@@ -1,0 +1,288 @@
+{
+  "Common": {
+    "title": "OriPics",
+    "usage": "How It Works",
+    "login": "Login",
+    "signup": "Start for Free",
+    "logout": "Logout",
+    "profile": "Profile",
+    "home": "Back to Home",
+    "meta_title": "OriPics - the original proof.",
+    "meta_description": "Prove your image is original. Embed invisible digital fingerprints.",
+    "contact": "Contact Us"
+  },
+  "Home": {
+    "hero": {
+      "title": "Prove Your Image is Original.",
+      "description": "By embedding an invisible digital fingerprint,\nyou can verify the authenticity anytime."
+    },
+    "upload": {
+      "idle": "☁️ Select or paste an image",
+      "dragover": "✨ Drop it here!",
+      "subtext": "Drag & drop, select file, paste, or take photo",
+      "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
+      "upload_menu": {
+        "title": "Upload Image",
+        "library": "Photo Library",
+        "camera": "Take Photo",
+        "file": "Select File",
+        "paste": "Paste from Clipboard",
+        "clipboard": "Clipboard",
+        "paste_subtext": "Upload copied image instantly",
+        "no_image": "No image found in clipboard.",
+        "paste_error": "Clipboard access denied or browser not supported.",
+        "cancel": "Cancel"
+      },
+      "processing": "🔄 Processing original proof...",
+      "error": "Processing Failed",
+      "retry": "Try Again"
+    },
+    "result": {
+      "stamped_title": "Original Proof Completed",
+      "original_image": "Original Image",
+      "stamped_image": "Stamped Image",
+      "timestamp": "Processed At",
+      "size": "Image Size",
+      "upload_type": "Auth Source",
+      "completed": "✨ Original proof has been successfully completed.",
+      "download": "Download Stamped Image",
+      "process_another": "Process Another Image",
+      "create_link": "🔗 Create Shared Link",
+      "link_time_left": "Time left: {minutes}m {seconds}s (cannot create after this)",
+      "link_created": "✅ Shared link created (stored for 7 days)",
+      "copy": "Copy",
+      "copy_success": "Link copied to clipboard!",
+      "link_hint": "Currently stored for 7 days. Permanent storage available for premium users in the future.",
+      "warning": "⚠️ Sharing Warning — Please read to protect proof data",
+      "warning_desc": "Directly uploading images to SNS (KakaoTalk, Instagram, X, etc.) will 100% destroy proof data due to forced compression.",
+      "guide_1_title": "1st (Recommended)",
+      "guide_1_desc": "Create link and share URL",
+      "guide_2_title": "2nd (Safe)",
+      "guide_2_desc": "Compress to ZIP and attach file",
+      "guide_3_title": "3rd (Safe)",
+      "guide_3_desc": "Upload to Drive and share download link"
+    },
+    "verify": {
+      "success_title": "Verification Successful",
+      "fail_title": "Verification Failed — Tampering Detected",
+      "processed_at": "Initially Processed At",
+      "integrity": "Integrity Status",
+      "match": "Matched ✅",
+      "mismatch": "Mismatched ❌",
+      "success_desc": "This image is a certified original, and it has been confirmed that the internal content has not been tampered with.",
+      "fail_desc": "Warning: This image is judged to have been tampered with or modified after certification. It may not be the original.",
+      "verify_another": "Verify Another Image"
+    },
+    "how_it_works": {
+      "title": "How It Works",
+      "step1_title": "Upload Image",
+      "step1_desc": "Upload original image via drag & drop or file selection.",
+      "step2_title": "Original Proof Processing",
+      "step2_desc": "The server performs original proof processing. Nothing is stored on the server after processing.",
+      "step3_title": "Return & Verify",
+      "step3_desc": "Download the certified image. Uploading this image again instantly verifies its authenticity. Even a single pixel change is detected."
+    },
+    "errors": {
+      "unsupported_format": "Unsupported image format. (PNG, JPG, WebP, BMP, TIFF, GIF supported)",
+      "size_limit": "File size must be 50MB or less.",
+      "server_error": "An error occurred during server communication.",
+      "unknown_error": "An unknown error has occurred.",
+      "link_creation_failed": "Failed to create link.",
+      "clipboard_success": "Link copied to clipboard!",
+      "empty_file": "The file is empty. Please upload a valid image file.",
+      "invalid_image": "Cannot read the image file. Please upload an uncorrupted PNG, JPG, or WebP file.",
+      "image_too_small": "The image is too small. Please use an image of at least 300×300 pixels."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "items": [
+        {
+          "q": "What image formats are supported?",
+          "a": "We support most common image formats including PNG, JPG (JPEG), WebP, BMP, TIFF, and GIF. Uploaded images are automatically converted to PNG for certification processing. Maximum file size is 50MB."
+        },
+        {
+          "q": "How does the original certification work?",
+          "a": "OriPics uses steganography technology to invisibly embed certification data into the pixel data of your image. When a certified image is uploaded again, the embedded data is extracted to instantly verify its authenticity. Even a single pixel modification is detected."
+        },
+        {
+          "q": "Can I share a certified image with others?",
+          "a": "Yes! By creating a Quick Link, anyone can verify the original certification status in their web browser. Quick Links are valid for 7 days. Note: Sending the image file directly through social media (KakaoTalk, Instagram, WhatsApp, etc.) may break the certification, as these platforms automatically compress and resize images. To preserve the certification, we recommend sharing via Quick Link."
+        },
+        {
+          "q": "Are my images stored on the server?",
+          "a": "During certification, your image exists only temporarily in server memory and is deleted immediately after processing. Only if you create a Quick Link, the image is stored securely in cloud storage for 7 days before automatic deletion."
+        },
+        {
+          "q": "Does certification affect image quality?",
+          "a": "No. OriPics converts to lossless PNG format for certification, so there is absolutely no quality degradation. Only imperceptible data is embedded — indistinguishable from the original to the human eye."
+        }
+      ]
+    }
+  },
+  "Login": {
+    "title": "Welcome Back",
+    "subtitle": "Login to continue with original proof.",
+    "google": "Login with Google",
+    "naver": "Login with Naver",
+    "kakao": "Login with Kakao",
+    "or_email": "Or continue with email",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Login",
+    "forgot_password": "Forgot password?",
+    "no_account": "Don't have an account?",
+    "signup_link": "Sign up",
+    "errors": {
+      "OAuthAccountNotLinked": "This email is already registered via another social account. Please log in using your original method.",
+      "OAuthAccountNotLinked_google": "This email is already registered with Google. Please click the Google button to log in.",
+      "OAuthAccountNotLinked_naver": "This email is already registered with Naver. Please click the Naver button to log in.",
+      "OAuthAccountNotLinked_kakao": "This email is already registered with Kakao. Please click the Kakao button to log in.",
+      "OAuthAccountNotLinked_credentials": "This email is already registered with email/password. Please enter your email and password below to log in.",
+      "OAuthCallback": "An error occurred during social login processing.",
+      "OAuthSignin": "Cannot start social login session.",
+      "EmailSignin": "Email login failed.",
+      "CredentialsSignin": "Incorrect email or password.",
+      "MissingCredentials": "Please enter your email and password.",
+      "UserNotFound": "Email not registered or this is a social login account.",
+      "InvalidPassword": "Incorrect password.",
+      "default": "An error occurred during authentication."
+    }
+  },
+  "Signup": {
+    "title": "Create New Account",
+    "subtitle": "Become a member of OriPics original proof service.",
+    "google": "Start with Google",
+    "naver": "Start with Naver",
+    "kakao": "Start with Kakao",
+    "or_email": "Or sign up with email",
+    "name": "Full Name",
+    "email": "Email Address",
+    "password": "Password",
+    "submit": "Sign Up",
+    "has_account": "Already have an account?",
+    "login_link": "Log in",
+    "shield_text": "Secure data encryption technology is applied.",
+    "errors": {
+      "invalid_email": "Invalid email address. Please enter a valid format (e.g., name@domain.com).",
+      "short_password": "Password must be at least 6 characters long.",
+      "password_hint": "Minimum 6 characters."
+    },
+    "verification": {
+      "send": "Verify",
+      "resend": "Resend",
+      "code_sent": "A verification code has been sent to your email. Please check your inbox.",
+      "code_label": "Verification Code",
+      "enter_code": "Please enter the 6-digit code sent to your email.",
+      "hint": "Enter the 6-digit code from your email. (Valid for 10 minutes)"
+    },
+    "api_errors": {
+      "missing_fields": "Please enter both email and password.",
+      "invalid_email": "Invalid email format.",
+      "short_password": "Password must be at least 6 characters.",
+      "missing_code": "Please enter the email verification code.",
+      "invalid_code": "The verification code is incorrect.",
+      "expired_code": "The verification code has expired. Please request a new one.",
+      "email_exists": "This email is already registered.",
+      "missing_email": "Please enter your email address.",
+      "send_failed": "Failed to send verification code. Please try again later.",
+      "server_error": "An error occurred during registration."
+    }
+  },
+  "Profile": {
+    "title": "Profile Management",
+    "subtitle": "Keep your profile picture and account info up to date.",
+    "profile_image": "Profile Picture",
+    "profile_image_desc": "Google profile or uploaded image will be displayed.\nJPG, PNG files under 2MB recommended.",
+    "change_photo": "Change Photo",
+    "email_label": "Email Address",
+    "email_hint": "* Email cannot be changed.",
+    "name_label": "Full Name",
+    "name_placeholder": "Enter your name",
+    "password_label": "New Password",
+    "password_placeholder": "Enter only if you want to change",
+    "submit": "Save Profile",
+    "messages": {
+      "upload_success": "Image uploaded. Click save to confirm.",
+      "upload_error": "Upload failed: {error}",
+      "size_error": "Image size must be under 2MB.",
+      "save_success": "Profile updated successfully!",
+      "save_error": "Failed to update profile: {error}",
+      "delete_error": "Failed to delete account: {error}"
+    },
+    "delete_account": {
+      "title": "Delete Account",
+      "description": "All account data will be permanently deleted and cannot be recovered.",
+      "button": "Delete Account",
+      "modal_title": "Are you sure you want to delete your account?",
+      "modal_description": "This will permanently delete your account information and all linked login data. This action cannot be undone.",
+      "confirm_label": "Type 'DELETE' below to confirm.",
+      "confirm_placeholder": "DELETE",
+      "confirm_word": "DELETE",
+      "cancel": "Cancel",
+      "confirm_button": "Delete"
+    },
+    "proof_history": {
+      "title": "My Proof History",
+      "empty": "No proofs yet.",
+      "go_certify": "Certify an image →",
+      "view_link": "View Link",
+      "expired": "Expired",
+      "certified_at": "Certified At",
+      "resolution": "Resolution"
+    }
+  },
+  "ForgotPassword": {
+    "title": "Reset Password",
+    "subtitle": "We'll send a password reset link to your email.",
+    "email_label": "Email Address",
+    "email_placeholder": "example@oripics.com",
+    "submit": "Send Reset Link",
+    "back_to_login": "Back to Login",
+    "success_message": "A reset link has been sent to your email.",
+    "error_message": "An error occurred: {error}",
+    "api_errors": {
+      "missing_email": "Please enter your email address.",
+      "user_not_found": "This email is not registered.",
+      "smtp_error": "Failed to send the email. Please try again later.",
+      "server_error": "A server error occurred."
+    }
+  },
+  "ResetPassword": {
+    "title": "Set New Password",
+    "subtitle": "Please enter your new password.",
+    "password_label": "New Password",
+    "password_placeholder": "••••••••",
+    "submit": "Change Password",
+    "success_message": "Password changed successfully. Please log in.",
+    "error_message": "An error occurred: {error}",
+    "invalid_token": "Invalid or expired link.",
+    "api_errors": {
+      "missing_fields": "Required information is missing.",
+      "invalid_token": "Invalid token.",
+      "expired_token": "Token has expired. Please request a new reset link.",
+      "user_not_found": "User not found.",
+      "server_error": "A server error occurred."
+    }
+  },
+  "LinkViewer": {
+    "loading": "Loading original data...",
+    "not_found": "Link Not Found",
+    "not_found_desc": "The link has expired or does not exist. (Stored for 7 days)",
+    "back_home": "Back to OriPics Home",
+    "verified": "Original Integrity Verified",
+    "info_title": "Image Information",
+    "timestamp_label": "Initially Certified At",
+    "resolution_label": "Original Resolution",
+    "source_label": "Auth Source",
+    "source_f": "Photo Library/File",
+    "source_p": "Camera",
+    "source_c": "Clipboard",
+    "download": "Download Original",
+    "short_link": "Short Link",
+    "copy_link": "Copy Link",
+    "copied": "Copied!",
+    "verified_desc": "✨ This image is digitally verified to be authentic with no artificial manipulation. Anyone can verify this via this link for 7 days.",
+    "try_now": "Certify My Image",
+    "footer": "OriPics © 2026  the original proof."
+  }
+}
