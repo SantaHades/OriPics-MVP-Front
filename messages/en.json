@@ -54,7 +54,7 @@
       "copy_success": "Link copied to clipboard!",
       "link_hint": "Currently stored for 7 days. Permanent storage available for premium users in the future.",
       "warning": "⚠️ Sharing Warning — Please read to protect proof data",
-      "warning_desc": "Directly uploading images to SNS (KakaoTalk, Instagram, X, etc.) will 100% destroy proof data due to forced compression.",
+      "warning_desc": "Directly uploading images to SNS (KakaoTalk, Instagram, X, etc.) may damage proof data due to forced compression.",
       "guide_1_title": "1st (Recommended)",
       "guide_1_desc": "Create link and share URL",
       "guide_2_title": "2nd (Safe)",
