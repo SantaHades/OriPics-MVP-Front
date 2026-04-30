@@ -115,6 +115,10 @@
         {
           "q": "Does certification affect image quality?",
           "a": "No. OriPics converts to lossless PNG format for certification, so there is absolutely no quality degradation. Only imperceptible data is embedded — indistinguishable from the original to the human eye."
+        },
+        {
+          "q": "What happens when I upload an animated GIF?",
+          "a": "Animated GIFs contain multiple frames, but OriPics certifies only the first frame. The certified result is saved as a static PNG image. Animation is not preserved."
         }
       ]
     }
