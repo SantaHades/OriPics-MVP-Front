@@ -5,6 +5,14 @@ import { useParams } from "next/navigation";
 import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
+import {
+  decodeImageToCanvas,
+  extractPayload,
+  payloadHasMagic,
+  splitPayload,
+  selectEmbedMode,
+} from "@/lib/oripics-stamp";
+import { OFFSET_TIMESTAMP, OFFSET_WIDTH, OFFSET_HEIGHT, TIMESTAMP_LENGTH, readUint32BE } from "@/lib/oripics-stamp/common";
 
 interface LinkData {
   image: string;
@@ -12,6 +20,30 @@ interface LinkData {
     timestamp: string;
     width: number;
     height: number;
+  };
+}
+
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
+async function extractMetadataFromBlob(blob: Blob): Promise<LinkData["metadata"] | null> {
+  const { data: pixels, width, height } = await decodeImageToCanvas(blob);
+  let mode;
+  try {
+    mode = selectEmbedMode(width, height);
+  } catch {
+    return null;
+  }
+  const payload = extractPayload(pixels, width, height, mode);
+  if (!payloadHasMagic(payload)) return null;
+  const { meta } = splitPayload(payload);
+  const ts = new TextDecoder("ascii").decode(meta.subarray(OFFSET_TIMESTAMP, OFFSET_TIMESTAMP + TIMESTAMP_LENGTH));
+  return {
+    timestamp: ts,
+    width: readUint32BE(meta, OFFSET_WIDTH),
+    height: readUint32BE(meta, OFFSET_HEIGHT),
   };
 }
 
@@ -41,7 +73,13 @@ export default function LinkViewer() {
           throw new Error(t("not_found_desc"));
         }
         const json = await res.json();
-        setData(json);
+        if (!json.image) throw new Error(t("not_found_desc"));
+
+        const blob = await dataUrlToBlob(json.image);
+        const metadata = await extractMetadataFromBlob(blob);
+        if (!metadata) throw new Error(t("not_found_desc"));
+
+        setData({ image: json.image, metadata });
       } catch (err: any) {
         setError(err.message);
       } finally {

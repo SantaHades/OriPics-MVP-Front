@@ -7,6 +7,12 @@ import { Link, useRouter } from "@/navigation";
 import { useTranslations } from "next-intl";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import {
+  signAndStamp,
+  publishStamped,
+  verifyImage,
+  type StampedDraft,
+} from "@/lib/oripics-stamp";
 
 type ProcessStatus = "idle" | "dragover" | "processing" | "result_stamped" | "result_verified" | "error";
 
@@ -26,6 +32,13 @@ interface ApiResponse {
   metadata?: MetaData;
 }
 
+const KNOWN_ERROR_CODES = ["empty_file", "invalid_image", "image_too_small", "dimension_mismatch"];
+
+function translateBackendError(detail: string, t: (k: string) => string): string {
+  if (KNOWN_ERROR_CODES.includes(detail)) return t(`errors.${detail}`);
+  return detail || t("errors.server_error");
+}
+
 export default function Home() {
   const [status, setStatus] = useState<ProcessStatus>("idle");
   const [resultData, setResultData] = useState<ApiResponse | null>(null);
@@ -33,6 +46,7 @@ export default function Home() {
   const [originalImagePreview, setOriginalImagePreview] = useState<string | null>(null);
   const { data: session } = useSession();
   const [sessionID, setSessionID] = useState<string | null>(null);
+  const [stampedDraft, setStampedDraft] = useState<StampedDraft | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [isLinking, setIsLinking] = useState(false);
@@ -145,52 +159,65 @@ export default function Home() {
     setStatus("processing");
     setErrorMessage("");
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_type", source);
-
     try {
-      const res = await fetch(`/api/process?upload_type=${source}`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        let errorMsg = t("errors.server_error");
-        try {
-          const errorData = JSON.parse(errorText);
-          const detail = errorData.detail || "";
-          const knownCodes = ["empty_file", "invalid_image", "image_too_small"];
-          errorMsg = knownCodes.includes(detail)
-            ? t(`errors.${detail}`)
-            : detail || errorMsg;
-        } catch (e) {
-          errorMsg = errorText || errorMsg;
+      if (file.type === "image/png") {
+        const verifyRes = await verifyImage(file, { apiBase: "" });
+        if (verifyRes.reason !== "no_stamp" && verifyRes.metadata) {
+          setResultData({
+            status: "verified",
+            match: verifyRes.match,
+            metadata: verifyRes.metadata,
+          });
+          setStatus("result_verified");
+          return;
         }
-        throw new Error(errorMsg);
       }
 
-      const data: ApiResponse = await res.json();
-      setResultData(data);
-      if (data.status === "stamped") {
-        setStatus("result_stamped");
-        setSessionID(data.session_id || null);
-        setTimeLeft(180); // 3 minutes
-        setGeneratedLink(null);
-      }
-      else setStatus("result_verified");
+      const draft = await signAndStamp(file, { apiBase: "", uploadType: source });
+      const stampedUrl = URL.createObjectURL(draft.blob);
+      setStampedDraft(draft);
+      setResultData({
+        status: "stamped",
+        image: stampedUrl,
+        session_id: draft.sign.link_id,
+        metadata: {
+          timestamp: draft.sign.timestamp,
+          width: draft.width,
+          height: draft.height,
+        },
+      });
+      setSessionID(draft.sign.link_id);
+      setTimeLeft(draft.sign.jwt_ttl);
+      setGeneratedLink(null);
+      setStatus("result_stamped");
     } catch (err: any) {
       setStatus("error");
-      setErrorMessage(err.message || t("errors.unknown_error"));
+      const raw = String(err?.message || err || "");
+      const m = raw.match(/^(?:sign_failed|verify_http|upload_failed|confirm_failed):\d+:(.*)$/);
+      if (m) {
+        try {
+          const parsed = JSON.parse(m[1]);
+          setErrorMessage(translateBackendError(parsed.detail || "", t));
+        } catch {
+          setErrorMessage(translateBackendError(m[1], t));
+        }
+      } else if (raw === "image_too_small" || KNOWN_ERROR_CODES.includes(raw)) {
+        setErrorMessage(t(`errors.${raw}`));
+      } else {
+        setErrorMessage(raw || t("errors.unknown_error"));
+      }
     }
   };
 
   const resetState = () => {
     setStatus("idle");
+    if (resultData?.image && resultData.image.startsWith("blob:")) {
+      URL.revokeObjectURL(resultData.image);
+    }
     setResultData(null);
     setErrorMessage("");
     setSessionID(null);
+    setStampedDraft(null);
     setTimeLeft(0);
     setGeneratedLink(null);
     if (originalImagePreview) {
@@ -249,28 +276,18 @@ export default function Home() {
   };
 
   const handleCreateLink = async () => {
-    if (!sessionID || isLinking) return;
+    if (!stampedDraft || isLinking) return;
     setIsLinking(true);
 
     try {
-      const res = await fetch("/api/links/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionID }),
-      });
-
-      if (!res.ok) throw new Error(t("errors.link_creation_failed"));
-
-      const data = await res.json();
+      const confirmed = await publishStamped(stampedDraft, { apiBase: "" });
       const baseUrl = window.location.origin;
-      const fullLink = `${baseUrl}/${data.link_id}`;
+      const fullLink = `${baseUrl}/${confirmed.link_id}`;
       setGeneratedLink(fullLink);
-      setSessionID(null); // Used up
+      setSessionID(null);
 
-      // 로그인된 사용자인 경우 증명 히스토리 저장
       if (session?.user) {
         try {
-          // 썸네일 생성 (스탬프된 이미지에서 축소)
           let thumbnailDataUrl: string | null = null;
           if (resultData?.image) {
             const img = new window.Image();
@@ -290,20 +307,32 @@ export default function Home() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              linkId: data.link_id,
+              linkId: confirmed.link_id,
               thumbnail: thumbnailDataUrl,
-              width: data.metadata?.width || resultData?.metadata?.width || 0,
-              height: data.metadata?.height || resultData?.metadata?.height || 0,
-              timestamp: data.metadata?.timestamp || resultData?.metadata?.timestamp || "",
+              width: stampedDraft.width,
+              height: stampedDraft.height,
+              timestamp: confirmed.timestamp,
             }),
           });
         } catch (historyErr) {
           console.error("Failed to save proof history:", historyErr);
-          // 히스토리 저장 실패는 무시 (링크 생성은 이미 성공)
         }
       }
+
+      setStampedDraft(null);
     } catch (err: any) {
-      alert(err.message);
+      const raw = String(err?.message || err || "");
+      const match = raw.match(/^(?:upload_failed|confirm_failed):\d+:(.*)$/);
+      let msg = raw;
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[1]);
+          msg = translateBackendError(parsed.detail || "", t);
+        } catch {
+          msg = match[1];
+        }
+      }
+      alert(msg || t("errors.link_creation_failed"));
     } finally {
       setIsLinking(false);
     }
@@ -317,9 +346,9 @@ export default function Home() {
   const formatTimestamp = (ts: string) => {
     // Prefix (1) + yymmddHHMMSS (12) + ms/10 (2) = 15 chars
     const cleanTs = isNaN(parseInt(ts[0])) ? ts.substring(1) : ts;
-    
+
     if (cleanTs.length !== 14) return ts;
-    
+
     const year = parseInt("20" + cleanTs.substring(0, 2), 10);
     const month = parseInt(cleanTs.substring(2, 4), 10) - 1;
     const day = parseInt(cleanTs.substring(4, 6), 10);
@@ -586,7 +615,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className={`p-4 rounded-xl mb-8 ${resultData.match ? "bg-blue-900/20 text-blue-200" : "bg-orange-900/20 text-orange-200"}`}>
+            <div className={`p-4 rounded-xl mb-8 ${resultData.match ? "bg-blue-50 text-blue-900 border border-blue-200" : "bg-orange-50 text-orange-900 border border-orange-200"}`}>
               {resultData.match ? (
                 <p>{t("verify.success_desc")}</p>
               ) : (
@@ -639,34 +668,30 @@ export default function Home() {
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className={`border rounded-2xl transition-all duration-300 overflow-hidden ${
-                openFaq === i
-                  ? "border-blue-200 bg-blue-500/5 shadow-lg shadow-blue-500/5"
-                  : "border-slate-200 bg-white/[0.02] hover:border-slate-300"
-              }`}
+              className={`border rounded-2xl transition-all duration-300 overflow-hidden ${openFaq === i
+                ? "border-blue-200 bg-blue-500/5 shadow-lg shadow-blue-500/5"
+                : "border-slate-200 bg-white/[0.02] hover:border-slate-300"
+                }`}
             >
               <button
                 onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 className="w-full flex items-center justify-between p-5 text-left gap-4"
               >
-                <span className={`font-semibold text-sm sm:text-base transition-colors ${
-                  openFaq === i ? "text-blue-600" : "text-slate-900"
-                }`}>
+                <span className={`font-semibold text-sm sm:text-base transition-colors ${openFaq === i ? "text-blue-600" : "text-slate-900"
+                  }`}>
                   {t(`faq.items.${i}.q`)}
                 </span>
                 <ChevronDown
                   size={18}
-                  className={`shrink-0 text-slate-500 transition-transform duration-300 ${
-                    openFaq === i ? "rotate-180 text-blue-600" : ""
-                  }`}
+                  className={`shrink-0 text-slate-500 transition-transform duration-300 ${openFaq === i ? "rotate-180 text-blue-600" : ""
+                    }`}
                 />
               </button>
               <div
-                className={`transition-all duration-300 ease-in-out ${
-                  openFaq === i
-                    ? "max-h-60 opacity-100"
-                    : "max-h-0 opacity-0"
-                }`}
+                className={`transition-all duration-300 ease-in-out ${openFaq === i
+                  ? "max-h-60 opacity-100"
+                  : "max-h-0 opacity-0"
+                  }`}
               >
                 <p className="px-5 pb-5 text-sm text-slate-600 leading-relaxed">
                   {t(`faq.items.${i}.a`)}

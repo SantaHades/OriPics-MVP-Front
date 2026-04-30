@@ -19,12 +19,16 @@ const nextConfig = {
     
     return [
       {
-        source: '/api/process',
-        destination: `${BACKEND_URL}/api/process` 
+        source: '/api/sign',
+        destination: `${BACKEND_URL}/api/sign`
+      },
+      {
+        source: '/api/verify',
+        destination: `${BACKEND_URL}/api/verify`
       },
       {
         source: '/api/links/:path*',
-        destination: `${BACKEND_URL}/api/links/:path*` 
+        destination: `${BACKEND_URL}/api/links/:path*`
       }
     ]
   }
