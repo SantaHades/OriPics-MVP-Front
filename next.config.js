@@ -17,20 +17,23 @@ const nextConfig = {
     // 트레일링 슬래시 제거
     const BACKEND_URL = rawUrl.replace(/\/$/, '');
     
-    return [
-      {
-        source: '/api/sign',
-        destination: `${BACKEND_URL}/api/sign`
-      },
-      {
-        source: '/api/verify',
-        destination: `${BACKEND_URL}/api/verify`
-      },
-      {
-        source: '/api/links/:path*',
-        destination: `${BACKEND_URL}/api/links/:path*`
-      }
-    ]
+    // beforeFiles: file system routes보다 먼저 실행 → [locale]/[id] 동적 라우트가 /api/* 를 가로채지 않도록
+    return {
+      beforeFiles: [
+        {
+          source: '/api/sign',
+          destination: `${BACKEND_URL}/api/sign`
+        },
+        {
+          source: '/api/verify',
+          destination: `${BACKEND_URL}/api/verify`
+        },
+        {
+          source: '/api/links/:path*',
+          destination: `${BACKEND_URL}/api/links/:path*`
+        }
+      ]
+    }
   }
 };
 
