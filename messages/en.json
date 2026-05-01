@@ -125,6 +125,10 @@
           "a": "Yes. When you tap 'Take Photo' on mobile and allow location access, your GPS coordinates at the moment of capture are included as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File upload and clipboard methods do not include GPS to prevent tampering."
         },
         {
+          "q": "GPS isn't being saved on iPhone Safari — which settings should I check?",
+          "a": "Check these four in order. ① [Reset site permission — most reliable] Settings → Safari → Advanced → Website Data → search 'ori.pics' → swipe the entry left and Delete → revisit the site and tap Allow when the permission prompt reappears. ② [Safari-wide location policy] Settings → Safari → Location → set to Ask or Allow (Deny blocks every site). ③ [iOS system location services] Settings → Privacy & Security → Location Services → On → scroll down to 'Safari Websites' → While Using the App + Precise Location turned on. ④ [HTTPS required] Geolocation is always blocked over http://. Always access the site via https://ori.pics or https://www.ori.pics."
+        },
+        {
           "q": "Are high-resolution images certified at original size?",
           "a": "Images with the longest side exceeding 1800 pixels are automatically resized (proportionally) to fit within 1800 pixels before certification (e.g., 4032×3024 → 1800×1350). This is to speed up mobile download and sharing — the resized image becomes the certified original. Images at 1800 pixels or smaller are certified at their original size. If you need certification at full original resolution, please contact us."
         }

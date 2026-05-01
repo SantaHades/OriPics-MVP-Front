@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
-import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle } from "lucide-react";
+import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Link, useRouter } from "@/navigation";
 import { useTranslations } from "next-intl";
@@ -572,7 +572,15 @@ export default function Home() {
                 {resultData.metadata.lat != null && resultData.metadata.lng != null && (
                   <div>
                     <span className="text-slate-500 block mb-1">GPS</span>
-                    <span className="font-mono text-xs">{resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}</span>
+                    <a
+                      href={`https://maps.google.com/?q=${resultData.metadata.lat},${resultData.metadata.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
+                    >
+                      {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
+                      <ExternalLink size={12} />
+                    </a>
                   </div>
                 )}
                 <div className="pt-2">
@@ -692,7 +700,15 @@ export default function Home() {
                 {resultData.metadata.lat != null && resultData.metadata.lng != null && (
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500">GPS</span>
-                    <span className="font-mono text-xs">{resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}</span>
+                    <a
+                      href={`https://maps.google.com/?q=${resultData.metadata.lat},${resultData.metadata.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
+                    >
+                      {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
+                      <ExternalLink size={12} />
+                    </a>
                   </div>
                 )}
                 <div className="flex justify-between py-2 items-center">

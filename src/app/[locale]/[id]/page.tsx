@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X } from "lucide-react";
+import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
@@ -291,9 +291,15 @@ export default function LinkViewer() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">GPS</p>
-                    <p className="text-sm font-medium font-mono">
+                    <a
+                      href={`https://maps.google.com/?q=${data!.lat},${data!.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium font-mono text-blue-700 hover:underline inline-flex items-center gap-1"
+                    >
                       {data!.lat!.toFixed(6)}, {data!.lng!.toFixed(6)}
-                    </p>
+                      <ExternalLink size={12} />
+                    </a>
                   </div>
                 </div>
               )}
