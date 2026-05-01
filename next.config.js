@@ -28,10 +28,7 @@ const nextConfig = {
           source: '/api/verify',
           destination: `${BACKEND_URL}/api/verify`
         },
-        {
-          source: '/api/links/:path*',
-          destination: `${BACKEND_URL}/api/links/:path*`
-        }
+
       ]
     }
   }
