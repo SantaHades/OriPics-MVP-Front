@@ -835,7 +835,7 @@ export default function Home() {
               </button>
               <div
                 className={`transition-all duration-300 ease-in-out ${openFaq === i
-                  ? "max-h-60 opacity-100"
+                  ? "max-h-[2000px] opacity-100"
                   : "max-h-0 opacity-0"
                   }`}
               >
