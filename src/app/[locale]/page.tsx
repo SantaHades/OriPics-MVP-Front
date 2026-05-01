@@ -36,6 +36,39 @@ interface ApiResponse {
 
 const KNOWN_ERROR_CODES = ["empty_file", "invalid_image", "image_too_small", "dimension_mismatch"];
 
+const MAX_DIMENSION = 2400;
+
+async function resizeIfLarger(file: Blob): Promise<Blob> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+  const { width, height } = bitmap;
+  const longest = Math.max(width, height);
+  if (longest <= MAX_DIMENSION) {
+    bitmap.close();
+    return file;
+  }
+  const scale = MAX_DIMENSION / longest;
+  const newW = Math.round(width * scale);
+  const newH = Math.round(height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = newW;
+  canvas.height = newH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    bitmap.close();
+    return file;
+  }
+  ctx.drawImage(bitmap, 0, 0, newW, newH);
+  bitmap.close();
+  return new Promise<Blob>((resolve) => {
+    canvas.toBlob((blob) => resolve(blob || file), "image/png");
+  });
+}
+
 function translateBackendError(detail: string, t: (k: string) => string): string {
   if (KNOWN_ERROR_CODES.includes(detail)) return t(`errors.${detail}`);
   return detail || t("errors.server_error");
@@ -192,7 +225,8 @@ export default function Home() {
         }
       }
 
-      const draft = await signAndStamp(file, { apiBase: "", uploadType: source, gps });
+      const toStamp = await resizeIfLarger(file);
+      const draft = await signAndStamp(toStamp, { apiBase: "", uploadType: source, gps });
       const stampedUrl = URL.createObjectURL(draft.blob);
       setStampedDraft(draft);
       setResultData({
