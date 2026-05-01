@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin } from "lucide-react";
+import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
@@ -30,6 +30,7 @@ export default function LinkViewer() {
   const [imageObjectUrl, setImageObjectUrl] = useState<string | null>(null);
   const [downloadedBytes, setDownloadedBytes] = useState(0);
   const [totalBytes, setTotalBytes] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const shortLink =
     typeof window !== "undefined"
@@ -103,6 +104,20 @@ export default function LinkViewer() {
       if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
   }, [data?.signed_url]);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isFullscreen]);
 
   const formatBytes = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -202,11 +217,21 @@ export default function LinkViewer() {
             </div>
           )}
           {imageObjectUrl && (
-            <img
-              src={imageObjectUrl}
-              alt="Verified Content"
-              className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl transition-opacity duration-300"
-            />
+            <>
+              <img
+                src={imageObjectUrl}
+                alt="Verified Content"
+                onClick={() => setIsFullscreen(true)}
+                className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl transition-opacity duration-300 cursor-zoom-in"
+              />
+              <button
+                onClick={() => setIsFullscreen(true)}
+                className="absolute top-6 right-6 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center backdrop-blur shadow-lg transition-colors"
+                aria-label="Fullscreen"
+              >
+                <Expand size={18} className="text-slate-700" />
+              </button>
+            </>
           )}
         </div>
 
@@ -326,6 +351,30 @@ export default function LinkViewer() {
         </Link>
         <p>{t("footer")}</p>
       </footer>
+
+      {isFullscreen && imageObjectUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setIsFullscreen(false)}
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsFullscreen(false);
+            }}
+            className="absolute top-4 right-4 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={imageObjectUrl}
+            alt="Full Resolution"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-full object-contain cursor-default"
+          />
+        </div>
+      )}
     </div>
   );
 }
