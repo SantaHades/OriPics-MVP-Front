@@ -298,7 +298,7 @@ export default function LinkViewer() {
                       className="text-sm font-medium font-mono text-blue-700 hover:underline inline-flex items-center gap-1"
                     >
                       {data!.lat!.toFixed(6)}, {data!.lng!.toFixed(6)}
-                      <ExternalLink size={12} />
+                      <ExternalLink size={16} />
                     </a>
                   </div>
                 </div>

@@ -579,7 +579,7 @@ export default function Home() {
                       className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
                     >
                       {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
-                      <ExternalLink size={12} />
+                      <ExternalLink size={16} />
                     </a>
                   </div>
                 )}
@@ -707,7 +707,7 @@ export default function Home() {
                       className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
                     >
                       {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
-                      <ExternalLink size={12} />
+                      <ExternalLink size={16} />
                     </a>
                   </div>
                 )}
