@@ -87,6 +87,7 @@ export default function Home() {
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [debugMessage, setDebugMessage] = useState<string | null>(null);
   const router = useRouter();
 
   // Detect if mobile device
@@ -167,16 +168,32 @@ export default function Home() {
     if (uploadSource === "P") {
       setStatus("processing");
       // 사진 선택 후 GPS 요청 (최대 3초 대기 후 null로 진행)
+      setDebugMessage("GPS 요청 중...");
       const gpsPromise = new Promise<{ lat: number; lng: number } | null>((resolve) => {
+        if (!navigator.geolocation) {
+          setDebugMessage("GPS 미지원: navigator.geolocation 없음");
+          resolve(null);
+          return;
+        }
         navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          () => resolve(null),
+          (pos) => {
+            setDebugMessage(`GPS OK: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)} (정확도 ${Math.round(pos.coords.accuracy)}m)`);
+            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          },
+          (err) => {
+            const codeMap: Record<number, string> = { 1: "PERMISSION_DENIED", 2: "POSITION_UNAVAILABLE", 3: "TIMEOUT" };
+            setDebugMessage(`GPS 실패: code=${err.code} (${codeMap[err.code] || "?"}) ${err.message || ""}`);
+            resolve(null);
+          },
           { timeout: 3000, maximumAge: 60000, enableHighAccuracy: false },
         );
       });
       gps = await Promise.race([
         gpsPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+        new Promise<null>((resolve) => setTimeout(() => {
+          setDebugMessage("GPS 타임아웃 (3초)");
+          resolve(null);
+        }, 3000)),
       ]);
     }
     processFile(file, uploadSource, gps);
@@ -909,6 +926,19 @@ export default function Home() {
         ref={cameraInputRef}
         onChange={handleFileSelect}
       />
+
+      {debugMessage && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[90vw] px-4 py-3 rounded-xl bg-black/85 text-white text-sm font-mono shadow-2xl border border-white/10 flex items-start gap-3">
+          <span className="break-all">{debugMessage}</span>
+          <button
+            onClick={() => setDebugMessage(null)}
+            className="shrink-0 text-white/60 hover:text-white"
+            aria-label="close"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
     </>
   );
 }
