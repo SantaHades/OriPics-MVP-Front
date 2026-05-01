@@ -27,7 +27,9 @@ export default function LinkViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imageObjectUrl, setImageObjectUrl] = useState<string | null>(null);
+  const [downloadedBytes, setDownloadedBytes] = useState(0);
+  const [totalBytes, setTotalBytes] = useState(0);
 
   const shortLink =
     typeof window !== "undefined"
@@ -61,6 +63,53 @@ export default function LinkViewer() {
     if (linkId) fetchData();
   }, [linkId, t]);
 
+  useEffect(() => {
+    if (!data?.signed_url) return;
+    let cancelled = false;
+    let createdUrl: string | null = null;
+
+    (async () => {
+      try {
+        const res = await fetch(data.signed_url);
+        if (!res.ok || !res.body) throw new Error("image_fetch_failed");
+        const total = Number(res.headers.get("content-length")) || 0;
+        setTotalBytes(total);
+        const reader = res.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let received = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (cancelled) {
+            try { reader.cancel(); } catch {}
+            return;
+          }
+          if (done) break;
+          if (value) {
+            chunks.push(value);
+            received += value.length;
+            setDownloadedBytes(received);
+          }
+        }
+        const blob = new Blob(chunks as BlobPart[], { type: "image/png" });
+        createdUrl = URL.createObjectURL(blob);
+        if (!cancelled) setImageObjectUrl(createdUrl);
+      } catch {
+        if (!cancelled) setImageObjectUrl(data.signed_url);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [data?.signed_url]);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  };
+
   const formatTimestamp = (ts: string) => {
     const cleanTs = isNaN(parseInt(ts[0])) ? ts.substring(1) : ts;
     if (cleanTs.length !== 14) return ts;
@@ -85,14 +134,19 @@ export default function LinkViewer() {
 
   const handleDownload = async () => {
     if (!data) return;
-    const res = await fetch(data.signed_url);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+    let url = imageObjectUrl;
+    let revoke = false;
+    if (!url || !url.startsWith("blob:")) {
+      const res = await fetch(data.signed_url);
+      const blob = await res.blob();
+      url = URL.createObjectURL(blob);
+      revoke = true;
+    }
     const a = document.createElement("a");
     a.href = url;
     a.download = `OriPics_${linkId}.png`;
     a.click();
-    URL.revokeObjectURL(url);
+    if (revoke) URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -137,19 +191,23 @@ export default function LinkViewer() {
       <main className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* 이미지 영역 */}
         <div className="lg:col-span-2 glass rounded-3xl p-4 sm:p-8 flex items-center justify-center min-h-[400px] relative">
-          {!imgLoaded && (
+          {!imageObjectUrl && (
             <div className="absolute inset-4 sm:inset-8 flex flex-col items-center justify-center bg-slate-100/50 rounded-xl gap-3">
               <RefreshCw size={36} className="animate-spin text-purple-500" />
-              <p className="text-sm text-slate-500">{t("loading")}</p>
+              <p className="text-sm font-mono text-slate-600">
+                {totalBytes > 0
+                  ? `${formatBytes(downloadedBytes)} / ${formatBytes(totalBytes)}`
+                  : formatBytes(downloadedBytes)}
+              </p>
             </div>
           )}
-          <img
-            src={data!.signed_url}
-            alt="Verified Content"
-            onLoad={() => setImgLoaded(true)}
-            onError={() => setImgLoaded(true)}
-            className={`max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
-          />
+          {imageObjectUrl && (
+            <img
+              src={imageObjectUrl}
+              alt="Verified Content"
+              className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl transition-opacity duration-300"
+            />
+          )}
         </div>
 
         {/* 정보 영역 */}
