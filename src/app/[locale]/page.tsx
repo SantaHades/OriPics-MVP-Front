@@ -54,7 +54,6 @@ export default function Home() {
   const [isLinking, setIsLinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const pendingGpsRef = useRef<Promise<{ lat: number; lng: number } | null> | null>(null);
   const [uploadSource, setUploadSource] = useState<"F" | "P" | "C">("F");
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -136,9 +135,20 @@ export default function Home() {
     if (!file) return;
 
     let gps: { lat: number; lng: number } | null = null;
-    if (uploadSource === "P" && pendingGpsRef.current) {
-      gps = await pendingGpsRef.current;
-      pendingGpsRef.current = null;
+    if (uploadSource === "P") {
+      setStatus("processing");
+      // 사진 선택 후 GPS 요청 (최대 3초 대기 후 null로 진행)
+      const gpsPromise = new Promise<{ lat: number; lng: number } | null>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => resolve(null),
+          { timeout: 3000, maximumAge: 60000, enableHighAccuracy: false },
+        );
+      });
+      gps = await Promise.race([
+        gpsPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+      ]);
     }
     processFile(file, uploadSource, gps);
   };
@@ -749,14 +759,6 @@ export default function Home() {
                   onClick={() => {
                     setShowUploadMenu(false);
                     setUploadSource("P");
-                    // GPS 요청과 카메라를 동시에 시작 (user gesture 유지)
-                    pendingGpsRef.current = new Promise<{ lat: number; lng: number } | null>((resolve) => {
-                      navigator.geolocation.getCurrentPosition(
-                        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-                        () => resolve(null),
-                        { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true },
-                      );
-                    });
                     cameraInputRef.current?.click();
                   }}
                   className="w-full flex items-center gap-4 p-4 hover:bg-white/80 rounded-2xl transition-all text-left"
