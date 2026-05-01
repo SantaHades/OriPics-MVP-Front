@@ -81,9 +81,13 @@ export interface SignAndStampOptions {
   gps?: { lat: number; lng: number } | null;
 }
 
-export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promise<StampedDraft> {
+export async function signAndStampFromPixels(
+  pixels: Uint8ClampedArray,
+  width: number,
+  height: number,
+  opts: SignAndStampOptions,
+): Promise<StampedDraft> {
   const apiBase = opts.apiBase.replace(/\/$/, '');
-  const { data: pixels, width, height } = await decodeImageToCanvas(file);
 
   const useV3 = (
     opts.uploadType === 'P' &&
@@ -95,8 +99,10 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
   if (useV3) {
     const gps = opts.gps!;
     const mode = selectEmbedModeV3(width, height);
-    const innerHash = await computeInnerHash(pixels, width, height);
-    const borderHash = await computeBorderHashV3(pixels, width, height, mode);
+    const [innerHash, borderHash] = await Promise.all([
+      computeInnerHash(pixels, width, height),
+      computeBorderHashV3(pixels, width, height, mode),
+    ]);
 
     const signRes = await fetch(`${apiBase}/api/sign`, {
       method: 'POST',
@@ -128,10 +134,12 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
     return { blob, width, height, sign, gps };
   }
 
-  // v2 기존 흐름
+  // v2
   const mode = selectEmbedMode(width, height);
-  const innerHash = await computeInnerHash(pixels, width, height);
-  const borderHash = await computeBorderHash(pixels, width, height, mode);
+  const [innerHash, borderHash] = await Promise.all([
+    computeInnerHash(pixels, width, height),
+    computeBorderHash(pixels, width, height, mode),
+  ]);
 
   const signRes = await fetch(`${apiBase}/api/sign`, {
     method: 'POST',
@@ -159,6 +167,11 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
   const blob = await encodeCanvasToPng(stamped, width, height);
 
   return { blob, width, height, sign, gps: null };
+}
+
+export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promise<StampedDraft> {
+  const { data: pixels, width, height } = await decodeImageToCanvas(file);
+  return signAndStampFromPixels(pixels, width, height, opts);
 }
 
 export async function uploadStamped(draft: StampedDraft): Promise<void> {
@@ -242,8 +255,10 @@ export async function verifyImage(file: Blob, opts: { apiBase: string }): Promis
       return { match: false, reason: 'dimension_mismatch' };
     }
 
-    const innerHash = await computeInnerHash(pixels, width, height);
-    const borderHash = await computeBorderHashV3(pixels, width, height, modeV3);
+    const [innerHash, borderHash] = await Promise.all([
+      computeInnerHash(pixels, width, height),
+      computeBorderHashV3(pixels, width, height, modeV3),
+    ]);
 
     const res = await fetch(`${apiBase}/api/verify`, {
       method: 'POST',
@@ -277,8 +292,10 @@ export async function verifyImage(file: Blob, opts: { apiBase: string }): Promis
     return { match: false, reason: 'dimension_mismatch' };
   }
 
-  const innerHash = await computeInnerHash(pixels, width, height);
-  const borderHash = await computeBorderHash(pixels, width, height, mode);
+  const [innerHash, borderHash] = await Promise.all([
+    computeInnerHash(pixels, width, height),
+    computeBorderHash(pixels, width, height, mode),
+  ]);
 
   const res = await fetch(`${apiBase}/api/verify`, {
     method: 'POST',

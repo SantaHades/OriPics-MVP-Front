@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
-  signAndStamp,
+  signAndStampFromPixels,
   publishStamped,
   verifyImage,
   type StampedDraft,
@@ -36,37 +36,33 @@ interface ApiResponse {
 
 const KNOWN_ERROR_CODES = ["empty_file", "invalid_image", "image_too_small", "dimension_mismatch"];
 
-const MAX_DIMENSION = 2400;
+const MAX_DIMENSION = 1800;
 
-async function resizeIfLarger(file: Blob): Promise<Blob> {
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch {
-    return file;
+async function decodeAndMaybeResize(
+  file: Blob,
+): Promise<{ pixels: Uint8ClampedArray; width: number; height: number }> {
+  const bitmap = await createImageBitmap(file);
+  const { width: srcW, height: srcH } = bitmap;
+  const longest = Math.max(srcW, srcH);
+  let targetW = srcW;
+  let targetH = srcH;
+  if (longest > MAX_DIMENSION) {
+    const scale = MAX_DIMENSION / longest;
+    targetW = Math.round(srcW * scale);
+    targetH = Math.round(srcH * scale);
   }
-  const { width, height } = bitmap;
-  const longest = Math.max(width, height);
-  if (longest <= MAX_DIMENSION) {
-    bitmap.close();
-    return file;
-  }
-  const scale = MAX_DIMENSION / longest;
-  const newW = Math.round(width * scale);
-  const newH = Math.round(height * scale);
   const canvas = document.createElement("canvas");
-  canvas.width = newW;
-  canvas.height = newH;
-  const ctx = canvas.getContext("2d");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) {
     bitmap.close();
-    return file;
+    throw new Error("canvas_context_failed");
   }
-  ctx.drawImage(bitmap, 0, 0, newW, newH);
+  ctx.drawImage(bitmap, 0, 0, targetW, targetH);
   bitmap.close();
-  return new Promise<Blob>((resolve) => {
-    canvas.toBlob((blob) => resolve(blob || file), "image/png");
-  });
+  const imageData = ctx.getImageData(0, 0, targetW, targetH);
+  return { pixels: imageData.data, width: targetW, height: targetH };
 }
 
 function translateBackendError(detail: string, t: (k: string) => string): string {
@@ -225,8 +221,13 @@ export default function Home() {
         }
       }
 
-      const toStamp = await resizeIfLarger(file);
-      const draft = await signAndStamp(toStamp, { apiBase: "", uploadType: source, gps });
+      const decoded = await decodeAndMaybeResize(file);
+      const draft = await signAndStampFromPixels(
+        decoded.pixels,
+        decoded.width,
+        decoded.height,
+        { apiBase: "", uploadType: source, gps },
+      );
       const stampedUrl = URL.createObjectURL(draft.blob);
       setStampedDraft(draft);
       setResultData({
@@ -340,6 +341,13 @@ export default function Home() {
       const fullLink = `${baseUrl}/${confirmed.link_id}`;
       setGeneratedLink(fullLink);
       setSessionID(null);
+
+      // CDN warm-up: 첫 조회자가 CDN MISS를 겪지 않도록 사전 캐시
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (supabaseUrl && confirmed.storage_path) {
+        const publicUrl = `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${confirmed.storage_path}`;
+        fetch(publicUrl, { method: "HEAD", cache: "no-cache" }).catch(() => {});
+      }
 
       const draftSnapshot = stampedDraft;
       const resultImage = resultData?.image;
