@@ -507,28 +507,29 @@ export default function Home() {
               onDrop={handleDrop}
             >
               {status === "idle" || status === "dragover" ? (
-                <div className="flex items-center justify-center gap-6">
-                  <div className="flex flex-col items-center cursor-pointer flex-1" onClick={() => setShowUploadMenu(true)}>
-                    <UploadCloud size={64} strokeWidth={1.5} className={`mb-4 ${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
-                    <p className="text-xl font-medium mb-2">
-                      {status === "dragover" ? t("upload.dragover") : t("upload.idle")}
-                    </p>
-                    <p className="text-sm text-slate-600 mt-1">{t("upload.subtext")}</p>
-                    <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
+                <div className="flex flex-col items-center cursor-pointer" onClick={() => setShowUploadMenu(true)}>
+                  <div className="flex items-center justify-center gap-6 mb-4">
+                    <UploadCloud size={64} strokeWidth={1.5} className={`${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
+                    {isMobileDevice && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadSource("P");
+                          cameraInputRef.current?.click();
+                        }}
+                        className="shrink-0 flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-orange-600 border border-slate-200 shadow-sm transition-all"
+                        aria-label={t("upload.upload_menu.camera")}
+                      >
+                        <Camera size={64} strokeWidth={1.5} />
+                        <span className="text-xs font-medium">{t("upload.upload_menu.camera")}</span>
+                      </button>
+                    )}
                   </div>
-                  {isMobileDevice && (
-                    <button
-                      onClick={() => {
-                        setUploadSource("P");
-                        cameraInputRef.current?.click();
-                      }}
-                      className="shrink-0 flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-orange-500/10 hover:bg-orange-500/20 active:bg-orange-500/30 text-orange-600 border border-orange-200 transition-all"
-                      aria-label={t("upload.upload_menu.camera")}
-                    >
-                      <Camera size={64} strokeWidth={1.5} />
-                      <span className="text-xs font-medium">{t("upload.upload_menu.camera")}</span>
-                    </button>
-                  )}
+                  <p className="text-xl font-medium mb-2">
+                    {status === "dragover" ? t("upload.dragover") : t("upload.idle")}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">{t("upload.subtext")}</p>
+                  <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
                 </div>
               ) : status === "processing" ? (
                 <div className="flex flex-col items-center py-6">
