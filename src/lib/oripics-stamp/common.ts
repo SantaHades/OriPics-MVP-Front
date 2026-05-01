@@ -7,12 +7,21 @@ export const OFFSET_LENGTH = 12;
 export const OFFSET_TIMESTAMP = 16;
 export const OFFSET_WIDTH = 31;
 export const OFFSET_HEIGHT = 35;
+// v2
 export const OFFSET_FINAL_HASH = 39;
-
 export const META_LENGTH = 39;
+export const PAYLOAD_LENGTH = 71;  // 39 + 32
+export const PAYLOAD_BITS = PAYLOAD_LENGTH * 8;  // 568
+
+// v3 (GPS 8 bytes 추가)
+export const OFFSET_LAT = 39;
+export const OFFSET_LNG = 43;
+export const OFFSET_FINAL_HASH_V3 = 47;
+export const META_LENGTH_V3 = 47;
+export const PAYLOAD_LENGTH_V3 = 79;  // 47 + 32
+export const PAYLOAD_BITS_V3 = PAYLOAD_LENGTH_V3 * 8;  // 632
+
 export const HASH_LENGTH = 32;
-export const PAYLOAD_LENGTH = META_LENGTH + HASH_LENGTH;
-export const PAYLOAD_BITS = PAYLOAD_LENGTH * 8;
 
 export const TIMESTAMP_LENGTH = 15;
 
@@ -62,9 +71,19 @@ export function hexToBytes(hex: string): Uint8Array {
   if (hex.length % 2 !== 0) throw new Error('invalid hex length');
   const out = new Uint8Array(hex.length / 2);
   for (let i = 0; i < out.length; i++) {
-    out[i] = parseInt(hex.substr(i * 2, 2), 16);
+    out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
   }
   return out;
+}
+
+export function int32BE(n: number): Uint8Array {
+  const buf = new Uint8Array(4);
+  new DataView(buf.buffer).setInt32(0, n, false);
+  return buf;
+}
+
+export function readInt32BE(buf: Uint8Array, offset: number): number {
+  return new DataView(buf.buffer, buf.byteOffset).getInt32(offset, false);
 }
 
 export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {

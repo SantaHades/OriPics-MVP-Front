@@ -11,13 +11,24 @@ import {
   selectEmbedMode,
 } from './v2';
 import {
+  selectEmbedModeV3,
+  computeBorderHashV3,
+  embedPayloadV3,
+  extractPayloadV3,
+  splitPayloadV3,
+  buildPayloadV3,
+  readGpsFromMeta,
+} from './v3';
+import {
   PAYLOAD_LENGTH,
   META_LENGTH,
   HASH_LENGTH,
   OFFSET_WIDTH,
   OFFSET_HEIGHT,
+  OFFSET_VERSION,
   bytesToHex,
   hexToBytes,
+  readUint16BE,
   readUint32BE,
 } from './common';
 
@@ -45,7 +56,13 @@ export interface VerifyResponse {
   match: boolean;
   version?: number;
   reason?: string;
-  metadata?: { timestamp: string; width: number; height: number };
+  metadata?: {
+    timestamp: string;
+    width: number;
+    height: number;
+    lat?: number;
+    lng?: number;
+  };
 }
 
 export interface StampedDraft {
@@ -53,6 +70,7 @@ export interface StampedDraft {
   width: number;
   height: number;
   sign: SignResponse;
+  gps?: { lat: number; lng: number } | null;
 }
 
 export type UploadType = 'F' | 'P' | 'C';
@@ -60,13 +78,58 @@ export type UploadType = 'F' | 'P' | 'C';
 export interface SignAndStampOptions {
   apiBase: string;
   uploadType?: UploadType;
+  gps?: { lat: number; lng: number } | null;
 }
 
 export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promise<StampedDraft> {
   const apiBase = opts.apiBase.replace(/\/$/, '');
   const { data: pixels, width, height } = await decodeImageToCanvas(file);
-  const mode = selectEmbedMode(width, height);
 
+  const useV3 = (
+    opts.uploadType === 'P' &&
+    opts.gps != null &&
+    width >= 300 &&
+    height >= 300
+  );
+
+  if (useV3) {
+    const gps = opts.gps!;
+    const mode = selectEmbedModeV3(width, height);
+    const innerHash = await computeInnerHash(pixels, width, height);
+    const borderHash = await computeBorderHashV3(pixels, width, height, mode);
+
+    const signRes = await fetch(`${apiBase}/api/sign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        inner_hash: bytesToHex(innerHash),
+        border_hash: bytesToHex(borderHash),
+        width,
+        height,
+        upload_type: 'P',
+        lat_e6: Math.round(gps.lat * 1_000_000),
+        lng_e6: Math.round(gps.lng * 1_000_000),
+      }),
+    });
+    if (!signRes.ok) {
+      const detail = await signRes.text();
+      throw new Error(`sign_failed:${signRes.status}:${detail}`);
+    }
+    const sign: SignResponse = await signRes.json();
+
+    const meta = hexToBytes(sign.meta_hex);
+    const finalHash = hexToBytes(sign.final_hash);
+    const payload = buildPayloadV3(meta, finalHash);
+
+    const stamped = new Uint8ClampedArray(pixels);
+    embedPayloadV3(stamped, width, height, payload, mode);
+    const blob = await encodeCanvasToPng(stamped, width, height);
+
+    return { blob, width, height, sign, gps };
+  }
+
+  // v2 기존 흐름
+  const mode = selectEmbedMode(width, height);
   const innerHash = await computeInnerHash(pixels, width, height);
   const borderHash = await computeBorderHash(pixels, width, height, mode);
 
@@ -95,7 +158,7 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
   embedPayload(stamped, width, height, payload, mode);
   const blob = await encodeCanvasToPng(stamped, width, height);
 
-  return { blob, width, height, sign };
+  return { blob, width, height, sign, gps: null };
 }
 
 export async function uploadStamped(draft: StampedDraft): Promise<void> {
@@ -140,12 +203,60 @@ export async function verifyImage(file: Blob, opts: { apiBase: string }): Promis
     return { match: false, reason: 'image_too_small' };
   }
 
-  const payload = extractPayload(pixels, width, height, mode);
-  if (!payloadHasMagic(payload)) {
+  // 1차 추출 (v2 크기, 568 bits) — version 필드 읽기 목적
+  const payloadV2 = extractPayload(pixels, width, height, mode);
+  if (!payloadHasMagic(payloadV2)) {
     return { match: false, reason: 'no_stamp' };
   }
 
-  const { meta, finalHash } = splitPayload(payload);
+  const version = readUint16BE(payloadV2, OFFSET_VERSION);
+
+  if (version === 3) {
+    // 2차 추출 (v3 크기, 632 bits)
+    let modeV3;
+    try {
+      modeV3 = selectEmbedModeV3(width, height);
+    } catch {
+      return { match: false, reason: 'image_too_small' };
+    }
+
+    const payloadV3 = extractPayloadV3(pixels, width, height, modeV3);
+    const { meta, finalHash } = splitPayloadV3(payloadV3);
+
+    const claimedW = readUint32BE(meta, OFFSET_WIDTH);
+    const claimedH = readUint32BE(meta, OFFSET_HEIGHT);
+    if (claimedW !== width || claimedH !== height) {
+      return { match: false, reason: 'dimension_mismatch' };
+    }
+
+    const innerHash = await computeInnerHash(pixels, width, height);
+    const borderHash = await computeBorderHashV3(pixels, width, height, modeV3);
+
+    const res = await fetch(`${apiBase}/api/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        meta_hex: bytesToHex(meta),
+        inner_hash: bytesToHex(innerHash),
+        border_hash: bytesToHex(borderHash),
+        extracted_final_hash: bytesToHex(finalHash),
+      }),
+    });
+    if (!res.ok) {
+      return { match: false, reason: `verify_http_${res.status}` };
+    }
+    const result: VerifyResponse = await res.json();
+    if (result.metadata && result.metadata.lat == null) {
+      // 백엔드가 lat/lng를 안 줬을 경우 프론트에서 직접 파싱
+      const gps = readGpsFromMeta(meta);
+      result.metadata.lat = gps.lat;
+      result.metadata.lng = gps.lng;
+    }
+    return result;
+  }
+
+  // v2 검증
+  const { meta, finalHash } = splitPayload(payloadV2);
 
   const claimedW = readUint32BE(meta, OFFSET_WIDTH);
   const claimedH = readUint32BE(meta, OFFSET_HEIGHT);

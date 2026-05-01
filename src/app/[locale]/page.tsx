@@ -20,6 +20,8 @@ interface MetaData {
   timestamp: string;
   width: number;
   height: number;
+  lat?: number;
+  lng?: number;
   hash?: string;
 }
 
@@ -52,6 +54,7 @@ export default function Home() {
   const [isLinking, setIsLinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const pendingGpsRef = useRef<Promise<{ lat: number; lng: number } | null> | null>(null);
   const [uploadSource, setUploadSource] = useState<"F" | "P" | "C">("F");
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -127,11 +130,17 @@ export default function Home() {
     if (file) processFile(file, "F");
   };
 
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) processFile(file, uploadSource);
-    // Reset value to allow selecting same file again
     e.target.value = "";
+    if (!file) return;
+
+    let gps: { lat: number; lng: number } | null = null;
+    if (uploadSource === "P" && pendingGpsRef.current) {
+      gps = await pendingGpsRef.current;
+      pendingGpsRef.current = null;
+    }
+    processFile(file, uploadSource, gps);
   };
 
   const onClickUpload = () => {
@@ -139,7 +148,7 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
-  const processFile = async (file: File, source: "F" | "P" | "C" = "F") => {
+  const processFile = async (file: File, source: "F" | "P" | "C" = "F", gps?: { lat: number; lng: number } | null) => {
     setUploadSource(source);
     const supportedTypes = ["image/png", "image/jpeg", "image/webp", "image/bmp", "image/tiff", "image/gif"];
     if (!supportedTypes.includes(file.type)) {
@@ -173,7 +182,7 @@ export default function Home() {
         }
       }
 
-      const draft = await signAndStamp(file, { apiBase: "", uploadType: source });
+      const draft = await signAndStamp(file, { apiBase: "", uploadType: source, gps });
       const stampedUrl = URL.createObjectURL(draft.blob);
       setStampedDraft(draft);
       setResultData({
@@ -184,6 +193,8 @@ export default function Home() {
           timestamp: draft.sign.timestamp,
           width: draft.width,
           height: draft.height,
+          lat: draft.gps?.lat,
+          lng: draft.gps?.lng,
         },
       });
       setSessionID(draft.sign.link_id);
@@ -490,6 +501,12 @@ export default function Home() {
                     {!["F", "P", "C"].includes(resultData.metadata.timestamp[0]) && t("upload.upload_menu.library")}
                   </span>
                 </div>
+                {resultData.metadata.lat != null && resultData.metadata.lng != null && (
+                  <div>
+                    <span className="text-slate-500 block mb-1">GPS</span>
+                    <span className="font-mono text-xs">{resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}</span>
+                  </div>
+                )}
                 <div className="pt-2">
                   <p className="text-blue-700 font-medium">{t("result.completed")}</p>
                 </div>
@@ -604,6 +621,12 @@ export default function Home() {
                     {!["F", "P", "C"].includes(resultData.metadata.timestamp[0]) && t("upload.upload_menu.library")}
                   </span>
                 </div>
+                {resultData.metadata.lat != null && resultData.metadata.lng != null && (
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500">GPS</span>
+                    <span className="font-mono text-xs">{resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-2 items-center">
                   <span className="text-slate-500">{t("verify.integrity")}</span>
                   {resultData.match ? (
@@ -724,9 +747,17 @@ export default function Home() {
               {isMobileDevice && (
                 <button
                   onClick={() => {
-                    setUploadSource("P");
-                    cameraInputRef.current?.click();
                     setShowUploadMenu(false);
+                    setUploadSource("P");
+                    // GPS 요청과 카메라를 동시에 시작 (user gesture 유지)
+                    pendingGpsRef.current = new Promise<{ lat: number; lng: number } | null>((resolve) => {
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                        () => resolve(null),
+                        { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true },
+                      );
+                    });
+                    cameraInputRef.current?.click();
                   }}
                   className="w-full flex items-center gap-4 p-4 hover:bg-white/80 rounded-2xl transition-all text-left"
                 >
