@@ -167,9 +167,9 @@ export default function Home() {
     let gps: { lat: number; lng: number } | null = null;
     if (uploadSource === "P") {
       setStatus("processing");
-      // 사진 선택 후 GPS 요청 (최대 3초 대기 후 null로 진행)
+      // 사진 선택 후 GPS 요청 (getCurrentPosition의 timeout이 3초 후 자동 fail)
       setDebugMessage("GPS 요청 중...");
-      const gpsPromise = new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      gps = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
         if (!navigator.geolocation) {
           setDebugMessage("GPS 미지원: navigator.geolocation 없음");
           resolve(null);
@@ -188,13 +188,6 @@ export default function Home() {
           { timeout: 3000, maximumAge: 60000, enableHighAccuracy: false },
         );
       });
-      gps = await Promise.race([
-        gpsPromise,
-        new Promise<null>((resolve) => setTimeout(() => {
-          setDebugMessage("GPS 타임아웃 (3초)");
-          resolve(null);
-        }, 3000)),
-      ]);
     }
     processFile(file, uploadSource, gps);
   };
