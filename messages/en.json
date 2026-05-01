@@ -119,6 +119,10 @@
         {
           "q": "What happens when I upload an animated image (GIF, WebP, APNG, etc.)?",
           "a": "Animated images such as GIF, animated WebP, and APNG contain multiple frames, but OriPics certifies only the first frame. The certified result is saved as a static PNG image. Animation is not preserved."
+        },
+        {
+          "q": "Is GPS location included when I take a photo?",
+          "a": "Yes. When you tap 'Take Photo' on mobile and allow location access, your GPS coordinates at the moment of capture are included in the HMAC signature as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File upload and clipboard methods do not include GPS to prevent tampering."
         }
       ]
     }
