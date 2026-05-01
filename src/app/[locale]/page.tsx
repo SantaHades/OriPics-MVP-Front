@@ -524,10 +524,14 @@ export default function Home() {
                       </button>
                     )}
                   </div>
-                  <p className="text-xl font-medium mb-2">
-                    {status === "dragover" ? t("upload.dragover") : t("upload.idle")}
+                  <p className="text-xl font-medium mb-2 whitespace-pre-line">
+                    {status === "dragover"
+                      ? t("upload.dragover")
+                      : isMobileDevice
+                        ? t("upload.idle_mobile")
+                        : t("upload.idle")}
                   </p>
-                  <p className="text-sm text-slate-600 mt-1">{t("upload.subtext")}</p>
+                  <p className="text-sm text-slate-600 mt-1">{isMobileDevice ? t("upload.subtext_mobile") : t("upload.subtext")}</p>
                   <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
                 </div>
               ) : status === "processing" ? (

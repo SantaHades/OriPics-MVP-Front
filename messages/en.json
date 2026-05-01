@@ -18,8 +18,10 @@
     },
     "upload": {
       "idle": "☁️ Select or paste an image",
+      "idle_mobile": "☁️ Select an image\nor take a photo",
       "dragover": "✨ Drop it here!",
       "subtext": "Drag & drop, select file, paste, or take photo",
+      "subtext_mobile": "Select file, paste, or take photo",
       "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
       "upload_menu": {
         "title": "Upload Image",
