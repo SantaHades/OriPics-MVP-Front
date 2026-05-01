@@ -13,7 +13,7 @@
   },
   "Home": {
     "hero": {
-      "title": "Prove Your Image is Original.",
+      "title": "Prove Your Image\nis Original.",
       "description": "By embedding an invisible digital fingerprint,\nyou can verify the authenticity anytime."
     },
     "upload": {
@@ -75,10 +75,10 @@
     },
     "how_it_works": {
       "title": "How It Works",
-      "step1_title": "Upload Image",
-      "step1_desc": "Upload original image via drag & drop or file selection.",
+      "step1_title": "Upload Image or Take Photo",
+      "step1_desc": "Upload an original image via drag & drop or file selection, or take a photo directly.",
       "step2_title": "Original Proof Processing",
-      "step2_desc": "The server performs original proof processing. Nothing is stored on the server after processing.",
+      "step2_desc": "Original proof processing is performed. Nothing is stored on the server.",
       "step3_title": "Return & Verify",
       "step3_desc": "Download the certified image. Uploading this image again instantly verifies its authenticity. Even a single pixel change is detected."
     },

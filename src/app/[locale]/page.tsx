@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
-import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink } from "lucide-react";
+import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink, ImageUp, Lock } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Link, useRouter } from "@/navigation";
 import { useTranslations } from "next-intl";
@@ -493,7 +493,7 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-6 py-12 flex flex-col items-center">
         <section className="w-full text-center mb-16 pt-8 flex flex-col items-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-6">{t("hero.title")}</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-6 whitespace-pre-line md:whitespace-normal">{t("hero.title")}</h1>
           <p className="text-slate-700 md:text-lg mb-12 max-w-xl mx-auto whitespace-pre-line">
             {t("hero.description")}
           </p>
@@ -509,7 +509,7 @@ export default function Home() {
               {status === "idle" || status === "dragover" ? (
                 <div className="flex items-center justify-center gap-6">
                   <div className="flex flex-col items-center cursor-pointer flex-1" onClick={() => setShowUploadMenu(true)}>
-                    <UploadCloud size={48} className={`mb-4 ${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
+                    <UploadCloud size={64} strokeWidth={1.5} className={`mb-4 ${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
                     <p className="text-xl font-medium mb-2">
                       {status === "dragover" ? t("upload.dragover") : t("upload.idle")}
                     </p>
@@ -755,19 +755,39 @@ export default function Home() {
 
         <section id="how-it-works" className="w-full max-w-4xl mt-12 mb-20 scroll-mt-24">
           <h2 className="text-3xl font-bold text-center mb-12">{t("how_it_works.title")}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="glass p-6 rounded-2xl flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center font-bold text-xl mb-4">1</div>
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* 데스크톱 전용 점선 커넥터 — 카드 간 진행 흐름 시각화 */}
+            <div className="hidden md:block absolute top-[5.5rem] left-[16.6%] right-[16.6%] border-t-2 border-dashed border-slate-200 pointer-events-none" aria-hidden="true"></div>
+
+            <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
+              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-sky-600 mb-3">STEP 01</span>
+              <div className="relative mb-4">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 text-white flex items-center justify-center shadow-lg shadow-sky-400/25 ring-4 ring-sky-50">
+                  <ImageUp size={36} strokeWidth={1.75} />
+                </div>
+              </div>
               <h3 className="font-bold text-lg mb-2">{t("how_it_works.step1_title")}</h3>
               <p className="text-slate-600 text-sm whitespace-pre-line">{t("how_it_works.step1_desc")}</p>
             </div>
-            <div className="glass p-6 rounded-2xl flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center font-bold text-xl mb-4 text-blue-600">2</div>
+
+            <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
+              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-teal-600 mb-3">STEP 02</span>
+              <div className="relative mb-4">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-400/25 ring-4 ring-teal-50">
+                  <Lock size={36} strokeWidth={1.75} />
+                </div>
+              </div>
               <h3 className="font-bold text-lg mb-2">{t("how_it_works.step2_title")}</h3>
               <p className="text-slate-600 text-sm whitespace-pre-line">{t("how_it_works.step2_desc")}</p>
             </div>
-            <div className="glass p-6 rounded-2xl flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center font-bold text-xl mb-4 text-green-600">3</div>
+
+            <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
+              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-600 mb-3">STEP 03</span>
+              <div className="relative mb-4">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg shadow-emerald-400/25 ring-4 ring-emerald-50 p-3">
+                  <img src="/logo.png" alt="OriPics" className="w-full h-full object-contain brightness-0 invert" />
+                </div>
+              </div>
               <h3 className="font-bold text-lg mb-2">{t("how_it_works.step3_title")}</h3>
               <p className="text-slate-600 text-sm whitespace-pre-line">{t("how_it_works.step3_desc")}</p>
             </div>
