@@ -162,11 +162,16 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
 }
 
 export async function uploadStamped(draft: StampedDraft): Promise<void> {
-  const res = await fetch(draft.sign.signed_upload_url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'image/png' },
-    body: draft.blob,
-  });
+  let res: Response;
+  try {
+    res = await fetch(draft.sign.signed_upload_url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/png' },
+      body: draft.blob,
+    });
+  } catch (e: any) {
+    throw new Error(`upload_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
+  }
   if (!res.ok) {
     const detail = await res.text();
     throw new Error(`upload_failed:${res.status}:${detail}`);
@@ -175,11 +180,16 @@ export async function uploadStamped(draft: StampedDraft): Promise<void> {
 
 export async function confirmLink(draft: StampedDraft, opts: { apiBase: string }): Promise<ConfirmResponse> {
   const apiBase = opts.apiBase.replace(/\/$/, '');
-  const res = await fetch(`${apiBase}/api/links/confirm`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jwt_token: draft.sign.jwt }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}/api/links/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jwt_token: draft.sign.jwt }),
+    });
+  } catch (e: any) {
+    throw new Error(`confirm_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
+  }
   if (!res.ok) {
     const detail = await res.text();
     throw new Error(`confirm_failed:${res.status}:${detail}`);

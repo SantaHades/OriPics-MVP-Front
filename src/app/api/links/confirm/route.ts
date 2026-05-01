@@ -22,17 +22,27 @@ function verifyJwt(token: string): Record<string, any> {
 }
 
 export async function POST(req: NextRequest) {
+  if (!JWT_SECRET) {
+    console.error("[confirm] missing ORIPICS_JWT_SECRET");
+    return NextResponse.json({ detail: "missing_jwt_secret" }, { status: 500 });
+  }
+  if (!SUPABASE_SERVICE_KEY) {
+    console.error("[confirm] missing SUPABASE_SERVICE_KEY");
+    return NextResponse.json({ detail: "missing_service_key" }, { status: 500 });
+  }
+
   try {
     const { jwt_token } = await req.json();
     if (!jwt_token) {
-      return NextResponse.json({ error: "missing_jwt" }, { status: 400 });
+      return NextResponse.json({ detail: "missing_jwt" }, { status: 400 });
     }
 
     let claims: Record<string, any>;
     try {
       claims = verifyJwt(jwt_token);
     } catch (e: any) {
-      return NextResponse.json({ error: e.message }, { status: 401 });
+      console.error("[confirm] jwt verify failed:", e.message);
+      return NextResponse.json({ detail: e.message }, { status: 401 });
     }
 
     const { link_id, storage_path, timestamp, width, height, lat_e6, lng_e6 } = claims;
@@ -53,11 +63,14 @@ export async function POST(req: NextRequest) {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const { error } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
     if (error) {
-      return NextResponse.json({ error: `db_error:${error.message}` }, { status: 500 });
+      console.error("[confirm] db upsert failed:", error);
+      return NextResponse.json({ detail: `db_error:${error.message}` }, { status: 500 });
     }
 
+    console.log(`[confirm] ok link_id=${link_id}`);
     return NextResponse.json({ link_id, timestamp, storage_path });
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    console.error("[confirm] unexpected error:", e);
+    return NextResponse.json({ detail: e.message || "unknown_error" }, { status: 500 });
   }
 }
