@@ -27,6 +27,7 @@ export default function LinkViewer() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const shortLink =
     typeof window !== "undefined"
@@ -135,11 +136,19 @@ export default function LinkViewer() {
 
       <main className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* 이미지 영역 */}
-        <div className="lg:col-span-2 glass rounded-3xl p-4 sm:p-8 flex items-center justify-center min-h-[400px]">
+        <div className="lg:col-span-2 glass rounded-3xl p-4 sm:p-8 flex items-center justify-center min-h-[400px] relative">
+          {!imgLoaded && (
+            <div className="absolute inset-4 sm:inset-8 flex flex-col items-center justify-center bg-slate-100/50 rounded-xl gap-3">
+              <RefreshCw size={36} className="animate-spin text-purple-500" />
+              <p className="text-sm text-slate-500">{t("loading")}</p>
+            </div>
+          )}
           <img
             src={data!.signed_url}
             alt="Verified Content"
-            className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => setImgLoaded(true)}
+            className={`max-w-full max-h-[70vh] object-contain rounded-xl shadow-2xl transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0"}`}
           />
         </div>
 
