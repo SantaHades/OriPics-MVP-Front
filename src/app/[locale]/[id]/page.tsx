@@ -6,6 +6,7 @@ import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Hom
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
+import { verifyLinkId } from "@/lib/oripics-stamp/common";
 
 interface LinkData {
   link_id: string;
@@ -46,6 +47,9 @@ export default function LinkViewer() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        if (!verifyLinkId(linkId)) {
+          throw new Error(t("not_found_desc"));
+        }
         const { data: row, error: dbError } = await supabase
           .from("links")
           .select("*")

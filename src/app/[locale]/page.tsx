@@ -293,6 +293,7 @@ export default function Home() {
     setStampedDraft(null);
     setTimeLeft(0);
     setGeneratedLink(null);
+    setDebugMessage(null);
     if (originalImagePreview) {
       URL.revokeObjectURL(originalImagePreview);
       setOriginalImagePreview(null);

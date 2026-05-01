@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual, randomBytes } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import {
   MAGIC_BYTES,
   OFFSET_MAGIC,
@@ -16,6 +16,8 @@ import {
   PAYLOAD_LENGTH_V3,
   HASH_LENGTH,
   TIMESTAMP_LENGTH,
+  obfuscateCounter,
+  checksum2,
 } from "./common";
 
 const UPLOAD_TYPE_PREFIXES = ["F", "P", "C"] as const;
@@ -45,7 +47,9 @@ export function makeTimestamp(prefix: string): string {
   return `${p}${yy}${mm}${dd}${HH}${MM}${SS}${cs}`;
 }
 
-export function makeLinkId(prefix: string): { linkId: string; dt: Date } {
+// counter는 호출자(API 라우트)가 Supabase RPC `next_link_counter`로 받아 전달.
+// makeLinkId 자체는 동기 유지 — RPC 호출은 라우트에서 다른 작업과 병렬로 실행.
+export function makeLinkId(prefix: string, counter: number): { linkId: string; dt: Date } {
   const p = (UPLOAD_TYPE_PREFIXES as readonly string[]).includes(prefix) ? prefix : "F";
   const dt = new Date();
   const yy = String(dt.getUTCFullYear() % 100).padStart(2, "0");
@@ -55,11 +59,10 @@ export function makeLinkId(prefix: string): { linkId: string; dt: Date } {
   const MM = String(dt.getUTCMinutes()).padStart(2, "0");
   const SS = String(dt.getUTCSeconds()).padStart(2, "0");
   const ms = String(dt.getUTCMilliseconds()).padStart(3, "0");
-  const rand = randomBytes(2).toString("hex");
-  return {
-    linkId: `${p}${yy}${mm}${dd}-${HH}${MM}${SS}-${ms}${rand}`,
-    dt,
-  };
+  const obf = obfuscateCounter(counter);
+  const body = `${p}${yy}${mm}${dd}-${HH}${MM}${SS}-${ms}${obf}`;
+  const cs = checksum2(body);
+  return { linkId: `${body}${cs}`, dt };
 }
 
 export function storagePathFor(linkId: string, dt: Date): string {

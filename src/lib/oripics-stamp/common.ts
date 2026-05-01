@@ -91,3 +91,62 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
   return true;
 }
+
+// ────────────────────────────────────────────────────────────────────
+// 간편링크 ID: counter obfuscation + CRC16 체크섬
+// 형식: {prefix}{yymmdd}-{HHMMSS}-{ms 3}{obfCounter ≥1}{cs 2}
+// ────────────────────────────────────────────────────────────────────
+
+// 자리수별 곱셈 obfuscation (각 mult는 9·10^(d-1)과 서로소)
+const COUNTER_MULTIPLIERS: Record<number, number> = {
+  1: 7,
+  2: 17,
+  3: 167,
+  4: 1667,
+  5: 16567,
+  6: 165557,
+  7: 1655557,
+  8: 16555573,
+  9: 165555571,
+};
+
+export function obfuscateCounter(c: number): string {
+  if (!Number.isInteger(c) || c < 1) throw new Error('counter must be positive integer');
+  const d = String(c).length;
+  if (d > 9) throw new Error('counter overflow (>1B per day)');
+  const lo = d === 1 ? 1 : 10 ** (d - 1);
+  const range = 9 * (d === 1 ? 1 : 10 ** (d - 1));
+  const mult = COUNTER_MULTIPLIERS[d];
+  // d ≥ 8에서 (c-lo)*mult가 Number.MAX_SAFE_INTEGER를 넘을 수 있어 BigInt로 안전하게 계산
+  const obfOffset = Number(((BigInt(c) - BigInt(lo)) * BigInt(mult)) % BigInt(range));
+  return String(lo + obfOffset);
+}
+
+// CRC-16-CCITT (poly 0x1021, init 0xFFFF, no reflect, no xor-out)
+export function crc16(s: string): number {
+  let crc = 0xffff;
+  for (let i = 0; i < s.length; i++) {
+    crc ^= s.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+    }
+  }
+  return crc;
+}
+
+export function checksum2(body: string): string {
+  return String(crc16(body) % 100).padStart(2, '0');
+}
+
+// 신규 형식 link_id를 검증. 구 형식(끝 segment에 hex letter 포함)은 검증 스킵하여 통과.
+export function verifyLinkId(linkId: string): boolean {
+  if (typeof linkId !== 'string' || linkId.length < 3) return false;
+  const lastDash = linkId.lastIndexOf('-');
+  if (lastDash < 0) return false;
+  const tail = linkId.slice(lastDash + 1);
+  // 신규 형식: 마지막 segment 전체가 숫자 + 길이 ≥ 6 (ms 3 + counter ≥1 + cs 2)
+  if (!/^\d{6,}$/.test(tail)) return true; // 구 형식으로 간주, 통과
+  const body = linkId.slice(0, -2);
+  const cs = linkId.slice(-2);
+  return checksum2(body) === cs;
+}

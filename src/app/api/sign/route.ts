@@ -95,13 +95,28 @@ export async function POST(req: NextRequest) {
     hexToBytes(border_hash),
   );
 
-  const { linkId, dt } = makeLinkId(uploadType);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  // 1. 일별 카운터를 먼저 받아야 link_id가 결정되고, 그 후에야 signed upload URL을 만들 수 있음.
+  // counter RPC만 await 후, signed URL은 storage 호출이 그 결과에 의존.
+  const dateUtc = new Date();
+  const dateStr = `${dateUtc.getUTCFullYear()}-${String(dateUtc.getUTCMonth() + 1).padStart(2, "0")}-${String(dateUtc.getUTCDate()).padStart(2, "0")}`;
+  let counter: number;
+  try {
+    const { data, error } = await supabase.rpc("next_link_counter", { p_date: dateStr });
+    if (error || data == null) throw error || new Error("no_counter");
+    counter = Number(data);
+    if (!Number.isInteger(counter) || counter < 1) throw new Error(`invalid_counter:${data}`);
+  } catch (e: any) {
+    return NextResponse.json({ detail: `counter_rpc_error:${e?.message || e}` }, { status: 500 });
+  }
+
+  const { linkId, dt } = makeLinkId(uploadType, counter);
   const storagePath = storagePathFor(linkId, dt);
 
   let signedUploadUrl: string | null = null;
   let uploadToken: string | null = null;
   try {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
       .createSignedUploadUrl(storagePath);
