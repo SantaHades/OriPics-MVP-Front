@@ -517,11 +517,10 @@ export default function Home() {
                           setUploadSource("P");
                           cameraInputRef.current?.click();
                         }}
-                        className="shrink-0 flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-orange-600 border border-slate-200 shadow-sm transition-all"
+                        className="shrink-0 flex items-center justify-center p-5 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-orange-600 border border-slate-200 shadow-sm transition-all"
                         aria-label={t("upload.upload_menu.camera")}
                       >
                         <Camera size={64} strokeWidth={1.5} />
-                        <span className="text-xs font-medium">{t("upload.upload_menu.camera")}</span>
                       </button>
                     )}
                   </div>
