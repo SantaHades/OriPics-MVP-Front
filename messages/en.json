@@ -126,7 +126,7 @@
         },
         {
           "q": "Are high-resolution images certified at original size?",
-          "a": "Images with the longest side exceeding 2400 pixels are automatically resized (proportionally) to fit within 2400 pixels before certification (e.g., 4032×3024 → 2400×1800). This is to speed up mobile download and sharing — the resized image becomes the certified original. Images at 2400 pixels or smaller are certified at their original size. If you need certification at full original resolution, please contact us."
+          "a": "Images with the longest side exceeding 1800 pixels are automatically resized (proportionally) to fit within 1800 pixels before certification (e.g., 4032×3024 → 1800×1350). This is to speed up mobile download and sharing — the resized image becomes the certified original. Images at 1800 pixels or smaller are certified at their original size. If you need certification at full original resolution, please contact us."
         }
       ]
     }
