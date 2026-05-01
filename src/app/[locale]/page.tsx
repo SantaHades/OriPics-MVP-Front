@@ -341,37 +341,42 @@ export default function Home() {
       setGeneratedLink(fullLink);
       setSessionID(null);
 
+      const draftSnapshot = stampedDraft;
+      const resultImage = resultData?.image;
       if (session?.user) {
-        try {
-          let thumbnailDataUrl: string | null = null;
-          if (resultData?.image) {
-            const img = new window.Image();
-            img.src = resultData.image;
-            await new Promise((resolve) => { img.onload = resolve; });
-            const canvas = document.createElement("canvas");
-            const maxSize = 200;
-            const scale = Math.min(maxSize / img.width, maxSize / img.height);
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            const ctx = canvas.getContext("2d");
-            ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-            thumbnailDataUrl = canvas.toDataURL("image/webp", 0.6);
-          }
+        // Fire-and-forget: 이력 저장은 UI를 차단하지 않음
+        (async () => {
+          try {
+            let thumbnailDataUrl: string | null = null;
+            if (resultImage) {
+              const img = new window.Image();
+              img.src = resultImage;
+              await new Promise((resolve) => { img.onload = resolve; });
+              const canvas = document.createElement("canvas");
+              const maxSize = 200;
+              const scale = Math.min(maxSize / img.width, maxSize / img.height);
+              canvas.width = img.width * scale;
+              canvas.height = img.height * scale;
+              const ctx = canvas.getContext("2d");
+              ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+              thumbnailDataUrl = canvas.toDataURL("image/webp", 0.6);
+            }
 
-          await fetch("/api/proof/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              linkId: confirmed.link_id,
-              thumbnail: thumbnailDataUrl,
-              width: stampedDraft.width,
-              height: stampedDraft.height,
-              timestamp: confirmed.timestamp,
-            }),
-          });
-        } catch (historyErr) {
-          console.error("Failed to save proof history:", historyErr);
-        }
+            await fetch("/api/proof/history", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                linkId: confirmed.link_id,
+                thumbnail: thumbnailDataUrl,
+                width: draftSnapshot.width,
+                height: draftSnapshot.height,
+                timestamp: confirmed.timestamp,
+              }),
+            });
+          } catch (historyErr) {
+            console.error("Failed to save proof history:", historyErr);
+          }
+        })();
       }
 
       setStampedDraft(null);

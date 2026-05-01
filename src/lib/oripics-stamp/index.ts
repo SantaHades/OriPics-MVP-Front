@@ -198,8 +198,11 @@ export async function confirmLink(draft: StampedDraft, opts: { apiBase: string }
 }
 
 export async function publishStamped(draft: StampedDraft, opts: { apiBase: string }): Promise<ConfirmResponse> {
-  await uploadStamped(draft);
-  return confirmLink(draft, opts);
+  const [, confirmResult] = await Promise.all([
+    uploadStamped(draft),
+    confirmLink(draft, opts),
+  ]);
+  return confirmResult;
 }
 
 export async function verifyImage(file: Blob, opts: { apiBase: string }): Promise<VerifyResponse> {
