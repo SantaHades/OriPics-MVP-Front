@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
-import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon } from "lucide-react";
+import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X } from "lucide-react";
 import { Link } from "@/navigation";
 import { supabase } from "@/lib/supabase";
 import { useTranslations } from "next-intl";
@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [proofs, setProofs] = useState<ProofRecord[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(true);
+  const [previewProof, setPreviewProof] = useState<ProofRecord | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,6 +56,29 @@ export default function ProfilePage() {
     };
     fetchProofs();
   }, []);
+
+  // 모달 열린 동안 ESC + body scroll lock
+  useEffect(() => {
+    if (!previewProof) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewProof(null);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [previewProof]);
+
+  // linkId → public 원본 URL
+  const proofImageUrl = (linkId: string): string | null => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl || !linkId || linkId.length < 7) return null;
+    const yymmdd = linkId.slice(1, 7);
+    return `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${yymmdd}/${linkId}.png`;
+  };
 
   // 타임스탬프 포맷팅
   const formatProofTimestamp = (ts: string) => {
@@ -313,13 +337,15 @@ export default function ProfilePage() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
               {proofs.map((proof) => {
                 const expired = isExpired(proof.createdAt);
                 return (
-                  <div
+                  <button
                     key={proof.id}
-                    className={`group relative bg-slate-50 border rounded-2xl overflow-hidden transition-all hover:border-blue-200 ${
+                    type="button"
+                    onClick={() => setPreviewProof(proof)}
+                    className={`group relative bg-slate-50 border rounded-xl overflow-hidden transition-all hover:border-blue-200 text-left ${
                       expired ? "border-slate-100 opacity-60" : "border-slate-200"
                     }`}
                   >
@@ -332,38 +358,22 @@ export default function ProfilePage() {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <ImageIcon size={32} className="text-slate-700" />
+                        <ImageIcon size={24} className="text-slate-700" />
                       )}
                       {expired && (
-                        <div className="absolute top-2 right-2 bg-red-500/80 text-slate-900 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                        <div className="absolute top-1 right-1 bg-red-500/80 text-slate-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                           {t("proof_history.expired")}
                         </div>
                       )}
                     </div>
 
-                    {/* 메타 정보 */}
-                    <div className="p-3">
-                      <p className="text-[11px] text-slate-600 mb-1">
+                    {/* 메타 정보 (시간만) */}
+                    <div className="p-2">
+                      <p className="text-[10px] text-slate-600 truncate">
                         {formatProofTimestamp(proof.timestamp)}
                       </p>
-                      <p className="text-[10px] text-slate-600">
-                        {proof.width} × {proof.height}
-                      </p>
                     </div>
-
-                    {/* 링크 보기 오버레이 */}
-                    {!expired && (
-                      <Link
-                        href={`/${proof.linkId}`}
-                        className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-slate-900/50 transition-all"
-                      >
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 text-white text-xs font-medium bg-blue-600/80 px-3 py-1.5 rounded-full">
-                          <ExternalLink size={12} />
-                          {t("proof_history.view_link")}
-                        </span>
-                      </Link>
-                    )}
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -433,6 +443,43 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 증명 이미지 미리보기 모달 */}
+      {previewProof && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setPreviewProof(null)}
+        >
+          <button
+            onClick={(e) => { e.stopPropagation(); setPreviewProof(null); }}
+            className="absolute top-4 right-4 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
+          {(() => {
+            const url = proofImageUrl(previewProof.linkId);
+            return url ? (
+              <img
+                src={url}
+                alt="Proof original"
+                onClick={(e) => e.stopPropagation()}
+                className="max-w-full max-h-[85vh] object-contain cursor-default rounded-xl"
+              />
+            ) : null;
+          })()}
+          {!isExpired(previewProof.createdAt) && (
+            <Link
+              href={`/${previewProof.linkId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg"
+            >
+              <ExternalLink size={16} />
+              {t("proof_history.view_link")}
+            </Link>
+          )}
         </div>
       )}
     </div>

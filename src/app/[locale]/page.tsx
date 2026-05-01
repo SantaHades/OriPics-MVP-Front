@@ -361,7 +361,7 @@ export default function Home() {
               img.src = resultImage;
               await new Promise((resolve) => { img.onload = resolve; });
               const canvas = document.createElement("canvas");
-              const maxSize = 200;
+              const maxSize = 150;
               const scale = Math.min(maxSize / img.width, maxSize / img.height);
               canvas.width = img.width * scale;
               canvas.height = img.height * scale;
