@@ -122,7 +122,11 @@
         },
         {
           "q": "Is GPS location included when I take a photo?",
-          "a": "Yes. When you tap 'Take Photo' on mobile and allow location access, your GPS coordinates at the moment of capture are included in the HMAC signature as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File upload and clipboard methods do not include GPS to prevent tampering."
+          "a": "Yes. When you tap 'Take Photo' on mobile and allow location access, your GPS coordinates at the moment of capture are included as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File upload and clipboard methods do not include GPS to prevent tampering."
+        },
+        {
+          "q": "Are high-resolution images certified at original size?",
+          "a": "Images with the longest side exceeding 2400 pixels are automatically resized (proportionally) to fit within 2400 pixels before certification (e.g., 4032×3024 → 2400×1800). This is to speed up mobile download and sharing — the resized image becomes the certified original. Images at 2400 pixels or smaller are certified at their original size. If you need certification at full original resolution, please contact us."
         }
       ]
     }
