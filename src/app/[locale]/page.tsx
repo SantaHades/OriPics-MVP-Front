@@ -772,7 +772,7 @@ export default function Home() {
         </div>
 
         <div className="space-y-3">
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
             <div
               key={i}
               className={`border rounded-2xl transition-all duration-300 overflow-hidden ${openFaq === i

@@ -110,7 +110,7 @@
         },
         {
           "q": "Are my images stored on the server?",
-          "a": "During certification, your image exists only temporarily in server memory and is deleted immediately after processing. Only if you create a Quick Link, the image is stored securely in cloud storage for 7 days before automatic deletion."
+          "a": "During certification, your image is never sent to the server. Only if you create a Quick Link, the certified result image is stored securely in cloud storage for 7 days before being automatically deleted."
         },
         {
           "q": "Does certification affect image quality?",
@@ -127,6 +127,10 @@
         {
           "q": "GPS coordinates aren't saved after taking a photo on iPhone Safari — which settings should I check?",
           "a": "Check these four in order. ① [Reset site permission — most reliable] Settings → Safari → Advanced → Website Data → search 'ori.pics' → swipe the entry left and Delete → revisit the site and tap Allow when the permission prompt reappears. ② [Safari-wide location policy] Settings → Safari → Location → set to Ask or Allow (Deny blocks every site). ③ [iOS system location services] Settings → Privacy & Security → Location Services → On → scroll down to 'Safari Websites' → While Using the App + Precise Location turned on. ④ [HTTPS required] Geolocation is always blocked over http://. Always access the site via https://ori.pics or https://www.ori.pics."
+        },
+        {
+          "q": "Does editing EXIF metadata (timestamp, GPS) with an EXIF editor affect OriPics certification?",
+          "a": "No, it has zero effect. The timestamp, GPS, and resolution that OriPics certifies are embedded directly into the image pixels via steganography — not stored in EXIF. EXIF is just plain text metadata that anyone can freely edit or delete, but OriPics verification ignores EXIF entirely and extracts only the original information encoded in the pixels. So no matter how you alter the EXIF values, the verified timestamp and GPS will always show the original values recorded at the moment of certification. And if even a single pixel is modified, it is instantly detected as tampering."
         },
         {
           "q": "Are high-resolution images certified at original size?",
