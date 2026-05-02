@@ -23,6 +23,7 @@
       "subtext": "Drag & drop, select file, paste, or take photo",
       "subtext_mobile": "Select file, paste, or take photo",
       "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
+      "toggle_camera": "Enable camera capture",
       "upload_menu": {
         "title": "Upload Image",
         "library": "Photo Library",
@@ -38,6 +39,25 @@
       "processing": "🔄 Processing original proof...",
       "error": "Processing Failed",
       "retry": "Try Again"
+    },
+    "gps": {
+      "status_granted": "GPS Active",
+      "status_prompt": "Enable GPS",
+      "status_denied": "GPS Blocked",
+      "status_unsupported": "GPS Unsupported",
+      "status_unknown": "Checking...",
+      "include_label": "Include GPS",
+      "help_button": "GPS help",
+      "help_title": "How to enable GPS",
+      "help_detected_badge": "Your environment",
+      "help_intro": "To include GPS coordinates in photo certification, location permission must be allowed in both your browser and operating system. Check the guide that matches your environment.",
+      "help_ios_title": "📱 iPhone / iPad",
+      "help_ios_body": "① Reset site permission (most reliable): Settings → Safari → Advanced → Website Data → search 'ori.pics' → swipe left → Delete → revisit site and tap Allow on the permission prompt\n② Safari location policy: Settings → Safari → Location → Ask or Allow\n③ iOS Location Services: Settings → Privacy & Security → Location Services On → Safari Websites → While Using the App + Precise Location On",
+      "help_android_title": "📱 Android (Chrome etc.)",
+      "help_android_body": "① Chrome site permission: tap the lock icon at the left of the address bar → Permissions → Location → Allow\n② OS Location: Settings → Location → On → recommend Improve accuracy mode\n③ Chrome app permission: Settings → Apps → Chrome → Permissions → Location → Allow only while using the app",
+      "help_desktop_title": "💻 Desktop (macOS / Windows)",
+      "help_desktop_body": "① Browser site permission: click the lock icon at the left of the address bar → Location → Allow\n② macOS: System Settings → Privacy & Security → Location Services → enable your browser\n③ Windows: Settings → Privacy → Location → enable Let apps access your location → enable Let desktop apps access your location",
+      "help_https_note": "※ Geolocation is always blocked over http://. Always access the site via https://ori.pics or https://www.ori.pics."
     },
     "result": {
       "stamped_title": "Original Proof Completed",

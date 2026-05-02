@@ -23,6 +23,7 @@
       "subtext": "드래그앤드롭, 파일 선택, 클립보드 붙여넣기, 또는 사진찍기",
       "subtext_mobile": "파일 선택, 클립보드 붙여넣기, 또는 사진찍기",
       "limit": "지원: PNG, JPG, WebP 등 | 최대: 50MB",
+      "toggle_camera": "카메라로도 촬영하기",
       "upload_menu": {
         "title": "이미지 업로드",
         "library": "사진 보관함",
@@ -38,6 +39,25 @@
       "processing": "🔄 원본증명처리 과정을 진행하고 있습니다...",
       "error": "원본증명처리 실패",
       "retry": "다시 시도"
+    },
+    "gps": {
+      "status_granted": "GPS 활성",
+      "status_prompt": "GPS 활성화",
+      "status_denied": "GPS 차단됨",
+      "status_unsupported": "GPS 미지원",
+      "status_unknown": "확인 중...",
+      "include_label": "GPS 포함",
+      "help_button": "GPS 활성화 도움말",
+      "help_title": "GPS 활성화 방법",
+      "help_detected_badge": "현재 환경",
+      "help_intro": "사진 인증에 GPS 좌표를 포함하려면 브라우저와 OS 양쪽에서 위치 권한을 허용해야 합니다. 사용 환경에 맞는 안내를 확인하세요.",
+      "help_ios_title": "📱 iPhone / iPad",
+      "help_ios_body": "① 사이트 권한 초기화 (가장 확실): 설정 → Safari → 고급 → 웹사이트 데이터 → 'ori.pics' 검색 → 좌로 스와이프해 삭제 → 사이트 재방문 시 권한 팝업에서 '허용'\n② Safari 위치 정책: 설정 → Safari → 위치 → '질문' 또는 '허용'\n③ iOS 위치 서비스: 설정 → 개인정보 보호 및 보안 → 위치 서비스 켜짐 → 'Safari 웹사이트' → '앱을 사용하는 동안' + '정확한 위치' 켜기",
+      "help_android_title": "📱 Android (Chrome 등)",
+      "help_android_body": "① Chrome 사이트 권한: 주소창 좌측 자물쇠 아이콘 → 권한 → 위치 → '허용'\n② OS 위치 서비스: 설정 → 위치 → 켜짐 → 정확도 향상 모드 권장\n③ Chrome 앱 자체 위치 권한: 설정 → 앱 → Chrome → 권한 → 위치 → '앱 사용 중에만 허용'",
+      "help_desktop_title": "💻 데스크톱 (macOS / Windows)",
+      "help_desktop_body": "① 브라우저 사이트 권한: 주소창 좌측 자물쇠 아이콘 → 위치 → '허용'\n② macOS: 시스템 설정 → 개인정보 보호 및 보안 → 위치 서비스 → 사용하는 브라우저 켜기\n③ Windows: 설정 → 개인정보 → 위치 → 앱이 위치에 액세스하도록 허용 켜기 → 데스크톱 앱에 위치 액세스 허용 켜기",
+      "help_https_note": "※ http:// 로 접속하면 GPS는 항상 차단됩니다. 반드시 https://ori.pics 또는 https://www.ori.pics 로 접속하세요."
     },
     "result": {
       "stamped_title": "원본 증명 처리 완료",
