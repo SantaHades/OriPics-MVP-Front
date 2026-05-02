@@ -83,6 +83,7 @@ export default function Home() {
   const [isLinking, setIsLinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const gpsPromiseRef = useRef<Promise<{ lat: number; lng: number } | null> | null>(null);
   const [uploadSource, setUploadSource] = useState<"F" | "P" | "C">("F");
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -159,35 +160,60 @@ export default function Home() {
     if (file) processFile(file, "F");
   };
 
+  const startBackgroundGpsRequest = () => {
+    setDebugMessage("GPS 요청 중...");
+    gpsPromiseRef.current = new Promise<{ lat: number; lng: number } | null>((resolve) => {
+      if (!navigator.geolocation) {
+        setDebugMessage("GPS 미지원: navigator.geolocation 없음");
+        resolve(null);
+        return;
+      }
+      let settled = false;
+      const finish = (msg: string, value: { lat: number; lng: number } | null) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(safetyTimer);
+        setDebugMessage(msg);
+        resolve(value);
+      };
+      const safetyTimer = setTimeout(() => {
+        finish("GPS 타임아웃 (10초, 폴백)", null);
+      }, 10000);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          finish(
+            `GPS OK: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)} (정확도 ${Math.round(pos.coords.accuracy)}m)`,
+            { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          );
+        },
+        (err) => {
+          const codeMap: Record<number, string> = { 1: "PERMISSION_DENIED", 2: "POSITION_UNAVAILABLE", 3: "TIMEOUT" };
+          finish(
+            `GPS 실패: code=${err.code} (${codeMap[err.code] || "?"}) ${err.message || ""}`,
+            null,
+          );
+        },
+        { timeout: 8000, maximumAge: 60000, enableHighAccuracy: true },
+      );
+    });
+  };
+
   const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
 
     let gps: { lat: number; lng: number } | null = null;
-    if (uploadSource === "P") {
+    if (uploadSource === "P" && gpsPromiseRef.current) {
       setStatus("processing");
-      // 사진 선택 후 GPS 요청 (getCurrentPosition의 timeout이 3초 후 자동 fail)
-      setDebugMessage("GPS 요청 중...");
-      gps = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
-        if (!navigator.geolocation) {
-          setDebugMessage("GPS 미지원: navigator.geolocation 없음");
-          resolve(null);
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setDebugMessage(`GPS OK: ${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)} (정확도 ${Math.round(pos.coords.accuracy)}m)`);
-            resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          },
-          (err) => {
-            const codeMap: Record<number, string> = { 1: "PERMISSION_DENIED", 2: "POSITION_UNAVAILABLE", 3: "TIMEOUT" };
-            setDebugMessage(`GPS 실패: code=${err.code} (${codeMap[err.code] || "?"}) ${err.message || ""}`);
-            resolve(null);
-          },
-          { timeout: 3000, maximumAge: 60000, enableHighAccuracy: false },
-        );
-      });
+      // GPS는 카메라 버튼 클릭 시점에 이미 요청 시작됨. 사진 촬영 시간 동안 백그라운드 진행됐을 가능성 높음.
+      // 사진을 매우 빠르게 찍어 GPS가 아직 진행 중이면 추가 1.5초만 더 기다리고 null로 진행.
+      const inflight = gpsPromiseRef.current;
+      gpsPromiseRef.current = null;
+      gps = await Promise.race([
+        inflight,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+      ]);
     }
     processFile(file, uploadSource, gps);
   };
@@ -515,6 +541,7 @@ export default function Home() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setUploadSource("P");
+                          startBackgroundGpsRequest();
                           cameraInputRef.current?.click();
                         }}
                         className="shrink-0 flex items-center justify-center p-5 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-orange-600 border border-slate-200 shadow-sm transition-all"
@@ -872,6 +899,7 @@ export default function Home() {
                   onClick={() => {
                     setShowUploadMenu(false);
                     setUploadSource("P");
+                    startBackgroundGpsRequest();
                     cameraInputRef.current?.click();
                   }}
                   className="w-full flex items-center gap-4 p-4 hover:bg-white/80 rounded-2xl transition-all text-left"
