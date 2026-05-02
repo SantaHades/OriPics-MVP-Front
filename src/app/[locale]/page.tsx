@@ -90,7 +90,7 @@ export default function Home() {
   const [debugMessage, setDebugMessage] = useState<string | null>(null);
 
   type GpsState = 'unknown' | 'unsupported' | 'prompt' | 'granted' | 'denied';
-  type HelpPlatform = 'ios' | 'android' | 'desktop';
+  type HelpPlatform = 'ios_safari' | 'ios_chrome' | 'android' | 'desktop';
   const [gpsState, setGpsState] = useState<GpsState>('unknown');
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsIncludeEnabled, setGpsIncludeEnabled] = useState(true);
@@ -101,7 +101,11 @@ export default function Home() {
     if (typeof window === 'undefined') return 'desktop';
     const ua = navigator.userAgent || '';
     const isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
-    if (isIos) return 'ios';
+    if (isIos) {
+      // iOS Chrome은 UA에 "CriOS" 포함 (Firefox는 FxiOS, Edge는 EdgiOS)
+      if (/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua)) return 'ios_chrome';
+      return 'ios_safari';
+    }
     if (/android/i.test(ua)) return 'android';
     return 'desktop';
   };
@@ -657,22 +661,27 @@ export default function Home() {
                     type="button"
                     onClick={(e) => { e.stopPropagation(); handleGpsIndicatorClick(); }}
                     className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium transition-colors ${
-                      gpsState === 'granted' ? 'bg-green-50 text-green-700 hover:bg-green-100' :
-                      gpsState === 'denied' ? 'bg-red-50 text-red-700 hover:bg-red-100' :
-                      gpsState === 'unsupported' ? 'bg-slate-100 text-slate-500' :
-                      'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      gpsState === 'granted'
+                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                     title={gpsCoords ? `${gpsCoords.lat.toFixed(6)}, ${gpsCoords.lng.toFixed(6)}` : ''}
                   >
-                    <span aria-hidden>{gpsState === 'granted' ? '🟢' : gpsState === 'denied' ? '🔴' : gpsState === 'unsupported' ? '⚪' : '⚪'}</span>
+                    <span aria-hidden>{gpsState === 'granted' ? '🟢' : '⚪'}</span>
                     <span>
-                      {gpsState === 'granted' ? t('gps.status_granted') :
-                       gpsState === 'denied' ? t('gps.status_denied') :
-                       gpsState === 'unsupported' ? t('gps.status_unsupported') :
-                       gpsState === 'prompt' ? t('gps.status_prompt') :
-                       t('gps.status_unknown')}
+                      {gpsState === 'granted' ? t('gps.status_active') : t('gps.status_inactive')}
                     </span>
                   </button>
+                  {(gpsState === 'denied' || gpsState === 'prompt' || gpsState === 'unsupported') && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); openGpsHelpModal(); }}
+                      className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
+                      aria-label={t('gps.help_button')}
+                    >
+                      ?
+                    </button>
+                  )}
                   <label
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none"
@@ -685,16 +694,6 @@ export default function Home() {
                     />
                     <span>{t('gps.include_label')}</span>
                   </label>
-                  {(gpsState === 'denied' || gpsState === 'prompt' || gpsState === 'unsupported') && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); openGpsHelpModal(); }}
-                      className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
-                      aria-label={t('gps.help_button')}
-                    >
-                      ?
-                    </button>
-                  )}
                 </div>
               )}
               {status === "idle" || status === "dragover" ? (
@@ -1195,7 +1194,8 @@ export default function Home() {
       {showGpsHelpModal && (() => {
         const detected = detectHelpPlatform();
         const allSections: { key: HelpPlatform; titleKey: string; bodyKey: string }[] = [
-          { key: 'ios', titleKey: 'gps.help_ios_title', bodyKey: 'gps.help_ios_body' },
+          { key: 'ios_safari', titleKey: 'gps.help_ios_safari_title', bodyKey: 'gps.help_ios_safari_body' },
+          { key: 'ios_chrome', titleKey: 'gps.help_ios_chrome_title', bodyKey: 'gps.help_ios_chrome_body' },
           { key: 'android', titleKey: 'gps.help_android_title', bodyKey: 'gps.help_android_body' },
           { key: 'desktop', titleKey: 'gps.help_desktop_title', bodyKey: 'gps.help_desktop_body' },
         ];
