@@ -686,6 +686,19 @@ export default function Home() {
 
           {status !== "result_stamped" && status !== "result_verified" && (
             <div className="w-full max-w-2xl flex flex-col items-center">
+            {(status === "idle" || status === "dragover") && (
+              <div className="w-full flex justify-start mb-2 text-xs">
+                <label className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none">
+                  <input
+                    type="checkbox"
+                    checked={watermarkEnabled}
+                    onChange={(e) => handleWatermarkToggle(e.target.checked)}
+                    className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
+                  />
+                  <span>{t('upload.watermark_include')}</span>
+                </label>
+              </div>
+            )}
             <div
               className={`relative w-full p-10 rounded-2xl border-2 border-dashed transition-all duration-300 ${status === "dragover" ? "border-blue-400 bg-blue-500/10" : "border-slate-600 glass hover:border-slate-400"
                 }`}
@@ -693,22 +706,6 @@ export default function Home() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
-              {(status === "idle" || status === "dragover") && (
-                <div className="absolute top-3 left-3 flex items-center gap-2 text-xs">
-                  <label
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={watermarkEnabled}
-                      onChange={(e) => handleWatermarkToggle(e.target.checked)}
-                      className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
-                    />
-                    <span>{t('upload.watermark_include')}</span>
-                  </label>
-                </div>
-              )}
               {cameraEnabled && (status === "idle" || status === "dragover") && (
                 <div className="absolute top-3 right-3 flex items-center gap-2 text-xs">
                   <button
