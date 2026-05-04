@@ -573,7 +573,7 @@ export default function Home() {
   const handleShare = async (text: string) => {
     const shareData = {
       title: t("result.share_title"),
-      text: t("result.share_text"),
+      text: `${t("result.share_text")}\n${text}`,
       url: text,
     };
 
@@ -886,8 +886,9 @@ export default function Home() {
                     </button>
                     <button
                       onClick={() => copyToClipboard(generatedLink)}
-                      className="flex-1 sm:flex-none px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap shadow-sm"
+                      className="flex-1 sm:flex-none px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap shadow-sm flex items-center justify-center gap-1.5"
                     >
+                      <Clipboard size={16} />
                       {t("result.copy")}
                     </button>
                   </div>

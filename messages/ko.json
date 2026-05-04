@@ -310,6 +310,8 @@
     }
   },
   "LinkViewer": {
+    "og_title": "OriPics — 원본 증명 링크",
+    "og_description": "이 이미지는 OriPics에 의해 원본임이 디지털 방식으로 증명되었습니다.",
     "loading": "원본 데이터를 불러오는 중...",
     "not_found": "링크를 찾을 수 없습니다",
     "not_found_desc": "링크가 만료되었거나 존재하지 않습니다. (보관 기간 7일)",

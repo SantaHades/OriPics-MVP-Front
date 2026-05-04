@@ -310,6 +310,8 @@
     }
   },
   "LinkViewer": {
+    "og_title": "OriPics — Original Proof Link",
+    "og_description": "This image has been digitally verified as original by OriPics.",
     "loading": "Loading original data...",
     "not_found": "Link Not Found",
     "not_found_desc": "The link has expired or does not exist. (Stored for 7 days)",

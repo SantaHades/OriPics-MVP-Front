@@ -7,6 +7,7 @@ export async function generateMetadata({params: {locale}}: {params: {locale: str
   const t = await getTranslations({locale, namespace: 'Common'});
  
   return {
+    metadataBase: new URL('https://www.ori.pics'),
     title: t('meta_title'),
     description: t('meta_description'),
     icons: {
@@ -15,6 +16,20 @@ export async function generateMetadata({params: {locale}}: {params: {locale: str
         { url: '/favicon.ico', type: 'image/x-icon' },
       ],
       apple: '/apple-icon.png',
+    },
+    openGraph: {
+      type: 'website',
+      siteName: 'OriPics',
+      title: t('meta_title'),
+      description: t('meta_description'),
+      images: [{ url: '/logo-long.png', width: 1055, height: 400, alt: 'OriPics' }],
+      locale,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('meta_title'),
+      description: t('meta_description'),
+      images: ['/logo-long.png'],
     },
   };
 }
