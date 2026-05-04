@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
-import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink, ImageUp, Lock } from "lucide-react";
+import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink, ImageUp, Lock, Share2 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Link, useRouter } from "@/navigation";
 import { useTranslations } from "next-intl";
@@ -570,6 +570,30 @@ export default function Home() {
     alert(t("errors.clipboard_success"));
   };
 
+  const handleShare = async (text: string) => {
+    const shareData = {
+      title: t("result.share_title"),
+      text: t("result.share_text"),
+      url: text,
+    };
+
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as DOMException)?.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(text);
+      alert(t("result.share_unsupported"));
+    } catch {
+      alert(t("errors.clipboard_failed"));
+    }
+  };
+
   const formatTimestamp = (ts: string) => {
     // Prefix (1) + yymmddHHMMSS (12) + ms/10 (2) = 15 chars
     const cleanTs = isNaN(parseInt(ts[0])) ? ts.substring(1) : ts;
@@ -852,12 +876,21 @@ export default function Home() {
                     value={generatedLink}
                     className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-blue-600 font-mono min-w-0 overflow-ellipsis"
                   />
-                  <button
-                    onClick={() => copyToClipboard(generatedLink)}
-                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap shadow-sm"
-                  >
-                    {t("result.copy")}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleShare(generatedLink)}
+                      className="flex-1 sm:flex-none px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap shadow-sm flex items-center justify-center gap-1.5"
+                    >
+                      <Share2 size={16} />
+                      {t("result.share")}
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(generatedLink)}
+                      className="flex-1 sm:flex-none px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-colors whitespace-nowrap shadow-sm"
+                    >
+                      {t("result.copy")}
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-3 text-[10px] text-slate-500 text-center">{t("result.link_hint")}</p>
               </div>
