@@ -94,6 +94,7 @@ export default function Home() {
   const [gpsState, setGpsState] = useState<GpsState>('unknown');
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsIncludeEnabled, setGpsIncludeEnabled] = useState(true);
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [showGpsHelpModal, setShowGpsHelpModal] = useState(false);
   const [helpOpenSection, setHelpOpenSection] = useState<HelpPlatform | null>(null);
 
@@ -191,6 +192,12 @@ export default function Home() {
       setGpsIncludeEnabled(savedInclude === 'true');
     }
 
+    // '인증마크 포함' 체크박스 상태 로드
+    const savedWatermark = localStorage.getItem('oripics_watermark_include');
+    if (savedWatermark === 'true' || savedWatermark === 'false') {
+      setWatermarkEnabled(savedWatermark === 'true');
+    }
+
     if (!navigator.geolocation) {
       setGpsState('unsupported');
       return;
@@ -236,6 +243,13 @@ export default function Home() {
     setGpsIncludeEnabled(enabled);
     if (typeof window !== 'undefined') {
       localStorage.setItem('oripics_gps_include', enabled ? 'true' : 'false');
+    }
+  };
+
+  const handleWatermarkToggle = (enabled: boolean) => {
+    setWatermarkEnabled(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('oripics_watermark_include', enabled ? 'true' : 'false');
     }
   };
 
@@ -384,7 +398,7 @@ export default function Home() {
         decoded.pixels,
         decoded.width,
         decoded.height,
-        { apiBase: "", uploadType: source, gps },
+        { apiBase: "", uploadType: source, gps, watermark: watermarkEnabled },
       );
       const stampedUrl = URL.createObjectURL(draft.blob);
       setStampedDraft(draft);
@@ -679,6 +693,22 @@ export default function Home() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
+              {(status === "idle" || status === "dragover") && (
+                <div className="absolute top-3 left-3 flex items-center gap-2 text-xs">
+                  <label
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={watermarkEnabled}
+                      onChange={(e) => handleWatermarkToggle(e.target.checked)}
+                      className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
+                    />
+                    <span>{t('upload.watermark_include')}</span>
+                  </label>
+                </div>
+              )}
               {cameraEnabled && (status === "idle" || status === "dragover") && (
                 <div className="absolute top-3 right-3 flex items-center gap-2 text-xs">
                   <button

@@ -31,6 +31,7 @@ import {
   readUint16BE,
   readUint32BE,
 } from './common';
+import { applyWatermark } from './watermark';
 
 export interface SignResponse {
   version: number;
@@ -79,6 +80,7 @@ export interface SignAndStampOptions {
   apiBase: string;
   uploadType?: UploadType;
   gps?: { lat: number; lng: number } | null;
+  watermark?: boolean;
 }
 
 export async function signAndStampFromPixels(
@@ -88,6 +90,10 @@ export async function signAndStampFromPixels(
   opts: SignAndStampOptions,
 ): Promise<StampedDraft> {
   const apiBase = opts.apiBase.replace(/\/$/, '');
+
+  if (opts.watermark) {
+    pixels = await applyWatermark(pixels, width, height);
+  }
 
   const useV3 = (
     opts.uploadType === 'P' &&

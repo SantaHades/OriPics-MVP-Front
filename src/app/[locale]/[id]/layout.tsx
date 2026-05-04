@@ -9,7 +9,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'LinkViewer' });
   const url = `https://www.ori.pics/${id}`;
   const title = t('og_title');
-  const description = t('og_description');
+  const description = `${t('og_description')}\n${url}`;
 
   return {
     title,

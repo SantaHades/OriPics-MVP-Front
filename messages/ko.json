@@ -24,6 +24,7 @@
       "subtext_mobile": "파일 선택, 클립보드 붙여넣기, 또는 사진찍기",
       "limit": "지원: PNG, JPG, WebP 등 | 최대: 50MB",
       "toggle_camera": "카메라로도 촬영하기",
+      "watermark_include": "인증마크 포함",
       "upload_menu": {
         "title": "이미지 업로드",
         "library": "사진 보관함",
@@ -324,7 +325,7 @@
     "source_f": "사진 보관함/파일",
     "source_p": "사진 촬영",
     "source_c": "클립보드",
-    "download": "원본 다운로드",
+    "download": "증명 이미지 다운로드",
     "short_link": "간편링크",
     "copy_link": "링크 복사",
     "copied": "복사됨!",

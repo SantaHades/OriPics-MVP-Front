@@ -24,6 +24,7 @@
       "subtext_mobile": "Select file, paste, or take photo",
       "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
       "toggle_camera": "Enable camera capture",
+      "watermark_include": "Include badge",
       "upload_menu": {
         "title": "Upload Image",
         "library": "Photo Library",
