@@ -1,7 +1,8 @@
 const WATERMARK_PATH = '/watermark-logo.png';
 const NATIVE_W = 300;
 const NATIVE_H = 340;
-const TARGET_PCT = 0.08;
+const MAX_W = 150;
+const TARGET_PCT = 0.04;
 const MARGIN_PCT = 0.02;
 const OPACITY = 0.5;
 const LUMINANCE_THRESHOLD = 0.5;
@@ -55,7 +56,7 @@ export async function applyWatermark(
 ): Promise<Uint8ClampedArray> {
   const logo = await loadLogo();
 
-  const targetW = Math.min(NATIVE_W, Math.round(width * TARGET_PCT));
+  const targetW = Math.min(MAX_W, Math.round(width * TARGET_PCT));
   const targetH = Math.round((targetW * NATIVE_H) / NATIVE_W);
 
   const margin = Math.round(width * MARGIN_PCT);
