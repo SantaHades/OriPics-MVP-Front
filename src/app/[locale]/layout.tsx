@@ -22,14 +22,14 @@ export async function generateMetadata({params: {locale}}: {params: {locale: str
       siteName: 'OriPics',
       title: t('meta_title'),
       description: t('meta_description'),
-      images: [{ url: '/logo-long.png', width: 1055, height: 400, alt: 'OriPics' }],
+      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'OriPics — the original proof' }],
       locale,
     },
     twitter: {
       card: 'summary_large_image',
       title: t('meta_title'),
       description: t('meta_description'),
-      images: ['/logo-long.png'],
+      images: ['/og-image.png'],
     },
   };
 }

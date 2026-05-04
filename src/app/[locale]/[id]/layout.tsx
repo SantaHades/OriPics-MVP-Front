@@ -20,14 +20,14 @@ export async function generateMetadata({
       title,
       description,
       url,
-      images: [{ url: '/logo-long.png', width: 1055, height: 400, alt: 'OriPics' }],
+      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'OriPics — the original proof' }],
       locale,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/logo-long.png'],
+      images: ['/og-image.png'],
     },
   };
 }
