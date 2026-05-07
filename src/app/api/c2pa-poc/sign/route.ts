@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const inputPng = await fs.readFile(logoPath);
 
     const c2pa = await import('@contentauth/c2pa-node');
-    const { Builder, LocalSigner, Reader } = c2pa;
+    const { Builder, LocalSigner, Reader, createVerifySettings } = c2pa;
 
     const signer = LocalSigner.newSigner(
       Buffer.from(certPem),
@@ -56,8 +56,9 @@ export async function GET(req: Request) {
       ],
     };
 
-    // Builder.withJson은 객체 받음 (string 아님), sign은 동기 함수, output은 mimeType 없이 buffer만
-    const builder = Builder.withJson(manifestSpec as any);
+    // PoC: 자체서명 인증서 사용 시 verifyAfterSign 비활성화 (정식 인증서 도입 시 제거)
+    const settings = createVerifySettings({ verifyAfterSign: false });
+    const builder = Builder.withJson(manifestSpec as any, settings);
     const inputAsset = { buffer: inputPng, mimeType: 'image/png' };
     const outputAsset: any = { buffer: null };
 
