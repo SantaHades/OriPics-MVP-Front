@@ -56,7 +56,7 @@ export async function GET(req: Request) {
       ],
     };
 
-    const builder = Builder.withJson(JSON.stringify(manifestSpec));
+    const builder = Builder.withJson(manifestSpec as any);
     const inputAsset = { buffer: inputPng, mimeType: 'image/png' };
     const outputAsset: any = { buffer: Buffer.alloc(0), mimeType: 'image/png' };
 
