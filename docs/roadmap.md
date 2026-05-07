@@ -1043,3 +1043,6 @@ OriPics 추천 시작 TSC: Security + Availability + Confidentiality. 차후 Pri
 | 2026-05-06 | 동시 론칭 전제 반영 — 트랙 D·E·F 추가, B Phase 8 필수 승격, C 시점 명확화, 부록 매트릭스에 pre/post-launch 컬럼 추가, 통합 일정 추가 |
 | 2026-05-07 | 트랙 B Phase 1 실행 — frontend/ → apps/web/, deprecated backend/ 제거, Vercel rootDirectory=null 확인 (메모리 노트 정정) |
 | 2026-05-07 | 트랙 A 정정 — 패키지명 `c2pa-node-v2` → `@contentauth/c2pa-node` (스코프드), API 표면 v2 검증, `c2pa.actions.v2` + `c2pa.created` 필수, Next.js `serverExternalPackages` 설정 추가, A.10에 PoC 단계(0.5일) 추가, 보안 사전작업 6개 완료 |
+| 2026-05-07 | 트랙 A C2PA PoC 완료 — Vercel 호환성 ✅, cert chain (CA + leaf) + `createTrustSettings.trustAnchors` 자체서명 우회 확인, `builder.sign()`은 동기 함수 + 반환값 Buffer, `Builder.withJson(spec, settings)` 객체 직접, `LocalSigner.newSigner` PKCS#8 키 필수 |
+| 2026-05-07 | 트랙 A 본 통합 머지 — `apps/web/src/lib/oripics-stamp/c2pa.ts` 신규 + `/api/links/confirm`에 매니페스트 첨부 단계 추가. `ORIPICS_C2PA_ENABLED=false` 기본값 (사용자 영향 0). SSL.com 인증서 도착 후 환경변수 1개 활성화로 production 가동 |
+| 2026-05-07 | 동시 론칭 추가 의사결정 — C2PA 인증서는 SSL.com OV (IV 아님, eSealing 자동화 서비스 본질), 도메인 명의 (주)산타하데스로 변경 진행 중 (Porkbun, 개인 → 법인), CAI 멤버십 무료 가입 별도 진행 권장 |
