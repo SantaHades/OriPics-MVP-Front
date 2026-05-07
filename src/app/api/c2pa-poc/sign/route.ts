@@ -14,9 +14,11 @@ export async function GET(req: Request) {
   const start = Date.now();
 
   try {
-    const certPem = process.env.ORIPICS_C2PA_CERT_PEM;
-    const keyPem = process.env.ORIPICS_C2PA_KEY_PEM;
+    const certPem = process.env.ORIPICS_C2PA_CERT_PEM;  // leaf + CA chain
+    const keyPem = process.env.ORIPICS_C2PA_KEY_PEM;     // leaf private key (PKCS#8)
+    const caPem = process.env.ORIPICS_C2PA_CA_PEM;       // CA cert (trust anchor)
     if (!certPem || !keyPem) throw new Error('certs_missing_in_env');
+    if (!caPem) throw new Error('ca_missing_in_env');
 
     // 입력 PNG: public/logo.png
     const logoPath = path.join(process.cwd(), 'public', 'logo.png');
@@ -56,19 +58,13 @@ export async function GET(req: Request) {
       ],
     };
 
-    // PoC: settings를 JSON string으로 직접 (snake_case, c2pa-rs raw 형식)
-    void mergeSettings; void createTrustSettings; void createVerifySettings; // unused 표시 회피
-    const settingsJson = JSON.stringify({
-      trust: {
-        verify_trust_list: false,
-        user_anchors: certPem,
-      },
-      verify: {
-        verify_after_sign: false,
-        verify_after_reading: false,
-      },
-    });
-    const builder = Builder.withJson(manifestSpec as any, settingsJson as any);
+    // PoC: cert chain (leaf + CA) + CA를 trust anchor로 등록
+    const settings = mergeSettings(
+      createTrustSettings({ verifyTrustList: true, trustAnchors: caPem }),
+      createVerifySettings({ verifyAfterSign: true, verifyAfterReading: true }),
+    );
+    void createVerifySettings; void createTrustSettings; void mergeSettings;
+    const builder = Builder.withJson(manifestSpec as any, settings);
     const inputAsset = { buffer: inputPng, mimeType: 'image/png' };
     const outputAsset: any = { buffer: null };
 
