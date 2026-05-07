@@ -1,0 +1,336 @@
+{
+  "Common": {
+    "title": "OriPics",
+    "usage": "How It Works",
+    "login": "Login",
+    "signup": "Start for Free",
+    "logout": "Logout",
+    "profile": "Profile",
+    "home": "Back to Home",
+    "meta_title": "OriPics - the original proof.",
+    "meta_description": "Prove your image is original. Embed invisible digital fingerprints.",
+    "contact": "Contact Us"
+  },
+  "Home": {
+    "hero": {
+      "title": "Prove Your Image\nis Original.",
+      "description": "By embedding an invisible digital fingerprint,\nyou can verify the authenticity anytime."
+    },
+    "upload": {
+      "idle": "☁️ Select or paste an image",
+      "idle_mobile": "☁️ Select an image\nor take a photo",
+      "dragover": "✨ Drop it here!",
+      "subtext": "Drag & drop, select file, paste, or take photo",
+      "subtext_mobile": "Select file, paste, or take photo",
+      "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
+      "toggle_camera": "Enable camera capture",
+      "watermark_include": "Include badge",
+      "upload_menu": {
+        "title": "Upload Image",
+        "library": "Photo Library",
+        "camera": "Take Photo",
+        "file": "Select File",
+        "paste": "Paste from Clipboard",
+        "clipboard": "Clipboard",
+        "paste_subtext": "Upload copied image instantly",
+        "no_image": "No image found in clipboard.",
+        "paste_error": "Clipboard access denied or browser not supported.",
+        "cancel": "Cancel"
+      },
+      "processing": "🔄 Processing original proof...",
+      "error": "Processing Failed",
+      "retry": "Try Again"
+    },
+    "gps": {
+      "status_active": "GPS Activated",
+      "status_inactive": "GPS Deactivated",
+      "include_label": "Include GPS",
+      "help_button": "GPS help",
+      "help_title": "How to enable GPS",
+      "help_detected_badge": "Your environment",
+      "help_intro": "To include GPS coordinates in photo certification, location permission must be allowed in both your browser and operating system. Check the guide that matches your environment.",
+      "help_ios_safari_title": "📱 iPhone / iPad — Safari",
+      "help_ios_safari_body": "① Reset site permission (most reliable): Settings → Safari → Advanced → Website Data → search 'ori.pics' → swipe left → Delete → revisit site and tap Allow on the permission prompt\n② Safari location policy: Settings → Safari → Location → Ask or Allow\n③ iOS Location Services: Settings → Privacy & Security → Location Services On → Safari Websites → While Using the App + Precise Location On",
+      "help_ios_chrome_title": "📱 iPhone / iPad — Chrome",
+      "help_ios_chrome_body": "iOS Chrome manages permissions separately from Safari. Unlike Android Chrome, iOS Chrome does NOT have a per-site Content Settings → Location menu. Try the following in order.\n① iOS system location permission (required): Settings app → Privacy & Security → Location Services On → on the same screen, find 'Chrome' → While Using the App + Precise Location On\n② Reset per-site permission: Chrome bottom-right ⋯ menu → Settings → Privacy → Clear Browsing Data → Time Range: All time → check 'Cookies, Site Data' → Clear Browsing Data → revisit ori.pics, and tap Allow on the permission prompt\n③ Force-quit Chrome and relaunch: open the App Switcher (swipe up from the home bar and pause) → swipe Chrome up to close it → relaunch and revisit the site\n④ If still blocked, uninstall and reinstall Chrome (last resort)",
+      "help_android_title": "📱 Android (Chrome etc.)",
+      "help_android_body": "① Chrome site permission: tap the lock icon at the left of the address bar → Permissions → Location → Allow\n② OS Location: Settings → Location → On → recommend Improve accuracy mode\n③ Chrome app permission: Settings → Apps → Chrome → Permissions → Location → Allow only while using the app",
+      "help_desktop_title": "💻 Desktop (macOS / Windows)",
+      "help_desktop_body": "① Browser site permission: click the lock icon at the left of the address bar → Location → Allow\n② macOS: System Settings → Privacy & Security → Location Services → enable your browser\n③ Windows: Settings → Privacy → Location → enable Let apps access your location → enable Let desktop apps access your location",
+      "help_https_note": "※ Geolocation is always blocked over http://. Always access the site via https://ori.pics or https://www.ori.pics."
+    },
+    "result": {
+      "stamped_title": "Original Proof Completed",
+      "original_image": "Original Image",
+      "stamped_image": "Stamped Image",
+      "timestamp": "Processed At",
+      "size": "Image Size",
+      "upload_type": "Auth Source",
+      "completed": "✨ Original proof has been successfully completed.",
+      "download": "Download Stamped Image",
+      "process_another": "Process Another Image",
+      "create_link": "🔗 Create Shared Link",
+      "link_time_left": "Time left: {minutes}m {seconds}s (cannot create after this)",
+      "link_created": "✅ Shared link created (stored for 7 days)",
+      "copy": "Copy",
+      "copy_success": "Link copied to clipboard!",
+      "share": "Share",
+      "share_title": "OriPics Original Proof",
+      "share_text": "Original proof link generated by OriPics.",
+      "share_unsupported": "Sharing is not supported by this browser. Link copied instead.",
+      "link_hint": "Currently stored for 7 days. Permanent storage available for premium users in the future.",
+      "warning": "⚠️ Sharing Warning — Please read to protect proof data",
+      "warning_desc": "Directly uploading images to SNS (KakaoTalk, Instagram, X, etc.) may damage proof data due to forced compression.",
+      "guide_1_title": "1st (Recommended)",
+      "guide_1_desc": "Create link and share URL",
+      "guide_2_title": "2nd (Safe)",
+      "guide_2_desc": "Compress to ZIP and attach file",
+      "guide_3_title": "3rd (Safe)",
+      "guide_3_desc": "Upload to Drive and share download link"
+    },
+    "verify": {
+      "success_title": "Verification Successful",
+      "fail_title": "Verification Failed — Tampering Detected",
+      "processed_at": "Initially Processed At",
+      "integrity": "Integrity Status",
+      "match": "Matched ✅",
+      "mismatch": "Mismatched ❌",
+      "success_desc": "This image is a certified original, and it has been confirmed that the internal content has not been tampered with.",
+      "fail_desc": "Warning: This image is judged to have been tampered with or modified after certification. It may not be the original.",
+      "verify_another": "Verify Another Image"
+    },
+    "how_it_works": {
+      "title": "How It Works",
+      "step1_title": "Upload Image or Take Photo",
+      "step1_desc": "Upload an original image via drag & drop or file selection, or take a photo directly.",
+      "step2_title": "Original Proof Processing",
+      "step2_desc": "Original proof processing is performed. Nothing is stored on the server.",
+      "step3_title": "Return & Verify",
+      "step3_desc": "Download the certified image. Uploading this image again instantly verifies its authenticity. Even a single pixel change is detected."
+    },
+    "errors": {
+      "unsupported_format": "Unsupported image format. (PNG, JPG, WebP, BMP, TIFF, GIF supported)",
+      "size_limit": "File size must be 50MB or less.",
+      "server_error": "An error occurred during server communication.",
+      "unknown_error": "An unknown error has occurred.",
+      "link_creation_failed": "Failed to create link.",
+      "clipboard_success": "Link copied to clipboard!",
+      "empty_file": "The file is empty. Please upload a valid image file.",
+      "invalid_image": "Cannot read the image file. Please upload an uncorrupted PNG, JPG, or WebP file.",
+      "image_too_small": "The image is too small. Please use an image of at least 300×300 pixels."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "items": [
+        {
+          "q": "What image formats are supported?",
+          "a": "We support most common image formats including PNG, JPG (JPEG), WebP, BMP, TIFF, and GIF. Uploaded images are automatically converted to PNG for certification processing. Maximum file size is 50MB."
+        },
+        {
+          "q": "How does the original certification work?",
+          "a": "OriPics uses steganography technology to invisibly embed certification data into the pixel data of your image. When a certified image is uploaded again, the embedded data is extracted to instantly verify its authenticity. Even a single pixel modification is detected."
+        },
+        {
+          "q": "Can I share a certified image with others?",
+          "a": "Yes! By creating a Quick Link, anyone can verify the original certification status in their web browser. Quick Links are valid for 7 days. Note: Sending the image file directly through social media (KakaoTalk, Instagram, WhatsApp, etc.) may break the certification, as these platforms automatically compress and resize images. To preserve the certification, we recommend sharing via Quick Link."
+        },
+        {
+          "q": "Are my images stored on the server?",
+          "a": "During certification, your image is never sent to the server. Only if you create a Quick Link, the certified result image is stored securely in cloud storage for 7 days before being automatically deleted."
+        },
+        {
+          "q": "Does certification affect image quality?",
+          "a": "No. OriPics converts to lossless PNG format for certification, so there is absolutely no quality degradation. Only imperceptible data is embedded — indistinguishable from the original to the human eye."
+        },
+        {
+          "q": "What happens when I upload an animated image (GIF, WebP, APNG, etc.)?",
+          "a": "Animated images such as GIF, animated WebP, and APNG contain multiple frames, but OriPics certifies only the first frame. The certified result is saved as a static PNG image. Animation is not preserved."
+        },
+        {
+          "q": "Is GPS location included when I take a photo?",
+          "a": "Yes. When you tap 'Take Photo' on mobile and allow location access, your GPS coordinates at the moment of capture are included as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File upload and clipboard methods do not include GPS to prevent tampering."
+        },
+        {
+          "q": "GPS coordinates aren't saved after taking a photo on iPhone Safari — which settings should I check?",
+          "a": "Check these four in order. ① [Reset site permission — most reliable] Settings → Safari → Advanced → Website Data → search 'ori.pics' → swipe the entry left and Delete → revisit the site and tap Allow when the permission prompt reappears. ② [Safari-wide location policy] Settings → Safari → Location → set to Ask or Allow (Deny blocks every site). ③ [iOS system location services] Settings → Privacy & Security → Location Services → On → scroll down to 'Safari Websites' → While Using the App + Precise Location turned on. ④ [HTTPS required] Geolocation is always blocked over http://. Always access the site via https://ori.pics or https://www.ori.pics."
+        },
+        {
+          "q": "Does editing EXIF metadata (timestamp, GPS) with an EXIF editor affect OriPics certification?",
+          "a": "No, it has zero effect. The timestamp, GPS, and resolution that OriPics certifies are embedded directly into the image pixels via steganography — not stored in EXIF. EXIF is just plain text metadata that anyone can freely edit or delete, but OriPics verification ignores EXIF entirely and extracts only the original information encoded in the pixels. So no matter how you alter the EXIF values, the verified timestamp and GPS will always show the original values recorded at the moment of certification. And if even a single pixel is modified, it is instantly detected as tampering."
+        },
+        {
+          "q": "Are high-resolution images certified at original size?",
+          "a": "Images with the longest side exceeding 1800 pixels are automatically resized (proportionally) to fit within 1800 pixels before certification (e.g., 4032×3024 → 1800×1350). This is to speed up mobile download and sharing — the resized image becomes the certified original. Images at 1800 pixels or smaller are certified at their original size. If you need certification at full original resolution, please contact us."
+        }
+      ]
+    }
+  },
+  "Login": {
+    "title": "Welcome Back",
+    "subtitle": "Login to continue with original proof.",
+    "google": "Login with Google",
+    "naver": "Login with Naver",
+    "kakao": "Login with Kakao",
+    "or_email": "Or continue with email",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Login",
+    "forgot_password": "Forgot password?",
+    "no_account": "Don't have an account?",
+    "signup_link": "Sign up",
+    "errors": {
+      "OAuthAccountNotLinked": "This email is already registered via another social account. Please log in using your original method.",
+      "OAuthAccountNotLinked_google": "This email is already registered with Google. Please click the Google button to log in.",
+      "OAuthAccountNotLinked_naver": "This email is already registered with Naver. Please click the Naver button to log in.",
+      "OAuthAccountNotLinked_kakao": "This email is already registered with Kakao. Please click the Kakao button to log in.",
+      "OAuthAccountNotLinked_credentials": "This email is already registered with email/password. Please enter your email and password below to log in.",
+      "OAuthCallback": "An error occurred during social login processing.",
+      "OAuthSignin": "Cannot start social login session.",
+      "EmailSignin": "Email login failed.",
+      "CredentialsSignin": "Incorrect email or password.",
+      "MissingCredentials": "Please enter your email and password.",
+      "UserNotFound": "Email not registered or this is a social login account.",
+      "InvalidPassword": "Incorrect password.",
+      "default": "An error occurred during authentication."
+    }
+  },
+  "Signup": {
+    "title": "Create New Account",
+    "subtitle": "Become a member of OriPics original proof service.",
+    "google": "Start with Google",
+    "naver": "Start with Naver",
+    "kakao": "Start with Kakao",
+    "or_email": "Or sign up with email",
+    "name": "Full Name",
+    "email": "Email Address",
+    "password": "Password",
+    "submit": "Sign Up",
+    "has_account": "Already have an account?",
+    "login_link": "Log in",
+    "shield_text": "Secure data encryption technology is applied.",
+    "errors": {
+      "invalid_email": "Invalid email address. Please enter a valid format (e.g., name@domain.com).",
+      "short_password": "Password must be at least 6 characters long.",
+      "password_hint": "Minimum 6 characters."
+    },
+    "verification": {
+      "send": "Verify",
+      "resend": "Resend",
+      "code_sent": "A verification code has been sent to your email. Please check your inbox.",
+      "code_label": "Verification Code",
+      "enter_code": "Please enter the 6-digit code sent to your email.",
+      "hint": "Enter the 6-digit code from your email. (Valid for 10 minutes)"
+    },
+    "api_errors": {
+      "missing_fields": "Please enter both email and password.",
+      "invalid_email": "Invalid email format.",
+      "short_password": "Password must be at least 6 characters.",
+      "missing_code": "Please enter the email verification code.",
+      "invalid_code": "The verification code is incorrect.",
+      "expired_code": "The verification code has expired. Please request a new one.",
+      "email_exists": "This email is already registered.",
+      "missing_email": "Please enter your email address.",
+      "send_failed": "Failed to send verification code. Please try again later.",
+      "server_error": "An error occurred during registration."
+    }
+  },
+  "Profile": {
+    "title": "Profile Management",
+    "subtitle": "Keep your profile picture and account info up to date.",
+    "profile_image": "Profile Picture",
+    "profile_image_desc": "Google profile or uploaded image will be displayed.\nJPG, PNG files under 2MB recommended.",
+    "change_photo": "Change Photo",
+    "email_label": "Email Address",
+    "email_hint": "* Email cannot be changed.",
+    "name_label": "Full Name",
+    "name_placeholder": "Enter your name",
+    "password_label": "New Password",
+    "password_placeholder": "Enter only if you want to change",
+    "submit": "Save Profile",
+    "messages": {
+      "upload_success": "Image uploaded. Click save to confirm.",
+      "upload_error": "Upload failed: {error}",
+      "size_error": "Image size must be under 2MB.",
+      "save_success": "Profile updated successfully!",
+      "save_error": "Failed to update profile: {error}",
+      "delete_error": "Failed to delete account: {error}"
+    },
+    "delete_account": {
+      "title": "Delete Account",
+      "description": "All account data will be permanently deleted and cannot be recovered.",
+      "button": "Delete Account",
+      "modal_title": "Are you sure you want to delete your account?",
+      "modal_description": "This will permanently delete your account information and all linked login data. This action cannot be undone.",
+      "confirm_label": "Type 'DELETE' below to confirm.",
+      "confirm_placeholder": "DELETE",
+      "confirm_word": "DELETE",
+      "cancel": "Cancel",
+      "confirm_button": "Delete"
+    },
+    "proof_history": {
+      "title": "My Proof History",
+      "empty": "No proofs yet.",
+      "go_certify": "Certify an image →",
+      "view_link": "View Link",
+      "expired": "Expired",
+      "certified_at": "Certified At",
+      "resolution": "Resolution"
+    }
+  },
+  "ForgotPassword": {
+    "title": "Reset Password",
+    "subtitle": "We'll send a password reset link to your email.",
+    "email_label": "Email Address",
+    "email_placeholder": "example@oripics.com",
+    "submit": "Send Reset Link",
+    "back_to_login": "Back to Login",
+    "success_message": "A reset link has been sent to your email.",
+    "error_message": "An error occurred: {error}",
+    "api_errors": {
+      "missing_email": "Please enter your email address.",
+      "user_not_found": "This email is not registered.",
+      "smtp_error": "Failed to send the email. Please try again later.",
+      "server_error": "A server error occurred."
+    }
+  },
+  "ResetPassword": {
+    "title": "Set New Password",
+    "subtitle": "Please enter your new password.",
+    "password_label": "New Password",
+    "password_placeholder": "••••••••",
+    "submit": "Change Password",
+    "success_message": "Password changed successfully. Please log in.",
+    "error_message": "An error occurred: {error}",
+    "invalid_token": "Invalid or expired link.",
+    "api_errors": {
+      "missing_fields": "Required information is missing.",
+      "invalid_token": "Invalid token.",
+      "expired_token": "Token has expired. Please request a new reset link.",
+      "user_not_found": "User not found.",
+      "server_error": "A server error occurred."
+    }
+  },
+  "LinkViewer": {
+    "og_title": "OriPics — Original Proof Link",
+    "og_description": "This image has been digitally verified as original by OriPics.",
+    "loading": "Loading original data...",
+    "not_found": "Link Not Found",
+    "not_found_desc": "The link has expired or does not exist. (Stored for 7 days)",
+    "back_home": "Back to OriPics Home",
+    "verified": "Original Integrity Verified",
+    "info_title": "Image Information",
+    "timestamp_label": "Initially Certified At",
+    "resolution_label": "Original Resolution",
+    "source_label": "Auth Source",
+    "source_f": "Photo Library/File",
+    "source_p": "Camera",
+    "source_c": "Clipboard",
+    "download": "Download Original",
+    "short_link": "Short Link",
+    "copy_link": "Copy Link",
+    "copied": "Copied!",
+    "verified_desc": "✨ This image is digitally verified to be authentic with no artificial manipulation. Anyone can verify this via this link for 7 days.",
+    "try_now": "Certify My Image",
+    "footer": "OriPics © 2026  the original proof."
+  }
+}
