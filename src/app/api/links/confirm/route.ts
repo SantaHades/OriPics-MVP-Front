@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
+import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 const JWT_SECRET = process.env.ORIPICS_JWT_SECRET!;
 const BUCKET_NAME = "oripics-proofs";
+const C2PA_ENABLED = process.env.ORIPICS_C2PA_ENABLED === "true";
+
+export const runtime = "nodejs";
 
 function verifyJwt(token: string): Record<string, any> {
   const parts = token.split(".");
@@ -61,6 +65,50 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // C2PA 매니페스트 첨부 (기능 플래그 OFF 시 건너뜀).
+    // 실패해도 전체 흐름은 차단하지 않음 — 원본 PNG는 그대로 Storage에 존재.
+    if (C2PA_ENABLED) {
+      try {
+        const c2paStart = Date.now();
+        const { data: blob, error: dlErr } = await supabase.storage
+          .from(BUCKET_NAME)
+          .download(storage_path);
+        if (dlErr || !blob) throw new Error(`download_failed:${dlErr?.message || "no_blob"}`);
+        const pngBuffer = Buffer.from(await blob.arrayBuffer());
+
+        // 현재는 Standard 티어만. 모바일 Verified 티어는 트랙 D 후 추가.
+        const tier: Tier = "standard";
+        const stampVersion = lat_e6 != null && lng_e6 != null ? 3 : 2;
+
+        const signResult = await attachC2paManifest({
+          pngBuffer,
+          tier,
+          linkId: link_id,
+          timestamp: oripicsTimestampToISO8601(timestamp),
+          width,
+          height,
+          lat: lat_e6 != null ? lat_e6 / 1_000_000 : null,
+          lng: lng_e6 != null ? lng_e6 / 1_000_000 : null,
+          stampVersion,
+        });
+
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(storage_path, signResult.buffer, {
+            contentType: "image/png",
+            upsert: true,
+          });
+        if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
+
+        console.log(
+          `[confirm] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded} ms=${Date.now() - c2paStart}`,
+        );
+      } catch (e: any) {
+        console.error(`[confirm] c2pa attach failed link_id=${link_id}:`, e?.message || e);
+      }
+    }
+
     const { error } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
     if (error) {
       console.error("[confirm] db upsert failed:", error);
