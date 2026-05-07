@@ -5,6 +5,9 @@ const withNextIntl = require('next-intl/plugin')(
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    serverComponentsExternalPackages: ['@contentauth/c2pa-node'],
+  },
 };
 
 module.exports = withNextIntl(nextConfig);
