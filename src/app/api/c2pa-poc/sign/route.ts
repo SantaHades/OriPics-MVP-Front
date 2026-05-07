@@ -56,12 +56,19 @@ export async function GET(req: Request) {
       ],
     };
 
-    // PoC: 자체서명 인증서 사용 — trust list 검증 끄고 자체를 user anchor로 등록
-    const settings = mergeSettings(
-      createVerifySettings({ verifyAfterSign: false, verifyAfterReading: false }),
-      createTrustSettings({ verifyTrustList: false, userAnchors: certPem }),
-    );
-    const builder = Builder.withJson(manifestSpec as any, settings);
+    // PoC: settings를 JSON string으로 직접 (snake_case, c2pa-rs raw 형식)
+    void mergeSettings; void createTrustSettings; void createVerifySettings; // unused 표시 회피
+    const settingsJson = JSON.stringify({
+      trust: {
+        verify_trust_list: false,
+        user_anchors: certPem,
+      },
+      verify: {
+        verify_after_sign: false,
+        verify_after_reading: false,
+      },
+    });
+    const builder = Builder.withJson(manifestSpec as any, settingsJson as any);
     const inputAsset = { buffer: inputPng, mimeType: 'image/png' };
     const outputAsset: any = { buffer: null };
 
