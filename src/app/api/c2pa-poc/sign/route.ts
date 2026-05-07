@@ -1,5 +1,6 @@
 // PoC: builder.sign() 반환 시맨틱 + 자체서명 인증서 매니페스트 첨부 검증
 // 검증 후 삭제 예정
+// rev: 2026-05-07 PKCS#8 key
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
