@@ -56,38 +56,17 @@ export async function GET(req: Request) {
       ],
     };
 
+    // Builder.withJson은 객체 받음 (string 아님), sign은 동기 함수, output은 mimeType 없이 buffer만
     const builder = Builder.withJson(manifestSpec as any);
     const inputAsset = { buffer: inputPng, mimeType: 'image/png' };
-    const outputAsset: any = { buffer: Buffer.alloc(0), mimeType: 'image/png' };
+    const outputAsset: any = { buffer: null };
 
-    const signResult: any = await builder.sign(signer, inputAsset, outputAsset);
-
-    // 어느 쪽이 signed buffer인지 진단
-    const signedFromOutput =
-      outputAsset.buffer && outputAsset.buffer.length > 0 ? outputAsset.buffer : null;
-    const signedFromResult = Buffer.isBuffer(signResult) ? signResult : null;
-    const signedFromResultProperty =
-      signResult && typeof signResult === 'object' && Buffer.isBuffer(signResult.buffer)
-        ? signResult.buffer
-        : null;
-
-    const signedBuffer: Buffer | null =
-      signedFromOutput || signedFromResult || signedFromResultProperty;
+    // sign 시그니처: (signer, SourceAsset, DestinationAsset) => Buffer (sync)
+    const signedBuffer: Buffer = builder.sign(signer, inputAsset, outputAsset);
 
     if (!signedBuffer || signedBuffer.length === 0) {
       return NextResponse.json(
-        {
-          ok: false,
-          stage: 'sign_returned_no_buffer',
-          ms: Date.now() - start,
-          diagnosis: {
-            signResultType: typeof signResult,
-            signResultIsBuffer: Buffer.isBuffer(signResult),
-            signResultKeys:
-              signResult && typeof signResult === 'object' ? Object.keys(signResult) : null,
-            outputBufferLength: outputAsset.buffer?.length ?? null,
-          },
-        },
+        { ok: false, stage: 'sign_returned_empty', ms: Date.now() - start },
         { status: 500 },
       );
     }
@@ -133,12 +112,6 @@ export async function GET(req: Request) {
       output: {
         bytes: signedBuffer.length,
         sizeIncrease: signedBuffer.length - inputPng.length,
-      },
-      signReturnDiagnosis: {
-        bufferFromOutput: !!signedFromOutput,
-        bufferFromResult: !!signedFromResult,
-        bufferFromResultProperty: !!signedFromResultProperty,
-        signResultType: typeof signResult,
       },
       manifestStore: manifestStoreInfo,
     });
