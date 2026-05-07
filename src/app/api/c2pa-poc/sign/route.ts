@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const inputPng = await fs.readFile(logoPath);
 
     const c2pa = await import('@contentauth/c2pa-node');
-    const { Builder, LocalSigner, Reader, createVerifySettings } = c2pa;
+    const { Builder, LocalSigner, Reader, createVerifySettings, createTrustSettings, mergeSettings } = c2pa;
 
     const signer = LocalSigner.newSigner(
       Buffer.from(certPem),
@@ -56,8 +56,11 @@ export async function GET(req: Request) {
       ],
     };
 
-    // PoC: 자체서명 인증서 사용 시 verifyAfterSign 비활성화 (정식 인증서 도입 시 제거)
-    const settings = createVerifySettings({ verifyAfterSign: false });
+    // PoC: 자체서명 인증서 사용 — trust list 검증 끄고 자체를 user anchor로 등록
+    const settings = mergeSettings(
+      createVerifySettings({ verifyAfterSign: false, verifyAfterReading: false }),
+      createTrustSettings({ verifyTrustList: false, userAnchors: certPem }),
+    );
     const builder = Builder.withJson(manifestSpec as any, settings);
     const inputAsset = { buffer: inputPng, mimeType: 'image/png' };
     const outputAsset: any = { buffer: null };
