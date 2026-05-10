@@ -51,24 +51,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: e.message }, { status: 401 });
     }
 
-    const { user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6 } = claims;
+    const {
+      user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6,
+      tier: claimedTier,
+      verified_info,
+    } = claims;
 
-    // J-3: 인증 1회당 IMAGE_PROOF(=2) 크레딧 차감 (race-safe atomic).
-    // 차감 후 작업 실패 시 명시적 환불.
+    const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";
+    const creditCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+    const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
+
+    // J-3 + D-pre-3: tier별 크레딧 차감 (race-safe atomic).
     if (!user_id) {
       // sign 라우트가 J-3 이전에 발급한 JWT (user_id 없음) — 차감 스킵.
-      // J-3 배포 후 5분(JWT TTL) 지나면 모든 신규 JWT는 user_id 보장.
       console.warn(`[confirm] legacy JWT without user_id, skipping credit charge: link_id=${link_id}`);
     } else {
       const consume = await consumeCredits({
         userId: user_id,
-        amount: CREDIT_COSTS.IMAGE_PROOF,
-        action: "image_proof",
-        metadata: { link_id, storage_path },
+        amount: creditCost,
+        action: creditAction,
+        metadata: { link_id, storage_path, tier },
       });
       if (!consume.ok) {
         return NextResponse.json(
-          { detail: "insufficient_credits", balance: consume.balance, required: CREDIT_COSTS.IMAGE_PROOF },
+          { detail: "insufficient_credits", balance: consume.balance, required: creditCost, tier },
           { status: 402 },
         );
       }
@@ -100,13 +106,12 @@ export async function POST(req: NextRequest) {
         if (dlErr || !blob) throw new Error(`download_failed:${dlErr?.message || "no_blob"}`);
         const pngBuffer = Buffer.from(await blob.arrayBuffer());
 
-        // 현재는 Standard 티어만. 모바일 Verified 티어는 트랙 D 후 추가.
-        const tier: Tier = "standard";
         const stampVersion = lat_e6 != null && lng_e6 != null ? 3 : 2;
+        const c2paTier: Tier = tier === "verified" ? "verified" : "standard";
 
         const signResult = await attachC2paManifest({
           pngBuffer,
-          tier,
+          tier: c2paTier,
           linkId: link_id,
           timestamp: oripicsTimestampToISO8601(timestamp),
           width,
@@ -114,6 +119,9 @@ export async function POST(req: NextRequest) {
           lat: lat_e6 != null ? lat_e6 / 1_000_000 : null,
           lng: lng_e6 != null ? lng_e6 / 1_000_000 : null,
           stampVersion,
+          ...(c2paTier === "verified" && verified_info
+            ? { verifiedInfo: verified_info }
+            : {}),
         });
 
         const { error: upErr } = await supabase.storage
@@ -140,8 +148,8 @@ export async function POST(req: NextRequest) {
         try {
           await refundCredits({
             userId: user_id,
-            amount: CREDIT_COSTS.IMAGE_PROOF,
-            action: "image_proof",
+            amount: creditCost,
+            action: creditAction,
             metadata: { link_id, reason: `db_error:${error.message}` },
           });
         } catch (rfErr: any) {

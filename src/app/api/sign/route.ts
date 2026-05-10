@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createHmac } from "crypto";
+import { createHmac, createHash } from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/payment";
+import { verifyChallenge } from "@/lib/attest/challenge";
+import {
+  verifyAttestToken,
+  AttestVerifierNotImplementedError,
+} from "@/lib/attest/verifyToken";
 import {
   getSalt,
   makeTimestamp,
@@ -45,7 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   }
 
-  // J-3: 인증 + 잔액 사전확인
+  // J-3: 인증 + 잔액 사전확인 (tier에 따라 비용 결정)
   const session = await getServerSession(authOptions);
   const userId = (session?.user as any)?.id;
   if (!userId) {
@@ -53,18 +58,10 @@ export async function POST(req: NextRequest) {
   }
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { credits: true },
+    select: { credits: true, tier: true },
   });
   if (!user) {
     return NextResponse.json({ detail: "user_not_found" }, { status: 401 });
-  }
-  // 인증 1회 비용은 IMAGE_PROOF (=2). 차감은 /api/links/confirm에서 수행.
-  const requiredCredits = CREDIT_COSTS.IMAGE_PROOF;
-  if (user.credits < requiredCredits) {
-    return NextResponse.json(
-      { detail: "insufficient_credits", balance: user.credits, required: requiredCredits },
-      { status: 402 },
-    );
   }
 
   let body: any;
@@ -74,7 +71,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "invalid_json" }, { status: 400 });
   }
 
-  const { inner_hash, border_hash, width, height, upload_type, lat_e6, lng_e6 } = body || {};
+  const {
+    inner_hash, border_hash, width, height, upload_type, lat_e6, lng_e6,
+    // D-pre-3: verified 티어 (모바일 P 경로) 입력
+    tier: requestedTier,
+    nonce,
+    attest_token,
+    platform,
+    zoom_factor,
+    lens_position,
+  } = body || {};
   if (typeof inner_hash !== "string" || !HEX64.test(inner_hash)) {
     return NextResponse.json({ detail: "invalid_inner_hash" }, { status: 400 });
   }
@@ -86,6 +92,69 @@ export async function POST(req: NextRequest) {
   }
   if (!Number.isInteger(height) || height <= 0 || height >= 2 ** 32) {
     return NextResponse.json({ detail: "invalid_height" }, { status: 400 });
+  }
+
+  // D-pre-3: tier 결정 + verified attestation 검증
+  // verified는 모바일 P 경로 + Pro 이상 티어에서만 허용
+  const isVerifiedRequest = requestedTier === "verified";
+  const tier: "standard" | "verified" = isVerifiedRequest ? "verified" : "standard";
+  let verifiedInfo:
+    | { platform: "ios" | "android"; attest_token_hash: string; zoom_factor?: number; lens_position?: string }
+    | undefined;
+
+  if (isVerifiedRequest) {
+    // Verified 티어 = Pro 이상만 (pricing-policy §2)
+    if (user.tier === "free") {
+      return NextResponse.json(
+        { detail: "verified_requires_pro", tier: user.tier },
+        { status: 403 },
+      );
+    }
+    if (typeof nonce !== "string" || typeof attest_token !== "string") {
+      return NextResponse.json({ detail: "missing_attest_fields" }, { status: 400 });
+    }
+    if (platform !== "ios" && platform !== "android") {
+      return NextResponse.json({ detail: "invalid_platform" }, { status: 400 });
+    }
+    const challenge = verifyChallenge(nonce);
+    if (!challenge.ok) {
+      return NextResponse.json({ detail: `nonce_${challenge.reason}` }, { status: 401 });
+    }
+    try {
+      const tokenResult = await verifyAttestToken({ platform, token: attest_token, nonce });
+      if (!tokenResult.ok) {
+        return NextResponse.json({ detail: `attest_${tokenResult.reason}` }, { status: 401 });
+      }
+      verifiedInfo = {
+        platform,
+        attest_token_hash: tokenResult.attestTokenHash,
+        ...(typeof zoom_factor === "number" ? { zoom_factor } : {}),
+        ...(typeof lens_position === "string" ? { lens_position } : {}),
+      };
+    } catch (e) {
+      if (e instanceof AttestVerifierNotImplementedError) {
+        // D-pre-5 본 구현 전: token 자체는 SHA-256 해시만 기록하고 진행 (개발용)
+        console.warn("[sign] attest verifier stub — token hash only");
+        const hash = createHash("sha256").update(attest_token).digest("hex").slice(0, 32);
+        verifiedInfo = {
+          platform,
+          attest_token_hash: hash,
+          ...(typeof zoom_factor === "number" ? { zoom_factor } : {}),
+          ...(typeof lens_position === "string" ? { lens_position } : {}),
+        };
+      } else {
+        throw e;
+      }
+    }
+  }
+
+  // 잔액 확인 (tier에 따라 비용 결정). 차감은 /api/links/confirm.
+  const requiredCredits = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+  if (user.credits < requiredCredits) {
+    return NextResponse.json(
+      { detail: "insufficient_credits", balance: user.credits, required: requiredCredits, tier },
+      { status: 402 },
+    );
   }
 
   const uploadType = ["F", "P", "C"].includes(upload_type) ? upload_type : "F";
@@ -160,6 +229,7 @@ export async function POST(req: NextRequest) {
     exp: now + JWT_TTL_SECONDS,
     aud: "links/confirm",
     user_id: userId,
+    tier,
     link_id: linkId,
     storage_path: storagePath,
     timestamp,
@@ -169,6 +239,9 @@ export async function POST(req: NextRequest) {
   if (useV3) {
     jwtPayload.lat_e6 = lat_e6;
     jwtPayload.lng_e6 = lng_e6;
+  }
+  if (verifiedInfo) {
+    jwtPayload.verified_info = verifiedInfo;
   }
   const jwt = issueJwt(jwtPayload);
 
