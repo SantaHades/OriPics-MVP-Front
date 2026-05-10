@@ -44,9 +44,19 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?   // 암호화된 비밀번호 저장용 필드
+
+  // 요금제 / 크레딧 (J-1, 2026-05-10)
+  // tier: "free" | "pro" | "business" — pricing-policy.md 참조
+  tier              String    @default("free")
+  credits           Int       @default(0)
+  // 크레딧 다음 갱신 시점 (가입일 기준 매월). null = 미초기화 (기존 사용자) → J-2 마이그레이션 시 보정
+  creditsRenewAt    DateTime?
+
   accounts      Account[]
   sessions      Session[]
   proofs        ProofHistory[]
+  creditTransactions CreditTransaction[]
+  subscription  Subscription?
 }
 
 model VerificationToken {
@@ -77,4 +87,46 @@ model ProofHistory {
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// 크레딧 변동 이력 (J-1, 2026-05-10)
+// delta 양수 = 충전·갱신, 음수 = 차감
+// action 종류: signup_grant | monthly_renewal | image_proof | verify_query | link_create | verified_proof | subscription_grant | manual_adjust
+model CreditTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  delta        Int
+  action       String
+  balanceAfter Int
+  metadata     Json?    // 액션별 추가 컨텍스트 (예: { linkId, gatewayPaymentId, planId })
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// 결제 구독 (J-1, 2026-05-10) — 게이트웨이 무관 도메인 모델
+// gateway: "portone" | "stripe" — 추상화 레이어와 매핑
+// plan: "pro_monthly" | "pro_yearly" | "business_monthly"
+// status: "active" | "past_due" | "canceled" | "incomplete"
+model Subscription {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  gateway                  String
+  gatewayCustomerId        String
+  gatewaySubscriptionId    String?
+  plan                     String
+  status                   String
+  currentPeriodStart       DateTime
+  currentPeriodEnd         DateTime
+  cancelAtPeriodEnd        Boolean  @default(false)
+  canceledAt               DateTime?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([gatewayCustomerId])
+  @@index([gatewaySubscriptionId])
 }
