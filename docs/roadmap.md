@@ -1,7 +1,7 @@
 # OriPics 차세대 로드맵
 
 > **최초 작성**: 2026-05-06
-> **최종 갱신**: 2026-05-06 — 동시 론칭 전제 반영 (웹+모바일 단일 출시)
+> **최종 갱신**: 2026-05-10 — JPEG Trust 응답 + Content Credentials 배지 + 보안 패치 추가 라운드
 > **상태**: 실행 단계 (트랙별 작업 시작 가능)
 
 ---
@@ -1046,3 +1046,8 @@ OriPics 추천 시작 TSC: Security + Availability + Confidentiality. 차후 Pri
 | 2026-05-07 | 트랙 A C2PA PoC 완료 — Vercel 호환성 ✅, cert chain (CA + leaf) + `createTrustSettings.trustAnchors` 자체서명 우회 확인, `builder.sign()`은 동기 함수 + 반환값 Buffer, `Builder.withJson(spec, settings)` 객체 직접, `LocalSigner.newSigner` PKCS#8 키 필수 |
 | 2026-05-07 | 트랙 A 본 통합 머지 — `apps/web/src/lib/oripics-stamp/c2pa.ts` 신규 + `/api/links/confirm`에 매니페스트 첨부 단계 추가. `ORIPICS_C2PA_ENABLED=false` 기본값 (사용자 영향 0). SSL.com 인증서 도착 후 환경변수 1개 활성화로 production 가동 |
 | 2026-05-07 | 동시 론칭 추가 의사결정 — C2PA 인증서는 SSL.com OV (IV 아님, eSealing 자동화 서비스 본질), 도메인 명의 (주)산타하데스로 변경 진행 중 (Porkbun, 개인 → 법인), CAI 멤버십 무료 가입 별도 진행 권장 |
+| 2026-05-09 | C2PA 인증서 전략 전환 — SSL.com OV Document Signing은 PFX/SW 발급 불가 판명, **SSL.com C2PA Certificates** (별도 라인, C2PA Trust List `SSL.com C2PA ECC/RSA Root CA 2025` 등재)로 전환. eSigner CSC API + c2pa-node `CallbackSigner` 통합 사전 설계 완료. SSL.com 티켓 #99634791 제출 (8개 기술 질문) |
+| 2026-05-09 | Porkbun 도메인 ori.pics 명의 변경 완료 (개인 → SantaHades Co., Ltd., ICANN WHOIS 반영). Next.js 14.1.0 → 14.2.35 보안 패치, Dependabot 21개 트리아지 |
+| 2026-05-10 | **JPEG Trust 호환 확보 (트랙 A 후속)** — `/api/verify` 응답에 optional `link_id` + `trust_report` 필드 (ISO/IEC 21617-1 inspired evidence[] + overall_trust). C2PA 매니페스트는 Part 2 자동 충족, Part 1 Trust Report는 응답 구조로 충족. Part 3(워터마크)은 보류 |
+| 2026-05-10 | **Content Credentials 배지 UI** — `/api/links/[id]/c2pa` GET 엔드포인트 신설 + 링크 페이지 사이드바 카드. 매니페스트 없으면 graceful 숨김, contentcredentials.org/verify 외부 링크. i18n ko/en |
+| 2026-05-10 | 보안 패치 추가 라운드 — `next-intl 4.9.1 → 4.11.1` (prototype pollution moderate) + `icu-minify` (트랜지티브 low) 해결. nodemailer 두 CVE는 코드 점검 결과 미영향 (envelope.size·transport.name 옵션 미사용). audit 7 → 5 |
