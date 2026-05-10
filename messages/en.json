@@ -331,6 +331,12 @@
     "copied": "Copied!",
     "verified_desc": "✨ This image is digitally verified to be authentic with no artificial manipulation. Anyone can verify this via this link for 7 days.",
     "try_now": "Certify My Image",
+    "c2pa_title": "Content Credentials attached",
+    "c2pa_valid_desc": "This image carries a C2PA standard manifest so anyone can verify its origin and edit history.",
+    "c2pa_invalid_desc": "A C2PA manifest is attached, but validation flagged warnings.",
+    "c2pa_generator": "Generator",
+    "c2pa_issuer": "Signer",
+    "c2pa_inspect": "Inspect Content Credentials",
     "footer": "OriPics © 2026  the original proof."
   }
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink } from "lucide-react";
+import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink, BadgeCheck } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { supabase } from "@/lib/supabase";
@@ -19,6 +19,14 @@ interface LinkData {
   signed_url: string;
 }
 
+interface C2paStatus {
+  present: boolean;
+  valid: boolean;
+  claim_generator?: string;
+  signature?: { issuer?: string; time?: string; alg?: string };
+  validation_status?: Array<{ code: string; explanation?: string }>;
+}
+
 export default function LinkViewer() {
   const params = useParams();
   const linkId = params.id as string;
@@ -32,6 +40,7 @@ export default function LinkViewer() {
   const [downloadedBytes, setDownloadedBytes] = useState(0);
   const [totalBytes, setTotalBytes] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [c2pa, setC2pa] = useState<C2paStatus | null>(null);
 
   const shortLink =
     typeof window !== "undefined"
@@ -108,6 +117,24 @@ export default function LinkViewer() {
       if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
   }, [data?.signed_url]);
+
+  useEffect(() => {
+    if (!data?.link_id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/links/${data.link_id}/c2pa`);
+        if (!res.ok) return;
+        const json = (await res.json()) as C2paStatus;
+        if (!cancelled) setC2pa(json);
+      } catch {
+        // 매니페스트 없거나 조회 실패 → 배지 숨김 (graceful)
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [data?.link_id]);
 
   useEffect(() => {
     if (!isFullscreen) return;
@@ -337,6 +364,53 @@ export default function LinkViewer() {
               </button>
             </div>
           </div>
+
+          {c2pa?.present && (
+            <div className="p-6 rounded-3xl bg-white/60 border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <BadgeCheck
+                  size={20}
+                  className={c2pa.valid ? "text-emerald-600" : "text-amber-600"}
+                />
+                <h3 className="text-sm font-bold text-slate-900">
+                  {t("c2pa_title")}
+                </h3>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed mb-4">
+                {c2pa.valid ? t("c2pa_valid_desc") : t("c2pa_invalid_desc")}
+              </p>
+              {(c2pa.signature?.issuer || c2pa.claim_generator) && (
+                <dl className="space-y-1.5 mb-4 text-[11px]">
+                  {c2pa.claim_generator && (
+                    <div className="flex gap-2">
+                      <dt className="text-slate-500 shrink-0">{t("c2pa_generator")}</dt>
+                      <dd className="text-slate-700 font-mono break-all">
+                        {c2pa.claim_generator}
+                      </dd>
+                    </div>
+                  )}
+                  {c2pa.signature?.issuer && (
+                    <div className="flex gap-2">
+                      <dt className="text-slate-500 shrink-0">{t("c2pa_issuer")}</dt>
+                      <dd className="text-slate-700 font-mono break-all">
+                        {c2pa.signature.issuer}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+              {data?.signed_url && (
+                <a
+                  href={`https://contentcredentials.org/verify?source=${encodeURIComponent(data.signed_url)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:underline"
+                >
+                  {t("c2pa_inspect")} <ExternalLink size={12} />
+                </a>
+              )}
+            </div>
+          )}
 
           <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-50/50 to-indigo-50/50 border border-purple-200 shadow-sm">
             <p className="text-sm text-purple-800 leading-relaxed">{t("verified_desc")}</p>

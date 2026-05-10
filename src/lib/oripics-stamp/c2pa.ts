@@ -163,3 +163,74 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     bytesAdded: signedBuffer.length - input.pngBuffer.length,
   };
 }
+
+export interface C2paReadResult {
+  present: boolean;
+  valid: boolean;
+  validation_status: Array<{ code: string; url?: string; explanation?: string }>;
+  active_manifest_label?: string;
+  claim_generator?: string;
+  title?: string;
+  format?: string;
+  instance_id?: string;
+  signature?: {
+    issuer?: string;
+    cert_serial_number?: string;
+    time?: string;
+    alg?: string;
+  };
+  assertions?: Array<{ label: string; data?: any }>;
+}
+
+export async function readC2paManifest(
+  pngBuffer: Buffer,
+  mimeType: string = 'image/png',
+): Promise<C2paReadResult> {
+  const c2pa = await import('@contentauth/c2pa-node');
+  const { Reader, createTrustSettings, mergeSettings } = c2pa;
+
+  let settings: any = undefined;
+  if (CA_PEM) {
+    settings = mergeSettings(
+      createTrustSettings({ verifyTrustList: true, trustAnchors: CA_PEM }),
+    );
+  }
+
+  const reader = await Reader.fromAsset({ buffer: pngBuffer, mimeType }, settings);
+
+  if (!reader) {
+    return { present: false, valid: false, validation_status: [] };
+  }
+
+  const store: any = reader.json();
+  const activeLabel: string | undefined = store?.active_manifest;
+  const manifest: any = activeLabel ? store?.manifests?.[activeLabel] : undefined;
+  const validationIssues: any[] = Array.isArray(store?.validation_status)
+    ? store.validation_status
+    : [];
+  const valid = validationIssues.length === 0 && !!manifest;
+
+  const sig = manifest?.signature_info;
+
+  return {
+    present: true,
+    valid,
+    validation_status: validationIssues,
+    active_manifest_label: activeLabel,
+    claim_generator: manifest?.claim_generator,
+    title: manifest?.title,
+    format: manifest?.format,
+    instance_id: manifest?.instance_id,
+    signature: sig
+      ? {
+          issuer: sig.issuer,
+          cert_serial_number: sig.cert_serial_number,
+          time: sig.time,
+          alg: sig.alg,
+        }
+      : undefined,
+    assertions: Array.isArray(manifest?.assertions)
+      ? manifest.assertions.map((a: any) => ({ label: a.label, data: a.data }))
+      : undefined,
+  };
+}
