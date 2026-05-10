@@ -9,7 +9,8 @@
     "home": "Back to Home",
     "meta_title": "OriPics - the original proof.",
     "meta_description": "Prove your image is original. Embed invisible digital fingerprints.",
-    "contact": "Contact Us"
+    "contact": "Contact Us",
+    "privacy": "Privacy Policy"
   },
   "Home": {
     "hero": {
@@ -413,6 +414,7 @@
     "c2pa_generator": "Generator",
     "c2pa_issuer": "Signer",
     "c2pa_inspect": "Inspect Content Credentials",
+    "privacy_link": "Privacy Policy",
     "footer": "OriPics © 2026  the original proof."
   }
 }

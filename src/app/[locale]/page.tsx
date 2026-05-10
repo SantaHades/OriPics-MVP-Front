@@ -1275,11 +1275,16 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="w-full border-t border-slate-200 py-16 flex flex-col items-center gap-8 text-slate-500 text-sm">
+      <footer className="w-full border-t border-slate-200 py-16 flex flex-col items-center gap-6 text-slate-500 text-sm">
         <img src="/logo-long.png" alt="OriPics Logo" className="h-24 object-contain opacity-60 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
-        <a href="mailto:hi@ori.pics" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
-          {tc("contact")}
-        </a>
+        <div className="flex items-center gap-3">
+          <a href="mailto:hi@ori.pics" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
+            {tc("contact")}
+          </a>
+          <Link href="/privacy" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
+            {tc("privacy")}
+          </Link>
+        </div>
         <p>{tLV("footer")}</p>
       </footer>
       {/* Custom Upload Menu (Action Sheet) */}

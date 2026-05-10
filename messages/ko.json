@@ -9,7 +9,8 @@
     "home": "메인으로 돌아가기",
     "meta_title": "OriPics - 원본 인증",
     "meta_description": "이미지가 원본임을 증명하세요. 보이지 않는 디지털 지문을 새깁니다.",
-    "contact": "문의하기"
+    "contact": "문의하기",
+    "privacy": "개인정보 처리방침"
   },
   "Home": {
     "hero": {
@@ -413,6 +414,7 @@
     "c2pa_generator": "생성기",
     "c2pa_issuer": "서명자",
     "c2pa_inspect": "Content Credentials 자세히 보기",
+    "privacy_link": "개인정보 처리방침",
     "footer": "OriPics © 2026  원본 인증."
   }
 }

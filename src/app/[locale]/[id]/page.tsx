@@ -425,13 +425,16 @@ export default function LinkViewer() {
         </aside>
       </main>
 
-      <footer className="max-w-5xl mx-auto mt-20 pt-12 border-t border-slate-100 flex flex-col items-center gap-8 text-gray-600 text-xs">
+      <footer className="max-w-5xl mx-auto mt-20 pt-12 border-t border-slate-100 flex flex-col items-center gap-6 text-gray-600 text-xs">
         <Link href="/">
           <img
             src="/logo-long.png"
             alt="OriPics Logo"
             className="h-24 object-contain opacity-60 hover:opacity-100 transition-opacity"
           />
+        </Link>
+        <Link href="/privacy" className="hover:text-slate-900 transition-colors">
+          {t("privacy_link")}
         </Link>
         <p>{t("footer")}</p>
       </footer>
