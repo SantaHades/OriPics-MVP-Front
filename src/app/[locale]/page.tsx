@@ -13,6 +13,8 @@ import {
   verifyImage,
   type StampedDraft,
 } from "@/lib/oripics-stamp";
+import { useCredits } from "@/lib/credits/useCredits";
+import { CREDIT_COSTS } from "@/lib/payment";
 
 type ProcessStatus = "idle" | "dragover" | "processing" | "result_stamped" | "result_verified" | "error";
 
@@ -88,6 +90,8 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [debugMessage, setDebugMessage] = useState<string | null>(null);
+  const [showInsufficientModal, setShowInsufficientModal] = useState(false);
+  const { data: credits, refresh: refreshCredits } = useCredits();
 
   type GpsState = 'unknown' | 'unsupported' | 'prompt' | 'granted' | 'denied';
   type HelpPlatform = 'ios_safari' | 'ios_chrome' | 'android' | 'desktop';
@@ -433,15 +437,28 @@ export default function Home() {
       setGeneratedLink(null);
       setStatus("result_stamped");
     } catch (err: any) {
-      setStatus("error");
       const raw = String(err?.message || err || "");
-      const m = raw.match(/^(?:sign_failed|verify_http|upload_failed|confirm_failed):\d+:(.*)$/);
+      const m = raw.match(/^(?:sign_failed|verify_http|upload_failed|confirm_failed):(\d+):(.*)$/);
+      // 402(잔액 부족) → 일반 에러 대신 전용 모달 노출
+      if (m && m[1] === "402") {
+        setStatus("idle");
+        setShowInsufficientModal(true);
+        void refreshCredits();
+        return;
+      }
+      setStatus("error");
       if (m) {
         try {
-          const parsed = JSON.parse(m[1]);
+          const parsed = JSON.parse(m[2]);
+          if (parsed.detail === "insufficient_credits") {
+            setStatus("idle");
+            setShowInsufficientModal(true);
+            void refreshCredits();
+            return;
+          }
           setErrorMessage(translateBackendError(parsed.detail || "", t));
         } catch {
-          setErrorMessage(translateBackendError(m[1], t));
+          setErrorMessage(translateBackendError(m[2], t));
         }
       } else if (raw === "image_too_small" || KNOWN_ERROR_CODES.includes(raw)) {
         setErrorMessage(t(`errors.${raw}`));
@@ -656,6 +673,15 @@ export default function Home() {
 
           {session ? (
             <div className="flex items-center gap-1.5 sm:gap-4 pl-2 sm:pl-6 border-l border-slate-200">
+              {credits && (
+                <Link
+                  href="/profile#credits"
+                  className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                  title={t("credits.chip_title", { count: credits.credits })}
+                >
+                  {t("credits.chip", { count: Math.floor(credits.credits / CREDIT_COSTS.IMAGE_PROOF) })}
+                </Link>
+              )}
               <Link href="/profile" className="flex items-center gap-1.5 group hover:opacity-80 transition-all">
                 <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-blue-600/20 border border-slate-200 overflow-hidden flex items-center justify-center font-bold text-[9px] sm:text-xs">
                   {session.user?.image ? (
@@ -1376,6 +1402,57 @@ export default function Home() {
         ref={cameraInputRef}
         onChange={handleFileSelect}
       />
+
+      {showInsufficientModal && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60"
+          onClick={() => setShowInsufficientModal(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowInsufficientModal(false)}
+              className="absolute top-3 right-3 p-1.5 hover:bg-slate-100 rounded-full text-slate-500"
+              aria-label="close"
+            >
+              <X size={18} />
+            </button>
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+              <Lock size={22} />
+            </div>
+            <h3 className="text-xl font-bold mb-2">{t("credits.modal.insufficient_title")}</h3>
+            <p className="text-sm text-slate-600 leading-relaxed mb-1">
+              {t("credits.modal.insufficient_body")}
+            </p>
+            {credits?.creditsRenewAt && (
+              <p className="text-xs text-slate-500 mb-5">
+                {t("credits.modal.next_renewal", {
+                  date: new Date(credits.creditsRenewAt).toLocaleDateString(),
+                })}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowInsufficientModal(false);
+                  document.getElementById("pricing")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors"
+              >
+                {t("credits.modal.cta_pro")}
+              </button>
+              <button
+                onClick={() => setShowInsufficientModal(false)}
+                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors"
+              >
+                {t("credits.modal.close")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {debugMessage && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[90vw] px-4 py-3 rounded-xl bg-black/85 text-white text-sm font-mono shadow-2xl border border-white/10 flex items-start gap-3">

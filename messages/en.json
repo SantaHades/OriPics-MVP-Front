@@ -118,6 +118,32 @@
       "point_open_label": "OPEN",
       "point_open": "No vendor lock-in — verifiable on contentcredentials.org, Adobe Photoshop, Verify by Truepic, and any other C2PA-aware tool."
     },
+    "credits": {
+      "chip": "{count} left",
+      "chip_title": "{count} credits remaining",
+      "section_title": "My credits",
+      "tier_label": "Current plan",
+      "balance_label": "Balance (credits)",
+      "balance_suffix": " proofs available",
+      "renews_label": "Next renewal",
+      "history_title": "Recent activity",
+      "balance_short": "Balance {count}",
+      "action_signup_grant": "Sign-up bonus",
+      "action_monthly_renewal": "Monthly renewal",
+      "action_image_proof": "Image proof",
+      "action_verified_proof": "Verified proof",
+      "action_verify_query": "Verification query",
+      "action_link_create": "Link creation",
+      "action_subscription_grant": "Subscription top-up",
+      "action_manual_adjust": "Manual adjustment",
+      "modal": {
+        "insufficient_title": "Monthly proof quota reached",
+        "insufficient_body": "Free plan allows up to 5 proofs per month. Upgrade to Pro for unlimited proofs + permanent storage.",
+        "next_renewal": "Next renewal: {date}",
+        "cta_pro": "See Pro",
+        "close": "Close"
+      }
+    },
     "pricing": {
       "eyebrow": "Pricing",
       "title": "Start small, scale when you need to",

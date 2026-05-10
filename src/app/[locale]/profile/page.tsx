@@ -3,10 +3,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
-import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X } from "lucide-react";
+import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet } from "lucide-react";
 import { Link } from "@/navigation";
 import { supabase } from "@/lib/supabase";
 import { useTranslations } from "next-intl";
+import { useCredits } from "@/lib/credits/useCredits";
+import { CREDIT_COSTS } from "@/lib/payment";
 
 interface ProofRecord {
   id: string;
@@ -23,7 +25,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const t = useTranslations("Profile");
   const tc = useTranslations("Common");
-  
+  const tCredits = useTranslations("Home.credits");
+  const { data: credits } = useCredits();
+
   const [name, setName] = useState(session?.user?.name || "");
   const [password, setPassword] = useState("");
   const [image, setImage] = useState(session?.user?.image || "");
@@ -314,6 +318,75 @@ export default function ProfilePage() {
               )}
             </button>
           </form>
+        </div>
+
+        {/* 크레딧 섹션 (J-4) */}
+        <div id="credits" className="mt-12 pt-8 border-t border-slate-100 scroll-mt-24">
+          <div className="flex items-center gap-3 mb-6">
+            <Wallet size={20} className="text-blue-600" />
+            <h2 className="text-lg font-bold">{tCredits("section_title")}</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
+              <p className="text-xs text-slate-500 mb-1">{tCredits("tier_label")}</p>
+              <p className="text-2xl font-extrabold capitalize">
+                {credits?.tier ?? "—"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
+              <p className="text-xs text-slate-500 mb-1">{tCredits("balance_label")}</p>
+              <p className="text-2xl font-extrabold">
+                {credits ? `${credits.credits}` : "—"}
+                <span className="text-sm font-normal text-slate-500 ml-1">
+                  ({Math.floor((credits?.credits ?? 0) / CREDIT_COSTS.IMAGE_PROOF)}{tCredits("balance_suffix")})
+                </span>
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
+              <p className="text-xs text-slate-500 mb-1">{tCredits("renews_label")}</p>
+              <p className="text-sm font-semibold text-slate-700">
+                {credits?.creditsRenewAt
+                  ? new Date(credits.creditsRenewAt).toLocaleDateString()
+                  : "—"}
+              </p>
+            </div>
+          </div>
+
+          {credits && credits.recentTransactions.length > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white/40">
+              <div className="px-5 py-3 border-b border-slate-100">
+                <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  {tCredits("history_title")}
+                </p>
+              </div>
+              <ul className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
+                {credits.recentTransactions.map((tx) => {
+                  const positive = tx.delta > 0;
+                  return (
+                    <li key={tx.id} className="px-5 py-3 flex items-center justify-between gap-3 text-sm">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-medium text-slate-800 truncate">
+                          {tCredits(`action_${tx.action}` as any)}
+                        </span>
+                        <span className="text-xs text-slate-500 font-mono">
+                          {new Date(tx.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className={`font-bold tabular-nums ${positive ? "text-emerald-600" : "text-slate-700"}`}>
+                          {positive ? "+" : ""}{tx.delta}
+                        </span>
+                        <span className="text-[11px] text-slate-400 tabular-nums">
+                          {tCredits("balance_short", { count: tx.balanceAfter })}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* 증명 히스토리 섹션 */}

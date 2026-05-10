@@ -118,6 +118,32 @@
       "point_open_label": "OPEN",
       "point_open": "벤더 락인 없이 contentcredentials.org · Adobe Photoshop · Verify by Truepic 등 어떤 C2PA 도구에서도 검증 가능."
     },
+    "credits": {
+      "chip": "{count}건 남음",
+      "chip_title": "남은 크레딧 {count}",
+      "section_title": "내 크레딧",
+      "tier_label": "현재 플랜",
+      "balance_label": "잔액 (크레딧)",
+      "balance_suffix": "건 인증 가능",
+      "renews_label": "다음 갱신",
+      "history_title": "최근 내역",
+      "balance_short": "잔액 {count}",
+      "action_signup_grant": "가입 보너스",
+      "action_monthly_renewal": "월 갱신",
+      "action_image_proof": "이미지 인증",
+      "action_verified_proof": "사진 인증 (Verified)",
+      "action_verify_query": "인증 조회",
+      "action_link_create": "간편링크 생성",
+      "action_subscription_grant": "구독 충전",
+      "action_manual_adjust": "수동 조정",
+      "modal": {
+        "insufficient_title": "이번 달 인증 한도 도달",
+        "insufficient_body": "Free 플랜은 월 5건까지 인증할 수 있어요. Pro로 업그레이드하면 무제한 인증 + 영구 보관이 가능합니다.",
+        "next_renewal": "다음 갱신: {date}",
+        "cta_pro": "Pro 알아보기",
+        "close": "닫기"
+      }
+    },
     "pricing": {
       "eyebrow": "요금제",
       "title": "필요한 만큼 골라서 시작하세요",
