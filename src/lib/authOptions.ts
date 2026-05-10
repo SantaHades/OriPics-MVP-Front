@@ -6,6 +6,7 @@ import GoogleProvider from "next-auth/providers/google";
 import KakaoProvider from "next-auth/providers/kakao";
 import NaverProvider from "next-auth/providers/naver";
 import * as bcrypt from "bcryptjs";
+import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -147,6 +148,18 @@ export const authOptions: NextAuthOptions = {
         session.user.image = token.picture as string;
       }
       return session;
+    },
+  },
+  events: {
+    // OAuth 가입(PrismaAdapter가 User 레코드 생성) 직후 Free 가입 보너스 부여 (J-2).
+    // 이메일 가입은 /api/register 라우트에서 직접 호출.
+    async createUser({ user }) {
+      if (!user.id) return;
+      try {
+        await grantSignupCredits(user.id);
+      } catch (e) {
+        console.error("[authOptions] grantSignupCredits failed:", e);
+      }
     },
   },
   pages: {

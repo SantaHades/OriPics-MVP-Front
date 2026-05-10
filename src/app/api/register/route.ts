@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
 
 export async function POST(req: Request) {
   try {
@@ -86,6 +87,14 @@ export async function POST(req: Request) {
         password: hashedPassword,
       },
     });
+
+    // 4. Free 가입 보너스 크레딧 부여 (J-2)
+    // 실패해도 가입은 성공 — 백필 SQL로 후행 보정 가능
+    try {
+      await grantSignupCredits(user.id);
+    } catch (e) {
+      console.error("[register] grantSignupCredits failed:", e);
+    }
 
     return NextResponse.json(
       { code: "success", message: "Registration complete.", user: { email: user.email, name: user.name } },
