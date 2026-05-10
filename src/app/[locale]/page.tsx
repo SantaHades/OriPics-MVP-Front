@@ -75,7 +75,7 @@ export default function Home() {
   const [resultData, setResultData] = useState<ApiResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [originalImagePreview, setOriginalImagePreview] = useState<string | null>(null);
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const [sessionID, setSessionID] = useState<string | null>(null);
   const [stampedDraft, setStampedDraft] = useState<StampedDraft | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -284,6 +284,10 @@ export default function Home() {
     const handlePaste = (e: ClipboardEvent) => {
       // Only capture paste if we are in idle or error state (not while processing)
       if (status !== "idle" && status !== "dragover" && status !== "error") return;
+      if (sessionStatus === "unauthenticated") {
+        router.push("/login");
+        return;
+      }
 
       const items = e.clipboardData?.items;
       if (!items) return;
@@ -301,7 +305,7 @@ export default function Home() {
 
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
-  }, [status]);
+  }, [status, sessionStatus, router]);
 
   // GPS 토스트 자동 닫힘: 최종 상태(요청 중이 아닌 결과 메시지) 표시 후 3초 뒤 사라짐
   useEffect(() => {
@@ -320,10 +324,19 @@ export default function Home() {
     if (status === "dragover") setStatus("idle");
   };
 
+  const requireAuthOrRedirect = (): boolean => {
+    if (sessionStatus === "unauthenticated") {
+      router.push("/login");
+      return false;
+    }
+    return true;
+  };
+
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (status !== "idle" && status !== "dragover") return;
     setStatus("idle");
+    if (!requireAuthOrRedirect()) return;
     const file = e.dataTransfer.files?.[0];
     if (file) processFile(file, "F");
   };
@@ -360,6 +373,7 @@ export default function Home() {
   };
 
   const processFile = async (file: File, source: "F" | "P" | "C" = "F", gps?: { lat: number; lng: number } | null) => {
+    if (!requireAuthOrRedirect()) return;
     setUploadSource(source);
     const supportedTypes = ["image/png", "image/jpeg", "image/webp", "image/bmp", "image/tiff", "image/gif"];
     if (!supportedTypes.includes(file.type)) {
@@ -748,7 +762,7 @@ export default function Home() {
                 </div>
               )}
               {status === "idle" || status === "dragover" ? (
-                <div className="flex flex-col items-center cursor-pointer" onClick={() => setShowUploadMenu(true)}>
+                <div className="flex flex-col items-center cursor-pointer" onClick={() => { if (!requireAuthOrRedirect()) return; setShowUploadMenu(true); }}>
                   <div className="flex items-center justify-center gap-6 mb-4">
                     <UploadCloud size={64} strokeWidth={1.5} className={`${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
                     {cameraEnabled && (
@@ -774,6 +788,11 @@ export default function Home() {
                   </p>
                   <p className="text-sm text-slate-600 mt-1">{cameraEnabled ? t("upload.subtext_mobile") : t("upload.subtext")}</p>
                   <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
+                  {sessionStatus === "unauthenticated" && (
+                    <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                      <Lock size={12} /> {t("upload.login_required")}
+                    </p>
+                  )}
                 </div>
               ) : status === "processing" ? (
                 <div className="flex flex-col items-center py-6">
@@ -1059,6 +1078,125 @@ export default function Home() {
               <p className="text-slate-600 text-sm whitespace-pre-line">{t("how_it_works.step3_desc")}</p>
             </div>
           </div>
+        </section>
+
+        {/* Why OriPics — 표준 호환 트러스트 섹션 */}
+        <section id="why" className="w-full max-w-4xl mt-12 mb-20 scroll-mt-24">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 rounded-full text-emerald-700 text-xs font-semibold tracking-wider uppercase mb-4">
+              <ShieldCheck size={14} />
+              {t("why.eyebrow")}
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-4">{t("why.title")}</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto leading-relaxed whitespace-pre-line">{t("why.body")}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="glass p-5 rounded-2xl bg-white/60 border border-slate-200">
+              <p className="text-xs font-mono font-bold tracking-[0.15em] text-emerald-700 mb-2">C2PA</p>
+              <p className="text-sm text-slate-700 leading-relaxed">{t("why.point_c2pa")}</p>
+            </div>
+            <div className="glass p-5 rounded-2xl bg-white/60 border border-slate-200">
+              <p className="text-xs font-mono font-bold tracking-[0.15em] text-blue-700 mb-2">JPEG TRUST</p>
+              <p className="text-sm text-slate-700 leading-relaxed">{t("why.point_jpeg_trust")}</p>
+            </div>
+            <div className="glass p-5 rounded-2xl bg-white/60 border border-slate-200">
+              <p className="text-xs font-mono font-bold tracking-[0.15em] text-purple-700 mb-2">{t("why.point_open_label")}</p>
+              <p className="text-sm text-slate-700 leading-relaxed">{t("why.point_open")}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing — 요금제 */}
+        <section id="pricing" className="w-full max-w-5xl mt-12 mb-20 scroll-mt-24">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-500/10 rounded-full text-orange-700 text-xs font-semibold tracking-wider uppercase mb-4">
+              {t("pricing.eyebrow")}
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">{t("pricing.title")}</h2>
+            <p className="text-slate-600 max-w-xl mx-auto">{t("pricing.subtitle")}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Free */}
+            <div className="glass p-7 rounded-3xl border border-slate-200 bg-white/70 flex flex-col">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold mb-1">{t("pricing.free.name")}</h3>
+                <p className="text-xs text-slate-500">{t("pricing.free.tagline")}</p>
+              </div>
+              <p className="text-3xl font-extrabold mb-5">
+                ₩0<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}</span>
+              </p>
+              <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-emerald-600 mt-0.5" /> {t("pricing.free.f1")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-emerald-600 mt-0.5" /> {t("pricing.free.f2")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-emerald-600 mt-0.5" /> {t("pricing.free.f3")}</li>
+                <li className="flex gap-2 text-slate-400"><X size={16} className="shrink-0 mt-0.5" /> {t("pricing.free.f4_excluded")}</li>
+              </ul>
+              {session ? (
+                <span className="w-full py-3 text-center text-sm font-semibold rounded-xl bg-slate-100 text-slate-500">
+                  {t("pricing.free.current_plan")}
+                </span>
+              ) : (
+                <Link
+                  href="/signup"
+                  className="w-full py-3 text-center text-sm font-bold rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                >
+                  {t("pricing.free.cta")}
+                </Link>
+              )}
+            </div>
+
+            {/* Pro (highlighted) */}
+            <div className="relative glass p-7 rounded-3xl border-2 border-blue-400 bg-white/80 flex flex-col shadow-lg shadow-blue-200/40">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-blue-600 text-white text-[10px] font-bold tracking-wider uppercase">
+                {t("pricing.pro.badge")}
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-bold mb-1">{t("pricing.pro.name")}</h3>
+                <p className="text-xs text-slate-500">{t("pricing.pro.tagline")}</p>
+              </div>
+              <p className="text-3xl font-extrabold mb-1">
+                ₩9,900<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}</span>
+              </p>
+              <p className="text-xs text-slate-500 mb-5">{t("pricing.pro.annual_hint")}</p>
+              <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f1")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f2")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f3")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f4")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f5")}</li>
+              </ul>
+              <span className="w-full py-3 text-center text-sm font-bold rounded-xl bg-blue-50 text-blue-700 border border-blue-200">
+                {t("pricing.pro.coming_soon")}
+              </span>
+            </div>
+
+            {/* Business */}
+            <div className="glass p-7 rounded-3xl border border-slate-200 bg-white/70 flex flex-col">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold mb-1">{t("pricing.business.name")}</h3>
+                <p className="text-xs text-slate-500">{t("pricing.business.tagline")}</p>
+              </div>
+              <p className="text-3xl font-extrabold mb-1">
+                ₩59,000<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}~</span>
+              </p>
+              <p className="text-xs text-slate-500 mb-5">{t("pricing.business.team_hint")}</p>
+              <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f1")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f2")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f3")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f4")}</li>
+              </ul>
+              <a
+                href={`mailto:hi@ori.pics?subject=${encodeURIComponent(t("pricing.business.contact_subject"))}`}
+                className="w-full py-3 text-center text-sm font-bold rounded-xl border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white transition-colors"
+              >
+                {t("pricing.business.cta")}
+              </a>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-slate-500 mt-6">{t("pricing.footnote")}</p>
         </section>
 
       </main>

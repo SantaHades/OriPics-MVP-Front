@@ -23,6 +23,7 @@
       "subtext": "드래그앤드롭, 파일 선택, 클립보드 붙여넣기, 또는 사진찍기",
       "subtext_mobile": "파일 선택, 클립보드 붙여넣기, 또는 사진찍기",
       "limit": "지원: PNG, JPG, WebP 등 | 최대: 50MB",
+      "login_required": "로그인 후 사용 가능 — 클릭하면 로그인 페이지로 이동합니다",
       "toggle_camera": "카메라로도 촬영하기",
       "watermark_include": "인증마크 포함",
       "upload_menu": {
@@ -107,6 +108,55 @@
       "step2_desc": "원본 이미지 증명 처리를 수행합니다. 서버에는 아무것도 저장되지 않습니다.",
       "step3_title": "반환 & 검증",
       "step3_desc": "증명 완료 이미지를 다운로드합니다. 이 이미지를 다시 업로드하면 원본 여부를 즉시 확인합니다. 단 하나의 픽셀이 바뀌어도 감지됩니다."
+    },
+    "why": {
+      "eyebrow": "표준 호환",
+      "title": "폐쇄형 인증이 아닌, 국제 표준",
+      "body": "OriPics가 발급하는 모든 증명 이미지에는 C2PA 표준 매니페스트가 자동 첨부됩니다.\nOriPics 사이트가 사라져도 표준을 지원하는 어떤 도구로도 출처를 검증할 수 있습니다.",
+      "point_c2pa": "Adobe·Microsoft·Sony·BBC·Intel이 만든 콘텐츠 출처·무결성 표준. 모든 증명 이미지에 자동 첨부됩니다.",
+      "point_jpeg_trust": "ISO/IEC 21617 (JPEG Trust) 호환. 검증 응답이 Trust Report 구조를 따라 신뢰 등급을 함께 반환합니다.",
+      "point_open_label": "OPEN",
+      "point_open": "벤더 락인 없이 contentcredentials.org · Adobe Photoshop · Verify by Truepic 등 어떤 C2PA 도구에서도 검증 가능."
+    },
+    "pricing": {
+      "eyebrow": "요금제",
+      "title": "필요한 만큼 골라서 시작하세요",
+      "subtitle": "회원가입하면 자동으로 Free 플랜 — 신용카드 등록 없이 바로 사용",
+      "month": "월",
+      "footnote": "Pro·Business 출시는 2026-09~10월 예정. 가격은 부가세 별도. 글로벌 USD 가격은 출시 전 확정.",
+      "free": {
+        "name": "Free",
+        "tagline": "가입만 하면 바로 시작",
+        "f1": "월 5건 인증 (Standard)",
+        "f2": "7일 보관",
+        "f3": "Content Credentials(C2PA) 자동 첨부",
+        "f4_excluded": "모바일 사진 인증(Verified) 미포함",
+        "cta": "지금 무료로 시작",
+        "current_plan": "현재 플랜"
+      },
+      "pro": {
+        "badge": "추천",
+        "name": "Pro",
+        "tagline": "교통사고·분쟁·포트폴리오에",
+        "annual_hint": "연간 결제 ₩99,000 (2개월 무료)",
+        "f1": "무제한 인증",
+        "f2": "∞ 영구 보관",
+        "f3": "모바일 사진 인증(Verified) 무제한",
+        "f4": "증명서 PDF 월 5건",
+        "f5": "API 액세스 (10 req/min)",
+        "coming_soon": "곧 출시"
+      },
+      "business": {
+        "name": "Business",
+        "tagline": "팀·미디어·법무 사용",
+        "team_hint": "팀 멤버 5명 포함 · 추가 멤버 ₩9,900/명",
+        "f1": "무제한 인증 (팀 공유)",
+        "f2": "증명서 PDF 무제한 + API (100 req/min)",
+        "f3": "단체 관리 콘솔, 사용자별 통계",
+        "f4": "부가세 인보이스 · DPA · 우선 지원",
+        "cta": "영업팀 문의",
+        "contact_subject": "[OriPics Business] 도입 문의"
+      }
     },
     "errors": {
       "unsupported_format": "지원하지 않는 이미지 형식입니다. (PNG, JPG, WebP, BMP, TIFF, GIF 지원)",

@@ -23,6 +23,7 @@
       "subtext": "Drag & drop, select file, paste, or take photo",
       "subtext_mobile": "Select file, paste, or take photo",
       "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
+      "login_required": "Sign in required — click to go to login",
       "toggle_camera": "Enable camera capture",
       "watermark_include": "Include badge",
       "upload_menu": {
@@ -107,6 +108,55 @@
       "step2_desc": "Original proof processing is performed. Nothing is stored on the server.",
       "step3_title": "Return & Verify",
       "step3_desc": "Download the certified image. Uploading this image again instantly verifies its authenticity. Even a single pixel change is detected."
+    },
+    "why": {
+      "eyebrow": "Open standard",
+      "title": "We follow open international standards, not a walled garden",
+      "body": "Every proof image OriPics issues automatically carries a C2PA standard manifest.\nEven if our site disappears, provenance is independently verifiable in any C2PA-aware tool.",
+      "point_c2pa": "The content provenance and authenticity standard built by Adobe, Microsoft, Sony, BBC, and Intel — auto-attached to every proof image.",
+      "point_jpeg_trust": "ISO/IEC 21617 (JPEG Trust) compatible. Verification responds in the Trust Report shape with an overall trust level.",
+      "point_open_label": "OPEN",
+      "point_open": "No vendor lock-in — verifiable on contentcredentials.org, Adobe Photoshop, Verify by Truepic, and any other C2PA-aware tool."
+    },
+    "pricing": {
+      "eyebrow": "Pricing",
+      "title": "Start small, scale when you need to",
+      "subtitle": "Sign up and you're on Free automatically — no credit card required",
+      "month": "month",
+      "footnote": "Pro and Business launch in 2026-09~10. Prices exclude VAT. Global USD pricing finalized before launch.",
+      "free": {
+        "name": "Free",
+        "tagline": "Just sign up to start",
+        "f1": "5 proofs / month (Standard)",
+        "f2": "7-day storage",
+        "f3": "Content Credentials (C2PA) auto-attached",
+        "f4_excluded": "Mobile photo (Verified) tier excluded",
+        "cta": "Start free",
+        "current_plan": "Current plan"
+      },
+      "pro": {
+        "badge": "Recommended",
+        "name": "Pro",
+        "tagline": "For incidents, disputes, portfolios",
+        "annual_hint": "Annual ₩99,000 (2 months free)",
+        "f1": "Unlimited proofs",
+        "f2": "Permanent storage",
+        "f3": "Mobile photo (Verified) tier — unlimited",
+        "f4": "Certificate PDF — 5 / month",
+        "f5": "API access (10 req/min)",
+        "coming_soon": "Coming soon"
+      },
+      "business": {
+        "name": "Business",
+        "tagline": "For teams, media, legal",
+        "team_hint": "5 team members included · Additional ₩9,900/seat",
+        "f1": "Unlimited proofs (team-shared)",
+        "f2": "Unlimited certificate PDFs + API (100 req/min)",
+        "f3": "Team admin console, per-user analytics",
+        "f4": "VAT invoicing · DPA · Priority support",
+        "cta": "Contact sales",
+        "contact_subject": "[OriPics Business] Plan inquiry"
+      }
     },
     "errors": {
       "unsupported_format": "Unsupported image format. (PNG, JPG, WebP, BMP, TIFF, GIF supported)",
