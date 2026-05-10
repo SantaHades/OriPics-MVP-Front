@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
+import { CREDIT_COSTS } from "@/lib/payment";
+import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -49,7 +51,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: e.message }, { status: 401 });
     }
 
-    const { link_id, storage_path, timestamp, width, height, lat_e6, lng_e6 } = claims;
+    const { user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6 } = claims;
+
+    // J-3: 인증 1회당 IMAGE_PROOF(=2) 크레딧 차감 (race-safe atomic).
+    // 차감 후 작업 실패 시 명시적 환불.
+    if (!user_id) {
+      // sign 라우트가 J-3 이전에 발급한 JWT (user_id 없음) — 차감 스킵.
+      // J-3 배포 후 5분(JWT TTL) 지나면 모든 신규 JWT는 user_id 보장.
+      console.warn(`[confirm] legacy JWT without user_id, skipping credit charge: link_id=${link_id}`);
+    } else {
+      const consume = await consumeCredits({
+        userId: user_id,
+        amount: CREDIT_COSTS.IMAGE_PROOF,
+        action: "image_proof",
+        metadata: { link_id, storage_path },
+      });
+      if (!consume.ok) {
+        return NextResponse.json(
+          { detail: "insufficient_credits", balance: consume.balance, required: CREDIT_COSTS.IMAGE_PROOF },
+          { status: 402 },
+        );
+      }
+    }
 
     const row: Record<string, any> = {
       link_id,
@@ -112,6 +135,19 @@ export async function POST(req: NextRequest) {
     const { error } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
     if (error) {
       console.error("[confirm] db upsert failed:", error);
+      // 차감했으면 환불 — 작업 미완료 상태에서 크레딧만 소진되면 안 됨
+      if (user_id) {
+        try {
+          await refundCredits({
+            userId: user_id,
+            amount: CREDIT_COSTS.IMAGE_PROOF,
+            action: "image_proof",
+            metadata: { link_id, reason: `db_error:${error.message}` },
+          });
+        } catch (rfErr: any) {
+          console.error("[confirm] refund failed:", rfErr?.message || rfErr);
+        }
+      }
       return NextResponse.json({ detail: `db_error:${error.message}` }, { status: 500 });
     }
 

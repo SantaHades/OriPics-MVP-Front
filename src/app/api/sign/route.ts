@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import { prisma } from "@/lib/prisma";
+import { CREDIT_COSTS } from "@/lib/payment";
 import {
   getSalt,
   makeTimestamp,
@@ -39,6 +43,28 @@ function issueJwt(payload: Record<string, any>): string {
 export async function POST(req: NextRequest) {
   if (!JWT_SECRET || !SUPABASE_SERVICE_KEY || !SUPABASE_URL) {
     return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
+  }
+
+  // J-3: 인증 + 잔액 사전확인
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id;
+  if (!userId) {
+    return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { credits: true },
+  });
+  if (!user) {
+    return NextResponse.json({ detail: "user_not_found" }, { status: 401 });
+  }
+  // 인증 1회 비용은 IMAGE_PROOF (=2). 차감은 /api/links/confirm에서 수행.
+  const requiredCredits = CREDIT_COSTS.IMAGE_PROOF;
+  if (user.credits < requiredCredits) {
+    return NextResponse.json(
+      { detail: "insufficient_credits", balance: user.credits, required: requiredCredits },
+      { status: 402 },
+    );
   }
 
   let body: any;
@@ -133,6 +159,7 @@ export async function POST(req: NextRequest) {
     iat: now,
     exp: now + JWT_TTL_SECONDS,
     aud: "links/confirm",
+    user_id: userId,
     link_id: linkId,
     storage_path: storagePath,
     timestamp,
