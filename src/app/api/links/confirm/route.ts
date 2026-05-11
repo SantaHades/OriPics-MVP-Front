@@ -58,7 +58,9 @@ export async function POST(req: NextRequest) {
     } = claims;
 
     const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";
-    const creditCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+    // 인증 1회 = proof + link 통합 차감 (Standard 2+1=3, Verified 3+1=4)
+    const proofCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+    const creditCost = proofCost + CREDIT_COSTS.LINK_CREATE;
     const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
 
     // J-3 + D-pre-3: tier별 크레딧 차감 (race-safe atomic).

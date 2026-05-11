@@ -148,8 +148,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 잔액 확인 (tier에 따라 비용 결정). 차감은 /api/links/confirm.
-  const requiredCredits = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+  // 잔액 확인 (tier에 따라 비용 결정 + 링크 생성 비용 포함). 차감은 /api/links/confirm.
+  // Standard: IMAGE_PROOF(2) + LINK_CREATE(1) = 3
+  // Verified: VERIFIED_PROOF(3) + LINK_CREATE(1) = 4
+  const proofCost = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+  const requiredCredits = proofCost + CREDIT_COSTS.LINK_CREATE;
   if (user.credits < requiredCredits) {
     return NextResponse.json(
       { detail: "insufficient_credits", balance: user.credits, required: requiredCredits, tier },

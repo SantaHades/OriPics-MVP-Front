@@ -155,7 +155,7 @@
       "free": {
         "name": "Free",
         "tagline": "Just sign up to start",
-        "f1": "5 proofs / month (Standard)",
+        "f1": "10 credits / month (≈ 3 proofs or 10 verifications)",
         "f2": "7-day storage",
         "f3": "Content Credentials (C2PA) auto-attached",
         "f4_excluded": "Mobile photo (Verified) tier excluded",
@@ -167,9 +167,9 @@
         "name": "Pro",
         "tagline": "For incidents, disputes, portfolios",
         "annual_hint": "Annual ₩99,000 (2 months free)",
-        "f1": "Unlimited proofs",
+        "f1": "1,000 credits / month (≈ 300+ proofs)",
         "f2": "Permanent storage",
-        "f3": "Mobile photo (Verified) tier — unlimited",
+        "f3": "Mobile photo (Verified) tier included",
         "f4": "Certificate PDF — 5 / month",
         "f5": "API access (10 req/min)",
         "coming_soon": "Coming soon"
@@ -178,13 +178,26 @@
         "name": "Business",
         "tagline": "For teams, media, legal",
         "team_hint": "5 team members included · Additional ₩9,900/seat",
-        "f1": "Unlimited proofs (team-shared)",
+        "f1": "10,000 credits / month (≈ 2,500+ proofs)",
         "f2": "Unlimited certificate PDFs + API (100 req/min)",
         "f3": "Team admin console, per-user analytics",
         "f4": "VAT invoicing · DPA · Priority support",
         "cta": "Contact sales",
         "contact_subject": "[OriPics Business] Plan inquiry"
+      },
+      "guide": {
+        "title": "Credit cost guide",
+        "image_proof": "Standard proof — image proof −2 + link −1",
+        "verified_proof": "Verified proof (mobile camera) — proof −3 + link −1",
+        "verify_query": "Verification query — checking authenticity of someone else's OriPics image"
       }
+    },
+    "verify_confirm": {
+      "title": "Already an OriPics image",
+      "body": "This image contains an OriPics proof seal. View the detailed verification?",
+      "cost_notice": "Viewing details costs 1 verification credit.",
+      "yes": "Yes, verify",
+      "no": "No"
     },
     "errors": {
       "unsupported_format": "Unsupported image format. (PNG, JPG, WebP, BMP, TIFF, GIF supported)",

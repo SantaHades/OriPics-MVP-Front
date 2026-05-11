@@ -25,23 +25,31 @@ describe("payment/PLAN_GRANTS", () => {
     expect(PLAN_GRANTS.free_monthly).toBe(10);
   });
 
-  it("free monthly grant exhausts in fewer than 5 verified proofs", () => {
-    // 정책 anchor: Free 월 10크레딧 = Standard 5건. Verified는 3건만(=9크레딧).
-    const standardProofs = Math.floor(PLAN_GRANTS.free_monthly / CREDIT_COSTS.IMAGE_PROOF);
-    const verifiedProofs = Math.floor(PLAN_GRANTS.free_monthly / CREDIT_COSTS.VERIFIED_PROOF);
-    expect(standardProofs).toBe(5);
-    expect(verifiedProofs).toBe(3);
+  it("free monthly grant — 인증 1회 = proof + link_create 통합 (Standard 3 / Verified 4)", () => {
+    // 2026-05-11 정책 갱신: link_create -1 통합 차감
+    const standardOneShot = CREDIT_COSTS.IMAGE_PROOF + CREDIT_COSTS.LINK_CREATE; // 3
+    const verifiedOneShot = CREDIT_COSTS.VERIFIED_PROOF + CREDIT_COSTS.LINK_CREATE; // 4
+    expect(standardOneShot).toBe(3);
+    expect(verifiedOneShot).toBe(4);
+    expect(Math.floor(PLAN_GRANTS.free_monthly / standardOneShot)).toBe(3);
+    expect(Math.floor(PLAN_GRANTS.free_monthly / verifiedOneShot)).toBe(2);
+  });
+
+  it("free monthly grant — 검증 조회만 10건 가능", () => {
+    expect(Math.floor(PLAN_GRANTS.free_monthly / CREDIT_COSTS.VERIFY_QUERY)).toBe(10);
   });
 
   it("free monthly grant cannot cover one traffic accident (5+ verified photos)", () => {
-    // 가격 정책의 핵심 anchor — 교통사고 1건(5~8장) Pro 전환 트리거
+    // 핵심 anchor 유지: 사고 1건(8장) Verified 인증 = 32크레딧 ≫ Free 10
     const minAccidentPhotos = 5;
-    const requiredCredits = minAccidentPhotos * CREDIT_COSTS.VERIFIED_PROOF; // 15
+    const requiredCredits =
+      minAccidentPhotos * (CREDIT_COSTS.VERIFIED_PROOF + CREDIT_COSTS.LINK_CREATE); // 20
     expect(PLAN_GRANTS.free_monthly).toBeLessThan(requiredCredits);
   });
 
-  it("pro monthly grant covers heavy use (300+ standard proofs)", () => {
-    expect(PLAN_GRANTS.pro_monthly).toBeGreaterThanOrEqual(300 * CREDIT_COSTS.IMAGE_PROOF);
+  it("pro monthly grant covers heavy use (300+ standard proofs incl. link)", () => {
+    const standardOneShot = CREDIT_COSTS.IMAGE_PROOF + CREDIT_COSTS.LINK_CREATE; // 3
+    expect(PLAN_GRANTS.pro_monthly).toBeGreaterThanOrEqual(300 * standardOneShot);
   });
 
   it("yearly subscription grants per-month, not bulk", () => {

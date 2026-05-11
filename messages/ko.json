@@ -149,13 +149,13 @@
     "pricing": {
       "eyebrow": "요금제",
       "title": "필요한 만큼 골라서 시작하세요",
-      "subtitle": "회원가입하면 자동으로 Free 플랜 — 신용카드 등록 없이 바로 사용",
+      "subtitle": "회원가입하면 자동으로 Free 플랜 — 신용카드 없이 매월 10 크레딧 제공",
       "month": "월",
       "footnote": "Pro·Business 출시는 익월 예정. 가격은 부가세 별도. 글로벌 USD 가격은 출시 전 확정.",
       "free": {
         "name": "Free",
         "tagline": "가입만 하면 바로 시작",
-        "f1": "월 5건 인증 (Standard)",
+        "f1": "월 10 크레딧 (≈ 인증 3건 또는 검증 10건)",
         "f2": "7일 보관",
         "f3": "Content Credentials(C2PA) 자동 첨부",
         "f4_excluded": "모바일 사진 인증(Verified) 미포함",
@@ -167,9 +167,9 @@
         "name": "Pro",
         "tagline": "교통사고·분쟁·포트폴리오에",
         "annual_hint": "연간 결제 ₩99,000 (2개월 무료)",
-        "f1": "무제한 인증",
+        "f1": "월 1,000 크레딧 (≈ 인증 300+건)",
         "f2": "∞ 영구 보관",
-        "f3": "모바일 사진 인증(Verified) 무제한",
+        "f3": "모바일 사진 인증(Verified) 포함",
         "f4": "증명서 PDF 월 5건",
         "f5": "API 액세스 (10 req/min)",
         "coming_soon": "곧 출시"
@@ -178,13 +178,26 @@
         "name": "Business",
         "tagline": "팀·미디어·법무 사용",
         "team_hint": "팀 멤버 5명 포함 · 추가 멤버 ₩9,900/명",
-        "f1": "무제한 인증 (팀 공유)",
+        "f1": "월 10,000 크레딧 (≈ 인증 2,500+건)",
         "f2": "증명서 PDF 무제한 + API (100 req/min)",
         "f3": "단체 관리 콘솔, 사용자별 통계",
         "f4": "부가세 인보이스 · DPA · 우선 지원",
         "cta": "영업팀 문의",
         "contact_subject": "[OriPics Business] 도입 문의"
+      },
+      "guide": {
+        "title": "크레딧 차감 기준",
+        "image_proof": "이미지 인증 1회 (Standard) — 인증 −2 + 간편링크 −1",
+        "verified_proof": "사진 인증 1회 (Verified, 모바일 P 경로) — 인증 −3 + 간편링크 −1",
+        "verify_query": "검증 조회 1회 — 다른 사람이 만든 OriPics 이미지의 진위 확인"
       }
+    },
+    "verify_confirm": {
+      "title": "이미 인증된 이미지입니다",
+      "body": "이 이미지에는 OriPics 인증 시일이 포함되어 있습니다. 자세한 인증 내용을 확인하시겠습니까?",
+      "cost_notice": "확인 시 검증 크레딧 1개가 차감됩니다.",
+      "yes": "예, 확인",
+      "no": "아니오"
     },
     "errors": {
       "unsupported_format": "지원하지 않는 이미지 형식입니다. (PNG, JPG, WebP, BMP, TIFF, GIF 지원)",

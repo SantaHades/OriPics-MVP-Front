@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
+import { CREDIT_COSTS } from "@/lib/payment";
+import { consumeCredits } from "@/lib/credits/consumeCredits";
 import {
   getSalt,
   parseMetaBytes,
@@ -153,6 +157,13 @@ async function tryReadC2paForLink(
 }
 
 export async function POST(req: NextRequest) {
+  // 인증 필수 (로그인한 사용자만 verify 가능, 차감 대상)
+  const session = await getServerSession(authOptions);
+  const userId = (session?.user as any)?.id;
+  if (!userId) {
+    return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
+  }
+
   let body: any;
   try {
     body = await req.json();
@@ -192,6 +203,20 @@ export async function POST(req: NextRequest) {
   const innerHashBytes = hexToBytes(inner_hash);
   const borderHashBytes = hexToBytes(border_hash);
   const extractedBytes = hexToBytes(extracted_final_hash);
+
+  // 크레딧 차감 (race-safe atomic). 검증 통과 여부와 무관 — 호출 자체가 비용.
+  const consume = await consumeCredits({
+    userId,
+    amount: CREDIT_COSTS.VERIFY_QUERY,
+    action: "verify_query",
+    metadata: { link_id, version },
+  });
+  if (!consume.ok) {
+    return NextResponse.json(
+      { detail: "insufficient_credits", balance: consume.balance, required: CREDIT_COSTS.VERIFY_QUERY },
+      { status: 402 },
+    );
+  }
 
   let seal: SealResult;
   try {

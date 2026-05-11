@@ -26,6 +26,7 @@ import {
   OFFSET_WIDTH,
   OFFSET_HEIGHT,
   OFFSET_VERSION,
+  OFFSET_TIMESTAMP,
   bytesToHex,
   hexToBytes,
   readUint16BE,
@@ -222,6 +223,88 @@ export async function publishStamped(draft: StampedDraft, opts: { apiBase: strin
     confirmLink(draft, opts),
   ]);
   return confirmResult;
+}
+
+/**
+ * 클라이언트 측 무료 detect — magic byte로 OriPics 인증 여부 판단.
+ * 해시 계산·서버 호출 없음. 차감 없음.
+ *
+ * 풀 검증(/api/verify)은 `verifyImage`에서 별도로 -1 차감 + 서버 검증.
+ */
+export interface DetectResult {
+  hasStamp: boolean;
+  version?: number;
+  reason?: 'no_stamp' | 'image_too_small' | 'dimension_mismatch';
+  /** detect 결과로 즉시 표시 가능한 비신뢰 메타데이터 (서버 검증 전) */
+  preview?: {
+    timestamp: string;
+    width: number;
+    height: number;
+    lat?: number | null;
+    lng?: number | null;
+  };
+}
+
+export async function detectStamp(file: Blob): Promise<DetectResult> {
+  const { data: pixels, width, height } = await decodeImageToCanvas(file);
+
+  let mode;
+  try {
+    mode = selectEmbedMode(width, height);
+  } catch {
+    return { hasStamp: false, reason: 'image_too_small' };
+  }
+
+  const payloadV2 = extractPayload(pixels, width, height, mode);
+  if (!payloadHasMagic(payloadV2)) {
+    return { hasStamp: false, reason: 'no_stamp' };
+  }
+
+  const version = readUint16BE(payloadV2, OFFSET_VERSION);
+
+  if (version === 3) {
+    let modeV3;
+    try {
+      modeV3 = selectEmbedModeV3(width, height);
+    } catch {
+      return { hasStamp: false, reason: 'image_too_small' };
+    }
+    const payloadV3 = extractPayloadV3(pixels, width, height, modeV3);
+    const { meta } = splitPayloadV3(payloadV3);
+    const gps = readGpsFromMeta(meta);
+    return {
+      hasStamp: true,
+      version: 3,
+      preview: {
+        timestamp: extractTimestampFromMeta(meta),
+        width: readUint32BE(meta, OFFSET_WIDTH),
+        height: readUint32BE(meta, OFFSET_HEIGHT),
+        lat: gps.lat,
+        lng: gps.lng,
+      },
+    };
+  }
+
+  // v2
+  const { meta } = splitPayload(payloadV2);
+  return {
+    hasStamp: true,
+    version: 2,
+    preview: {
+      timestamp: extractTimestampFromMeta(meta),
+      width: readUint32BE(meta, OFFSET_WIDTH),
+      height: readUint32BE(meta, OFFSET_HEIGHT),
+    },
+  };
+}
+
+function extractTimestampFromMeta(meta: Uint8Array): string {
+  // common.ts의 OFFSET_TIMESTAMP·TIMESTAMP_LENGTH 사용
+  let s = '';
+  for (let i = 0; i < 15; i++) {
+    s += String.fromCharCode(meta[OFFSET_TIMESTAMP + i]);
+  }
+  return s;
 }
 
 export async function verifyImage(file: Blob, opts: { apiBase: string }): Promise<VerifyResponse> {

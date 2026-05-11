@@ -11,7 +11,9 @@ import {
   signAndStampFromPixels,
   publishStamped,
   verifyImage,
+  detectStamp,
   type StampedDraft,
+  type DetectResult,
 } from "@/lib/oripics-stamp";
 import { useCredits } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
@@ -91,6 +93,7 @@ export default function Home() {
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [debugMessage, setDebugMessage] = useState<string | null>(null);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
+  const [verifyConfirm, setVerifyConfirm] = useState<{ file: File; detect: DetectResult } | null>(null);
   const { data: credits, refresh: refreshCredits } = useCredits();
 
   type GpsState = 'unknown' | 'unsupported' | 'prompt' | 'granted' | 'denied';
@@ -376,6 +379,51 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
+  // 인증 확인 모달에서 "예" → 풀 verify 호출 (-1 차감)
+  const handleVerifyConfirmYes = async () => {
+    const ctx = verifyConfirm;
+    if (!ctx) return;
+    setVerifyConfirm(null);
+    setStatus("processing");
+    try {
+      const verifyRes = await verifyImage(ctx.file, { apiBase: "" });
+      if (verifyRes.reason === "verify_http_402" || /:402:/.test(verifyRes.reason ?? "")) {
+        setStatus("idle");
+        setShowInsufficientModal(true);
+        void refreshCredits();
+        return;
+      }
+      if (verifyRes.metadata) {
+        setResultData({
+          status: "verified",
+          match: verifyRes.match,
+          metadata: verifyRes.metadata,
+        });
+        setStatus("result_verified");
+        void refreshCredits();
+        return;
+      }
+      setStatus("error");
+      setErrorMessage(t("errors.unknown_error"));
+    } catch (err: any) {
+      const raw = String(err?.message || err || "");
+      if (/:402:/.test(raw)) {
+        setStatus("idle");
+        setShowInsufficientModal(true);
+        void refreshCredits();
+        return;
+      }
+      setStatus("error");
+      setErrorMessage(raw || t("errors.unknown_error"));
+    }
+  };
+
+  // 인증 확인 모달에서 "아니오" → 차감 없이 닫기 (idle 복귀)
+  const handleVerifyConfirmNo = () => {
+    setVerifyConfirm(null);
+    setStatus("idle");
+  };
+
   const processFile = async (file: File, source: "F" | "P" | "C" = "F", gps?: { lat: number; lng: number } | null) => {
     if (!requireAuthOrRedirect()) return;
     setUploadSource(source);
@@ -399,16 +447,15 @@ export default function Home() {
 
     try {
       if (file.type === "image/png") {
-        const verifyRes = await verifyImage(file, { apiBase: "" });
-        if (verifyRes.reason !== "no_stamp" && verifyRes.metadata) {
-          setResultData({
-            status: "verified",
-            match: verifyRes.match,
-            metadata: verifyRes.metadata,
-          });
-          setStatus("result_verified");
+        // 무료 detect — magic byte만 확인. 해시·서버 호출 없음.
+        const detect = await detectStamp(file);
+        if (detect.hasStamp) {
+          // 이미 인증된 이미지 — 풀 verify는 -1 차감이라 사용자 확인 필요.
+          setStatus("idle");
+          setVerifyConfirm({ file, detect });
           return;
         }
+        // no_stamp → stamp 흐름으로 진입
       }
 
       const decoded = await decodeAndMaybeResize(file);
@@ -1222,6 +1269,18 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Credits guide — 차감 기준 통합 표기 */}
+          <div className="mt-8 p-5 rounded-2xl bg-slate-100/60 border border-slate-200">
+            <p className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700 mb-3">
+              {t("pricing.guide.title")}
+            </p>
+            <ul className="text-sm text-slate-700 space-y-1.5">
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−3</span> <span>{t("pricing.guide.image_proof")}</span></li>
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−4</span> <span>{t("pricing.guide.verified_proof")}</span></li>
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−1</span> <span>{t("pricing.guide.verify_query")}</span></li>
+            </ul>
+          </div>
+
           <p className="text-center text-xs text-slate-500 mt-6">{t("pricing.footnote")}</p>
         </section>
 
@@ -1410,6 +1469,43 @@ export default function Home() {
         ref={cameraInputRef}
         onChange={handleFileSelect}
       />
+
+      {verifyConfirm && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60"
+          onClick={handleVerifyConfirmNo}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-4">
+              <ShieldCheck size={22} />
+            </div>
+            <h3 className="text-xl font-bold mb-2">{t("verify_confirm.title")}</h3>
+            <p className="text-sm text-slate-600 leading-relaxed mb-2">
+              {t("verify_confirm.body")}
+            </p>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-5">
+              {t("verify_confirm.cost_notice")}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleVerifyConfirmYes}
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors"
+              >
+                {t("verify_confirm.yes")}
+              </button>
+              <button
+                onClick={handleVerifyConfirmNo}
+                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors"
+              >
+                {t("verify_confirm.no")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showInsufficientModal && (
         <div
