@@ -113,8 +113,8 @@
     },
     "why": {
       "eyebrow": "표준 호환",
-      "title": "폐쇄형 인증이 아닌, 국제 표준",
-      "body": "OriPics가 발급하는 모든 증명 이미지에는 C2PA 표준 매니페스트가 자동 첨부됩니다.\nOriPics 사이트가 사라져도 표준을 지원하는 어떤 도구로도 출처를 검증할 수 있습니다.",
+      "title": "국제 표준 인증 적용",
+      "body": "OriPics가 발급하는 모든 증명 이미지에는 C2PA 표준 매니페스트가 자동 첨부됩니다.\nOriPics 사이트가 아니더라도 표준을 지원하는 어떤 도구로도 출처를 검증할 수 있습니다.",
       "point_c2pa": "Adobe·Microsoft·Sony·BBC·Intel이 만든 콘텐츠 출처·무결성 표준. 모든 증명 이미지에 자동 첨부됩니다.",
       "point_jpeg_trust": "ISO/IEC 21617 (JPEG Trust) 호환. 검증 응답이 Trust Report 구조를 따라 신뢰 등급을 함께 반환합니다.",
       "point_open_label": "OPEN",
@@ -151,7 +151,7 @@
       "title": "필요한 만큼 골라서 시작하세요",
       "subtitle": "회원가입하면 자동으로 Free 플랜 — 신용카드 등록 없이 바로 사용",
       "month": "월",
-      "footnote": "Pro·Business 출시는 2026-09~10월 예정. 가격은 부가세 별도. 글로벌 USD 가격은 출시 전 확정.",
+      "footnote": "Pro·Business 출시는 익월 예정. 가격은 부가세 별도. 글로벌 USD 가격은 출시 전 확정.",
       "free": {
         "name": "Free",
         "tagline": "가입만 하면 바로 시작",
