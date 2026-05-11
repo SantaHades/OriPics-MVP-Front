@@ -58,8 +58,7 @@
 
 | ID | 항목 | 시점 | 출처 | P |
 |---|---|---|---|---|
-| U-9 | 개인정보 보호 책임자 **성명** (현재 "대표이사" placeholder) | 모바일 본 시작 | [privacy/page.tsx](../src/app/[locale]/privacy/page.tsx) | P1 |
-| U-10 | 개인정보 처리방침 법무 검토 (국외 이전·아동 연령 기준) | 모바일 본 시작 | privacy 동일 | P1 |
+| U-10 | 개인정보 처리방침 법무 검토 (국외 이전·아동 연령 기준) | 모바일 본 시작 | [privacy/page.tsx](../src/app/[locale]/privacy/page.tsx) | P1 |
 | U-11 | 마케팅 카피의 CAI 로고/Wordmark 가이드라인 검토 | 마케팅 자료 발행 전 | [marketing-copy §7](marketing-copy-jpeg-trust.md) | P2 |
 | U-12 | "JPEG Trust" 단독 사용 시 위원회 문맥 명시 검토 | 동일 | 동일 | P2 |
 | U-13 | 이용약관 §10·§11 (유료 서비스·환불) 갱신 | 포트원 계약 후 | [/terms](../src/app/[locale]/terms/page.tsx) §10·§11 placeholder | P1 |
@@ -201,3 +200,4 @@ SSL.com 회신 (U-1)
 |---|---|
 | 2026-05-10 | 최초 작성 — 30 사용자 항목 + 19 AI 항목 통합. 의존 트리·원본 출처 매핑 |
 | 2026-05-11 | U-13 이용약관 골격 완성 (KO/EN, KCC 표준약관 16개 조항). §10·§11(유료 서비스·환불)은 J-7 시점 갱신 필요로 축소 |
+| 2026-05-11 | U-9 개인정보 보호 책임자 성명 확정 (대표이사 손용석). 행 제거 |

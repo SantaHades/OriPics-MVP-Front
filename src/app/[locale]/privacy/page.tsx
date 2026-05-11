@@ -11,6 +11,7 @@ const COMPANY_ADDRESS_EN =
   "#B01-H306, Terrace Garden, 150-29 Gongse-ro, Giheung-gu, Yongin-si, Gyeonggi-do, 17084, Republic of Korea";
 const COMPANY_ADDRESS_KO =
   "경기도 용인시 기흥구 공세로 150-29, 테라스가든 #B01-H306, 17084, 대한민국";
+const DPO_NAME = "손용석";
 const DPO_EMAIL = "hi@ori.pics";
 
 function PrivacyKo() {
@@ -199,7 +200,7 @@ function PrivacyKo() {
       <ul>
         <li>회사: {COMPANY_NAME_KO}</li>
         <li>주소: {COMPANY_ADDRESS_KO}</li>
-        <li>개인정보 보호 책임자: 대표이사 (※ 책임자 성명은 발효 전 확정 필요)</li>
+        <li>개인정보 보호 책임자: 대표이사 {DPO_NAME}</li>
         <li>이메일: <a href={`mailto:${DPO_EMAIL}`}>{DPO_EMAIL}</a></li>
       </ul>
 
