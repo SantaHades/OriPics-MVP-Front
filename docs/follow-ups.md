@@ -115,9 +115,11 @@
 
 | ID | 항목 | 트리거 | P |
 |---|---|---|---|
-| A-6 | J-7 결제 webhook 처리 + 구독 lifecycle | A-1 완료 후 | P0 |
+| A-6 | J-7 결제 webhook 처리 + 구독 lifecycle (subscription_grant 충전 포함) | A-1 완료 후 | P0 |
 | A-7 | J-8 영구 보관 라이프사이클 + 다운그레이드 30일 grace | A-1 완료 후 | P1 |
 | A-8 | J-9 증명서 PDF 발급 (react-pdf 또는 puppeteer-core) | NOW | P2 |
+| A-20 | **매월 크레딧 자동 갱신** — `creditsRenewAt` 도래 시 Free 10 / Pro 1000 / Business 10000 충전(`monthly_renewal`). Vercel Cron(daily) 또는 NextAuth session callback에서 lazy refresh. **갭: 미구현 시 1개월 후 모든 사용자가 0크레딧으로 멈춤** | 베타 시작 전 | P1 |
+| A-21 | 어드민 크레딧 조정 UI/API — CS 대응(환불·보너스). 권한 가드 + `manual_adjust` 트랜잭션 기록 | 베타 운영 중 | P2 |
 
 ### 2.3 모바일·모노레포
 
@@ -201,3 +203,4 @@ SSL.com 회신 (U-1)
 | 2026-05-10 | 최초 작성 — 30 사용자 항목 + 19 AI 항목 통합. 의존 트리·원본 출처 매핑 |
 | 2026-05-11 | U-13 이용약관 골격 완성 (KO/EN, KCC 표준약관 16개 조항). §10·§11(유료 서비스·환불)은 J-7 시점 갱신 필요로 축소 |
 | 2026-05-11 | U-9 개인정보 보호 책임자 성명 확정 (대표이사 손용석). 행 제거 |
+| 2026-05-11 | A-20 매월 자동 갱신·A-21 어드민 조정 UI 추가 — 현재 구현 갭 노출 (1개월 후 사용자 0크레딧 멈춤 risk) |
