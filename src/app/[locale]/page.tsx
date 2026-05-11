@@ -676,7 +676,7 @@ export default function Home() {
               {credits && (
                 <Link
                   href="/profile#credits"
-                  className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                  className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-[11px] sm:text-xs font-semibold border border-blue-100 hover:bg-blue-100 transition-colors whitespace-nowrap"
                   title={t("credits.chip_title", { count: credits.credits })}
                 >
                   {t("credits.chip", { count: Math.floor(credits.credits / CREDIT_COSTS.IMAGE_PROOF) })}
@@ -1277,10 +1277,13 @@ export default function Home() {
 
       <footer className="w-full border-t border-slate-200 py-16 flex flex-col items-center gap-6 text-slate-500 text-sm">
         <img src="/logo-long.png" alt="OriPics Logo" className="h-24 object-contain opacity-60 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           <a href="mailto:hi@ori.pics" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
             {tc("contact")}
           </a>
+          <Link href="/terms" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
+            {tc("terms")}
+          </Link>
           <Link href="/privacy" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
             {tc("privacy")}
           </Link>

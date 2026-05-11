@@ -17,6 +17,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -81,6 +82,12 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!agreed) {
+      setError(t("errors.must_agree"));
+      setLoading(false);
+      return;
+    }
 
     // 이메일 형식 유효성 검사
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -157,21 +164,30 @@ export default function SignupPage() {
           {/* 소셜 가입 버튼 */}
           <div className="flex justify-center gap-6 mb-8 group">
             <button
-              onClick={() => signIn("google", { callbackUrl: "/" })}
+              onClick={() => {
+                if (!agreed) { setError(t("errors.must_agree")); return; }
+                signIn("google", { callbackUrl: "/" });
+              }}
               className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
               title={t("google")}
             >
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
             </button>
             <button
-              onClick={() => signIn("naver", { callbackUrl: "/" })}
+              onClick={() => {
+                if (!agreed) { setError(t("errors.must_agree")); return; }
+                signIn("naver", { callbackUrl: "/" });
+              }}
               className="w-14 h-14 bg-[#03C75A] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
               title={t("naver")}
             >
               <span className="text-slate-900 font-extrabold text-xl">N</span>
             </button>
             <button
-              onClick={() => signIn("kakao", { callbackUrl: "/" })}
+              onClick={() => {
+                if (!agreed) { setError(t("errors.must_agree")); return; }
+                signIn("kakao", { callbackUrl: "/" });
+              }}
               className="w-14 h-14 bg-[#FEE500] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
               title={t("kakao")}
             >
@@ -287,6 +303,30 @@ export default function SignupPage() {
               <p className="text-xs text-slate-500 mt-2 ml-1">{t("errors.password_hint")}</p>
             </div>
 
+            {/* 약관·개인정보 처리방침 동의 (필수) */}
+            <label className="flex items-start gap-2 cursor-pointer select-none px-1">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <span className="text-xs text-slate-600 leading-relaxed">
+                {t.rich("agree_label", {
+                  terms: (chunks) => (
+                    <Link href="/terms" target="_blank" className="text-blue-600 font-semibold hover:underline">
+                      {chunks}
+                    </Link>
+                  ),
+                  privacy: (chunks) => (
+                    <Link href="/privacy" target="_blank" className="text-blue-600 font-semibold hover:underline">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </span>
+            </label>
+
             {/* 성공 메시지 */}
             {successMsg && (
               <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs p-4 rounded-xl flex items-start gap-2 animate-in fade-in duration-300">
@@ -305,7 +345,7 @@ export default function SignupPage() {
 
             <button
               type="submit"
-              disabled={loading || !codeSent || verificationCode.length !== 6}
+              disabled={loading || !codeSent || verificationCode.length !== 6 || !agreed}
               className="w-full py-4 bg-blue-800 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-blue-200/50 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? <RefreshCw className="animate-spin" size={20} /> : (

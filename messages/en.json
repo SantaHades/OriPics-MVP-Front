@@ -10,7 +10,8 @@
     "meta_title": "OriPics - the original proof.",
     "meta_description": "Prove your image is original. Embed invisible digital fingerprints.",
     "contact": "Contact Us",
-    "privacy": "Privacy Policy"
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
   },
   "Home": {
     "hero": {
@@ -243,8 +244,7 @@
     }
   },
   "Login": {
-    "title": "Welcome Back",
-    "subtitle": "Login to continue with original proof.",
+    "subtitle": "Sign in to continue with original proof.",
     "google": "Login with Google",
     "naver": "Login with Naver",
     "kakao": "Login with Kakao",
@@ -285,10 +285,12 @@
     "has_account": "Already have an account?",
     "login_link": "Log in",
     "shield_text": "Secure data encryption technology is applied.",
+    "agree_label": "I agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>. (Required)",
     "errors": {
       "invalid_email": "Invalid email address. Please enter a valid format (e.g., name@domain.com).",
       "short_password": "Password must be at least 6 characters long.",
-      "password_hint": "Minimum 6 characters."
+      "password_hint": "Minimum 6 characters.",
+      "must_agree": "Please agree to the Terms of Service and Privacy Policy."
     },
     "verification": {
       "send": "Verify",
@@ -415,6 +417,7 @@
     "c2pa_issuer": "Signer",
     "c2pa_inspect": "Inspect Content Credentials",
     "privacy_link": "Privacy Policy",
+    "terms_link": "Terms of Service",
     "footer": "OriPics © 2026  the original proof."
   }
 }

@@ -433,9 +433,14 @@ export default function LinkViewer() {
             className="h-24 object-contain opacity-60 hover:opacity-100 transition-opacity"
           />
         </Link>
-        <Link href="/privacy" className="hover:text-slate-900 transition-colors">
-          {t("privacy_link")}
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/terms" className="hover:text-slate-900 transition-colors">
+            {t("terms_link")}
+          </Link>
+          <Link href="/privacy" className="hover:text-slate-900 transition-colors">
+            {t("privacy_link")}
+          </Link>
+        </div>
         <p>{t("footer")}</p>
       </footer>
 

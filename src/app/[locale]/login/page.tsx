@@ -63,8 +63,7 @@ export default function LoginPage() {
             <img src="/logo.png" alt="OriPics Logo" className="w-12 h-12 object-contain group-hover:scale-110 transition-transform" />
             <span className="text-slate-900">OriPics</span>
           </Link>
-          <h1 className="text-2xl font-bold">{t("title")}</h1>
-          <p className="text-slate-600 mt-2 text-sm">{t("subtitle")}</p>
+          <h1 className="text-3xl font-bold text-slate-800 leading-snug">{t("subtitle")}</h1>
         </div>
 
         <div className="glass p-8 rounded-3xl border border-slate-200 shadow-2xl">

@@ -10,7 +10,8 @@
     "meta_title": "OriPics - 원본 인증",
     "meta_description": "이미지가 원본임을 증명하세요. 보이지 않는 디지털 지문을 새깁니다.",
     "contact": "문의하기",
-    "privacy": "개인정보 처리방침"
+    "privacy": "개인정보 처리방침",
+    "terms": "이용약관"
   },
   "Home": {
     "hero": {
@@ -243,7 +244,6 @@
     }
   },
   "Login": {
-    "title": "다시 오신 것을 환영합니다",
     "subtitle": "원본 인증을 계속하려면 로그인하세요.",
     "google": "Google로 로그인",
     "naver": "네이버로 로그인",
@@ -285,10 +285,12 @@
     "has_account": "이미 계정이 있으신가요?",
     "login_link": "로그인하기",
     "shield_text": "안전한 데이터 암호화 기술이 적용되어 있습니다.",
+    "agree_label": "<terms>이용약관</terms>과 <privacy>개인정보 처리방침</privacy>에 동의합니다. (필수)",
     "errors": {
       "invalid_email": "유효하지 않은 이메일 주소입니다. 올바른 형식(예: name@domain.com)으로 입력해 주세요.",
       "short_password": "비밀번호는 최소 6자 이상이어야 합니다.",
-      "password_hint": "6자 이상 입력해 주세요."
+      "password_hint": "6자 이상 입력해 주세요.",
+      "must_agree": "이용약관과 개인정보 처리방침에 동의해 주세요."
     },
     "verification": {
       "send": "인증",
@@ -415,6 +417,7 @@
     "c2pa_issuer": "서명자",
     "c2pa_inspect": "Content Credentials 자세히 보기",
     "privacy_link": "개인정보 처리방침",
+    "terms_link": "이용약관",
     "footer": "OriPics © 2026  원본 인증."
   }
 }
