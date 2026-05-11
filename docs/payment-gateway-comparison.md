@@ -2,7 +2,7 @@
 
 > **작성**: 2026-05-10
 > **상태**: 비교 분석 — 선정 의사결정 대기
-> **선결조건**: [pricing-policy.md](pricing-policy.md) 채택 완료 (Freemium 3-Tier, Pro ₩9,900/월, Business ₩59,000+/월, B2B 인보이스 필요)
+> **선결조건**: [pricing-policy.md](pricing-policy.md) 채택 완료 (Freemium 3-Tier, Pro ₩9,900/월, Business ₩79,000+/월, B2B 인보이스 필요)
 > **법인**: SantaHades Co., Ltd. (한국)
 
 ---

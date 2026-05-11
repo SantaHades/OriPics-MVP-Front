@@ -8,12 +8,14 @@ import {
   getSalt,
   parseMetaBytes,
   parseMetaBytesV3,
+  parseMetaBytesV4,
   verifyFinalHash,
   hexToBytes,
 } from "@/lib/oripics-stamp/server";
 import {
   META_LENGTH,
   META_LENGTH_V3,
+  META_LENGTH_V4,
   OFFSET_VERSION,
   verifyLinkId,
 } from "@/lib/oripics-stamp/common";
@@ -175,7 +177,7 @@ export async function POST(req: NextRequest) {
   if (typeof meta_hex !== "string") {
     return NextResponse.json({ detail: "invalid_meta_hex" }, { status: 400 });
   }
-  const allowed = [META_LENGTH * 2, META_LENGTH_V3 * 2];
+  const allowed = [META_LENGTH * 2, META_LENGTH_V3 * 2, META_LENGTH_V4 * 2];
   if (!allowed.includes(meta_hex.length)) {
     return NextResponse.json({ detail: "meta_hex_length" }, { status: 400 });
   }
@@ -204,18 +206,42 @@ export async function POST(req: NextRequest) {
   const borderHashBytes = hexToBytes(border_hash);
   const extractedBytes = hexToBytes(extracted_final_hash);
 
-  // 크레딧 차감 (race-safe atomic). 검증 통과 여부와 무관 — 호출 자체가 비용.
-  const consume = await consumeCredits({
-    userId,
-    amount: CREDIT_COSTS.VERIFY_QUERY,
-    action: "verify_query",
-    metadata: { link_id, version },
-  });
-  if (!consume.ok) {
-    return NextResponse.json(
-      { detail: "insufficient_credits", balance: consume.balance, required: CREDIT_COSTS.VERIFY_QUERY },
-      { status: 402 },
-    );
+  // 옵션 A: V4 메타에서 timestamp 추출 → DB 조회로 owner 매칭 → 본인이면 면책.
+  // V2/V3는 메타에 counter 없어서 면책 불가 (옛 이미지 호환만 유지).
+  // timestamp(15자, yymmddHHMMSS+cs)는 사실상 unique 식별자.
+  let ownerExempt = false;
+  if (version === 4 && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    try {
+      const parsedV4 = parseMetaBytesV4(metaBytes);
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      const { data: rows } = await supabase
+        .from("links")
+        .select("link_id, user_id")
+        .eq("timestamp", parsedV4.timestamp)
+        .limit(2);
+      if (rows && rows.length === 1 && rows[0].user_id === userId) {
+        ownerExempt = true;
+      }
+    } catch (e) {
+      // 면책 판정 실패해도 검증 흐름은 진행 (단지 -1 차감)
+      console.warn("[verify] owner exemption lookup failed:", e);
+    }
+  }
+
+  // 크레딧 차감 (race-safe atomic). 본인 이미지는 면책.
+  if (!ownerExempt) {
+    const consume = await consumeCredits({
+      userId,
+      amount: CREDIT_COSTS.VERIFY_QUERY,
+      action: "verify_query",
+      metadata: { link_id, version },
+    });
+    if (!consume.ok) {
+      return NextResponse.json(
+        { detail: "insufficient_credits", balance: consume.balance, required: CREDIT_COSTS.VERIFY_QUERY },
+        { status: 402 },
+      );
+    }
   }
 
   let seal: SealResult;
@@ -283,6 +309,7 @@ export async function POST(req: NextRequest) {
     version: seal.version,
     metadata: seal.metadata,
     ...(seal.reason ? { reason: seal.reason } : {}),
+    ...(ownerExempt ? { owner_exempt: true } : {}),
     trust_report,
   });
 }

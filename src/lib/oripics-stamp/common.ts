@@ -21,6 +21,15 @@ export const META_LENGTH_V3 = 47;
 export const PAYLOAD_LENGTH_V3 = 79;  // 47 + 32
 export const PAYLOAD_BITS_V3 = PAYLOAD_LENGTH_V3 * 8;  // 632
 
+// v4 (V3 + counter 2 bytes — 옵션 A: 자기 이미지 검증 면책)
+// counter는 day-local uint16 (server.ts makeLinkId의 counter 필드).
+// timestamp(yymmdd) + counter로 link_id 복원 → DB user_id 매칭 → 면책 판정.
+export const OFFSET_COUNTER_V4 = 47;
+export const OFFSET_FINAL_HASH_V4 = 49;
+export const META_LENGTH_V4 = 49;
+export const PAYLOAD_LENGTH_V4 = 81;  // 49 + 32
+export const PAYLOAD_BITS_V4 = PAYLOAD_LENGTH_V4 * 8;  // 648
+
 export const HASH_LENGTH = 32;
 
 export const TIMESTAMP_LENGTH = 15;
@@ -31,6 +40,13 @@ export function selectEmbedMode(width: number, height: number): EmbedMode {
   const borderCapacity = 2 * (width + height) - 4;
   if (borderCapacity >= PAYLOAD_BITS) return 'b_only';
   if (borderCapacity * 3 >= PAYLOAD_BITS) return 'rgb_lsb';
+  throw new Error('image_too_small');
+}
+
+export function selectEmbedModeV4(width: number, height: number): EmbedMode {
+  const borderCapacity = 2 * (width + height) - 4;
+  if (borderCapacity >= PAYLOAD_BITS_V4) return 'b_only';
+  if (borderCapacity * 3 >= PAYLOAD_BITS_V4) return 'rgb_lsb';
   throw new Error('image_too_small');
 }
 

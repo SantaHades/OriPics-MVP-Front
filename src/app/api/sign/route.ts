@@ -15,8 +15,7 @@ import {
   makeTimestamp,
   makeLinkId,
   storagePathFor,
-  buildMetaBytes,
-  buildMetaBytesV3,
+  buildMetaBytesV4,
   computeFinalHash,
   bytesToHex,
   hexToBytes,
@@ -161,12 +160,8 @@ export async function POST(req: NextRequest) {
   }
 
   const uploadType = ["F", "P", "C"].includes(upload_type) ? upload_type : "F";
-  const useV3 =
-    uploadType === "P" &&
-    Number.isInteger(lat_e6) &&
-    Number.isInteger(lng_e6) &&
-    width >= 300 &&
-    height >= 300;
+  // V4: GPS는 optional (없으면 0 sentinel). 모든 신규 인증 V4.
+  const hasGps = Number.isInteger(lat_e6) && Number.isInteger(lng_e6);
 
   let salt: Uint8Array;
   try {
@@ -176,27 +171,10 @@ export async function POST(req: NextRequest) {
   }
 
   const timestamp = makeTimestamp(uploadType);
-  let metaBytes: Uint8Array;
-  let versionNum: number;
-  if (useV3) {
-    metaBytes = buildMetaBytesV3(CURRENT_SALT_ID, timestamp, width, height, lat_e6, lng_e6);
-    versionNum = 3;
-  } else {
-    metaBytes = buildMetaBytes(CURRENT_SALT_ID, timestamp, width, height);
-    versionNum = 2;
-  }
-
-  const finalHash = computeFinalHash(
-    salt,
-    metaBytes,
-    hexToBytes(inner_hash),
-    hexToBytes(border_hash),
-  );
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-  // 1. 일별 카운터를 먼저 받아야 link_id가 결정되고, 그 후에야 signed upload URL을 만들 수 있음.
-  // counter RPC만 await 후, signed URL은 storage 호출이 그 결과에 의존.
+  // counter를 먼저 받아야 V4 메타에 인코딩 가능 (옵션 A: 자기 이미지 면책 식별자)
   const dateUtc = new Date();
   const dateStr = `${dateUtc.getUTCFullYear()}-${String(dateUtc.getUTCMonth() + 1).padStart(2, "0")}-${String(dateUtc.getUTCDate()).padStart(2, "0")}`;
   let counter: number;
@@ -208,6 +186,29 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     return NextResponse.json({ detail: `counter_rpc_error:${e?.message || e}` }, { status: 500 });
   }
+
+  if (counter >= 2 ** 16) {
+    // V4 메타의 counter 필드(uint16) 한계 초과. 일일 65k건 초과 시 정책 재검토 필요.
+    return NextResponse.json({ detail: "counter_overflow_uint16" }, { status: 500 });
+  }
+
+  const metaBytes = buildMetaBytesV4(
+    CURRENT_SALT_ID,
+    timestamp,
+    width,
+    height,
+    hasGps ? lat_e6 : 0,
+    hasGps ? lng_e6 : 0,
+    counter,
+  );
+  const versionNum = 4;
+
+  const finalHash = computeFinalHash(
+    salt,
+    metaBytes,
+    hexToBytes(inner_hash),
+    hexToBytes(border_hash),
+  );
 
   const { linkId, dt } = makeLinkId(uploadType, counter);
   const storagePath = storagePathFor(linkId, dt);
@@ -239,7 +240,7 @@ export async function POST(req: NextRequest) {
     width,
     height,
   };
-  if (useV3) {
+  if (hasGps) {
     jwtPayload.lat_e6 = lat_e6;
     jwtPayload.lng_e6 = lng_e6;
   }

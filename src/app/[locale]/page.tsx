@@ -597,7 +597,7 @@ export default function Home() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       if (supabaseUrl && confirmed.storage_path) {
         const publicUrl = `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${confirmed.storage_path}`;
-        fetch(publicUrl, { method: "HEAD", cache: "no-cache" }).catch(() => {});
+        fetch(publicUrl, { method: "HEAD", cache: "no-cache" }).catch(() => { });
       }
 
       const draftSnapshot = stampedDraft;
@@ -773,131 +773,130 @@ export default function Home() {
 
           {status !== "result_stamped" && status !== "result_verified" && (
             <div className="w-full max-w-2xl flex flex-col items-center">
-            {(status === "idle" || status === "dragover") && (
-              <div className="w-full flex justify-start mb-2 text-xs">
-                <label className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none">
-                  <input
-                    type="checkbox"
-                    checked={watermarkEnabled}
-                    onChange={(e) => handleWatermarkToggle(e.target.checked)}
-                    className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
-                  />
-                  <span>{t('upload.watermark_include')}</span>
-                </label>
-              </div>
-            )}
-            <div
-              className={`relative w-full p-10 rounded-2xl border-2 border-dashed transition-all duration-300 ${status === "dragover" ? "border-blue-400 bg-blue-500/10" : "border-slate-600 glass hover:border-slate-400"
-                }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              {cameraEnabled && (status === "idle" || status === "dragover") && (
-                <div className="absolute top-3 right-3 flex items-center gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); handleGpsIndicatorClick(); }}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium transition-colors ${
-                      gpsState === 'granted'
-                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                    title={gpsCoords ? `${gpsCoords.lat.toFixed(6)}, ${gpsCoords.lng.toFixed(6)}` : ''}
-                  >
-                    <span aria-hidden>{gpsState === 'granted' ? '🟢' : '⚪'}</span>
-                    <span>
-                      {gpsState === 'granted' ? t('gps.status_active') : t('gps.status_inactive')}
-                    </span>
-                  </button>
-                  {(gpsState === 'denied' || gpsState === 'prompt' || gpsState === 'unsupported') && (
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); openGpsHelpModal(); }}
-                      className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
-                      aria-label={t('gps.help_button')}
-                    >
-                      ?
-                    </button>
-                  )}
-                  <label
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none"
-                  >
+              {(status === "idle" || status === "dragover") && (
+                <div className="w-full flex justify-start mb-2 text-xs">
+                  <label className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none">
                     <input
                       type="checkbox"
-                      checked={gpsIncludeEnabled}
-                      onChange={(e) => handleGpsIncludeToggle(e.target.checked)}
+                      checked={watermarkEnabled}
+                      onChange={(e) => handleWatermarkToggle(e.target.checked)}
                       className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
                     />
-                    <span>{t('gps.include_label')}</span>
+                    <span>{t('upload.watermark_include')}</span>
                   </label>
                 </div>
               )}
-              {status === "idle" || status === "dragover" ? (
-                <div className="flex flex-col items-center cursor-pointer" onClick={() => { if (!requireAuthOrRedirect()) return; setShowUploadMenu(true); }}>
-                  <div className="flex items-center justify-center gap-6 mb-4">
-                    <UploadCloud size={64} strokeWidth={1.5} className={`${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
-                    {cameraEnabled && (
+              <div
+                className={`relative w-full p-10 rounded-2xl border-2 border-dashed transition-all duration-300 ${status === "dragover" ? "border-blue-400 bg-blue-500/10" : "border-slate-600 glass hover:border-slate-400"
+                  }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {cameraEnabled && (status === "idle" || status === "dragover") && (
+                  <div className="absolute top-3 right-3 flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleGpsIndicatorClick(); }}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium transition-colors ${gpsState === 'granted'
+                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      title={gpsCoords ? `${gpsCoords.lat.toFixed(6)}, ${gpsCoords.lng.toFixed(6)}` : ''}
+                    >
+                      <span aria-hidden>{gpsState === 'granted' ? '🟢' : '⚪'}</span>
+                      <span>
+                        {gpsState === 'granted' ? t('gps.status_active') : t('gps.status_inactive')}
+                      </span>
+                    </button>
+                    {(gpsState === 'denied' || gpsState === 'prompt' || gpsState === 'unsupported') && (
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setUploadSource("P");
-                          cameraInputRef.current?.click();
-                        }}
-                        className="shrink-0 flex items-center justify-center p-5 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-orange-600 border border-slate-200 shadow-sm transition-all"
-                        aria-label={t("upload.upload_menu.camera")}
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openGpsHelpModal(); }}
+                        className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
+                        aria-label={t('gps.help_button')}
                       >
-                        <Camera size={64} strokeWidth={1.5} />
+                        ?
                       </button>
                     )}
+                    <label
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={gpsIncludeEnabled}
+                        onChange={(e) => handleGpsIncludeToggle(e.target.checked)}
+                        className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
+                      />
+                      <span>{t('gps.include_label')}</span>
+                    </label>
                   </div>
-                  <p className="text-xl font-medium mb-2 whitespace-pre-line">
-                    {status === "dragover"
-                      ? t("upload.dragover")
-                      : cameraEnabled
-                        ? t("upload.idle_mobile")
-                        : t("upload.idle")}
-                  </p>
-                  <p className="text-sm text-slate-600 mt-1">{cameraEnabled ? t("upload.subtext_mobile") : t("upload.subtext")}</p>
-                  <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
-                  {sessionStatus === "unauthenticated" && (
-                    <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
-                      <Lock size={12} /> {t("upload.login_required")}
+                )}
+                {status === "idle" || status === "dragover" ? (
+                  <div className="flex flex-col items-center cursor-pointer" onClick={() => { if (!requireAuthOrRedirect()) return; setShowUploadMenu(true); }}>
+                    <div className="flex items-center justify-center gap-6 mb-4">
+                      <UploadCloud size={64} strokeWidth={1.5} className={`${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
+                      {cameraEnabled && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setUploadSource("P");
+                            cameraInputRef.current?.click();
+                          }}
+                          className="shrink-0 flex items-center justify-center p-5 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-orange-600 border border-slate-200 shadow-sm transition-all"
+                          aria-label={t("upload.upload_menu.camera")}
+                        >
+                          <Camera size={64} strokeWidth={1.5} />
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xl font-medium mb-2 whitespace-pre-line">
+                      {status === "dragover"
+                        ? t("upload.dragover")
+                        : cameraEnabled
+                          ? t("upload.idle_mobile")
+                          : t("upload.idle")}
                     </p>
-                  )}
-                </div>
-              ) : status === "processing" ? (
-                <div className="flex flex-col items-center py-6">
-                  <RefreshCw size={40} className="animate-spin text-blue-600 mb-6" />
-                  <p className="text-xl font-medium">{t("upload.processing")}</p>
-                  <div className="w-full max-w-md bg-slate-100 rounded-full h-2 mt-6 overflow-hidden">
-                    <div className="bg-blue-500 h-2 rounded-full animate-pulse w-full"></div>
+                    <p className="text-sm text-slate-600 mt-1">{cameraEnabled ? t("upload.subtext_mobile") : t("upload.subtext")}</p>
+                    <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
+                    {sessionStatus === "unauthenticated" && (
+                      <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                        <Lock size={12} /> {t("upload.login_required")}
+                      </p>
+                    )}
                   </div>
-                </div>
-              ) : status === "error" ? (
-                <div className="flex flex-col items-center text-red-600">
-                  <AlertTriangle size={48} className="mb-4" />
-                  <h3 className="text-xl font-bold mb-2">{t("upload.error")}</h3>
-                  <p>{errorMessage}</p>
-                  <button onClick={resetState} className="mt-6 px-6 py-2 bg-slate-100 hover:bg-slate-700 text-slate-900 rounded-lg flex items-center gap-2">
-                    <RefreshCw size={16} /> {t("upload.retry")}
-                  </button>
-                </div>
-              ) : null}
+                ) : status === "processing" ? (
+                  <div className="flex flex-col items-center py-6">
+                    <RefreshCw size={40} className="animate-spin text-blue-600 mb-6" />
+                    <p className="text-xl font-medium">{t("upload.processing")}</p>
+                    <div className="w-full max-w-md bg-slate-100 rounded-full h-2 mt-6 overflow-hidden">
+                      <div className="bg-blue-500 h-2 rounded-full animate-pulse w-full"></div>
+                    </div>
+                  </div>
+                ) : status === "error" ? (
+                  <div className="flex flex-col items-center text-red-600">
+                    <AlertTriangle size={48} className="mb-4" />
+                    <h3 className="text-xl font-bold mb-2">{t("upload.error")}</h3>
+                    <p>{errorMessage}</p>
+                    <button onClick={resetState} className="mt-6 px-6 py-2 bg-slate-100 hover:bg-slate-700 text-slate-900 rounded-lg flex items-center gap-2">
+                      <RefreshCw size={16} /> {t("upload.retry")}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              {(status === "idle" || status === "dragover") && (
+                <label className="mt-4 inline-flex items-center gap-2 text-xs text-slate-500 cursor-pointer hover:text-slate-700 select-none">
+                  <input
+                    type="checkbox"
+                    checked={cameraEnabled}
+                    onChange={(e) => handleCameraToggle(e.target.checked)}
+                    className="rounded border-slate-300 text-orange-500 focus:ring-orange-500"
+                  />
+                  {t("upload.toggle_camera")}
+                </label>
+              )}
             </div>
-            {(status === "idle" || status === "dragover") && (
-              <label className="mt-4 inline-flex items-center gap-2 text-xs text-slate-500 cursor-pointer hover:text-slate-700 select-none">
-                <input
-                  type="checkbox"
-                  checked={cameraEnabled}
-                  onChange={(e) => handleCameraToggle(e.target.checked)}
-                  className="rounded border-slate-300 text-orange-500 focus:ring-orange-500"
-                />
-                {t("upload.toggle_camera")}
-              </label>
-            )}
-          </div>
           )}
         </section>
 
@@ -1251,7 +1250,7 @@ export default function Home() {
                 <p className="text-xs text-slate-500">{t("pricing.business.tagline")}</p>
               </div>
               <p className="text-3xl font-extrabold mb-1">
-                ₩59,000<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}~</span>
+                ₩79,000<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}~</span>
               </p>
               <p className="text-xs text-slate-500 mb-5">{t("pricing.business.team_hint")}</p>
               <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">

@@ -137,6 +137,58 @@ describe("server/computeFinalHash + verifyFinalHash", () => {
   });
 });
 
+describe("server/buildMetaBytesV4 (V3 + counter)", () => {
+  it("round-trips with GPS + counter", async () => {
+    const { buildMetaBytesV4, parseMetaBytesV4 } = await importServer();
+    const meta = buildMetaBytesV4(1, TS_15, 1920, 1080, 37_566_535, 126_977_969, 42);
+    const parsed = parseMetaBytesV4(meta);
+    expect(parsed.version).toBe(4);
+    expect(parsed.counter).toBe(42);
+    expect(parsed.lat_e6).toBe(37_566_535);
+    expect(parsed.lng_e6).toBe(126_977_969);
+    expect(parsed.width).toBe(1920);
+    expect(parsed.height).toBe(1080);
+  });
+
+  it("handles GPS sentinel (0,0) when no GPS provided", async () => {
+    const { buildMetaBytesV4, parseMetaBytesV4 } = await importServer();
+    const meta = buildMetaBytesV4(1, TS_15, 800, 600, 0, 0, 1);
+    const parsed = parseMetaBytesV4(meta);
+    expect(parsed.lat_e6).toBe(0);
+    expect(parsed.lng_e6).toBe(0);
+    expect(parsed.counter).toBe(1);
+  });
+
+  it("accepts counter 0 and uint16 max", async () => {
+    const { buildMetaBytesV4, parseMetaBytesV4 } = await importServer();
+    const a = buildMetaBytesV4(1, TS_15, 800, 600, 0, 0, 0);
+    const b = buildMetaBytesV4(1, TS_15, 800, 600, 0, 0, 65535);
+    expect(parseMetaBytesV4(a).counter).toBe(0);
+    expect(parseMetaBytesV4(b).counter).toBe(65535);
+  });
+
+  it("rejects counter overflow (>uint16)", async () => {
+    const { buildMetaBytesV4 } = await importServer();
+    expect(() => buildMetaBytesV4(1, TS_15, 800, 600, 0, 0, 65536)).toThrow();
+    expect(() => buildMetaBytesV4(1, TS_15, 800, 600, 0, 0, -1)).toThrow();
+  });
+
+  it("V4 final hash verification — meta tampering detected", async () => {
+    const { buildMetaBytesV4, computeFinalHash, verifyFinalHash, getSalt } =
+      await importServer();
+    const meta = buildMetaBytesV4(1, TS_15, 1280, 720, 37_566_535, 126_977_969, 100);
+    const inner = new Uint8Array(32).fill(0xa1);
+    const border = new Uint8Array(32).fill(0xb2);
+    const salt = getSalt(1);
+    const finalHash = computeFinalHash(salt, meta, inner, border);
+    expect(verifyFinalHash(salt, meta, inner, border, finalHash)).toBe(true);
+    // counter 변조
+    const tampered = new Uint8Array(meta);
+    tampered[47] = (tampered[47] + 1) & 0xff;
+    expect(verifyFinalHash(salt, tampered, inner, border, finalHash)).toBe(false);
+  });
+});
+
 describe("server/getSalt", () => {
   it("decodes hex env var into bytes", async () => {
     const { getSalt } = await importServer();

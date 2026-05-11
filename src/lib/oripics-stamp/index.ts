@@ -20,6 +20,15 @@ import {
   readGpsFromMeta,
 } from './v3';
 import {
+  selectEmbedModeV4,
+  computeBorderHashV4,
+  embedPayloadV4,
+  extractPayloadV4,
+  splitPayloadV4,
+  buildPayloadV4,
+  readGpsFromMetaV4,
+} from './v4';
+import {
   PAYLOAD_LENGTH,
   META_LENGTH,
   HASH_LENGTH,
@@ -96,68 +105,32 @@ export async function signAndStampFromPixels(
     pixels = await applyWatermark(pixels, width, height);
   }
 
-  const useV3 = (
-    opts.uploadType === 'P' &&
-    opts.gps != null &&
-    width >= 300 &&
-    height >= 300
-  );
-
-  if (useV3) {
-    const gps = opts.gps!;
-    const mode = selectEmbedModeV3(width, height);
-    const [innerHash, borderHash] = await Promise.all([
-      computeInnerHash(pixels, width, height),
-      computeBorderHashV3(pixels, width, height, mode),
-    ]);
-
-    const signRes = await fetch(`${apiBase}/api/sign`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        inner_hash: bytesToHex(innerHash),
-        border_hash: bytesToHex(borderHash),
-        width,
-        height,
-        upload_type: 'P',
-        lat_e6: Math.round(gps.lat * 1_000_000),
-        lng_e6: Math.round(gps.lng * 1_000_000),
-      }),
-    });
-    if (!signRes.ok) {
-      const detail = await signRes.text();
-      throw new Error(`sign_failed:${signRes.status}:${detail}`);
-    }
-    const sign: SignResponse = await signRes.json();
-
-    const meta = hexToBytes(sign.meta_hex);
-    const finalHash = hexToBytes(sign.final_hash);
-    const payload = buildPayloadV3(meta, finalHash);
-
-    const stamped = new Uint8ClampedArray(pixels);
-    embedPayloadV3(stamped, width, height, payload, mode);
-    const blob = await encodeCanvasToPng(stamped, width, height);
-
-    return { blob, width, height, sign, gps };
-  }
-
-  // v2
-  const mode = selectEmbedMode(width, height);
+  // V4 단일 흐름 (옵션 A: 자기 이미지 검증 면책 위한 counter 포함).
+  // GPS 미사용 시 lat_e6=lng_e6=0 sentinel. 모든 신규 인증은 V4.
+  // 구 V2/V3는 backward compat verify 흐름에만 유지.
+  const hasGps = opts.gps != null;
+  const mode = selectEmbedModeV4(width, height);
   const [innerHash, borderHash] = await Promise.all([
     computeInnerHash(pixels, width, height),
-    computeBorderHash(pixels, width, height, mode),
+    computeBorderHashV4(pixels, width, height, mode),
   ]);
+
+  const body: Record<string, any> = {
+    inner_hash: bytesToHex(innerHash),
+    border_hash: bytesToHex(borderHash),
+    width,
+    height,
+    upload_type: opts.uploadType ?? 'F',
+  };
+  if (hasGps) {
+    body.lat_e6 = Math.round(opts.gps!.lat * 1_000_000);
+    body.lng_e6 = Math.round(opts.gps!.lng * 1_000_000);
+  }
 
   const signRes = await fetch(`${apiBase}/api/sign`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      inner_hash: bytesToHex(innerHash),
-      border_hash: bytesToHex(borderHash),
-      width,
-      height,
-      upload_type: opts.uploadType ?? 'F',
-    }),
+    body: JSON.stringify(body),
   });
   if (!signRes.ok) {
     const detail = await signRes.text();
@@ -167,13 +140,13 @@ export async function signAndStampFromPixels(
 
   const meta = hexToBytes(sign.meta_hex);
   const finalHash = hexToBytes(sign.final_hash);
-  const payload = buildPayload(meta, finalHash);
+  const payload = buildPayloadV4(meta, finalHash);
 
   const stamped = new Uint8ClampedArray(pixels);
-  embedPayload(stamped, width, height, payload, mode);
+  embedPayloadV4(stamped, width, height, payload, mode);
   const blob = await encodeCanvasToPng(stamped, width, height);
 
-  return { blob, width, height, sign, gps: null };
+  return { blob, width, height, sign, gps: hasGps ? opts.gps! : null };
 }
 
 export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promise<StampedDraft> {
@@ -262,6 +235,31 @@ export async function detectStamp(file: Blob): Promise<DetectResult> {
 
   const version = readUint16BE(payloadV2, OFFSET_VERSION);
 
+  if (version === 4) {
+    // V4: V3 메타 + counter 2 bytes
+    let modeV4;
+    try {
+      modeV4 = selectEmbedModeV4(width, height);
+    } catch {
+      return { hasStamp: false, reason: 'image_too_small' };
+    }
+    const payloadV4 = extractPayloadV4(pixels, width, height, modeV4);
+    const { meta } = splitPayloadV4(payloadV4);
+    const gps = readGpsFromMetaV4(meta);
+    const hasGps = gps.lat !== 0 || gps.lng !== 0;
+    return {
+      hasStamp: true,
+      version: 4,
+      preview: {
+        timestamp: extractTimestampFromMeta(meta),
+        width: readUint32BE(meta, OFFSET_WIDTH),
+        height: readUint32BE(meta, OFFSET_HEIGHT),
+        lat: hasGps ? gps.lat : null,
+        lng: hasGps ? gps.lng : null,
+      },
+    };
+  }
+
   if (version === 3) {
     let modeV3;
     try {
@@ -325,6 +323,56 @@ export async function verifyImage(file: Blob, opts: { apiBase: string }): Promis
   }
 
   const version = readUint16BE(payloadV2, OFFSET_VERSION);
+
+  if (version === 4) {
+    // V4: 메타에 counter 인코딩됨 → 서버가 owner 매칭 → 면책 가능
+    let modeV4;
+    try {
+      modeV4 = selectEmbedModeV4(width, height);
+    } catch {
+      return { match: false, reason: 'image_too_small' };
+    }
+    const payloadV4 = extractPayloadV4(pixels, width, height, modeV4);
+    const { meta, finalHash } = splitPayloadV4(payloadV4);
+
+    const claimedW = readUint32BE(meta, OFFSET_WIDTH);
+    const claimedH = readUint32BE(meta, OFFSET_HEIGHT);
+    if (claimedW !== width || claimedH !== height) {
+      return { match: false, reason: 'dimension_mismatch' };
+    }
+
+    const [innerHash, borderHash] = await Promise.all([
+      computeInnerHash(pixels, width, height),
+      computeBorderHashV4(pixels, width, height, modeV4),
+    ]);
+
+    const res = await fetch(`${apiBase}/api/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        meta_hex: bytesToHex(meta),
+        inner_hash: bytesToHex(innerHash),
+        border_hash: bytesToHex(borderHash),
+        extracted_final_hash: bytesToHex(finalHash),
+      }),
+    });
+    if (!res.ok) {
+      return { match: false, reason: `verify_http_${res.status}` };
+    }
+    const result: VerifyResponse = await res.json();
+    if (result.metadata) {
+      // V4는 GPS sentinel(0)일 수도 있음 — 백엔드가 채우지만 0이면 null로
+      const gps = readGpsFromMetaV4(meta);
+      if (gps.lat !== 0 || gps.lng !== 0) {
+        result.metadata.lat = gps.lat;
+        result.metadata.lng = gps.lng;
+      } else {
+        result.metadata.lat = undefined;
+        result.metadata.lng = undefined;
+      }
+    }
+    return result;
+  }
 
   if (version === 3) {
     // 2차 추출 (v3 크기, 632 bits)

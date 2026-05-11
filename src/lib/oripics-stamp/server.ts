@@ -10,10 +10,13 @@ import {
   OFFSET_HEIGHT,
   OFFSET_LAT,
   OFFSET_LNG,
+  OFFSET_COUNTER_V4,
   META_LENGTH,
   META_LENGTH_V3,
+  META_LENGTH_V4,
   PAYLOAD_LENGTH,
   PAYLOAD_LENGTH_V3,
+  PAYLOAD_LENGTH_V4,
   HASH_LENGTH,
   TIMESTAMP_LENGTH,
   obfuscateCounter,
@@ -214,6 +217,67 @@ export function parseMetaBytesV3(meta: Uint8Array): ParsedMeta {
     height: readUint32BE(meta, OFFSET_HEIGHT),
     lat_e6: readInt32BE(meta, OFFSET_LAT),
     lng_e6: readInt32BE(meta, OFFSET_LNG),
+  };
+}
+
+// V4: V3 + counter(2 bytes). 옵션 A — 자기 이미지 검증 면책용.
+// counter는 makeLinkId()에서 받은 일별 카운터 (day-local uint16).
+// GPS 미사용 시 lat_e6=lng_e6=0 (sentinel).
+export function buildMetaBytesV4(
+  saltId: number,
+  timestamp: string,
+  width: number,
+  height: number,
+  latE6: number,
+  lngE6: number,
+  counter: number,
+): Uint8Array {
+  if (timestamp.length !== TIMESTAMP_LENGTH) {
+    throw new Error(`Timestamp must be ${TIMESTAMP_LENGTH} chars, got ${timestamp.length}`);
+  }
+  if (saltId <= 0 || saltId >= 2 ** 16) throw new Error(`salt_id out of range`);
+  if (width <= 0 || width >= 2 ** 32) throw new Error(`width out of range`);
+  if (height <= 0 || height >= 2 ** 32) throw new Error(`height out of range`);
+  if (latE6 < -90_000_000 || latE6 > 90_000_000) throw new Error(`lat_e6 out of range`);
+  if (lngE6 < -180_000_000 || lngE6 > 180_000_000) throw new Error(`lng_e6 out of range`);
+  if (!Number.isInteger(counter) || counter < 0 || counter >= 2 ** 16) {
+    throw new Error(`counter out of range (uint16): ${counter}`);
+  }
+
+  const meta = new Uint8Array(META_LENGTH_V4);
+  meta.set(MAGIC_BYTES, OFFSET_MAGIC);
+  writeUint16BE(meta, OFFSET_VERSION, 4);
+  writeUint16BE(meta, OFFSET_SALT_ID, saltId);
+  writeUint32BE(meta, OFFSET_LENGTH, PAYLOAD_LENGTH_V4);
+  for (let i = 0; i < TIMESTAMP_LENGTH; i++) {
+    meta[OFFSET_TIMESTAMP + i] = timestamp.charCodeAt(i);
+  }
+  writeUint32BE(meta, OFFSET_WIDTH, width);
+  writeUint32BE(meta, OFFSET_HEIGHT, height);
+  writeInt32BE(meta, OFFSET_LAT, latE6);
+  writeInt32BE(meta, OFFSET_LNG, lngE6);
+  writeUint16BE(meta, OFFSET_COUNTER_V4, counter);
+  return meta;
+}
+
+export function parseMetaBytesV4(meta: Uint8Array): ParsedMeta & { counter: number } {
+  if (meta.length !== META_LENGTH_V4) throw new Error(`meta must be ${META_LENGTH_V4} bytes`);
+  if (!magicMatches(meta)) throw new Error("magic_mismatch");
+  const version = readUint16BE(meta, OFFSET_VERSION);
+  if (version !== 4) throw new Error(`unsupported_version:${version}`);
+  const salt_id = readUint16BE(meta, OFFSET_SALT_ID);
+  const length = readUint32BE(meta, OFFSET_LENGTH);
+  if (length !== PAYLOAD_LENGTH_V4) throw new Error(`length_mismatch:${length}`);
+  return {
+    version,
+    salt_id,
+    length,
+    timestamp: readTimestampAscii(meta),
+    width: readUint32BE(meta, OFFSET_WIDTH),
+    height: readUint32BE(meta, OFFSET_HEIGHT),
+    lat_e6: readInt32BE(meta, OFFSET_LAT),
+    lng_e6: readInt32BE(meta, OFFSET_LNG),
+    counter: readUint16BE(meta, OFFSET_COUNTER_V4),
   };
 }
 

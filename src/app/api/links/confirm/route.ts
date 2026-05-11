@@ -90,6 +90,9 @@ export async function POST(req: NextRequest) {
       storage_path,
       signed_url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${storage_path}`,
     };
+    if (user_id) {
+      row.user_id = user_id; // 옵션 A: 검증 시 면책 판정용
+    }
     if (lat_e6 != null && lng_e6 != null) {
       row.lat = lat_e6 / 1_000_000;
       row.lng = lng_e6 / 1_000_000;

@@ -214,7 +214,7 @@ function PrivacyKo() {
 
       <h2>13. 변경 이력</h2>
       <ul>
-        <li>2026-05-10: 최초 제정</li>
+        <li>2026-05-11: 최초 제정</li>
       </ul>
     </article>
   );
@@ -366,7 +366,7 @@ function PrivacyEn() {
 
       <h2>13. Changes to This Policy</h2>
       <ul>
-        <li>2026-05-10: Initial publication.</li>
+        <li>2026-05-11: Initial publication.</li>
       </ul>
       <p>
         Material changes will be announced on the Service at least 7 days before
