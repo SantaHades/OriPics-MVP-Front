@@ -36,6 +36,7 @@ interface ApiResponse {
   message?: string;
   session_id?: string;
   metadata?: MetaData;
+  owner_exempt?: boolean;
 }
 
 const KNOWN_ERROR_CODES = ["empty_file", "invalid_image", "image_too_small", "dimension_mismatch"];
@@ -398,6 +399,7 @@ export default function Home() {
           status: "verified",
           match: verifyRes.match,
           metadata: verifyRes.metadata,
+          owner_exempt: verifyRes.owner_exempt,
         });
         setStatus("result_verified");
         void refreshCredits();
@@ -1045,10 +1047,16 @@ export default function Home() {
 
         {status === "result_verified" && resultData?.metadata && (
           <section className="w-full max-w-2xl glass p-8 rounded-2xl mb-16 animate-in slide-in-from-bottom-4 fade-in duration-500">
-            <div className={`flex items-center gap-3 mb-6 border-b border-slate-200 pb-4 ${resultData.match ? "text-blue-600" : "text-orange-400"}`}>
+            <div className={`flex items-center gap-3 mb-2 ${resultData.match ? "text-blue-600" : "text-orange-400"}`}>
               {resultData.match ? <ShieldCheck size={28} /> : <AlertTriangle size={28} />}
               <h2 className="text-2xl font-bold">{resultData.match ? t("verify.success_title") : t("verify.fail_title")}</h2>
             </div>
+            {resultData.owner_exempt && (
+              <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+                <CheckCircle size={14} /> {t("verify.owner_exempt")}
+              </div>
+            )}
+            <div className="border-b border-slate-200 pb-4 mb-6"></div>
 
             <div className="flex flex-col items-center mb-8">
               <img src={originalImagePreview!} className="max-w-[200px] max-h-[200px] object-contain rounded border border-slate-200 mb-6" alt="Verify" />

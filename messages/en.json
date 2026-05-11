@@ -100,6 +100,7 @@
       "mismatch": "Mismatched ❌",
       "success_desc": "This image is a certified original, and it has been confirmed that the internal content has not been tampered with.",
       "fail_desc": "Warning: This image is judged to have been tampered with or modified after certification. It may not be the original.",
+      "owner_exempt": "Your own proof — credit waived",
       "verify_another": "Verify Another Image"
     },
     "how_it_works": {

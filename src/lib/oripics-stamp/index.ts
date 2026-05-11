@@ -74,6 +74,8 @@ export interface VerifyResponse {
     lat?: number;
     lng?: number;
   };
+  /** V4 메타에서 owner가 호출자와 일치하면 true — 차감 면제됨 */
+  owner_exempt?: boolean;
 }
 
 export interface StampedDraft {
