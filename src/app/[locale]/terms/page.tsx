@@ -4,8 +4,8 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-05-11";
-const EFFECTIVE_DATE = "2026-05-11";
+const LAST_UPDATED = "2026-05-12";
+const EFFECTIVE_DATE = "2026-05-12";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const SUPPORT_EMAIL = "hi@ori.pics";
@@ -107,25 +107,46 @@ function TermsKo() {
         <li>C2PA 매니페스트와 스테가노그래피 시일은 원본 무결성·출처 정보를 기록할 뿐이며, 콘텐츠의 합법성 또는 진위 자체를 회사가 보증하는 것은 아닙니다.</li>
       </ol>
 
-      <h2>제10조 (유료 서비스)</h2>
-      <p className="text-sm text-slate-500 italic">
-        ※ 본 조항은 유료 결제 시스템(포트원 통합) 출시 시점에 갱신됩니다. 시행
-        전까지는 모든 회원이 Free 플랜으로 운영됩니다.
-      </p>
+      <h2 id="paid" className="scroll-mt-20">제10조 (유료 서비스)</h2>
       <ol>
-        <li>회사는 Pro·Business 등 유료 플랜을 제공할 수 있습니다.</li>
-        <li>요금·과금 주기·결제 방법·환불 조건은 결제 화면 및 회사 홈페이지의 요금제 안내에 따릅니다.</li>
-        <li>유료 회원은 결제일을 기준으로 매월 자동 결제됩니다. 회원은 언제든지 구독을 해지할 수 있으며, 해지 후에도 결제된 기간이 만료될 때까지 서비스를 이용할 수 있습니다.</li>
+        <li>회사는 다음의 유료 플랜을 제공합니다. 모든 가격은 부가가치세(VAT) 포함 표기이며, 사업자 회원이 세금계산서를 요청하는 경우 별도 처리합니다.
+          <ul>
+            <li><strong>Free 플랜</strong>: 월 ₩0. 월 인증 5건, 보관 7일.</li>
+            <li><strong>Pro 플랜</strong>: 월 ₩9,900 또는 연 ₩99,000 (월 환산 약 17% 할인).</li>
+            <li><strong>Business 플랜</strong>: 월 ₩79,000부터 (팀 인원·옵션에 따라 영업 협의).</li>
+          </ul>
+          최신 요금 및 플랜별 포함 사항은 서비스 내 요금제 안내 페이지에 게시된 내용이 우선합니다.
+        </li>
+        <li>결제 수단은 결제대행사(PG)를 통하여 제공되며, 신용카드·체크카드·간편결제(카카오페이·토스페이 등)를 포함합니다. 회사는 결제 수단의 종류와 제공 범위를 사전 공지 후 변경할 수 있습니다.</li>
+        <li>유료 회원은 최초 결제일을 기준으로 매월(또는 매년) 동일 일자에 자동으로 결제(정기결제)됩니다. 다음 결제 7일 전까지 해지 또는 플랜 변경 신청이 없는 경우 기존 플랜으로 갱신됩니다.</li>
+        <li>회원은 프로필 또는 결제 관리 페이지에서 언제든지 구독을 해지하거나 플랜을 변경할 수 있으며, 해지 후에도 이미 결제된 기간이 만료될 때까지 해당 플랜의 서비스를 이용할 수 있습니다.</li>
+        <li>결제 수단의 한도 초과·유효기간 만료·잔액 부족 등의 사유로 자동 결제가 실패한 경우, 회사는 최대 7일간 재시도하며 그 기간 동안 회원에게 이메일로 안내합니다. 7일 이내에 결제가 완료되지 않으면 해당 회원은 Free 플랜으로 자동 다운그레이드되며, 영구 보관 자료는 제8조 제2호의 grace 정책에 따라 처리됩니다.</li>
+        <li>플랜에 포함된 월별 인증 한도(크레딧)는 결제일(가입일) 기준 매월 갱신되며, 사용하지 않은 한도는 다음 달로 이월되지 않습니다.</li>
+        <li>회사는 요금·과금 주기·플랜 구성을 변경할 수 있으며, 회원에게 불리한 변경은 시행일 30일 전, 그 외 변경은 7일 전 서비스 내 공지 및 이메일로 안내합니다. 변경 후 회원이 계속하여 서비스를 이용하는 경우 변경된 조건에 동의한 것으로 간주합니다. 변경 전 결제된 구독은 해당 결제 주기 종료 시까지 변경 전 조건이 유지됩니다.</li>
+        <li>미성년자(만 19세 미만)가 결제를 진행한 경우 법정대리인은 미성년자 본인 또는 법정대리인이 동의하지 아니한 결제에 대하여 취소를 요청할 수 있습니다.</li>
       </ol>
 
-      <h2>제11조 (환불 및 청약철회)</h2>
-      <p className="text-sm text-slate-500 italic">
-        ※ 본 조항은 유료 결제 시스템 출시 시점에 갱신됩니다.
-      </p>
+      <h2 id="refund" className="scroll-mt-20">제11조 (환불 및 청약철회)</h2>
       <ol>
-        <li>회원은 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조에 따라 결제일로부터 7일 이내에 청약철회를 요청할 수 있습니다. 단, 일부 또는 전부를 이용한 경우 해당 분의 환불은 제한될 수 있습니다.</li>
-        <li>회사의 귀책사유로 서비스를 정상 제공하지 못한 경우 일할 계산하여 환불합니다.</li>
-        <li>환불 요청은 <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>로 접수합니다.</li>
+        <li><strong>청약철회 (7일):</strong> 회원은 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제1항에 따라 결제일로부터 7일 이내에 별도의 수수료 없이 청약철회를 요청할 수 있습니다.</li>
+        <li><strong>청약철회의 제한:</strong> 다음 어느 하나에 해당하는 경우에는 같은 법 제17조 제2항에 따라 청약철회가 제한될 수 있습니다.
+          <ul>
+            <li>회원이 해당 결제 주기 내에 유료 플랜의 기능(Verified 인증, 영구 보관 등 Free 플랜에서 제공하지 않는 기능)을 이미 사용하여 그 효용이 회원에게 귀속된 경우. 이 경우에도 사용량에 비례한 부분 환불은 본 조 제4항에 따라 처리합니다.</li>
+            <li>회원의 귀책사유로 콘텐츠가 훼손·멸실된 경우.</li>
+          </ul>
+        </li>
+        <li><strong>회사 귀책사유로 인한 환불:</strong> 회사의 시스템 장애, 서비스 결함, 약관·법령 위반 등 회사의 귀책사유로 회원이 서비스를 정상적으로 이용하지 못한 경우, 회사는 영향을 받은 기간을 일할 계산하여 즉시 환불하거나 동일 가치의 크레딧·이용 기간을 보상합니다.</li>
+        <li><strong>월간 구독 환불:</strong> 청약철회 기간(7일)이 경과한 후의 월간 구독 해지는 다음 결제 시점부터 효력이 발생하며, 이미 결제된 당월분은 환불되지 않습니다. 다만 회원은 해당 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다.</li>
+        <li><strong>연간 구독 환불:</strong> 연간 구독의 경우, 청약철회 기간(7일)이 경과한 후의 환불은 다음 산식에 따라 계산합니다.
+          <br />
+          <em>환불액 = 결제액 − (사용한 개월 수 × 월간 정상가 ₩9,900) − 환불 수수료(결제대행사 정책)</em>
+          <br />
+          연간 할인분은 청약철회 기간 경과 후 환불에 적용되지 않습니다. 사용 개월 수의 1개월 미만 잔여 기간은 1개월로 올림 계산합니다.
+        </li>
+        <li><strong>환불 처리 기간:</strong> 회사는 환불 사유를 확인한 날로부터 3영업일 이내에 결제대행사에 환불(승인 취소 또는 매입 취소)을 요청합니다. 실제 환급 시점은 회원의 결제 수단(카드사·간편결제사) 정책에 따라 결제일과 동일 사이클 또는 다음 사이클에 처리됩니다.</li>
+        <li><strong>환불 신청 방법:</strong> 환불 요청은 서비스 내 결제 관리 페이지 또는 <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>로 접수합니다. 회사는 접수일로부터 3영업일 이내에 처리 결과를 안내합니다.</li>
+        <li><strong>미성년자 결제 취소:</strong> 미성년자가 법정대리인의 동의 없이 결제한 경우, 미성년자 본인 또는 법정대리인은 결제일로부터 6개월 이내(민법상 취소권 행사기간) 환불을 요청할 수 있으며, 회사는 관련 입증 자료 확인 후 환불합니다.</li>
+        <li><strong>분쟁 해결:</strong> 환불 관련 분쟁은 회사와 회원이 우선 협의하여 해결하며, 협의가 이루어지지 않는 경우 「소비자기본법」에 따라 한국소비자원 등 공식 분쟁조정기관의 조정을 신청할 수 있습니다.</li>
       </ol>
 
       <h2>제12조 (서비스의 변경 및 종료)</h2>
@@ -160,6 +181,7 @@ function TermsKo() {
 
       <h2>변경 이력</h2>
       <ul>
+        <li>2026-05-12: 제10조(유료 서비스) 및 제11조(환불·청약철회) 본문 갱신</li>
         <li>2026-05-11: 최초 제정</li>
       </ul>
     </article>
@@ -222,24 +244,46 @@ function TermsEn() {
         <li>Retention periods: Free plan — 7 days; paid plans — for the subscription period (with a 30-day grace period upon downgrade).</li>
       </ol>
 
-      <h2>6. Paid Services</h2>
-      <p className="text-sm text-slate-500 italic">
-        ※ This section will be updated when paid services launch via PortOne integration. Until then, all members operate on the Free plan.
-      </p>
+      <h2 id="paid" className="scroll-mt-20">6. Paid Services</h2>
       <ol>
-        <li>Pro and Business plans are billed automatically each billing cycle starting from the subscription date.</li>
-        <li>You may cancel at any time; access remains until the end of the paid period.</li>
-        <li>Pricing, billing frequency, and refund terms are stated on the checkout page and the pricing section of our website.</li>
+        <li>We offer the following paid plans. All prices include Korean VAT; business customers requesting a tax invoice are billed separately.
+          <ul>
+            <li><strong>Free</strong>: ₩0/month. 5 proofs/month, 7-day retention.</li>
+            <li><strong>Pro</strong>: ₩9,900/month or ₩99,000/year (~17% annual discount).</li>
+            <li><strong>Business</strong>: from ₩79,000/month (sales-negotiated based on team size and options).</li>
+          </ul>
+          The pricing page on the Service is authoritative for current rates and plan inclusions.
+        </li>
+        <li>Payments are processed by a licensed payment gateway (PG) supporting credit/debit cards and Korean easy-pay methods (KakaoPay, TossPay, etc.). We may change accepted payment methods with prior notice.</li>
+        <li>Paid plans are billed automatically on the same day each month (or year) from the initial subscription date. If no cancellation or plan change is requested at least 7 days before the next billing date, the subscription renews under the existing plan.</li>
+        <li>You may cancel or change your plan at any time from the profile or billing page; access to the current plan continues until the end of the paid period.</li>
+        <li>If an automatic charge fails (credit limit exceeded, expired card, insufficient balance), we retry for up to 7 days while notifying you by email. If payment is not completed within that period, the account is downgraded to Free, and permanent-retention content is handled under the grace policy in §5.3.</li>
+        <li>Monthly proof allowances (credits) reset on each billing-anniversary date; unused credits do not carry over.</li>
+        <li>We may change pricing, billing cycles, or plan composition. Changes adverse to members take effect at least 30 days after in-Service and email notice; other changes take effect at least 7 days after notice. Continued use after the effective date constitutes acceptance. Subscriptions paid before the effective date retain prior terms until the end of that billing cycle.</li>
+        <li>Where a minor (under 19 in Korea) made a payment without the consent of a legal guardian, the guardian or the minor may request cancellation under the Korean Civil Code.</li>
       </ol>
 
-      <h2>7. Refunds and Withdrawal</h2>
-      <p className="text-sm text-slate-500 italic">
-        ※ This section will be updated when paid services launch.
-      </p>
+      <h2 id="refund" className="scroll-mt-20">7. Refunds and Withdrawal</h2>
       <ol>
-        <li>Under Korean Act on Consumer Protection in E-Commerce Art. 17, members may withdraw a subscription within 7 days of payment. Refund of partially used periods may be prorated.</li>
-        <li>If the Service fails through our fault, refunds are pro-rated.</li>
-        <li>Refund requests: <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.</li>
+        <li><strong>7-day withdrawal right:</strong> Under Article 17(1) of the Korean Act on Consumer Protection in E-Commerce, members may withdraw a subscription within 7 days of payment, without fee.</li>
+        <li><strong>Limits on withdrawal:</strong> Under Article 17(2), the right of withdrawal may be limited where:
+          <ul>
+            <li>the member has already used paid-tier features within the current billing cycle (such as Verified-tier proofs or permanent retention) such that the benefit has accrued — in which case the prorated refund in §7.4 applies; or</li>
+            <li>content was damaged or lost due to the member&apos;s fault.</li>
+          </ul>
+        </li>
+        <li><strong>Refunds due to our fault:</strong> If you cannot use the Service normally due to system failure, defects, or our breach of these Terms or law, we will refund the affected period pro-rated, or compensate with equivalent credits or service days.</li>
+        <li><strong>Monthly subscription refunds:</strong> After the 7-day withdrawal window, a monthly cancellation takes effect at the next billing date; the current month is non-refundable, but access continues until the end of that paid period.</li>
+        <li><strong>Annual subscription refunds:</strong> After the 7-day withdrawal window, the refundable amount is calculated as:
+          <br />
+          <em>Refund = Amount paid − (Months used × monthly list price ₩9,900) − payment-processor refund fee</em>
+          <br />
+          The annual discount does not apply to refunds after the withdrawal window. Partial months are rounded up to a full month.
+        </li>
+        <li><strong>Refund processing:</strong> We submit the refund request (authorization void or settlement reversal) to the payment processor within 3 business days of confirming eligibility. Actual return to your payment method follows the card issuer&apos;s or easy-pay provider&apos;s cycle.</li>
+        <li><strong>How to request:</strong> Submit refund requests via the in-Service billing page or by email to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. We respond with a decision within 3 business days of receipt.</li>
+        <li><strong>Minor cancellations:</strong> A minor or their legal guardian may request a refund within 6 months of the payment (the rescission period under the Korean Civil Code) where the minor paid without guardian consent; refunds follow verification of supporting documents.</li>
+        <li><strong>Dispute resolution:</strong> Refund disputes are first resolved between the Company and the member. If unresolved, members may apply to mediation through the Korea Consumer Agency or other competent body under the Framework Act on Consumers.</li>
       </ol>
 
       <h2>8. Service Changes and Discontinuation</h2>
@@ -277,6 +321,7 @@ function TermsEn() {
 
       <h2>13. Changes</h2>
       <ul>
+        <li>2026-05-12: Updated §6 (Paid Services) and §7 (Refunds and Withdrawal) with substantive terms.</li>
         <li>2026-05-11: Initial publication.</li>
       </ul>
       <p>

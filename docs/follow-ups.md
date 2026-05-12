@@ -51,7 +51,7 @@
 |---|---|---|---|---|
 | U-5 | SSL.com 정확한 월 비용 확인 → 손익분기 갱신 | SSL.com 회신 후 | [pricing-policy §7](pricing-policy.md) | P1 |
 | U-6 | 글로벌 USD 가격 확정 ($7.99/Pro 잠정) | 베타 직전 | [pricing-policy §7](pricing-policy.md) | P2 |
-| U-7 | 연간 결제 환불 정책 (한국 7일 청약철회) | 포트원 계약 후 | [pricing-policy §7](pricing-policy.md) | P1 |
+| U-7 | ~~연간 결제 환불 정책 (한국 7일 청약철회)~~ → [/terms §11](../src/app/[locale]/terms/page.tsx) 본문에 반영 완료 (2026-05-12). PG 본계약 시 환불 수수료 수치 최종 검증 필요. | 포트원 계약 후 | [pricing-policy §7](pricing-policy.md) | P2 |
 | U-8 | B2B 인보이스 부가세 표기 정책 | B2B 영업 시작 | [pricing-policy §7](pricing-policy.md) | P2 |
 
 ### 1.3 법무·문서 결정
@@ -61,7 +61,7 @@
 | U-10 | 개인정보 처리방침 법무 검토 (국외 이전·아동 연령 기준) | 모바일 본 시작 | [privacy/page.tsx](../src/app/[locale]/privacy/page.tsx) | P1 |
 | U-11 | 마케팅 카피의 CAI 로고/Wordmark 가이드라인 검토 | 마케팅 자료 발행 전 | [marketing-copy §7](marketing-copy-jpeg-trust.md) | P2 |
 | U-12 | "JPEG Trust" 단독 사용 시 위원회 문맥 명시 검토 | 동일 | 동일 | P2 |
-| U-13 | 이용약관 §10·§11 (유료 서비스·환불) 갱신 | 포트원 계약 후 | [/terms](../src/app/[locale]/terms/page.tsx) §10·§11 placeholder | P1 |
+| U-13 | ~~이용약관 §10·§11 (유료 서비스·환불) 갱신~~ → 토스페이먼츠 가입 신청용 초안 작성 완료 (2026-05-12). PG 본계약 후 실제 환불 수수료·결제 수단 목록을 반영하여 재검토. | 포트원 계약 후 | [/terms](../src/app/[locale]/terms/page.tsx) §10·§11 | P2 |
 
 ### 1.4 앱스토어 메타데이터 (베타~심사 직전)
 
