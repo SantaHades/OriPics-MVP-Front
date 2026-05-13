@@ -29,6 +29,8 @@ interface SingleResult {
   error: string | null;
   /** 사이즈 라벨 — 멀티 결과 카드 헤더에 표시 */
   variant: "standard" | "original";
+  /** 업로드 진행률 (loaded/total bytes) — publishing 중 표시 */
+  uploadProgress?: { loaded: number; total: number };
 }
 
 interface MetaData {
@@ -130,6 +132,11 @@ export default function Home() {
   } | null>(null);
   // 양쪽 체크 시 결과 (1개 자리는 stampedDraft/resultData로 표시, 2개면 multiResults로 표시)
   const [multiResults, setMultiResults] = useState<SingleResult[] | null>(null);
+  // 처리 진행 표시: 경과 초 + 단계 라벨 (멀티 시 "1/2 기준 사이즈" 등)
+  const [processingElapsed, setProcessingElapsed] = useState(0);
+  const [processingStep, setProcessingStep] = useState<{ current: number; total: number; variant: "standard" | "original" } | null>(null);
+  // 단일 결과 publish(업로드+confirm) 진행률
+  const [singleUploadProgress, setSingleUploadProgress] = useState<{ loaded: number; total: number } | null>(null);
 
   type GpsState = 'unknown' | 'unsupported' | 'prompt' | 'granted' | 'denied';
   type HelpPlatform = 'ios_safari' | 'ios_chrome' | 'android' | 'desktop';
@@ -321,6 +328,21 @@ export default function Home() {
     }
     return () => clearInterval(timer);
   }, [status, timeLeft]);
+
+  // 처리 경과 초 카운터 — status === "processing" 동안만 1초 tick
+  useEffect(() => {
+    if (status !== "processing") {
+      setProcessingElapsed(0);
+      setProcessingStep(null);
+      return;
+    }
+    const start = Date.now();
+    setProcessingElapsed(0);
+    const timer = setInterval(() => {
+      setProcessingElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [status]);
 
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
@@ -617,7 +639,10 @@ export default function Home() {
 
       // 양쪽 모두 체크 — 순차 처리 + 자동 publish
       const results: SingleResult[] = [];
-      for (const variant of ["standard", "original"] as const) {
+      const variants = ["standard", "original"] as const;
+      for (let i = 0; i < variants.length; i++) {
+        const variant = variants[i];
+        setProcessingStep({ current: i + 1, total: variants.length, variant });
         const skipResize = variant === "original";
         const decoded = await decodeAndMaybeResize(file, { skipResize });
         const draft = await signAndStampFromPixels(
@@ -656,7 +681,17 @@ export default function Home() {
           copy[idx] = { ...copy[idx], publishing: true };
           return copy;
         });
-        publishStamped(item.draft, { apiBase: "" })
+        publishStamped(item.draft, {
+          apiBase: "",
+          onUploadProgress: (loaded, total) => {
+            setMultiResults((prev) => {
+              if (!prev) return prev;
+              const copy = [...prev];
+              copy[idx] = { ...copy[idx], uploadProgress: { loaded, total } };
+              return copy;
+            });
+          },
+        })
           .then((confirmed) => {
             const linkUrl = `${baseUrl}/${confirmed.link_id}`;
             // CDN warm-up
@@ -744,6 +779,7 @@ export default function Home() {
     setTimeLeft(0);
     setGeneratedLink(null);
     setDebugMessage(null);
+    setSingleUploadProgress(null);
     if (originalImagePreview) {
       URL.revokeObjectURL(originalImagePreview);
       setOriginalImagePreview(null);
@@ -802,9 +838,13 @@ export default function Home() {
   const handleCreateLink = async () => {
     if (!stampedDraft || isLinking) return;
     setIsLinking(true);
+    setSingleUploadProgress({ loaded: 0, total: stampedDraft.blob.size });
 
     try {
-      const confirmed = await publishStamped(stampedDraft, { apiBase: "" });
+      const confirmed = await publishStamped(stampedDraft, {
+        apiBase: "",
+        onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
+      });
       const baseUrl = window.location.origin;
       const fullLink = `${baseUrl}/${confirmed.link_id}`;
       setGeneratedLink(fullLink);
@@ -871,6 +911,7 @@ export default function Home() {
       alert(msg || t("errors.link_creation_failed"));
     } finally {
       setIsLinking(false);
+      setSingleUploadProgress(null);
     }
   };
 
@@ -1086,7 +1127,19 @@ export default function Home() {
                 ) : status === "processing" ? (
                   <div className="flex flex-col items-center py-6">
                     <RefreshCw size={40} className="animate-spin text-blue-600 mb-6" />
-                    <p className="text-xl font-medium">{t("upload.processing")}</p>
+                    <p className="text-xl font-medium">
+                      {processingStep
+                        ? t("upload.processing_step", {
+                            current: processingStep.current,
+                            total: processingStep.total,
+                            label:
+                              processingStep.variant === "original"
+                                ? t("size_select.original_label")
+                                : t("size_select.standard_label"),
+                          })
+                        : t("upload.processing")}
+                    </p>
+                    <p className="text-sm text-slate-500 mt-1 font-mono">{processingElapsed}s</p>
                     <div className="w-full max-w-md bg-slate-100 rounded-full h-2 mt-6 overflow-hidden">
                       <div className="bg-blue-500 h-2 rounded-full animate-pulse w-full"></div>
                     </div>
@@ -1301,11 +1354,11 @@ export default function Home() {
             </div>
 
             {sessionID && !generatedLink && timeLeft > 0 && (
-              <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-300">
+              <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-300 w-full">
                 <button
                   onClick={handleCreateLink}
                   disabled={isLinking}
-                  className="w-full max-w-md px-6 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl shadow-lg shadow-slate-200/50 flex flex-col items-center gap-1 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full max-w-md px-6 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl shadow-lg shadow-slate-200/50 flex flex-col items-center gap-1 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   <span className="flex items-center gap-2">
                     {isLinking ? <RefreshCw className="animate-spin" size={20} /> : t("result.create_link")}
@@ -1321,6 +1374,29 @@ export default function Home() {
                     })}
                   </span>
                 </button>
+                {isLinking && singleUploadProgress && singleUploadProgress.total > 0 && (() => {
+                  const pct = Math.min(
+                    100,
+                    Math.round((singleUploadProgress.loaded / singleUploadProgress.total) * 100),
+                  );
+                  return (
+                    <div className="w-full max-w-md mt-3">
+                      <div className="flex justify-between text-xs text-slate-600 mb-1">
+                        <span>{t("result.uploading")}</span>
+                        <span className="font-mono">
+                          {pct}% ({(singleUploadProgress.loaded / (1024 * 1024)).toFixed(1)}/
+                          {(singleUploadProgress.total / (1024 * 1024)).toFixed(1)} MB)
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-150"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -1417,12 +1493,35 @@ export default function Home() {
                     />
                   </div>
 
-                  {item.publishing && (
-                    <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
-                      <RefreshCw size={14} className="animate-spin" />
-                      {t("result.publishing")}
-                    </div>
-                  )}
+                  {item.publishing && (() => {
+                    const total = item.uploadProgress?.total ?? item.draft.blob.size;
+                    const loaded = item.uploadProgress?.loaded ?? 0;
+                    const pct = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+                    return (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                          <span className="flex items-center gap-1.5">
+                            <RefreshCw size={12} className="animate-spin" />
+                            {item.uploadProgress
+                              ? t("result.uploading")
+                              : t("result.publishing")}
+                          </span>
+                          {item.uploadProgress && total > 0 && (
+                            <span className="font-mono">
+                              {pct}% ({(loaded / (1024 * 1024)).toFixed(1)}/
+                              {(total / (1024 * 1024)).toFixed(1)} MB)
+                            </span>
+                          )}
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-1.5 rounded-full transition-all duration-150"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {item.error && (
                     <p className="text-xs text-rose-600 mb-2">

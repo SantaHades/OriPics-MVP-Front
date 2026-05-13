@@ -41,6 +41,7 @@
         "cancel": "Cancel"
       },
       "processing": "🔄 Processing original proof...",
+      "processing_step": "🔄 [{current}/{total}] Processing {label}…",
       "error": "Processing Failed",
       "retry": "Try Again"
     },
@@ -93,6 +94,7 @@
       "multi_title": "Both sizes proven",
       "multi_desc": "Both selected options were processed. Each link is retained for 7 days (or permanently for Pro+).",
       "publishing": "Creating link…",
+      "uploading": "Uploading image…",
       "publish_error": "Link creation failed",
       "short_link": "Short link",
       "copy_link": "Copy link",

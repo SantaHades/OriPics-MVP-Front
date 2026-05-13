@@ -41,6 +41,7 @@
         "cancel": "취소"
       },
       "processing": "🔄 원본증명처리 과정을 진행하고 있습니다...",
+      "processing_step": "🔄 [{current}/{total}] {label} 처리 중…",
       "error": "원본증명처리 실패",
       "retry": "다시 시도"
     },
@@ -93,6 +94,7 @@
       "multi_title": "두 사이즈 모두 인증 완료",
       "multi_desc": "선택하신 두 옵션 모두 처리되었습니다. 각 링크는 7일간 (또는 Pro 이상 영구) 보관됩니다.",
       "publishing": "링크 생성 중…",
+      "uploading": "이미지 업로드 중…",
       "publish_error": "링크 생성 실패",
       "short_link": "간편링크",
       "copy_link": "링크 복사",

@@ -156,21 +156,38 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
   return signAndStampFromPixels(pixels, width, height, opts);
 }
 
-export async function uploadStamped(draft: StampedDraft): Promise<void> {
-  let res: Response;
-  try {
-    res = await fetch(draft.sign.signed_upload_url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'image/png' },
-      body: draft.blob,
-    });
-  } catch (e: any) {
-    throw new Error(`upload_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
-  }
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`upload_failed:${res.status}:${detail}`);
-  }
+export async function uploadStamped(
+  draft: StampedDraft,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<void> {
+  // XHR 사용 — fetch는 ReadableStream PUT을 안정적으로 지원하지 않아 onprogress 콜백을 위해 XHR 채택.
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', draft.sign.signed_upload_url);
+    xhr.setRequestHeader('Content-Type', 'image/png');
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(e.loaded, e.total);
+        else onProgress(e.loaded, draft.blob.size || 0);
+      });
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        // 마지막 100% 신호 보장
+        if (onProgress) onProgress(draft.blob.size, draft.blob.size);
+        resolve();
+      } else {
+        reject(new Error(`upload_failed:${xhr.status}:${xhr.responseText}`));
+      }
+    };
+    xhr.onerror = () => {
+      reject(new Error(`upload_failed:0:${JSON.stringify({ detail: 'network_error' })}`));
+    };
+    xhr.onabort = () => {
+      reject(new Error('upload_failed:0:aborted'));
+    };
+    xhr.send(draft.blob);
+  });
 }
 
 export async function confirmLink(draft: StampedDraft, opts: { apiBase: string }): Promise<ConfirmResponse> {
@@ -192,9 +209,16 @@ export async function confirmLink(draft: StampedDraft, opts: { apiBase: string }
   return res.json();
 }
 
-export async function publishStamped(draft: StampedDraft, opts: { apiBase: string }): Promise<ConfirmResponse> {
+export async function publishStamped(
+  draft: StampedDraft,
+  opts: {
+    apiBase: string;
+    /** 업로드 PUT 바이트 진행률 콜백 (loaded, total in bytes) */
+    onUploadProgress?: (loaded: number, total: number) => void;
+  },
+): Promise<ConfirmResponse> {
   const [, confirmResult] = await Promise.all([
-    uploadStamped(draft),
+    uploadStamped(draft, opts.onUploadProgress),
     confirmLink(draft, opts),
   ]);
   return confirmResult;
