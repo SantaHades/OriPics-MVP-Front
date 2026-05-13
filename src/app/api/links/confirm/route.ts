@@ -4,6 +4,7 @@ import { createHmac } from "crypto";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
+import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -58,8 +59,13 @@ export async function POST(req: NextRequest) {
     } = claims;
 
     const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";
-    // 인증 1회 = proof + link 통합 차감 (Standard 2+1=3, Verified 3+1=4)
-    const proofCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+    // 인증 1회 = proof × sizeMultiplier + LINK_CREATE(1, 사이즈 무관)
+    // 1× : 긴 변 ≤ 1800px
+    // 2× : 긴 변 > 1800 AND 픽셀 수 ≤ 100M
+    // 3× : 픽셀 수 > 100M
+    const sizeMultiplier = getProofMultiplier(width, height);
+    const baseProofCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+    const proofCost = baseProofCost * sizeMultiplier;
     const creditCost = proofCost + CREDIT_COSTS.LINK_CREATE;
     const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
 
@@ -72,11 +78,17 @@ export async function POST(req: NextRequest) {
         userId: user_id,
         amount: creditCost,
         action: creditAction,
-        metadata: { link_id, storage_path, tier },
+        metadata: { link_id, storage_path, tier, width, height, size_multiplier: sizeMultiplier },
       });
       if (!consume.ok) {
         return NextResponse.json(
-          { detail: "insufficient_credits", balance: consume.balance, required: creditCost, tier },
+          {
+            detail: "insufficient_credits",
+            balance: consume.balance,
+            required: creditCost,
+            tier,
+            size_multiplier: sizeMultiplier,
+          },
           { status: 402 },
         );
       }

@@ -17,8 +17,19 @@ import {
 } from "@/lib/oripics-stamp";
 import { useCredits } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
+import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 
-type ProcessStatus = "idle" | "dragover" | "processing" | "result_stamped" | "result_verified" | "error";
+type ProcessStatus = "idle" | "dragover" | "processing" | "size_selection" | "result_stamped" | "result_multi" | "result_verified" | "error";
+
+interface SingleResult {
+  draft: StampedDraft;
+  display: ApiResponse;
+  link: string | null;
+  publishing: boolean;
+  error: string | null;
+  /** 사이즈 라벨 — 멀티 결과 카드 헤더에 표시 */
+  variant: "standard" | "original";
+}
 
 interface MetaData {
   timestamp: string;
@@ -43,15 +54,25 @@ const KNOWN_ERROR_CODES = ["empty_file", "invalid_image", "image_too_small", "di
 
 const MAX_DIMENSION = 1800;
 
+// 원본 사이즈 측정 — 빠른 dimensions probe (decode 비용 회피).
+// 메타에 박힐 width/height와 동일하게 createImageBitmap이 반환하는 값을 사용.
+async function probeDimensions(file: Blob): Promise<{ width: number; height: number }> {
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = bitmap;
+  bitmap.close();
+  return { width, height };
+}
+
 async function decodeAndMaybeResize(
   file: Blob,
+  options?: { skipResize?: boolean },
 ): Promise<{ pixels: Uint8ClampedArray; width: number; height: number }> {
   const bitmap = await createImageBitmap(file);
   const { width: srcW, height: srcH } = bitmap;
   const longest = Math.max(srcW, srcH);
   let targetW = srcW;
   let targetH = srcH;
-  if (longest > MAX_DIMENSION) {
+  if (!options?.skipResize && longest > MAX_DIMENSION) {
     const scale = MAX_DIMENSION / longest;
     targetW = Math.round(srcW * scale);
     targetH = Math.round(srcH * scale);
@@ -96,6 +117,19 @@ export default function Home() {
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [verifyConfirm, setVerifyConfirm] = useState<{ file: File; detect: DetectResult } | null>(null);
   const { data: credits, refresh: refreshCredits } = useCredits();
+
+  // 원본 사이즈 옵션 — 긴 변 > 1800px 이미지가 들어왔을 때 사용자가 선택
+  const [sizeSelection, setSizeSelection] = useState<{
+    file: File;
+    source: "F" | "P" | "C";
+    gps?: { lat: number; lng: number } | null;
+    originalWidth: number;
+    originalHeight: number;
+    standardChecked: boolean;
+    originalChecked: boolean;
+  } | null>(null);
+  // 양쪽 체크 시 결과 (1개 자리는 stampedDraft/resultData로 표시, 2개면 multiResults로 표시)
+  const [multiResults, setMultiResults] = useState<SingleResult[] | null>(null);
 
   type GpsState = 'unknown' | 'unsupported' | 'prompt' | 'granted' | 'denied';
   type HelpPlatform = 'ios_safari' | 'ios_chrome' | 'android' | 'desktop';
@@ -452,12 +486,29 @@ export default function Home() {
         // 무료 detect — magic byte만 확인. 해시·서버 호출 없음.
         const detect = await detectStamp(file);
         if (detect.hasStamp) {
-          // 이미 인증된 이미지 — 풀 verify는 -1 차감이라 사용자 확인 필요.
+          // 이미 인증된 이미지 — 풀 verify는 차감이라 사용자 확인 필요.
           setStatus("idle");
           setVerifyConfirm({ file, detect });
           return;
         }
         // no_stamp → stamp 흐름으로 진입
+      }
+
+      // 사이즈 확인: 긴 변 > 1800px면 size_selection 단계로 분기 (1개·2개 결과물 선택)
+      const dims = await probeDimensions(file);
+      const longest = Math.max(dims.width, dims.height);
+      if (longest > MAX_DIMENSION) {
+        setStatus("size_selection");
+        setSizeSelection({
+          file,
+          source,
+          gps: gps ?? null,
+          originalWidth: dims.width,
+          originalHeight: dims.height,
+          standardChecked: false,
+          originalChecked: false,
+        });
+        return;
       }
 
       const decoded = await decodeAndMaybeResize(file);
@@ -517,12 +568,176 @@ export default function Home() {
     }
   };
 
+  /**
+   * size_selection에서 사용자가 1개 또는 2개 옵션을 체크하고 진행 클릭 시 호출.
+   * - 1개 체크: 기존 단일 result_stamped 흐름으로 진입 (preview → 사용자가 link 발급 클릭)
+   * - 2개 체크: 두 옵션 모두 즉시 sign + publish 자동 실행 후 result_multi 표시
+   */
+  const handleSizeSelectionConfirm = async () => {
+    if (!sizeSelection) return;
+    const { file, source, gps, standardChecked, originalChecked } = sizeSelection;
+    if (!standardChecked && !originalChecked) return;
+
+    const wantsBoth = standardChecked && originalChecked;
+    setStatus("processing");
+    setErrorMessage("");
+
+    try {
+      if (!wantsBoth) {
+        // 단일 옵션 — 기존 single-result 흐름
+        const skipResize = originalChecked;
+        const decoded = await decodeAndMaybeResize(file, { skipResize });
+        const draft = await signAndStampFromPixels(
+          decoded.pixels,
+          decoded.width,
+          decoded.height,
+          { apiBase: "", uploadType: source, gps: gps ?? undefined, watermark: watermarkEnabled },
+        );
+        const stampedUrl = URL.createObjectURL(draft.blob);
+        setStampedDraft(draft);
+        setResultData({
+          status: "stamped",
+          image: stampedUrl,
+          session_id: draft.sign.link_id,
+          metadata: {
+            timestamp: draft.sign.timestamp,
+            width: draft.width,
+            height: draft.height,
+            lat: draft.gps?.lat,
+            lng: draft.gps?.lng,
+          },
+        });
+        setSessionID(draft.sign.link_id);
+        setTimeLeft(draft.sign.jwt_ttl);
+        setGeneratedLink(null);
+        setSizeSelection(null);
+        setStatus("result_stamped");
+        return;
+      }
+
+      // 양쪽 모두 체크 — 순차 처리 + 자동 publish
+      const results: SingleResult[] = [];
+      for (const variant of ["standard", "original"] as const) {
+        const skipResize = variant === "original";
+        const decoded = await decodeAndMaybeResize(file, { skipResize });
+        const draft = await signAndStampFromPixels(
+          decoded.pixels,
+          decoded.width,
+          decoded.height,
+          { apiBase: "", uploadType: source, gps: gps ?? undefined, watermark: watermarkEnabled },
+        );
+        const stampedUrl = URL.createObjectURL(draft.blob);
+        const display: ApiResponse = {
+          status: "stamped",
+          image: stampedUrl,
+          session_id: draft.sign.link_id,
+          metadata: {
+            timestamp: draft.sign.timestamp,
+            width: draft.width,
+            height: draft.height,
+            lat: draft.gps?.lat,
+            lng: draft.gps?.lng,
+          },
+        };
+        results.push({ draft, display, link: null, publishing: false, error: null, variant });
+      }
+      setMultiResults(results);
+      setSizeSelection(null);
+      setStatus("result_multi");
+      void refreshCredits();
+
+      // publish 각 결과물 (병렬) — 실패해도 다른 쪽은 진행
+      const baseUrl = window.location.origin;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      results.forEach((item, idx) => {
+        setMultiResults((prev) => {
+          if (!prev) return prev;
+          const copy = [...prev];
+          copy[idx] = { ...copy[idx], publishing: true };
+          return copy;
+        });
+        publishStamped(item.draft, { apiBase: "" })
+          .then((confirmed) => {
+            const linkUrl = `${baseUrl}/${confirmed.link_id}`;
+            // CDN warm-up
+            if (supabaseUrl && confirmed.storage_path) {
+              const publicUrl = `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${confirmed.storage_path}`;
+              fetch(publicUrl, { method: "HEAD", cache: "no-cache" }).catch(() => {});
+            }
+            setMultiResults((prev) => {
+              if (!prev) return prev;
+              const copy = [...prev];
+              copy[idx] = { ...copy[idx], link: linkUrl, publishing: false };
+              return copy;
+            });
+            void refreshCredits();
+          })
+          .catch((err: any) => {
+            const raw = String(err?.message || err || "");
+            setMultiResults((prev) => {
+              if (!prev) return prev;
+              const copy = [...prev];
+              copy[idx] = { ...copy[idx], publishing: false, error: raw };
+              return copy;
+            });
+          });
+      });
+    } catch (err: any) {
+      const raw = String(err?.message || err || "");
+      const m = raw.match(/^(?:sign_failed|verify_http|upload_failed|confirm_failed):(\d+):(.*)$/);
+      if (m && m[1] === "402") {
+        setStatus("idle");
+        setShowInsufficientModal(true);
+        void refreshCredits();
+        setSizeSelection(null);
+        return;
+      }
+      setStatus("error");
+      if (m) {
+        try {
+          const parsed = JSON.parse(m[2]);
+          if (parsed.detail === "insufficient_credits") {
+            setStatus("idle");
+            setShowInsufficientModal(true);
+            void refreshCredits();
+            setSizeSelection(null);
+            return;
+          }
+          setErrorMessage(translateBackendError(parsed.detail || "", t));
+        } catch {
+          setErrorMessage(translateBackendError(m[2], t));
+        }
+      } else if (raw === "image_too_small" || KNOWN_ERROR_CODES.includes(raw)) {
+        setErrorMessage(t(`errors.${raw}`));
+      } else {
+        setErrorMessage(raw || t("errors.unknown_error"));
+      }
+      setSizeSelection(null);
+    }
+  };
+
+  const handleSizeSelectionCancel = () => {
+    setSizeSelection(null);
+    setStatus("idle");
+    if (originalImagePreview) {
+      URL.revokeObjectURL(originalImagePreview);
+      setOriginalImagePreview(null);
+    }
+  };
+
   const resetState = () => {
     setStatus("idle");
     if (resultData?.image && resultData.image.startsWith("blob:")) {
       URL.revokeObjectURL(resultData.image);
     }
+    if (multiResults) {
+      for (const r of multiResults) {
+        if (r.display.image?.startsWith("blob:")) URL.revokeObjectURL(r.display.image);
+      }
+    }
     setResultData(null);
+    setMultiResults(null);
+    setSizeSelection(null);
     setErrorMessage("");
     setSessionID(null);
     setStampedDraft(null);
@@ -902,6 +1117,128 @@ export default function Home() {
           )}
         </section>
 
+        {status === "size_selection" && sizeSelection && (() => {
+          const { originalWidth, originalHeight, standardChecked, originalChecked } = sizeSelection;
+          // 사이즈별 비용 미리보기
+          const stdMult = 1;
+          const origMult = getProofMultiplier(originalWidth, originalHeight);
+          const stdProof = CREDIT_COSTS.IMAGE_PROOF * stdMult; // 2
+          const origProof = CREDIT_COSTS.IMAGE_PROOF * origMult; // 4 or 6
+          const stdCost = stdProof + CREDIT_COSTS.LINK_CREATE; // 3
+          const origCost = origProof + CREDIT_COSTS.LINK_CREATE; // 5 or 7
+          const totalCost =
+            (standardChecked ? stdCost : 0) + (originalChecked ? origCost : 0);
+          const longest = Math.max(originalWidth, originalHeight);
+          const pixels = originalWidth * originalHeight;
+          const noneSelected = !standardChecked && !originalChecked;
+
+          return (
+            <section className="w-full max-w-3xl glass p-8 rounded-2xl mb-16 animate-in slide-in-from-bottom-4 fade-in duration-500">
+              <div className="flex items-center gap-3 text-blue-600 mb-6 border-b border-slate-200 pb-4">
+                <ImageUp size={28} />
+                <h2 className="text-2xl font-bold">{t("size_select.title")}</h2>
+              </div>
+              <p className="text-sm text-slate-700 mb-2">
+                {t.rich("size_select.intro", {
+                  w: originalWidth,
+                  h: originalHeight,
+                  mp: (pixels / 1_000_000).toFixed(1),
+                  strong: (chunks) => <strong className="font-semibold">{chunks}</strong>,
+                })}
+              </p>
+              <p className="text-xs text-slate-500 mb-6">
+                {longest > 10000 || pixels > 100_000_000
+                  ? t("size_select.hint_huge")
+                  : t("size_select.hint_large")}
+              </p>
+
+              <div className="space-y-3 mb-6">
+                <label
+                  className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    standardChecked
+                      ? "border-blue-500 bg-blue-50/60"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={standardChecked}
+                    onChange={(e) =>
+                      setSizeSelection((s) => (s ? { ...s, standardChecked: e.target.checked } : s))
+                    }
+                    className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-baseline mb-1">
+                      <span className="font-semibold text-slate-900">
+                        {t("size_select.standard_label")}
+                      </span>
+                      <span className="text-xs font-mono text-slate-500">
+                        ≤ {MAX_DIMENSION}px · {stdCost} {t("size_select.credits")}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600">{t("size_select.standard_desc")}</p>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    originalChecked
+                      ? "border-purple-500 bg-purple-50/60"
+                      : "border-slate-200 bg-white hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={originalChecked}
+                    onChange={(e) =>
+                      setSizeSelection((s) => (s ? { ...s, originalChecked: e.target.checked } : s))
+                    }
+                    className="mt-1 w-5 h-5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-baseline mb-1">
+                      <span className="font-semibold text-slate-900">
+                        {t("size_select.original_label")}
+                      </span>
+                      <span className="text-xs font-mono text-slate-500">
+                        {originalWidth}×{originalHeight} · {origCost} {t("size_select.credits")}{" "}
+                        <span className="text-purple-600">({origMult}×)</span>
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600">{t("size_select.original_desc")}</p>
+                  </div>
+                </label>
+              </div>
+
+              {!noneSelected && (
+                <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200 flex justify-between items-center text-sm">
+                  <span className="text-slate-600">{t("size_select.total_label")}</span>
+                  <span className="font-bold text-slate-900">
+                    {totalCost} {t("size_select.credits")}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSizeSelectionCancel}
+                  className="flex-1 py-3 rounded-xl border border-slate-300 bg-white text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
+                >
+                  {t("size_select.cancel")}
+                </button>
+                <button
+                  onClick={handleSizeSelectionConfirm}
+                  disabled={noneSelected}
+                  className="flex-1 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-200/50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {t("size_select.confirm")}
+                </button>
+              </div>
+            </section>
+          );
+        })()}
+
         {status === "result_stamped" && resultData?.metadata && (
           <section className="w-full max-w-3xl glass p-8 rounded-2xl mb-16 animate-in slide-in-from-bottom-4 fade-in duration-500">
             <div className="flex items-center gap-3 text-green-600 mb-8 border-b border-slate-200 pb-4">
@@ -1042,6 +1379,106 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </section>
+        )}
+
+        {status === "result_multi" && multiResults && (
+          <section className="w-full max-w-5xl mx-auto glass p-8 rounded-2xl mb-16 animate-in slide-in-from-bottom-4 fade-in duration-500">
+            <div className="flex items-center gap-3 text-green-600 mb-6 border-b border-slate-200 pb-4">
+              <CheckCircle size={28} />
+              <h2 className="text-2xl font-bold">{t("result.multi_title")}</h2>
+            </div>
+            <p className="text-sm text-slate-600 mb-6">{t("result.multi_desc")}</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {multiResults.map((item, idx) => (
+                <div
+                  key={item.draft.sign.link_id}
+                  className="bg-white rounded-2xl border-2 border-slate-200 p-6 flex flex-col"
+                >
+                  <div
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold mb-3 self-start ${
+                      item.variant === "original"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {item.variant === "original"
+                      ? t("size_select.original_label")
+                      : t("size_select.standard_label")}{" "}
+                    · {item.draft.width}×{item.draft.height}
+                  </div>
+
+                  <div className="flex justify-center mb-4 bg-slate-50 rounded-xl p-3">
+                    <img
+                      src={item.display.image}
+                      alt={`Result ${idx + 1}`}
+                      className="max-w-full max-h-[200px] object-contain rounded"
+                    />
+                  </div>
+
+                  {item.publishing && (
+                    <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                      <RefreshCw size={14} className="animate-spin" />
+                      {t("result.publishing")}
+                    </div>
+                  )}
+
+                  {item.error && (
+                    <p className="text-xs text-rose-600 mb-2">
+                      {t("result.publish_error")}: {item.error.slice(0, 80)}
+                    </p>
+                  )}
+
+                  {item.link && (
+                    <div className="mb-3">
+                      <p className="text-xs text-slate-500 mb-1">{t("result.short_link")}</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={item.link}
+                          className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-blue-700 font-mono outline-none min-w-0"
+                        />
+                        <button
+                          onClick={() => copyToClipboard(item.link!)}
+                          className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-600 rounded-lg flex-shrink-0"
+                          title={t("result.copy_link")}
+                        >
+                          <Clipboard size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleShare(item.link!)}
+                          className="p-2 bg-blue-600/20 hover:bg-blue-600/40 text-blue-600 rounded-lg flex-shrink-0"
+                          title={t("result.share")}
+                        >
+                          <Share2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      const a = document.createElement("a");
+                      a.href = item.display.image!;
+                      a.download = `${item.draft.sign.link_id}.png`;
+                      a.click();
+                    }}
+                    className="mt-auto w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold rounded-lg flex items-center justify-center gap-2 text-sm transition-colors"
+                  >
+                    <Download size={16} /> {t("result.download_stamped")}
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={resetState}
+              className="w-full py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={18} /> {t("result.process_another")}
+            </button>
           </section>
         )}
 
@@ -1477,7 +1914,13 @@ export default function Home() {
         onChange={handleFileSelect}
       />
 
-      {verifyConfirm && (
+      {verifyConfirm && (() => {
+        const preview = verifyConfirm.detect.preview;
+        const verifyMult = preview
+          ? getProofMultiplier(preview.width, preview.height)
+          : 1;
+        const verifyCost = CREDIT_COSTS.VERIFY_QUERY * verifyMult;
+        return (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60"
           onClick={handleVerifyConfirmNo}
@@ -1494,7 +1937,7 @@ export default function Home() {
               {t("verify_confirm.body")}
             </p>
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-5">
-              {t("verify_confirm.cost_notice")}
+              {t("verify_confirm.cost_notice_dynamic", { cost: verifyCost, mult: verifyMult })}
             </p>
             <div className="flex gap-2">
               <button
@@ -1512,7 +1955,8 @@ export default function Home() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {showInsufficientModal && (
         <div

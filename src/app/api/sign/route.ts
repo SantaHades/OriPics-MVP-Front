@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/payment";
+import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 import { verifyChallenge } from "@/lib/attest/challenge";
 import {
   verifyAttestToken,
@@ -147,14 +148,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 잔액 확인 (tier에 따라 비용 결정 + 링크 생성 비용 포함). 차감은 /api/links/confirm.
-  // Standard: IMAGE_PROOF(2) + LINK_CREATE(1) = 3
-  // Verified: VERIFIED_PROOF(3) + LINK_CREATE(1) = 4
-  const proofCost = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+  // 잔액 확인 (tier + 사이즈 multiplier 반영). 실제 차감은 /api/links/confirm.
+  // Standard: IMAGE_PROOF(2) × sizeMultiplier + LINK_CREATE(1)
+  // Verified: VERIFIED_PROOF(3) × sizeMultiplier + LINK_CREATE(1)
+  // sizeMultiplier: 긴 변 ≤ 1800 = 1×, > 1800 ≤ 100MP = 2×, > 100MP = 3×
+  const sizeMultiplier = getProofMultiplier(width, height);
+  const baseProofCost = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+  const proofCost = baseProofCost * sizeMultiplier;
   const requiredCredits = proofCost + CREDIT_COSTS.LINK_CREATE;
   if (user.credits < requiredCredits) {
     return NextResponse.json(
-      { detail: "insufficient_credits", balance: user.credits, required: requiredCredits, tier },
+      {
+        detail: "insufficient_credits",
+        balance: user.credits,
+        required: requiredCredits,
+        tier,
+        size_multiplier: sizeMultiplier,
+      },
       { status: 402 },
     );
   }

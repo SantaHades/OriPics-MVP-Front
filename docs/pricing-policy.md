@@ -61,11 +61,31 @@
 
 todo.md의 액션별 비용 매트릭스를 그대로 사용:
 
-| 액션 | 크레딧 | Free 10크레딧 시 가능 횟수 |
+| 액션 | 기본 크레딧 | Free 10크레딧 시 가능 횟수 (1× 기준) |
 |---|---|---|
 | **이미지 인증 1회** (Standard, 인증 −2 + 링크 −1 통합) | **−3** | 3건 |
 | **사진 인증 1회** (Verified, 모바일 P, 인증 −3 + 링크 −1 통합) | **−4** | (Pro 한정이라 Free에선 N/A) |
 | **검증 조회** (`/api/verify`) — **로그인 필수**, 호출자 계정에서 차감 | **−1** | 10건 |
+
+### 2.1 이미지 사이즈별 multiplier (2026-05-13 도입)
+
+대형 이미지는 LSB 임베드 부하·저장·전송 비용이 비례 증가하므로 **사이즈 multiplier**를 적용한다. LINK_CREATE는 메타 작업이라 사이즈와 무관 → **1× 고정**.
+
+| 사이즈 구분 | Multiplier | IMAGE_PROOF | VERIFIED_PROOF | VERIFY_QUERY | Standard 1건 합계 |
+|---|---|---|---|---|---|
+| 긴 변 ≤ 1800px | **1×** | −2 | −3 | −1 | −3 (변동 없음) |
+| 긴 변 > 1800 AND 픽셀 ≤ 100MP | **2×** | −4 | −6 | −2 | −5 |
+| 픽셀 > 100,000,000 (1억) | **3×** | −6 | −9 | −3 | −7 |
+
+**적용 위치**:
+- `/api/sign` + `/api/links/confirm` — 요청 width/height 기준
+- `/api/verify` — 메타에 박힌 width/height 기준 (변조 불가)
+- 클라이언트 측 사이즈 선택 UI (`/[locale]/page.tsx`) — 긴 변 > 1800px 이미지가 들어오면 "기준 사이즈" / "원본 사이즈" 체크박스 노출, 두 옵션 모두 선택 시 각각 별도 결과물 생성·각각 차감
+- verify 확인 모달 — 동적 비용 표시 (`cost_notice_dynamic`)
+
+**Free 접근성**: Multiplier 정책은 Free에도 동일 적용 (티어 게이트 없음). 50MP iPhone 셀카 1건 = 5크레딧 → Free 한 달치 10크레딧의 절반. 자연스러운 Pro 전환 트리거.
+
+구현: [lib/credits/sizeMultiplier.ts](../src/lib/credits/sizeMultiplier.ts), 테스트: [sizeMultiplier.test.ts](../src/lib/credits/sizeMultiplier.test.ts).
 
 **검증 조회 정책 (2026-05-11 갱신)**: 외부 검증 가능성은 contentcredentials.org·Adobe Photoshop·Truepic Verify 등 C2PA 외부 도구로 유지. OriPics 사이트 내 verify는 로그인 필수 + 차감.
 
@@ -188,3 +208,4 @@ todo.md의 "비로그인 증명 기능 삭제: 테스트 완료 후 비로그인
 |---|---|
 | 2026-05-10 | 최초 작성 — 모델 D(Freemium 3-tier) + 사용자 노출 단순화 + 백엔드 크레딧 + 교통사고 페르소나 앵커링 채택. 잔여 6개 결정사항(갱신·이월·다운그레이드·할인율·Verified 권한·Business 시점) 모두 추천안으로 확정 |
 | 2026-05-11 | 차감 정책 정합 강화 — (1) verify_query 로그인 필수 + −1 차감 (외부 검증은 C2PA 도구로 위임). (2) link_create −1 통합 차감 (인증 1회 = Standard −3 / Verified −4). (3) 클라이언트 detectStamp 도입(magic only, 무료) — 사용자가 의도적으로 "자세히 확인" 시에만 풀 verify. (4) 사용자 UI를 "건수" → "크레딧 + 차감기준" 표기로 변경 |
+| 2026-05-13 | 이미지 사이즈별 multiplier 도입 — 1800px 초과 = 2×, 100MP 초과 = 3×. 인증·검증 양쪽 적용. LINK_CREATE 제외. 사이즈 캡 없음. 큰 이미지 업로드 시 "기준 사이즈"/"원본 사이즈" 체크박스로 사용자 선택 (양쪽 체크 시 별도 결과물 2개). Free 사용자도 동일 정책 |

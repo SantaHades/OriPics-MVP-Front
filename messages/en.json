@@ -89,7 +89,28 @@
       "guide_2_title": "2nd (Safe)",
       "guide_2_desc": "Compress to ZIP and attach file",
       "guide_3_title": "3rd (Safe)",
-      "guide_3_desc": "Upload to Drive and share download link"
+      "guide_3_desc": "Upload to Drive and share download link",
+      "multi_title": "Both sizes proven",
+      "multi_desc": "Both selected options were processed. Each link is retained for 7 days (or permanently for Pro+).",
+      "publishing": "Creating link…",
+      "publish_error": "Link creation failed",
+      "short_link": "Short link",
+      "copy_link": "Copy link",
+      "download_stamped": "Download image"
+    },
+    "size_select": {
+      "title": "Choose proof size",
+      "intro": "Your image is <strong>{w}×{h}px ({mp}MP)</strong>. Pick the size(s) to prove — selecting both produces two separate outputs.",
+      "hint_large": "Original-size proofs cost 2× or 3× credits depending on pixel count.",
+      "hint_huge": "Images over 100 megapixels cost 3× credits.",
+      "standard_label": "Standard (1800px)",
+      "standard_desc": "Downscale longest side to 1800px. Fast, light.",
+      "original_label": "Original size",
+      "original_desc": "Keep capture resolution. Recommended for print and legal submission.",
+      "credits": "credits",
+      "total_label": "Total",
+      "confirm": "Start proof",
+      "cancel": "Cancel"
     },
     "verify": {
       "success_title": "Verification Successful",
@@ -198,6 +219,7 @@
       "title": "Already an OriPics image",
       "body": "This image contains an OriPics proof seal. View the detailed verification?",
       "cost_notice": "Viewing details costs 1 verification credit.",
+      "cost_notice_dynamic": "Viewing details costs {cost} verification credit(s) (size {mult}× applied).",
       "yes": "Yes, verify",
       "no": "No"
     },

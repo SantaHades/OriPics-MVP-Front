@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits } from "@/lib/credits/consumeCredits";
+import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 import {
   getSalt,
   parseMetaBytes,
@@ -206,39 +207,85 @@ export async function POST(req: NextRequest) {
   const borderHashBytes = hexToBytes(border_hash);
   const extractedBytes = hexToBytes(extracted_final_hash);
 
+  // 메타를 미리 파싱 — 사이즈 multiplier 계산 + owner 면책 + seal 검증에 모두 필요.
+  // 파싱 실패 시 차감 전에 200 응답으로 종료 (잘못된 메타에 크레딧 소모 방지).
+  let metaWidth = 0;
+  let metaHeight = 0;
+  let metaTimestamp = "";
+  let metaLatE6: number | undefined;
+  let metaLngE6: number | undefined;
+  let metaSaltId = 0;
+  let parsedVersion = version;
+  try {
+    if (version === 4) {
+      const p = parseMetaBytesV4(metaBytes);
+      metaWidth = p.width;
+      metaHeight = p.height;
+      metaTimestamp = p.timestamp;
+      metaLatE6 = p.lat_e6;
+      metaLngE6 = p.lng_e6;
+      metaSaltId = p.salt_id;
+      parsedVersion = p.version;
+    } else if (version === 3) {
+      const p = parseMetaBytesV3(metaBytes);
+      metaWidth = p.width;
+      metaHeight = p.height;
+      metaTimestamp = p.timestamp;
+      metaLatE6 = p.lat_e6;
+      metaLngE6 = p.lng_e6;
+      metaSaltId = p.salt_id;
+      parsedVersion = p.version;
+    } else {
+      const p = parseMetaBytes(metaBytes);
+      metaWidth = p.width;
+      metaHeight = p.height;
+      metaTimestamp = p.timestamp;
+      metaSaltId = p.salt_id;
+      parsedVersion = p.version;
+    }
+  } catch (e: any) {
+    return NextResponse.json({ match: false, reason: e.message });
+  }
+
   // 옵션 A: V4 메타에서 timestamp 추출 → DB 조회로 owner 매칭 → 본인이면 면책.
   // V2/V3는 메타에 counter 없어서 면책 불가 (옛 이미지 호환만 유지).
-  // timestamp(15자, yymmddHHMMSS+cs)는 사실상 unique 식별자.
   let ownerExempt = false;
   if (version === 4 && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
-      const parsedV4 = parseMetaBytesV4(metaBytes);
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
       const { data: rows } = await supabase
         .from("links")
         .select("link_id, user_id")
-        .eq("timestamp", parsedV4.timestamp)
+        .eq("timestamp", metaTimestamp)
         .limit(2);
       if (rows && rows.length === 1 && rows[0].user_id === userId) {
         ownerExempt = true;
       }
     } catch (e) {
-      // 면책 판정 실패해도 검증 흐름은 진행 (단지 -1 차감)
+      // 면책 판정 실패해도 검증 흐름은 진행 (단지 -N 차감)
       console.warn("[verify] owner exemption lookup failed:", e);
     }
   }
 
   // 크레딧 차감 (race-safe atomic). 본인 이미지는 면책.
+  // VERIFY_QUERY × sizeMultiplier (1×/2×/3× — 메타에 박힌 width/height 기준).
+  const sizeMultiplier = getProofMultiplier(metaWidth, metaHeight);
+  const verifyCost = CREDIT_COSTS.VERIFY_QUERY * sizeMultiplier;
   if (!ownerExempt) {
     const consume = await consumeCredits({
       userId,
-      amount: CREDIT_COSTS.VERIFY_QUERY,
+      amount: verifyCost,
       action: "verify_query",
-      metadata: { link_id, version },
+      metadata: { link_id, version, width: metaWidth, height: metaHeight, size_multiplier: sizeMultiplier },
     });
     if (!consume.ok) {
       return NextResponse.json(
-        { detail: "insufficient_credits", balance: consume.balance, required: CREDIT_COSTS.VERIFY_QUERY },
+        {
+          detail: "insufficient_credits",
+          balance: consume.balance,
+          required: verifyCost,
+          size_multiplier: sizeMultiplier,
+        },
         { status: 402 },
       );
     }
@@ -246,35 +293,18 @@ export async function POST(req: NextRequest) {
 
   let seal: SealResult;
   try {
-    if (version === 3) {
-      const parsed = parseMetaBytesV3(metaBytes);
-      const salt = getSalt(parsed.salt_id);
-      const match = verifyFinalHash(salt, metaBytes, innerHashBytes, borderHashBytes, extractedBytes);
-      seal = {
-        match,
-        version: parsed.version,
-        metadata: {
-          timestamp: parsed.timestamp,
-          width: parsed.width,
-          height: parsed.height,
-          lat: (parsed.lat_e6 ?? 0) / 1_000_000,
-          lng: (parsed.lng_e6 ?? 0) / 1_000_000,
-        },
-      };
-    } else {
-      const parsed = parseMetaBytes(metaBytes);
-      const salt = getSalt(parsed.salt_id);
-      const match = verifyFinalHash(salt, metaBytes, innerHashBytes, borderHashBytes, extractedBytes);
-      seal = {
-        match,
-        version: parsed.version,
-        metadata: {
-          timestamp: parsed.timestamp,
-          width: parsed.width,
-          height: parsed.height,
-        },
-      };
+    const salt = getSalt(metaSaltId);
+    const match = verifyFinalHash(salt, metaBytes, innerHashBytes, borderHashBytes, extractedBytes);
+    const metadata: NonNullable<SealResult["metadata"]> = {
+      timestamp: metaTimestamp,
+      width: metaWidth,
+      height: metaHeight,
+    };
+    if (version === 3 || version === 4) {
+      metadata.lat = (metaLatE6 ?? 0) / 1_000_000;
+      metadata.lng = (metaLngE6 ?? 0) / 1_000_000;
     }
+    seal = { match, version: parsedVersion, metadata };
   } catch (e: any) {
     return NextResponse.json({ match: false, reason: e.message });
   }
