@@ -124,6 +124,9 @@
 | A-23 | **증명서 PDF — 한글 폰트 번들링** — 현재 Google gstatic Noto Sans KR CDN URL 하드코딩([render.tsx](../src/lib/certificate/render.tsx)). URL이 깨지면 한글이 □ 박스로 렌더됨. 대안: postinstall에서 폰트 다운로드 → `public/fonts/`(gitignored) → fs.readFileSync로 로드. 또는 jsdelivr npm CDN(Pretendard) 사용 | 베타 시작 전 또는 폰트 깨짐 감지 시 | P1 |
 | A-24 | **증명서 PDF — 월 5건 캡 enforcement** — pricing-policy.md상 Pro 월 5건, Business 무제한. 현재는 `pdf_issue` 이력만 기록하고 무제한 발급 허용. `creditsRenewAt - 1 month` 기준으로 카운트 → Pro 5건 초과 시 402 응답 + 잔여 횟수 UI 표시 | Pro 결제 시작 후 | P2 |
 | A-25 | **증명서 PDF — 사진 썸네일 임베드** — 현재 PDF에 실제 이미지는 미포함, QR로 검증 URL 참조만. 사진을 PDF 본문에 직접 임베드하면 B2B/소송 제출 시 단독 문서로 가치 상승. 단 음란물·저작권 침해 이미지 임베드 위험 → 신고 시스템 + 모더레이션 게이트 필요 | 첫 B2B 영업 미팅 시점 | P3 |
+| A-26 | **`/api/links/confirm` 마무리 단계 진행 표시** — 업로드(PUT) 진행률은 XHR onprogress로 실측 가능하나, confirm 단계(C2PA 매니페스트 첨부·DB write 등)는 단일 요청이라 진행률 측정 불가. SSL.com eSigner 본 통합 후 서명 호출이 추가되면 confirm 응답이 1~3s 길어짐 → "마무리 중" stage 라벨만이라도 추가하여 사용자 체감 개선. SSE/streaming 응답까지 가면 더 정확하지만 비용 큼 | A-2(C2PA 본 통합) 후 | P2 |
+| A-27 | **클라이언트 stego embed 진행률** — 200MP 이미지에서 LSB 임베드 루프가 ~500ms 동기 실행됨. setTimeout/requestIdleCallback로 chunked 처리하여 진행률 콜백 노출 가능. 1800px 이하에선 의미 없지만 기가픽셀 이미지에서 체감 개선 | 기가픽셀 사용 사례 발생 시 | P3 |
+| A-28 | **업로드 취소 버튼** — `handleCreateLink`/멀티 publish 진행 중 사용자 취소 (`xhr.abort()`). 큰 PNG 업로드 중간에 마음 바뀌면 새로고침 외 방법 없음 → cancel 버튼 + 진행 중 abort + 크레딧 환불(인증 차감은 이미 confirm에서 일어났으므로 환불 필요) | 베타 직전 | P2 |
 
 ### 2.3 모바일·모노레포
 
@@ -209,3 +212,4 @@ SSL.com 회신 (U-1)
 | 2026-05-11 | U-9 개인정보 보호 책임자 성명 확정 (대표이사 손용석). 행 제거 |
 | 2026-05-11 | A-20 매월 자동 갱신·A-21 어드민 조정 UI 추가 — 현재 구현 갭 노출 (1개월 후 사용자 0크레딧 멈춤 risk) |
 | 2026-05-11 | 차감 정책 정합 강화 — verify_query 로그인 필수 + −1 / link_create 통합 −1 (Standard −3·Verified −4) / detectStamp 무료 분리(magic only) / 사용자 UI를 크레딧 + 차감기준으로 변경. pricing-policy §2 갱신, 테스트 anchor 갱신(33 tests) |
+| 2026-05-13 | A-23·A-24·A-25 추가 (J-9 PDF 발급 트레이드오프). A-26·A-27·A-28 추가 (업로드 진행률 후속 — confirm stage 라벨, stego chunking, 취소 버튼) |
