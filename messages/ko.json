@@ -138,6 +138,7 @@
       "action_verify_query": "인증 조회",
       "action_link_create": "간편링크 생성",
       "action_subscription_grant": "구독 충전",
+      "action_pdf_issue": "증명서 PDF 발급",
       "action_manual_adjust": "수동 조정",
       "modal": {
         "insufficient_title": "이번 달 인증 한도 도달",
@@ -419,6 +420,10 @@
     "source_p": "사진 촬영",
     "source_c": "클립보드",
     "download": "증명 이미지 다운로드",
+    "cert_download": "증명서 PDF 다운로드",
+    "cert_generating": "PDF 생성 중…",
+    "cert_error": "PDF 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    "cert_pro_only": "공식 증명서 PDF는 Pro 플랜부터 발급됩니다.",
     "short_link": "간편링크",
     "copy_link": "링크 복사",
     "copied": "복사됨!",

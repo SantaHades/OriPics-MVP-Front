@@ -138,6 +138,7 @@
       "action_verify_query": "Verification query",
       "action_link_create": "Link creation",
       "action_subscription_grant": "Subscription top-up",
+      "action_pdf_issue": "Certificate PDF issued",
       "action_manual_adjust": "Manual adjustment",
       "modal": {
         "insufficient_title": "Monthly proof quota reached",
@@ -419,6 +420,10 @@
     "source_p": "Camera",
     "source_c": "Clipboard",
     "download": "Download Original",
+    "cert_download": "Download Certificate PDF",
+    "cert_generating": "Generating PDF…",
+    "cert_error": "Failed to generate PDF. Please try again shortly.",
+    "cert_pro_only": "Official Certificate PDF is available on Pro and above.",
     "short_link": "Short Link",
     "copy_link": "Copy Link",
     "copied": "Copied!",

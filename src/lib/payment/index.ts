@@ -89,5 +89,6 @@ export type CreditTransactionAction =
   | "verify_query"           // -1
   | "link_create"            // -1
   | "verified_proof"         // -3
+  | "pdf_issue"              // 증명서 PDF 발급 (delta=0, 발급 이력 트래킹용)
   | "subscription_grant"     // 구독 결제 시 추가 부여
   | "manual_adjust";         // 어드민 수동 조정

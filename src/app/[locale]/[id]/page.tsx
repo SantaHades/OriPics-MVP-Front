@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink, BadgeCheck } from "lucide-react";
+import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink, BadgeCheck, FileText } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
+import { useSession } from "next-auth/react";
 import { supabase } from "@/lib/supabase";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
+import { useCredits } from "@/lib/credits/useCredits";
 
 interface LinkData {
   link_id: string;
@@ -17,6 +19,7 @@ interface LinkData {
   lng?: number | null;
   storage_path: string;
   signed_url: string;
+  user_id?: string | null;
 }
 
 interface C2paStatus {
@@ -30,7 +33,10 @@ interface C2paStatus {
 export default function LinkViewer() {
   const params = useParams();
   const linkId = params.id as string;
+  const locale = (params?.locale as string) || "ko";
   const t = useTranslations("LinkViewer");
+  const { data: session } = useSession();
+  const { data: credits } = useCredits();
 
   const [data, setData] = useState<LinkData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,6 +47,39 @@ export default function LinkViewer() {
   const [totalBytes, setTotalBytes] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [c2pa, setC2pa] = useState<C2paStatus | null>(null);
+  const [certLoading, setCertLoading] = useState(false);
+  const [certError, setCertError] = useState<string | null>(null);
+
+  const sessionUserId = (session?.user as any)?.id as string | undefined;
+  const isOwner = !!data?.user_id && !!sessionUserId && data.user_id === sessionUserId;
+  const isPaidTier = credits?.tier === "pro" || credits?.tier === "business";
+  const canDownloadCertificate = isOwner && isPaidTier;
+
+  const handleDownloadCertificate = async () => {
+    if (!data || !canDownloadCertificate) return;
+    setCertLoading(true);
+    setCertError(null);
+    try {
+      const res = await fetch(
+        `/api/links/${data.link_id}/certificate?locale=${locale === "en" ? "en" : "ko"}`,
+      );
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        throw new Error(`http_${res.status}:${detail.slice(0, 120)}`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `OriPics_Certificate_${data.link_id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setCertError(e?.message ?? "unknown");
+    } finally {
+      setCertLoading(false);
+    }
+  };
 
   const shortLink =
     typeof window !== "undefined"
@@ -355,13 +394,42 @@ export default function LinkViewer() {
               </div>
             </div>
 
-            <div className="mt-10 pt-8 border-t border-slate-200">
+            <div className="mt-10 pt-8 border-t border-slate-200 space-y-3">
               <button
                 onClick={handleDownload}
                 className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-200/50"
               >
                 <Download size={20} /> {t("download")}
               </button>
+              {canDownloadCertificate && (
+                <>
+                  <button
+                    onClick={handleDownloadCertificate}
+                    disabled={certLoading}
+                    className="w-full py-3 bg-white hover:bg-slate-50 text-slate-900 font-semibold rounded-2xl border border-slate-300 flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {certLoading ? (
+                      <>
+                        <RefreshCw size={18} className="animate-spin" /> {t("cert_generating")}
+                      </>
+                    ) : (
+                      <>
+                        <FileText size={18} /> {t("cert_download")}
+                      </>
+                    )}
+                  </button>
+                  {certError && (
+                    <p className="text-xs text-rose-600 text-center">
+                      {t("cert_error")}
+                    </p>
+                  )}
+                </>
+              )}
+              {isOwner && !isPaidTier && (
+                <p className="text-xs text-slate-500 text-center pt-1">
+                  {t("cert_pro_only")}
+                </p>
+              )}
             </div>
           </div>
 
