@@ -114,6 +114,8 @@ export async function POST(req: NextRequest) {
 
     // C2PA 매니페스트 첨부 (기능 플래그 OFF 시 건너뜀).
     // 실패해도 전체 흐름은 차단하지 않음 — 원본 PNG는 그대로 Storage에 존재.
+    // 디버그: 실패 시 응답 헤더(X-C2pa-Debug)에 에러 메시지 노출 (sandbox PoC용).
+    let c2paDebug = "skipped";
     if (C2PA_ENABLED) {
       try {
         const c2paStart = Date.now();
@@ -149,11 +151,15 @@ export async function POST(req: NextRequest) {
           });
         if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
 
+        c2paDebug = `ok:${signResult.buffer.length}b/+${signResult.bytesAdded}b/${Date.now() - c2paStart}ms`;
         console.log(
           `[confirm] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded} ms=${Date.now() - c2paStart}`,
         );
       } catch (e: any) {
-        console.error(`[confirm] c2pa attach failed link_id=${link_id}:`, e?.message || e);
+        const errMsg = (e?.message || String(e) || "unknown").slice(0, 300);
+        const stack = (e?.stack || "").slice(0, 500);
+        c2paDebug = `error:${errMsg}`;
+        console.error(`[confirm] c2pa attach failed link_id=${link_id}:`, errMsg, "\n", stack);
       }
     }
 
@@ -176,8 +182,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: `db_error:${error.message}` }, { status: 500 });
     }
 
-    console.log(`[confirm] ok link_id=${link_id}`);
-    return NextResponse.json({ link_id, timestamp, storage_path });
+    console.log(`[confirm] ok link_id=${link_id} c2pa=${c2paDebug}`);
+    return NextResponse.json(
+      { link_id, timestamp, storage_path, c2pa_debug: c2paDebug },
+      { headers: { "X-C2pa-Debug": c2paDebug } },
+    );
   } catch (e: any) {
     console.error("[confirm] unexpected error:", e);
     return NextResponse.json({ detail: e.message || "unknown_error" }, { status: 500 });
