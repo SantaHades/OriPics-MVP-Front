@@ -6,22 +6,12 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    # 메이저 업데이트가 peer dep 깨뜨려 빌드 실패하는 패키지는 차단.
-    # next-auth v5 마이그레이션(follow-ups A-18) 완료 후 풀 것.
+    # 정책: 모든 패키지의 메이저 버전 업데이트는 자동 PR 차단.
+    #   - peer dep 충돌·API 변경·schema 마이그레이션 등 회귀 위험이 일률적으로 높음
+    #   - 메이저는 별도 인간 트랙으로 수동 진행 (follow-ups A-17·A-18 패턴 참고)
+    # 마이너·패치는 아래 groups로 묶어서 자동 PR 진행 (안전한 범위).
     ignore:
-      # nodemailer 8.x는 next-auth@4 peerOptional(^7.0.7)와 충돌하여
-      # ERESOLVE로 Vercel 빌드 실패함. next-auth v5에서 해소될 때까지 차단.
-      - dependency-name: "nodemailer"
-        update-types: ["version-update:semver-major"]
-      # next 메이저 업그레이드는 별도 트랙(follow-ups A-17)에서 수동 진행.
-      # 자동 PR로 14→15 시도하면 React 19·App Router 동작 변경으로 회귀 위험.
-      - dependency-name: "next"
-        update-types: ["version-update:semver-major"]
-      # next-auth v5는 별도 트랙(follow-ups A-18)에서 수동 진행.
-      # @next-auth/prisma-adapter도 함께 옮겨야 하므로 자동 PR 부적합.
-      - dependency-name: "next-auth"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@next-auth/prisma-adapter"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     # 마이너·패치는 카테고리별로 묶어서 단일 PR로 — 노이즈 감소.
     groups:
