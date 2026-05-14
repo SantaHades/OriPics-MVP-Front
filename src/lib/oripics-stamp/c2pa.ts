@@ -149,11 +149,15 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     : Builder.withJson(manifestSpec as any);
 
   const inputAsset = { buffer: input.pngBuffer, mimeType: 'image/png' };
-  const outputAsset: any = { buffer: null };
+  const outputAsset: { buffer: Buffer | null } = { buffer: null };
 
-  // builder.sign은 동기 함수, 반환값이 signed Buffer
-  const signedBuffer: Buffer = builder.sign(signer, inputAsset, outputAsset);
+  // builder.sign:
+  //   - 반환값(Buffer) = 매니페스트 box (JUMBF) 바이트 — 보통 디버그/검증용
+  //   - outputAsset.buffer ← 서명된 자산(signed PNG) 으로 mutate됨
+  // (c2pa-node v0.5.x — DestinationBufferAsset 타입 주석 참조)
+  builder.sign(signer, inputAsset, outputAsset);
 
+  const signedBuffer = outputAsset.buffer;
   if (!signedBuffer || signedBuffer.length === 0) {
     throw new Error('c2pa_sign_returned_empty');
   }
