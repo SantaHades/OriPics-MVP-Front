@@ -127,7 +127,7 @@
 | A-26 | **`/api/links/confirm` 마무리 단계 진행 표시** — 업로드(PUT) 진행률은 XHR onprogress로 실측 가능하나, confirm 단계(C2PA 매니페스트 첨부·DB write 등)는 단일 요청이라 진행률 측정 불가. SSL.com eSigner 본 통합 후 서명 호출이 추가되면 confirm 응답이 1~3s 길어짐 → "마무리 중" stage 라벨만이라도 추가하여 사용자 체감 개선. SSE/streaming 응답까지 가면 더 정확하지만 비용 큼 | A-2(C2PA 본 통합) 후 | P2 |
 | A-27 | **클라이언트 stego embed 진행률** — 200MP 이미지에서 LSB 임베드 루프가 ~500ms 동기 실행됨. setTimeout/requestIdleCallback로 chunked 처리하여 진행률 콜백 노출 가능. 1800px 이하에선 의미 없지만 기가픽셀 이미지에서 체감 개선 | 기가픽셀 사용 사례 발생 시 | P3 |
 | A-28 | **업로드 취소 버튼** — `handleCreateLink`/멀티 publish 진행 중 사용자 취소 (`xhr.abort()`). 큰 PNG 업로드 중간에 마음 바뀌면 새로고침 외 방법 없음 → cancel 버튼 + 진행 중 abort + 크레딧 환불(인증 차감은 이미 confirm에서 일어났으므로 환불 필요) | 베타 직전 | P2 |
-| A-29 | **c2pasign.com sandbox cert로 Preview C2PA PoC 검증** — UI에서 ECC test cert 발급(30분) → Vercel Preview env vars에 PEM 주입 → `ORIPICS_C2PA_ENABLED=true` → `/api/links/confirm` E2E 라운드트립 검증. TSA URL `https://api.c2patool.io/api/v1/timestamps/ecc`. Sandbox cert는 untrusted issuer 경고 표시되지만 매니페스트 구조·서명 흐름은 production과 동일. 본 통합 진입 전 검증 완료 권장 | NOW (Alexandre 가격 회신 대기 동안 가능) | P1 |
+| A-29 | ~~c2pasign.com sandbox cert로 Preview C2PA PoC 검증~~ → 완료 (2026-05-14). 진행 중 **중요 버그 발견·수정**: `builder.sign()`은 매니페스트 box(JUMBF)를 반환값으로 돌려주고, 실제 서명된 PNG는 `outputAsset.buffer`에 mutate. 코드가 반환값을 PNG로 가정 → Storage에 JUMBF 박스만 저장됨. 수정 커밋 `875faf6`. 향후 production cert로 전환 시 env vars 교체만으로 가동 가능 확인 | DONE | — |
 
 ### 2.3 모바일·모노레포
 
