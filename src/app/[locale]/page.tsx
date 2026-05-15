@@ -1774,6 +1774,7 @@ export default function Home() {
               <p className="text-3xl font-extrabold mb-1">
                 ₩9,900<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}</span>
               </p>
+              <p className="text-xs text-slate-500">{t("pricing.price_tax_note")}</p>
               <p className="text-xs text-slate-500 mb-5">{t("pricing.pro.annual_hint")}</p>
               <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f1")}</li>
@@ -1796,6 +1797,7 @@ export default function Home() {
               <p className="text-3xl font-extrabold mb-1">
                 ₩79,000<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}~</span>
               </p>
+              <p className="text-xs text-slate-500">{t("pricing.price_tax_note")}</p>
               <p className="text-xs text-slate-500 mb-5">{t("pricing.business.team_hint")}</p>
               <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f1")}</li>
@@ -1818,9 +1820,11 @@ export default function Home() {
               {t("pricing.guide.title")}
             </p>
             <ul className="text-sm text-slate-700 space-y-1.5">
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−1</span> <span>{t("pricing.guide.verify_query")}</span></li>
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−2</span> <span>{t("pricing.guide.link_create")}</span></li>
               <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−3</span> <span>{t("pricing.guide.image_proof")}</span></li>
               <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−4</span> <span>{t("pricing.guide.verified_proof")}</span></li>
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−1</span> <span>{t("pricing.guide.verify_query")}</span></li>
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−10</span> <span>{t("pricing.guide.certificate_pdf")}</span></li>
             </ul>
           </div>
 

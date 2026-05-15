@@ -8,6 +8,8 @@ import React from "react";
 import { prisma } from "@/lib/prisma";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
 import { readC2paManifest } from "@/lib/oripics-stamp/c2pa";
+import { CREDIT_COSTS } from "@/lib/payment";
+import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 import {
   CertificateDocument,
   type CertificateData,
@@ -81,6 +83,24 @@ export async function GET(
     );
   }
 
+  // 1-1. 크레딧 차감 (PDF 발급 -10, race-safe atomic).
+  const consume = await consumeCredits({
+    userId,
+    amount: CREDIT_COSTS.CERTIFICATE_PDF,
+    action: "pdf_issue",
+    metadata: { link_id: linkId, locale } as any,
+  });
+  if (!consume.ok) {
+    return NextResponse.json(
+      {
+        detail: "insufficient_credits",
+        balance: consume.balance,
+        required: CREDIT_COSTS.CERTIFICATE_PDF,
+      },
+      { status: 402 },
+    );
+  }
+
   // 2. 링크 조회 + 소유자 검증
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const { data: row, error } = await supabase
@@ -89,9 +109,21 @@ export async function GET(
     .eq("link_id", linkId)
     .single();
   if (error || !row) {
+    await refundCredits({
+      userId,
+      amount: CREDIT_COSTS.CERTIFICATE_PDF,
+      action: "pdf_issue",
+      metadata: { link_id: linkId, reason: "link_not_found" } as any,
+    }).catch((e) => console.warn("[certificate] refund failed:", e));
     return NextResponse.json({ detail: "link_not_found" }, { status: 404 });
   }
   if (row.user_id && row.user_id !== userId) {
+    await refundCredits({
+      userId,
+      amount: CREDIT_COSTS.CERTIFICATE_PDF,
+      action: "pdf_issue",
+      metadata: { link_id: linkId, reason: "not_owner" } as any,
+    }).catch((e) => console.warn("[certificate] refund failed:", e));
     // 본인이 생성한 링크에 대해서만 PDF 발급 허용
     return NextResponse.json({ detail: "not_owner" }, { status: 403 });
   }
@@ -161,29 +193,16 @@ export async function GET(
     pdfBuffer = await renderToBuffer(element as any);
   } catch (e: any) {
     console.error("[certificate] render failed", e);
+    await refundCredits({
+      userId,
+      amount: CREDIT_COSTS.CERTIFICATE_PDF,
+      action: "pdf_issue",
+      metadata: { link_id: linkId, reason: `render_failed:${e?.message ?? "unknown"}` } as any,
+    }).catch((rfErr) => console.warn("[certificate] refund failed:", rfErr));
     return NextResponse.json(
       { detail: `render_failed:${e?.message ?? "unknown"}` },
       { status: 500 },
     );
-  }
-
-  // 6. 발급 이력 기록 (best-effort, 실패해도 PDF 응답은 진행)
-  try {
-    const u = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { credits: true },
-    });
-    await prisma.creditTransaction.create({
-      data: {
-        userId,
-        delta: 0,
-        action: "pdf_issue",
-        balanceAfter: u?.credits ?? 0,
-        metadata: { linkId, locale } as any,
-      },
-    });
-  } catch (e) {
-    console.warn("[certificate] failed to record pdf_issue transaction", e);
   }
 
   const filename = `OriPics_Certificate_${linkId}.pdf`;

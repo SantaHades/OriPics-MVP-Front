@@ -174,14 +174,15 @@
     "pricing": {
       "eyebrow": "요금제",
       "title": "필요한 만큼 골라서 시작하세요",
-      "subtitle": "회원가입하면 자동으로 Free 플랜 — 신용카드 없이 매월 10 크레딧 제공",
+      "subtitle": "회원가입하면 자동으로 Free 플랜 — 신용카드 없이 매월 20 크레딧 제공",
       "month": "월",
+      "price_tax_note": "부가세 별도",
       "footnote": "Pro·Business 출시는 익월 예정. 가격은 부가세 별도. 글로벌 USD 가격은 출시 전 확정.",
       "free": {
         "name": "Free",
         "tagline": "가입만 하면 바로 시작",
-        "f1": "월 10 크레딧 (≈ 인증 3건 또는 검증 10건)",
-        "f2": "7일 보관",
+        "f1": "월 20크레딧 (사진인증 5건)",
+        "f2": "간편 링크 7일 보관",
         "f3": "Content Credentials(C2PA) 자동 첨부",
         "f4_excluded": "모바일 사진 인증(Verified) 미포함",
         "cta": "지금 무료로 시작",
@@ -190,31 +191,33 @@
       "pro": {
         "badge": "추천",
         "name": "Pro",
-        "tagline": "교통사고·분쟁·포트폴리오에",
+        "tagline": "개인 업무에 적합",
         "annual_hint": "연간 결제 ₩99,000 (2개월 무료)",
-        "f1": "월 1,000 크레딧 (≈ 인증 300+건)",
-        "f2": "∞ 영구 보관",
+        "f1": "월 1,000 크레딧 (사진인증 250건)",
+        "f2": "간편 링크 ∞ 영구 보관",
         "f3": "모바일 사진 인증(Verified) 포함",
-        "f4": "증명서 PDF 월 5건",
+        "f4": "증명서(PDF) 발급 가능",
         "f5": "API 액세스 (10 req/min)",
         "coming_soon": "곧 출시"
       },
       "business": {
         "name": "Business",
-        "tagline": "팀·미디어·법무 사용",
+        "tagline": "팀 업무에 적합",
         "team_hint": "팀 멤버 5명 포함 · 추가 멤버 ₩9,900/명",
-        "f1": "월 10,000 크레딧 (≈ 인증 2,500+건)",
-        "f2": "증명서 PDF 무제한 + API (100 req/min)",
+        "f1": "월 10,000크레딧 (사진인증 2,500건)",
+        "f2": "API 액세스 (100 req/min)",
         "f3": "단체 관리 콘솔, 사용자별 통계",
-        "f4": "부가세 인보이스 · DPA · 우선 지원",
+        "f4": "세금계산서 발행 · DPA · 우선 지원",
         "cta": "영업팀 문의",
         "contact_subject": "[OriPics Business] 도입 문의"
       },
       "guide": {
         "title": "크레딧 차감 기준",
-        "image_proof": "이미지 인증 1회 (Standard) — 인증 −2 + 간편링크 −1",
-        "verified_proof": "사진 인증 1회 (Verified, 모바일 P 경로) — 인증 −3 + 간편링크 −1",
-        "verify_query": "검증 조회 1회 — 다른 사람이 만든 OriPics 이미지의 진위 확인"
+        "verify_query": "검증 조회 1회 — 다른 사람이 만든 OriPics 이미지의 진위 확인",
+        "link_create": "간편링크 생성 1회",
+        "image_proof": "이미지 인증 1회 — 파일(F), 붙여넣기(C) 경로로 인증 (Standard)",
+        "verified_proof": "사진 인증 1회 — 사진찍기(P) 경로로 인증 (Verified)",
+        "certificate_pdf": "증명서(PDF) 발행 1회"
       }
     },
     "verify_confirm": {

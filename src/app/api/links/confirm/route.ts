@@ -59,14 +59,13 @@ export async function POST(req: NextRequest) {
     } = claims;
 
     const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";
-    // 인증 1회 = proof × sizeMultiplier + LINK_CREATE(1, 사이즈 무관)
+    // 인증 1회 = (IMAGE_PROOF=3 | VERIFIED_PROOF=4, 링크 포함 통합 비용) × sizeMultiplier
     // 1× : 긴 변 ≤ 1800px
     // 2× : 긴 변 > 1800 AND 픽셀 수 ≤ 100M
     // 3× : 픽셀 수 > 100M
     const sizeMultiplier = getProofMultiplier(width, height);
     const baseProofCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
-    const proofCost = baseProofCost * sizeMultiplier;
-    const creditCost = proofCost + CREDIT_COSTS.LINK_CREATE;
+    const creditCost = baseProofCost * sizeMultiplier;
     const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
 
     // J-3 + D-pre-3: tier별 크레딧 차감 (race-safe atomic).
