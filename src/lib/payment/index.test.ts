@@ -59,6 +59,41 @@ describe("payment/PLAN_GRANTS", () => {
   });
 });
 
+// 2026-05-17 B-2'' 흐름 — confirm(proof만) ↔ publish(LINK_CREATE) 별도 차감
+describe("payment/B-2'' 흐름 (인증 ↔ 공개링크 분리)", () => {
+  it("인증만 받는 경우(공개링크 미생성) Standard = -3 / Verified = -4", () => {
+    expect(CREDIT_COSTS.IMAGE_PROOF).toBe(3);
+    expect(CREDIT_COSTS.VERIFIED_PROOF).toBe(4);
+  });
+
+  it("인증 + 공개링크 생성 총비용 (Standard = 5 / Verified = 6)", () => {
+    const standardFullFlow = CREDIT_COSTS.IMAGE_PROOF + CREDIT_COSTS.LINK_CREATE; // 3 + 2 = 5
+    const verifiedFullFlow = CREDIT_COSTS.VERIFIED_PROOF + CREDIT_COSTS.LINK_CREATE; // 4 + 2 = 6
+    expect(standardFullFlow).toBe(5);
+    expect(verifiedFullFlow).toBe(6);
+  });
+
+  it("Free 20크레딧 시 인증+공개링크 풀 흐름 가능 횟수 (Standard 4 / Verified 3)", () => {
+    expect(Math.floor(PLAN_GRANTS.free_monthly / (CREDIT_COSTS.IMAGE_PROOF + CREDIT_COSTS.LINK_CREATE))).toBe(4);
+    expect(Math.floor(PLAN_GRANTS.free_monthly / (CREDIT_COSTS.VERIFIED_PROOF + CREDIT_COSTS.LINK_CREATE))).toBe(3);
+  });
+
+  it("LINK_CREATE는 사이즈 multiplier 영향 받지 않음 (publish는 항상 -2)", () => {
+    // 정책: LINK_CREATE·CERTIFICATE_PDF는 메타·DB 작업만이라 사이즈 무관 1× 고정
+    // 이 테스트는 정책 회귀 방지용 anchor (코드는 sizeMultiplier.ts에서 처리)
+    expect(CREDIT_COSTS.LINK_CREATE).toBe(2);
+    expect(CREDIT_COSTS.CERTIFICATE_PDF).toBe(10);
+  });
+
+  it("PDF 첫 발급은 LINK_CREATE 이후만 가능 (총 흐름: proof + link + pdf)", () => {
+    // 시나리오: 사진인증 + 공개링크 + PDF 발급 = 4 + 2 + 10 = 16
+    const verifiedWithCert = CREDIT_COSTS.VERIFIED_PROOF + CREDIT_COSTS.LINK_CREATE + CREDIT_COSTS.CERTIFICATE_PDF;
+    expect(verifiedWithCert).toBe(16);
+    // Free 20크레딧으로 1건 가능 (잔여 4 — verify 4번 또는 image_proof 1번 추가 가능)
+    expect(verifiedWithCert).toBeLessThanOrEqual(PLAN_GRANTS.free_monthly);
+  });
+});
+
 describe("payment/getGateway", () => {
   it("returns portone adapter", () => {
     const g = getGateway("portone");

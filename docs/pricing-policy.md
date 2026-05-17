@@ -59,15 +59,37 @@
 
 ## 2. 백엔드 크레딧 회계 (사용자 비노출)
 
-2026-05-15 갱신 — IMAGE_PROOF·VERIFIED_PROOF는 링크 비용을 통합한 단일 비용. CERTIFICATE_PDF 신설.
+**2026-05-17 갱신** — 인증(`confirm`) ↔ 공개링크 생성(`publish`) 2단계 분리. proof는 link 비용 미포함. CERTIFICATE_PDF는 Storage 캐시 도입.
 
-| 액션 | 기본 크레딧 | Free 20크레딧 시 가능 횟수 (1× 기준) |
+| 액션 | 기본 크레딧 | 비고 |
 |---|---|---|
-| **검증 조회** (`/api/verify`) — **로그인 필수**, 호출자 계정에서 차감 | **−1** | 20건 |
-| **공개링크 생성 1회** (단독, 현재 통합 차감 흐름에는 미사용) | **−2** | — |
-| **이미지 인증 1회** (Standard, F/C, link 포함 통합 비용) | **−3** | 6건 |
-| **사진 인증 1회** (Verified, 모바일 P, link 포함 통합 비용) | **−4** | (Pro 한정이라 Free에선 N/A) |
-| **증명서 PDF 발급 1회** (`/api/links/[id]/certificate`) | **−10** | (Pro 한정) |
+| **검증 조회** (`/api/verify`) — **로그인 필수**, 호출자 계정에서 차감. 미공개 인증 이미지면 무차감 404 응답. | **−1** × multiplier | 본인 published 이미지는 면제 |
+| **이미지 인증 1회** (Standard, F/C) — `/api/links/confirm` | **−3** × multiplier | proof만. Storage·DB 미접근 |
+| **사진 인증 1회** (Verified, 모바일 P) — `/api/links/confirm` | **−4** × multiplier | proof만. Pro 한정 |
+| **공개링크 생성 1회** — `/api/links/publish` | **−2** | 사이즈 무관 1× 고정. C2PA·Storage·DB row 생성을 모두 처리 |
+| **증명서 PDF 발급 1회** — `/api/links/[id]/certificate` | **−10** | Pro 한정. 첫 발급 후 Storage 캐시 → 재다운로드 무료, `?reissue=1`로 재발급 −10 |
+
+**Free 20크레딧 시 가능 횟수 (1× 기준)**:
+- 인증만 (downloadable stamped PNG만) — Standard 6건 / Verified 5건
+- 인증 + 공개링크 — Standard 4건 / Verified 3건 (각 인증 후 LINK_CREATE −2 추가)
+- 검증만 (공개링크 가진 타인 이미지) — 20건
+
+### 2.2 흐름 단계별 차감 (B-2'' 흐름)
+
+```
+┌─────────────────┐  ┌─────────────────────┐  ┌─────────────────┐
+│ /api/sign       │  │ /api/links/confirm  │  │ /api/links/     │
+│  - JWT 발급     │→ │  - proof cost 차감  │→ │   publish       │
+│  - signed_     │  │  - receipt JWT 발급 │  │  - LINK_CREATE  │
+│    upload_url  │  │  - Storage/DB X     │  │    −2 차감      │
+│  - precheck    │  │  - C2PA X           │  │  - Storage 업로드│
+│    (proof only)│  │                     │  │  - C2PA 적용    │
+└─────────────────┘  └─────────────────────┘  │  - links row    │
+                                              │  - ProofHistory │
+                                              └─────────────────┘
+```
+
+미공개 인증 단계에서는 서버 측 무상태 (Storage 0, DB 0) — cron 정리 불필요.
 
 ### 2.1 이미지 사이즈별 multiplier (2026-05-13 도입)
 
@@ -212,3 +234,4 @@ todo.md의 "비로그인 증명 기능 삭제: 테스트 완료 후 비로그인
 | 2026-05-11 | 차감 정책 정합 강화 — (1) verify_query 로그인 필수 + −1 차감 (외부 검증은 C2PA 도구로 위임). (2) link_create −1 통합 차감 (인증 1회 = Standard −3 / Verified −4). (3) 클라이언트 detectStamp 도입(magic only, 무료) — 사용자가 의도적으로 "자세히 확인" 시에만 풀 verify. (4) 사용자 UI를 "건수" → "크레딧 + 차감기준" 표기로 변경 |
 | 2026-05-13 | 이미지 사이즈별 multiplier 도입 — 1800px 초과 = 2×, 100MP 초과 = 3×. 인증·검증 양쪽 적용. LINK_CREATE 제외. 사이즈 캡 없음. 큰 이미지 업로드 시 "기준 사이즈"/"원본 사이즈" 체크박스로 사용자 선택 (양쪽 체크 시 별도 결과물 2개). Free 사용자도 동일 정책 |
 | 2026-05-15 | 크레딧 비용 재정렬 — IMAGE_PROOF·VERIFIED_PROOF에 link 비용 통합 (−3 / −4 단일). LINK_CREATE 단독 비용 1→2 (현재 흐름 미사용, 표시용). CERTIFICATE_PDF −10 신설 — `/certificate` 라우트에서 실제 차감(이전 delta=0 트래킹만). Free 월 크레딧 10→20 (사진인증 5건 앵커). UI 텍스트: "공개 링크 7일 보관", "증명서(PDF) 발급 가능", "개인/팀 업무에 적합", "세금계산서 발행 · DPA · 우선 지원" |
+| 2026-05-17 | **B-2'' 흐름 분리 + 운영 강화**. (1) 인증(`confirm`) ↔ 공개링크 생성(`publish`)을 2단계로 분리 — `confirm`은 작은 JSON으로 proof cost(−3/−4) + receipt JWT만 처리, Storage·DB·C2PA 모두 `publish`(−2)로 이동. 결과: 미공개 인증은 서버 무상태 → cron 정리 불필요. (2) `publish/upload-url` 신규 엔드포인트 — receipt JWT 기반 fresh `signed_upload_url` 발급으로 TTL 만료·다른 세션 publish 지원. (3) 드롭존 미공개 재검출 — localStorage receipt(`oripics_receipt:{timestamp}`, TTL 30일)로 본인 미공개 인증 자동 감지, "본인 미공개 인증" 모달 노출. (4) `/api/verify` 미공개 사전 검사 — DB row 없으면 무차감 404(`reason: "not_published"`) → seal-only 의미 없는 검증에 크레딧 낭비 차단. (5) `/api/links/[id]` DELETE — Supabase row + Storage(원본·PDF 캐시) + ProofHistory 모두 삭제, 환불 없음. (6) 증명서 PDF Storage 캐시 — 첫 발급 −10 후 캐시, 재다운로드 무료, `?reissue=1`로 재발급 −10. (7) 사이즈 선택 UI는 proof 비용만 표시 + "공개링크 생성 시 추가 −2" 안내 분리. (8) 용어 통일 "간편링크" → "공개링크" (`Public link`) |
