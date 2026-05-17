@@ -94,11 +94,13 @@
       "multi_title": "두 사이즈 모두 인증 완료",
       "multi_desc": "선택하신 두 옵션 모두 처리되었습니다. 각 링크는 7일간 (또는 Pro 이상 영구) 보관됩니다.",
       "publishing": "링크 생성 중…",
+      "confirming": "인증 처리 중…",
       "uploading": "이미지 업로드 중…",
       "publish_error": "링크 생성 실패",
       "short_link": "간편링크",
       "copy_link": "링크 복사",
-      "download_stamped": "이미지 다운로드"
+      "download_stamped": "이미지 다운로드",
+      "create_link_button": "간편링크 생성 (−{cost})"
     },
     "size_select": {
       "title": "사이즈 선택",

@@ -77,16 +77,21 @@ model PasswordResetToken {
 }
 
 model ProofHistory {
-  id         String   @id @default(cuid())
-  userId     String
-  linkId     String   @unique
-  thumbnail  String?  // Supabase Storage URL
-  width      Int
-  height     Int
-  timestamp  String   // 스테가노그래피 타임스탬프
-  createdAt  DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  linkId          String   @unique
+  thumbnail       String?  // Supabase Storage URL
+  width           Int
+  height          Int
+  timestamp       String   // 스테가노그래피 타임스탬프 (proof 시점)
+  createdAt       DateTime @default(now())  // publish 시점 (B-2 흐름)
+  // 증명서 PDF 캐시 경로 (Supabase Storage). 발급 후 재다운로드 무료, 재발급 시 -10 차감.
+  pdfStoragePath  String?
+  pdfIssuedAt     DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 // 크레딧 변동 이력 (J-1, 2026-05-10)

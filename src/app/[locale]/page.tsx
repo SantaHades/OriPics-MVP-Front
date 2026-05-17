@@ -9,12 +9,14 @@ import { useTranslations } from "next-intl";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   signAndStampFromPixels,
+  confirmStamped,
   publishStamped,
   verifyImage,
   detectStamp,
   type StampedDraft,
   type DetectResult,
 } from "@/lib/oripics-stamp";
+import { saveReceipt, getReceipt, removeReceipt } from "@/lib/oripics-stamp/receipts";
 import { useCredits } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
@@ -24,12 +26,17 @@ type ProcessStatus = "idle" | "dragover" | "processing" | "size_selection" | "re
 interface SingleResult {
   draft: StampedDraft;
   display: ApiResponse;
+  /** 인증(confirm) 단계 후 보관 — publish 버튼 클릭 시 재전송 */
+  stampedBlob: Blob | null;
+  receipt: string | null;
+  proofCost: number;
+  /** 단계: confirming(서버 C2PA 적용 중) → ready(publish 버튼 대기) → publishing → published */
+  phase: "confirming" | "ready" | "publishing" | "published" | "error";
   link: string | null;
-  publishing: boolean;
   error: string | null;
   /** 사이즈 라벨 — 멀티 결과 카드 헤더에 표시 */
   variant: "standard" | "original";
-  /** 업로드 진행률 (loaded/total bytes) — publishing 중 표시 */
+  /** 업로드 진행률 (loaded/total bytes) — confirming/publishing 중 표시 */
   uploadProgress?: { loaded: number; total: number };
 }
 
@@ -106,6 +113,9 @@ export default function Home() {
   const { data: session, status: sessionStatus } = useSession();
   const [sessionID, setSessionID] = useState<string | null>(null);
   const [stampedDraft, setStampedDraft] = useState<StampedDraft | null>(null);
+  // B-2 (2026-05-17): confirm 후 보관되는 stamped+C2PA Blob과 receipt JWT. publish 버튼 클릭 시 사용.
+  const [confirmedSingle, setConfirmedSingle] = useState<{ stampedBlob: Blob; receipt: string; linkId: string; timestamp: string; proofCost: number } | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [isLinking, setIsLinking] = useState(false);
@@ -540,8 +550,31 @@ export default function Home() {
         decoded.height,
         { apiBase: "", uploadType: source, gps, watermark: watermarkEnabled },
       );
-      const stampedUrl = URL.createObjectURL(draft.blob);
       setStampedDraft(draft);
+      // B-2: 자동으로 confirm(C2PA 적용) 호출. publish는 사용자 버튼 클릭 시 별도.
+      setConfirming(true);
+      setSingleUploadProgress({ loaded: 0, total: draft.blob.size });
+      const confirmed = await confirmStamped(draft, {
+        apiBase: "",
+        onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
+      });
+      setConfirming(false);
+      setSingleUploadProgress(null);
+      saveReceipt({
+        receipt: confirmed.receipt,
+        timestamp: confirmed.timestamp,
+        linkId: confirmed.link_id,
+        width: draft.width,
+        height: draft.height,
+      });
+      const stampedUrl = URL.createObjectURL(confirmed.stampedBlob);
+      setConfirmedSingle({
+        stampedBlob: confirmed.stampedBlob,
+        receipt: confirmed.receipt,
+        linkId: confirmed.link_id,
+        timestamp: confirmed.timestamp,
+        proofCost: confirmed.proofCost,
+      });
       setResultData({
         status: "stamped",
         image: stampedUrl,
@@ -558,7 +591,10 @@ export default function Home() {
       setTimeLeft(draft.sign.jwt_ttl);
       setGeneratedLink(null);
       setStatus("result_stamped");
+      void refreshCredits();
     } catch (err: any) {
+      setConfirming(false);
+      setSingleUploadProgress(null);
       const raw = String(err?.message || err || "");
       const m = raw.match(/^(?:sign_failed|verify_http|upload_failed|confirm_failed):(\d+):(.*)$/);
       // 402(잔액 부족) → 일반 에러 대신 전용 모달 노출
@@ -606,7 +642,7 @@ export default function Home() {
 
     try {
       if (!wantsBoth) {
-        // 단일 옵션 — 기존 single-result 흐름
+        // 단일 옵션 — single-result 흐름 (B-2: signAndStamp + 자동 confirmStamped, publish는 버튼 클릭 시)
         const skipResize = originalChecked;
         const decoded = await decodeAndMaybeResize(file, { skipResize });
         const draft = await signAndStampFromPixels(
@@ -615,8 +651,30 @@ export default function Home() {
           decoded.height,
           { apiBase: "", uploadType: source, gps: gps ?? undefined, watermark: watermarkEnabled },
         );
-        const stampedUrl = URL.createObjectURL(draft.blob);
         setStampedDraft(draft);
+        setConfirming(true);
+        setSingleUploadProgress({ loaded: 0, total: draft.blob.size });
+        const confirmed = await confirmStamped(draft, {
+          apiBase: "",
+          onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
+        });
+        setConfirming(false);
+        setSingleUploadProgress(null);
+        saveReceipt({
+          receipt: confirmed.receipt,
+          timestamp: confirmed.timestamp,
+          linkId: confirmed.link_id,
+          width: draft.width,
+          height: draft.height,
+        });
+        const stampedUrl = URL.createObjectURL(confirmed.stampedBlob);
+        setConfirmedSingle({
+          stampedBlob: confirmed.stampedBlob,
+          receipt: confirmed.receipt,
+          linkId: confirmed.link_id,
+          timestamp: confirmed.timestamp,
+          proofCost: confirmed.proofCost,
+        });
         setResultData({
           status: "stamped",
           image: stampedUrl,
@@ -634,6 +692,7 @@ export default function Home() {
         setGeneratedLink(null);
         setSizeSelection(null);
         setStatus("result_stamped");
+        void refreshCredits();
         return;
       }
 
@@ -664,24 +723,22 @@ export default function Home() {
             lng: draft.gps?.lng,
           },
         };
-        results.push({ draft, display, link: null, publishing: false, error: null, variant });
+        results.push({
+          draft, display, variant,
+          stampedBlob: null, receipt: null, proofCost: 0,
+          phase: "confirming",
+          link: null, error: null,
+        });
       }
       setMultiResults(results);
       setSizeSelection(null);
       setStatus("result_multi");
       void refreshCredits();
 
-      // publish 각 결과물 (병렬) — 실패해도 다른 쪽은 진행
-      const baseUrl = window.location.origin;
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      // 각 결과물에 대해 confirmStamped 호출 (C2PA 적용 + proof cost 차감). 병렬 처리.
+      // publish는 사용자가 "간편링크 생성" 버튼 클릭 시 별도 흐름.
       results.forEach((item, idx) => {
-        setMultiResults((prev) => {
-          if (!prev) return prev;
-          const copy = [...prev];
-          copy[idx] = { ...copy[idx], publishing: true };
-          return copy;
-        });
-        publishStamped(item.draft, {
+        confirmStamped(item.draft, {
           apiBase: "",
           onUploadProgress: (loaded, total) => {
             setMultiResults((prev) => {
@@ -693,16 +750,32 @@ export default function Home() {
           },
         })
           .then((confirmed) => {
-            const linkUrl = `${baseUrl}/${confirmed.link_id}`;
-            // CDN warm-up
-            if (supabaseUrl && confirmed.storage_path) {
-              const publicUrl = `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${confirmed.storage_path}`;
-              fetch(publicUrl, { method: "HEAD", cache: "no-cache" }).catch(() => {});
-            }
+            // receipt JWT를 localStorage에 저장 (브라우저 재방문 시 미공개 detect용)
+            saveReceipt({
+              receipt: confirmed.receipt,
+              timestamp: confirmed.timestamp,
+              linkId: confirmed.link_id,
+              width: item.draft.width,
+              height: item.draft.height,
+            });
+            // stamped+C2PA 결과 이미지 URL 갱신
+            const newUrl = URL.createObjectURL(confirmed.stampedBlob);
             setMultiResults((prev) => {
               if (!prev) return prev;
               const copy = [...prev];
-              copy[idx] = { ...copy[idx], link: linkUrl, publishing: false };
+              // 이전 LSB-only URL 회수
+              if (copy[idx].display.image && copy[idx].display.image!.startsWith("blob:")) {
+                URL.revokeObjectURL(copy[idx].display.image!);
+              }
+              copy[idx] = {
+                ...copy[idx],
+                stampedBlob: confirmed.stampedBlob,
+                receipt: confirmed.receipt,
+                proofCost: confirmed.proofCost,
+                phase: "ready",
+                display: { ...copy[idx].display, image: newUrl },
+                uploadProgress: undefined,
+              };
               return copy;
             });
             void refreshCredits();
@@ -712,7 +785,7 @@ export default function Home() {
             setMultiResults((prev) => {
               if (!prev) return prev;
               const copy = [...prev];
-              copy[idx] = { ...copy[idx], publishing: false, error: raw };
+              copy[idx] = { ...copy[idx], phase: "error", error: raw };
               return copy;
             });
           });
@@ -760,6 +833,76 @@ export default function Home() {
     }
   };
 
+  // multi-result 카드별 간편링크 생성 핸들러 (LINK_CREATE -2 차감)
+  const handleMultiPublish = async (idx: number) => {
+    if (!multiResults) return;
+    const item = multiResults[idx];
+    if (!item || item.phase !== "ready" || !item.stampedBlob || !item.receipt) return;
+
+    setMultiResults((prev) => {
+      if (!prev) return prev;
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], phase: "publishing", error: null, uploadProgress: undefined };
+      return copy;
+    });
+
+    try {
+      // 썸네일 생성 (history용)
+      let thumbnailDataUrl: string | null = null;
+      try {
+        const img = new window.Image();
+        img.src = URL.createObjectURL(item.stampedBlob);
+        await new Promise<void>((r) => { img.onload = () => r(); });
+        const canvas = document.createElement("canvas");
+        const maxSize = 150;
+        const scale = Math.min(maxSize / img.width, maxSize / img.height);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        thumbnailDataUrl = canvas.toDataURL("image/webp", 0.6);
+        URL.revokeObjectURL(img.src);
+      } catch { /* thumbnail은 best-effort */ }
+
+      const result = await publishStamped({
+        apiBase: "",
+        stampedBlob: item.stampedBlob,
+        receipt: item.receipt,
+        thumbnailDataUrl,
+        onUploadProgress: (loaded, total) => {
+          setMultiResults((prev) => {
+            if (!prev) return prev;
+            const copy = [...prev];
+            copy[idx] = { ...copy[idx], uploadProgress: { loaded, total } };
+            return copy;
+          });
+        },
+      });
+      const linkUrl = `${window.location.origin}/${result.link_id}`;
+      // 공개 완료 → localStorage receipt 제거
+      removeReceipt(item.draft.sign.timestamp);
+      // CDN warm-up
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      if (supabaseUrl) {
+        fetch(result.public_url, { method: "HEAD", cache: "no-cache" }).catch(() => {});
+      }
+      setMultiResults((prev) => {
+        if (!prev) return prev;
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], phase: "published", link: linkUrl, uploadProgress: undefined };
+        return copy;
+      });
+      void refreshCredits();
+    } catch (err: any) {
+      const raw = String(err?.message || err || "");
+      setMultiResults((prev) => {
+        if (!prev) return prev;
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], phase: "ready", error: raw, uploadProgress: undefined };
+        return copy;
+      });
+    }
+  };
+
   const resetState = () => {
     setStatus("idle");
     if (resultData?.image && resultData.image.startsWith("blob:")) {
@@ -776,6 +919,8 @@ export default function Home() {
     setErrorMessage("");
     setSessionID(null);
     setStampedDraft(null);
+    setConfirmedSingle(null);
+    setConfirming(false);
     setTimeLeft(0);
     setGeneratedLink(null);
     setDebugMessage(null);
@@ -836,69 +981,54 @@ export default function Home() {
   };
 
   const handleCreateLink = async () => {
-    if (!stampedDraft || isLinking) return;
+    if (!confirmedSingle || isLinking) return;
     setIsLinking(true);
-    setSingleUploadProgress({ loaded: 0, total: stampedDraft.blob.size });
+    setSingleUploadProgress({ loaded: 0, total: confirmedSingle.stampedBlob.size });
 
     try {
-      const confirmed = await publishStamped(stampedDraft, {
+      // 썸네일 생성 (history 표시용)
+      let thumbnailDataUrl: string | null = null;
+      try {
+        const img = new window.Image();
+        img.src = URL.createObjectURL(confirmedSingle.stampedBlob);
+        await new Promise<void>((r) => { img.onload = () => r(); });
+        const canvas = document.createElement("canvas");
+        const maxSize = 150;
+        const scale = Math.min(maxSize / img.width, maxSize / img.height);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        thumbnailDataUrl = canvas.toDataURL("image/webp", 0.6);
+        URL.revokeObjectURL(img.src);
+      } catch { /* best-effort */ }
+
+      const result = await publishStamped({
         apiBase: "",
+        stampedBlob: confirmedSingle.stampedBlob,
+        receipt: confirmedSingle.receipt,
+        thumbnailDataUrl,
         onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
       });
       const baseUrl = window.location.origin;
-      const fullLink = `${baseUrl}/${confirmed.link_id}`;
+      const fullLink = `${baseUrl}/${result.link_id}`;
       setGeneratedLink(fullLink);
       setSessionID(null);
 
-      // CDN warm-up: 첫 조회자가 CDN MISS를 겪지 않도록 사전 캐시
+      // 공개 완료 → localStorage receipt 제거
+      removeReceipt(confirmedSingle.timestamp);
+
+      // CDN warm-up
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (supabaseUrl && confirmed.storage_path) {
-        const publicUrl = `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${confirmed.storage_path}`;
-        fetch(publicUrl, { method: "HEAD", cache: "no-cache" }).catch(() => { });
-      }
-
-      const draftSnapshot = stampedDraft;
-      const resultImage = resultData?.image;
-      if (session?.user) {
-        // Fire-and-forget: 이력 저장은 UI를 차단하지 않음
-        (async () => {
-          try {
-            let thumbnailDataUrl: string | null = null;
-            if (resultImage) {
-              const img = new window.Image();
-              img.src = resultImage;
-              await new Promise((resolve) => { img.onload = resolve; });
-              const canvas = document.createElement("canvas");
-              const maxSize = 150;
-              const scale = Math.min(maxSize / img.width, maxSize / img.height);
-              canvas.width = img.width * scale;
-              canvas.height = img.height * scale;
-              const ctx = canvas.getContext("2d");
-              ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-              thumbnailDataUrl = canvas.toDataURL("image/webp", 0.6);
-            }
-
-            await fetch("/api/proof/history", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                linkId: confirmed.link_id,
-                thumbnail: thumbnailDataUrl,
-                width: draftSnapshot.width,
-                height: draftSnapshot.height,
-                timestamp: confirmed.timestamp,
-              }),
-            });
-          } catch (historyErr) {
-            console.error("Failed to save proof history:", historyErr);
-          }
-        })();
+      if (supabaseUrl && result.public_url) {
+        fetch(result.public_url, { method: "HEAD", cache: "no-cache" }).catch(() => { });
       }
 
       setStampedDraft(null);
+      setConfirmedSingle(null);
+      void refreshCredits();
     } catch (err: any) {
       const raw = String(err?.message || err || "");
-      const match = raw.match(/^(?:upload_failed|confirm_failed):\d+:(.*)$/);
+      const match = raw.match(/^(?:publish_failed):\d+:(.*)$/);
       let msg = raw;
       if (match) {
         try {
@@ -1493,8 +1623,8 @@ export default function Home() {
                     />
                   </div>
 
-                  {item.publishing && (() => {
-                    const total = item.uploadProgress?.total ?? item.draft.blob.size;
+                  {(item.phase === "confirming" || item.phase === "publishing") && (() => {
+                    const total = item.uploadProgress?.total ?? item.stampedBlob?.size ?? item.draft.blob.size;
                     const loaded = item.uploadProgress?.loaded ?? 0;
                     const pct = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
                     return (
@@ -1502,9 +1632,11 @@ export default function Home() {
                         <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
                           <span className="flex items-center gap-1.5">
                             <RefreshCw size={12} className="animate-spin" />
-                            {item.uploadProgress
-                              ? t("result.uploading")
-                              : t("result.publishing")}
+                            {item.phase === "confirming"
+                              ? t("result.confirming")
+                              : item.uploadProgress
+                                ? t("result.uploading")
+                                : t("result.publishing")}
                           </span>
                           {item.uploadProgress && total > 0 && (
                             <span className="font-mono">
@@ -1527,6 +1659,15 @@ export default function Home() {
                     <p className="text-xs text-rose-600 mb-2">
                       {t("result.publish_error")}: {item.error.slice(0, 80)}
                     </p>
+                  )}
+
+                  {item.phase === "ready" && (
+                    <button
+                      onClick={() => handleMultiPublish(idx)}
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg flex items-center justify-center gap-2 text-sm transition-colors mb-3"
+                    >
+                      {t("result.create_link_button", { cost: CREDIT_COSTS.LINK_CREATE })}
+                    </button>
                   )}
 
                   {item.link && (

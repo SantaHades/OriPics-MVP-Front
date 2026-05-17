@@ -148,20 +148,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 잔액 확인 (tier + 사이즈 multiplier 반영). 실제 차감은 /api/links/confirm.
-  // Standard: IMAGE_PROOF(2) × sizeMultiplier + LINK_CREATE(1)
-  // Verified: VERIFIED_PROOF(3) × sizeMultiplier + LINK_CREATE(1)
+  // 잔액 확인 — 인증 단계 비용만 (LINK_CREATE는 publish 시점 별도 차감).
+  // Standard: IMAGE_PROOF(3) × sizeMultiplier
+  // Verified: VERIFIED_PROOF(4) × sizeMultiplier
   // sizeMultiplier: 긴 변 ≤ 1800 = 1×, > 1800 ≤ 100MP = 2×, > 100MP = 3×
   const sizeMultiplier = getProofMultiplier(width, height);
   const baseProofCost = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
   const proofCost = baseProofCost * sizeMultiplier;
-  const requiredCredits = proofCost + CREDIT_COSTS.LINK_CREATE;
-  if (user.credits < requiredCredits) {
+  if (user.credits < proofCost) {
     return NextResponse.json(
       {
         detail: "insufficient_credits",
         balance: user.credits,
-        required: requiredCredits,
+        required: proofCost,
         tier,
         size_multiplier: sizeMultiplier,
       },

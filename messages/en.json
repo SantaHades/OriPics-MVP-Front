@@ -94,11 +94,13 @@
       "multi_title": "Both sizes proven",
       "multi_desc": "Both selected options were processed. Each link is retained for 7 days (or permanently for Pro+).",
       "publishing": "Creating link…",
+      "confirming": "Processing proof…",
       "uploading": "Uploading image…",
       "publish_error": "Link creation failed",
       "short_link": "Short link",
       "copy_link": "Copy link",
-      "download_stamped": "Download image"
+      "download_stamped": "Download image",
+      "create_link_button": "Create share link (−{cost})"
     },
     "size_select": {
       "title": "Choose proof size",

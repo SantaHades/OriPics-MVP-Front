@@ -58,9 +58,21 @@ export interface SignResponse {
 }
 
 export interface ConfirmResponse {
+  /** stamped + C2PA 적용된 PNG (브라우저 메모리에서 보관, publish 시 재전송) */
+  stampedBlob: Blob;
   link_id: string;
   timestamp: string;
-  storage_path: string;
+  /** publish 시 재제출할 receipt JWT (localStorage 보관 권장) */
+  receipt: string;
+  /** 차감된 proof 크레딧 (UI 표시용) */
+  proofCost: number;
+}
+
+export interface PublishResponse {
+  link_id: string;
+  timestamp: string;
+  public_url: string;
+  already_published?: boolean;
 }
 
 export interface VerifyResponse {
@@ -156,72 +168,117 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
   return signAndStampFromPixels(pixels, width, height, opts);
 }
 
-export async function uploadStamped(
+/**
+ * confirmStamped — B-2 흐름 (2026-05-17):
+ *   - 클라가 stamped PNG + JWT를 multipart로 confirm 라우트에 전송
+ *   - 서버는 C2PA 적용 후 image bytes + receipt JWT 응답 (Storage/DB 변경 없음)
+ *   - 응답으로 받은 stamped+C2PA Blob과 receipt를 반환 — publish 시 재전송
+ *
+ * onUploadProgress: 요청 바이트 업로드 진행률 (XHR 채택)
+ */
+export function confirmStamped(
   draft: StampedDraft,
-  onProgress?: (loaded: number, total: number) => void,
-): Promise<void> {
-  // XHR 사용 — fetch는 ReadableStream PUT을 안정적으로 지원하지 않아 onprogress 콜백을 위해 XHR 채택.
-  return new Promise<void>((resolve, reject) => {
+  opts: {
+    apiBase: string;
+    onUploadProgress?: (loaded: number, total: number) => void;
+  },
+): Promise<ConfirmResponse> {
+  const apiBase = opts.apiBase.replace(/\/$/, '');
+  return new Promise<ConfirmResponse>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('PUT', draft.sign.signed_upload_url);
-    xhr.setRequestHeader('Content-Type', 'image/png');
-    if (onProgress) {
+    xhr.open('POST', `${apiBase}/api/links/confirm`);
+    xhr.responseType = 'blob';
+    if (opts.onUploadProgress) {
       xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) onProgress(e.loaded, e.total);
-        else onProgress(e.loaded, draft.blob.size || 0);
+        if (e.lengthComputable) opts.onUploadProgress!(e.loaded, e.total);
+        else opts.onUploadProgress!(e.loaded, draft.blob.size || 0);
       });
     }
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        // 마지막 100% 신호 보장
-        if (onProgress) onProgress(draft.blob.size, draft.blob.size);
-        resolve();
+        if (opts.onUploadProgress) opts.onUploadProgress(draft.blob.size, draft.blob.size);
+        const receipt = xhr.getResponseHeader('X-Oripics-Receipt') || '';
+        const linkId = xhr.getResponseHeader('X-Oripics-Link-Id') || draft.sign.link_id;
+        const timestamp = xhr.getResponseHeader('X-Oripics-Timestamp') || draft.sign.timestamp;
+        const proofCost = parseInt(xhr.getResponseHeader('X-Oripics-Proof-Cost') || '0', 10);
+        if (!receipt) {
+          reject(new Error('confirm_failed:200:missing_receipt_header'));
+          return;
+        }
+        resolve({
+          stampedBlob: xhr.response as Blob,
+          link_id: linkId,
+          timestamp,
+          receipt,
+          proofCost,
+        });
       } else {
-        reject(new Error(`upload_failed:${xhr.status}:${xhr.responseText}`));
+        // 에러 응답은 JSON일 가능성 → blob을 텍스트로 변환
+        const blob = xhr.response as Blob | null;
+        if (blob && blob.type.includes('json')) {
+          blob.text().then((t) => {
+            reject(new Error(`confirm_failed:${xhr.status}:${t}`));
+          }).catch(() => {
+            reject(new Error(`confirm_failed:${xhr.status}:`));
+          });
+        } else {
+          reject(new Error(`confirm_failed:${xhr.status}:`));
+        }
       }
     };
-    xhr.onerror = () => {
-      reject(new Error(`upload_failed:0:${JSON.stringify({ detail: 'network_error' })}`));
-    };
-    xhr.onabort = () => {
-      reject(new Error('upload_failed:0:aborted'));
-    };
-    xhr.send(draft.blob);
+    xhr.onerror = () => reject(new Error(`confirm_failed:0:network_error`));
+    xhr.onabort = () => reject(new Error('confirm_failed:0:aborted'));
+
+    const form = new FormData();
+    form.append('jwt_token', draft.sign.jwt);
+    form.append('image', draft.blob, 'stamped.png');
+    xhr.send(form);
   });
 }
 
-export async function confirmLink(draft: StampedDraft, opts: { apiBase: string }): Promise<ConfirmResponse> {
-  const apiBase = opts.apiBase.replace(/\/$/, '');
-  let res: Response;
-  try {
-    res = await fetch(`${apiBase}/api/links/confirm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jwt_token: draft.sign.jwt }),
-    });
-  } catch (e: any) {
-    throw new Error(`confirm_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
-  }
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`confirm_failed:${res.status}:${detail}`);
-  }
-  return res.json();
-}
-
+/**
+ * publishStamped — B-2 흐름:
+ *   - stamped+C2PA Blob과 receipt JWT를 publish 라우트에 전송
+ *   - 서버: Storage 업로드 + links DB row 생성 + LINK_CREATE 차감
+ */
 export async function publishStamped(
-  draft: StampedDraft,
-  opts: {
+  args: {
     apiBase: string;
-    /** 업로드 PUT 바이트 진행률 콜백 (loaded, total in bytes) */
+    stampedBlob: Blob;
+    receipt: string;
+    thumbnailDataUrl?: string | null;
     onUploadProgress?: (loaded: number, total: number) => void;
   },
-): Promise<ConfirmResponse> {
-  const [, confirmResult] = await Promise.all([
-    uploadStamped(draft, opts.onUploadProgress),
-    confirmLink(draft, opts),
-  ]);
-  return confirmResult;
+): Promise<PublishResponse> {
+  const apiBase = args.apiBase.replace(/\/$/, '');
+  return new Promise<PublishResponse>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${apiBase}/api/links/publish`);
+    xhr.responseType = 'json';
+    if (args.onUploadProgress) {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) args.onUploadProgress!(e.loaded, e.total);
+      });
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(xhr.response as PublishResponse);
+      } else {
+        const detail = xhr.response ? JSON.stringify(xhr.response) : '';
+        reject(new Error(`publish_failed:${xhr.status}:${detail}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('publish_failed:0:network_error'));
+    xhr.onabort = () => reject(new Error('publish_failed:0:aborted'));
+
+    const form = new FormData();
+    form.append('receipt', args.receipt);
+    form.append('image', args.stampedBlob, 'stamped.png');
+    if (args.thumbnailDataUrl) {
+      form.append('thumbnail', args.thumbnailDataUrl);
+    }
+    xhr.send(form);
+  });
 }
 
 /**

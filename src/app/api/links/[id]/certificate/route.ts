@@ -45,6 +45,21 @@ function getSourceCode(ts: string): "F" | "P" | "C" {
   return "F";
 }
 
+function certificateStoragePath(linkId: string): string {
+  return `certificates/${linkId}.pdf`;
+}
+
+/**
+ * GET /api/links/[id]/certificate
+ *
+ * 동작 (2026-05-17 갱신: PDF 캐시 도입):
+ *   - 기본: 캐시가 있으면 그대로 반환 (무차감 다운로드). 없으면 발급(-10) + 캐시 저장.
+ *   - ?reissue=1: 캐시 무시하고 새로 발급(-10). 캐시 덮어쓰기.
+ *
+ * 권한:
+ *   - Pro/Business 티어 한정
+ *   - 본인 소유 link만
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } },
@@ -63,6 +78,7 @@ export async function GET(
   const url = new URL(req.url);
   const localeParam = url.searchParams.get("locale");
   const locale: "ko" | "en" = localeParam === "en" ? "en" : "ko";
+  const reissue = url.searchParams.get("reissue") === "1";
 
   if (!SUPABASE_SERVICE_KEY || !SUPABASE_URL) {
     return NextResponse.json({ detail: "supabase_not_configured" }, { status: 500 });
@@ -83,12 +99,52 @@ export async function GET(
     );
   }
 
-  // 1-1. 크레딧 차감 (PDF 발급 -10, race-safe atomic).
+  // 2. 링크 조회 + 소유자 검증
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  const { data: row, error } = await supabase
+    .from("links")
+    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id")
+    .eq("link_id", linkId)
+    .single();
+  if (error || !row) {
+    return NextResponse.json({ detail: "link_not_found" }, { status: 404 });
+  }
+  if (row.user_id !== userId) {
+    return NextResponse.json({ detail: "not_owner" }, { status: 403 });
+  }
+
+  // 3. 캐시 확인 (reissue=1이 아닐 때만)
+  const history = await prisma.proofHistory.findUnique({
+    where: { linkId },
+    select: { pdfStoragePath: true },
+  });
+  if (!reissue && history?.pdfStoragePath) {
+    const { data: cachedBlob, error: dlErr } = await supabase.storage
+      .from(BUCKET_NAME)
+      .download(history.pdfStoragePath);
+    if (cachedBlob && !dlErr) {
+      const buf = Buffer.from(await cachedBlob.arrayBuffer());
+      const filename = `OriPics_Certificate_${linkId}.pdf`;
+      return new NextResponse(new Uint8Array(buf), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/pdf",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Cache-Control": "no-store",
+          "X-Oripics-Cached": "1",
+        },
+      });
+    }
+    // 캐시 누락 시 (Storage 삭제됨 등) → 신규 발급으로 fallback (차감 발생)
+    console.warn(`[certificate] cache miss link_id=${linkId} path=${history.pdfStoragePath}`);
+  }
+
+  // 4. 크레딧 차감 (-10). 실패 시 즉시 종료.
   const consume = await consumeCredits({
     userId,
     amount: CREDIT_COSTS.CERTIFICATE_PDF,
     action: "pdf_issue",
-    metadata: { link_id: linkId, locale } as any,
+    metadata: { link_id: linkId, locale, reissue } as any,
   });
   if (!consume.ok) {
     return NextResponse.json(
@@ -101,34 +157,7 @@ export async function GET(
     );
   }
 
-  // 2. 링크 조회 + 소유자 검증
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  const { data: row, error } = await supabase
-    .from("links")
-    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id")
-    .eq("link_id", linkId)
-    .single();
-  if (error || !row) {
-    await refundCredits({
-      userId,
-      amount: CREDIT_COSTS.CERTIFICATE_PDF,
-      action: "pdf_issue",
-      metadata: { link_id: linkId, reason: "link_not_found" } as any,
-    }).catch((e) => console.warn("[certificate] refund failed:", e));
-    return NextResponse.json({ detail: "link_not_found" }, { status: 404 });
-  }
-  if (row.user_id && row.user_id !== userId) {
-    await refundCredits({
-      userId,
-      amount: CREDIT_COSTS.CERTIFICATE_PDF,
-      action: "pdf_issue",
-      metadata: { link_id: linkId, reason: "not_owner" } as any,
-    }).catch((e) => console.warn("[certificate] refund failed:", e));
-    // 본인이 생성한 링크에 대해서만 PDF 발급 허용
-    return NextResponse.json({ detail: "not_owner" }, { status: 403 });
-  }
-
-  // 3. C2PA 매니페스트 best-effort 조회
+  // 5. C2PA 매니페스트 best-effort 조회
   let c2paSummary: CertificateData["c2pa"] | undefined;
   try {
     const { data: blob } = await supabase.storage
@@ -154,10 +183,10 @@ export async function GET(
       }
     }
   } catch {
-    // 매니페스트 조회 실패는 무시 (PDF는 정상 발급)
+    // C2PA 조회 실패는 무시 (PDF는 정상 발급)
   }
 
-  // 4. QR 생성 — 검증 URL을 PNG data URL로
+  // 6. QR 생성
   const verifyUrl = `https://www.ori.pics/${linkId}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
     errorCorrectionLevel: "M",
@@ -166,8 +195,9 @@ export async function GET(
     color: { dark: "#0f172a", light: "#ffffff" },
   });
 
-  // 5. PDF 렌더링
+  // 7. PDF 렌더링
   const capturedAt = parseMetaTimestamp(row.timestamp) ?? new Date();
+  const issuedAt = new Date();
   const certData: CertificateData = {
     linkId: row.link_id,
     capturedAt,
@@ -177,7 +207,7 @@ export async function GET(
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     issuedTo: user.name || user.email || userId,
-    issuedAt: new Date(),
+    issuedAt,
     verifyUrl,
     qrDataUrl,
     c2pa: c2paSummary,
@@ -205,6 +235,41 @@ export async function GET(
     );
   }
 
+  // 8. 캐시 저장 (best-effort) + ProofHistory 갱신
+  const cachePath = certificateStoragePath(linkId);
+  try {
+    const { error: upErr } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(cachePath, pdfBuffer, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+    if (upErr) throw new Error(upErr.message);
+    await prisma.proofHistory.update({
+      where: { linkId },
+      data: { pdfStoragePath: cachePath, pdfIssuedAt: issuedAt },
+    }).catch((e) => {
+      // ProofHistory row 없을 수도 (legacy data) → upsert로 처리
+      if (String(e?.message || "").includes("Record to update not found")) {
+        return prisma.proofHistory.create({
+          data: {
+            userId,
+            linkId,
+            width: row.width,
+            height: row.height,
+            timestamp: row.timestamp,
+            pdfStoragePath: cachePath,
+            pdfIssuedAt: issuedAt,
+          },
+        });
+      }
+      throw e;
+    });
+  } catch (e: any) {
+    // 캐시 실패해도 사용자에게는 PDF 응답 — 다음 호출에 다시 시도
+    console.warn(`[certificate] cache save failed link_id=${linkId}:`, e?.message || e);
+  }
+
   const filename = `OriPics_Certificate_${linkId}.pdf`;
   return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,
@@ -212,6 +277,7 @@ export async function GET(
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "no-store",
+      "X-Oripics-Cached": "0",
     },
   });
 }

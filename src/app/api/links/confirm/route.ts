@@ -1,20 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 const JWT_SECRET = process.env.ORIPICS_JWT_SECRET!;
-const BUCKET_NAME = "oripics-proofs";
 const C2PA_ENABLED = process.env.ORIPICS_C2PA_ENABLED === "true";
+const RECEIPT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30일
 
 export const runtime = "nodejs";
+// Vercel Functions에서 큰 PNG 처리를 위해 default body size limit 확장
+export const maxDuration = 60;
 
-function verifyJwt(token: string): Record<string, any> {
+function b64urlEncodeJson(obj: unknown): string {
+  return Buffer.from(JSON.stringify(obj)).toString("base64url");
+}
+
+function issueReceiptJwt(payload: Record<string, any>): string {
+  const header = { alg: "HS256", typ: "JWT" };
+  const headerB64 = b64urlEncodeJson(header);
+  const payloadB64 = b64urlEncodeJson(payload);
+  const sig = createHmac("sha256", JWT_SECRET)
+    .update(`${headerB64}.${payloadB64}`)
+    .digest("base64url");
+  return `${headerB64}.${payloadB64}.${sig}`;
+}
+
+function verifySignJwt(token: string): Record<string, any> {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("invalid_jwt");
   const [header, payload, sig] = parts;
@@ -28,157 +41,166 @@ function verifyJwt(token: string): Record<string, any> {
   return decoded;
 }
 
+/**
+ * /api/links/confirm — B-2 흐름 (2026-05-17 재설계)
+ *
+ * 입력: multipart/form-data
+ *   - jwt_token: /api/sign에서 발급한 JWT (claims에 user_id, link_id, storage_path, timestamp, width, height, tier 등)
+ *   - image: stamped PNG (LSB 스테가노그래피 적용된 클라이언트 산출물)
+ *
+ * 처리:
+ *   - JWT 검증
+ *   - proof cost(IMAGE_PROOF or VERIFIED_PROOF × sizeMultiplier) 차감
+ *   - 클라이언트가 보낸 PNG에 C2PA 매니페스트 첨부
+ *   - **Supabase Storage 업로드 X, DB row 생성 X** — 미공개 상태는 서버에 흔적을 남기지 않음
+ *
+ * 응답: image/png 바이너리
+ *   - X-Oripics-Receipt: receipt JWT (publish 시 재제출용, TTL 30일)
+ *   - X-Oripics-Proof-Cost: 차감된 크레딧 수 (UI 표시용)
+ */
 export async function POST(req: NextRequest) {
   if (!JWT_SECRET) {
-    console.error("[confirm] missing ORIPICS_JWT_SECRET");
     return NextResponse.json({ detail: "missing_jwt_secret" }, { status: 500 });
   }
-  if (!SUPABASE_SERVICE_KEY) {
-    console.error("[confirm] missing SUPABASE_SERVICE_KEY");
-    return NextResponse.json({ detail: "missing_service_key" }, { status: 500 });
-  }
 
+  let form: FormData;
   try {
-    const { jwt_token } = await req.json();
-    if (!jwt_token) {
-      return NextResponse.json({ detail: "missing_jwt" }, { status: 400 });
-    }
-
-    let claims: Record<string, any>;
-    try {
-      claims = verifyJwt(jwt_token);
-    } catch (e: any) {
-      console.error("[confirm] jwt verify failed:", e.message);
-      return NextResponse.json({ detail: e.message }, { status: 401 });
-    }
-
-    const {
-      user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6,
-      tier: claimedTier,
-      verified_info,
-    } = claims;
-
-    const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";
-    // 인증 1회 = (IMAGE_PROOF=3 | VERIFIED_PROOF=4, 링크 포함 통합 비용) × sizeMultiplier
-    // 1× : 긴 변 ≤ 1800px
-    // 2× : 긴 변 > 1800 AND 픽셀 수 ≤ 100M
-    // 3× : 픽셀 수 > 100M
-    const sizeMultiplier = getProofMultiplier(width, height);
-    const baseProofCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
-    const creditCost = baseProofCost * sizeMultiplier;
-    const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
-
-    // J-3 + D-pre-3: tier별 크레딧 차감 (race-safe atomic).
-    if (!user_id) {
-      // sign 라우트가 J-3 이전에 발급한 JWT (user_id 없음) — 차감 스킵.
-      console.warn(`[confirm] legacy JWT without user_id, skipping credit charge: link_id=${link_id}`);
-    } else {
-      const consume = await consumeCredits({
-        userId: user_id,
-        amount: creditCost,
-        action: creditAction,
-        metadata: { link_id, storage_path, tier, width, height, size_multiplier: sizeMultiplier },
-      });
-      if (!consume.ok) {
-        return NextResponse.json(
-          {
-            detail: "insufficient_credits",
-            balance: consume.balance,
-            required: creditCost,
-            tier,
-            size_multiplier: sizeMultiplier,
-          },
-          { status: 402 },
-        );
-      }
-    }
-
-    const row: Record<string, any> = {
-      link_id,
-      timestamp,
-      width,
-      height,
-      storage_path,
-      signed_url: `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${storage_path}`,
-    };
-    if (user_id) {
-      row.user_id = user_id; // 옵션 A: 검증 시 면책 판정용
-    }
-    if (lat_e6 != null && lng_e6 != null) {
-      row.lat = lat_e6 / 1_000_000;
-      row.lng = lng_e6 / 1_000_000;
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-
-    // C2PA 매니페스트 첨부 (기능 플래그 OFF 시 건너뜀).
-    // 실패해도 전체 흐름은 차단하지 않음 — 원본 PNG는 그대로 Storage에 존재.
-    if (C2PA_ENABLED) {
-      try {
-        const c2paStart = Date.now();
-        const { data: blob, error: dlErr } = await supabase.storage
-          .from(BUCKET_NAME)
-          .download(storage_path);
-        if (dlErr || !blob) throw new Error(`download_failed:${dlErr?.message || "no_blob"}`);
-        const pngBuffer = Buffer.from(await blob.arrayBuffer());
-
-        const stampVersion = lat_e6 != null && lng_e6 != null ? 3 : 2;
-        const c2paTier: Tier = tier === "verified" ? "verified" : "standard";
-
-        const signResult = await attachC2paManifest({
-          pngBuffer,
-          tier: c2paTier,
-          linkId: link_id,
-          timestamp: oripicsTimestampToISO8601(timestamp),
-          width,
-          height,
-          lat: lat_e6 != null ? lat_e6 / 1_000_000 : null,
-          lng: lng_e6 != null ? lng_e6 / 1_000_000 : null,
-          stampVersion,
-          ...(c2paTier === "verified" && verified_info
-            ? { verifiedInfo: verified_info }
-            : {}),
-        });
-
-        const { error: upErr } = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(storage_path, signResult.buffer, {
-            contentType: "image/png",
-            upsert: true,
-          });
-        if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
-
-        console.log(
-          `[confirm] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded} ms=${Date.now() - c2paStart}`,
-        );
-      } catch (e: any) {
-        console.error(`[confirm] c2pa attach failed link_id=${link_id}:`, e?.message || e);
-      }
-    }
-
-    const { error } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
-    if (error) {
-      console.error("[confirm] db upsert failed:", error);
-      // 차감했으면 환불 — 작업 미완료 상태에서 크레딧만 소진되면 안 됨
-      if (user_id) {
-        try {
-          await refundCredits({
-            userId: user_id,
-            amount: creditCost,
-            action: creditAction,
-            metadata: { link_id, reason: `db_error:${error.message}` },
-          });
-        } catch (rfErr: any) {
-          console.error("[confirm] refund failed:", rfErr?.message || rfErr);
-        }
-      }
-      return NextResponse.json({ detail: `db_error:${error.message}` }, { status: 500 });
-    }
-
-    console.log(`[confirm] ok link_id=${link_id}`);
-    return NextResponse.json({ link_id, timestamp, storage_path });
-  } catch (e: any) {
-    console.error("[confirm] unexpected error:", e);
-    return NextResponse.json({ detail: e.message || "unknown_error" }, { status: 500 });
+    form = await req.formData();
+  } catch {
+    return NextResponse.json({ detail: "invalid_form_data" }, { status: 400 });
   }
+
+  const jwtToken = form.get("jwt_token");
+  const imageEntry = form.get("image");
+  if (typeof jwtToken !== "string" || !jwtToken) {
+    return NextResponse.json({ detail: "missing_jwt" }, { status: 400 });
+  }
+  if (!(imageEntry instanceof Blob)) {
+    return NextResponse.json({ detail: "missing_image" }, { status: 400 });
+  }
+
+  let claims: Record<string, any>;
+  try {
+    claims = verifySignJwt(jwtToken);
+  } catch (e: any) {
+    console.error("[confirm] jwt verify failed:", e.message);
+    return NextResponse.json({ detail: e.message }, { status: 401 });
+  }
+
+  const {
+    user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6,
+    tier: claimedTier,
+    verified_info,
+  } = claims;
+
+  if (!user_id) {
+    return NextResponse.json({ detail: "jwt_missing_user_id" }, { status: 400 });
+  }
+
+  const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";
+  const sizeMultiplier = getProofMultiplier(width, height);
+  const baseProofCost = tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+  const proofCost = baseProofCost * sizeMultiplier;
+  const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
+
+  // 1. 크레딧 차감 (race-safe atomic)
+  const consume = await consumeCredits({
+    userId: user_id,
+    amount: proofCost,
+    action: creditAction,
+    metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier },
+  });
+  if (!consume.ok) {
+    return NextResponse.json(
+      {
+        detail: "insufficient_credits",
+        balance: consume.balance,
+        required: proofCost,
+        tier,
+        size_multiplier: sizeMultiplier,
+      },
+      { status: 402 },
+    );
+  }
+
+  // 2. C2PA 매니페스트 첨부
+  let finalBuffer: Buffer;
+  try {
+    const inputBuffer = Buffer.from(await imageEntry.arrayBuffer());
+    if (!C2PA_ENABLED) {
+      finalBuffer = inputBuffer;
+    } else {
+      const stampVersion = lat_e6 != null && lng_e6 != null ? 3 : 2;
+      const c2paTier: Tier = tier === "verified" ? "verified" : "standard";
+
+      const signResult = await attachC2paManifest({
+        pngBuffer: inputBuffer,
+        tier: c2paTier,
+        linkId: link_id,
+        timestamp: oripicsTimestampToISO8601(timestamp),
+        width,
+        height,
+        lat: lat_e6 != null ? lat_e6 / 1_000_000 : null,
+        lng: lng_e6 != null ? lng_e6 / 1_000_000 : null,
+        stampVersion,
+        ...(c2paTier === "verified" && verified_info
+          ? { verifiedInfo: verified_info }
+          : {}),
+      });
+      finalBuffer = signResult.buffer;
+      console.log(
+        `[confirm] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded}`,
+      );
+    }
+  } catch (e: any) {
+    console.error(`[confirm] c2pa attach failed link_id=${link_id}:`, e?.message || e);
+    // C2PA 첨부 실패 시 환불 (사용자는 stamped 이미지 못 받았으므로 사용 0)
+    try {
+      await refundCredits({
+        userId: user_id,
+        amount: proofCost,
+        action: creditAction,
+        metadata: { link_id, reason: `c2pa_error:${e?.message || e}` },
+      });
+    } catch (rfErr: any) {
+      console.error("[confirm] refund failed:", rfErr?.message || rfErr);
+    }
+    return NextResponse.json({ detail: `c2pa_error:${e?.message || "unknown"}` }, { status: 500 });
+  }
+
+  // 3. receipt JWT 발급 (publish 시점에 사용)
+  const now = Math.floor(Date.now() / 1000);
+  const receiptPayload: Record<string, any> = {
+    iat: now,
+    exp: now + RECEIPT_TTL_SECONDS,
+    aud: "links/publish",
+    user_id,
+    link_id,
+    storage_path,
+    timestamp,
+    width,
+    height,
+    tier,
+  };
+  if (lat_e6 != null && lng_e6 != null) {
+    receiptPayload.lat_e6 = lat_e6;
+    receiptPayload.lng_e6 = lng_e6;
+  }
+  if (verified_info) {
+    receiptPayload.verified_info = verified_info;
+  }
+  const receiptJwt = issueReceiptJwt(receiptPayload);
+
+  console.log(`[confirm] ok link_id=${link_id} bytes=${finalBuffer.length} cost=${proofCost}`);
+
+  return new NextResponse(new Uint8Array(finalBuffer), {
+    status: 200,
+    headers: {
+      "Content-Type": "image/png",
+      "X-Oripics-Receipt": receiptJwt,
+      "X-Oripics-Proof-Cost": String(proofCost),
+      "X-Oripics-Link-Id": link_id,
+      "X-Oripics-Timestamp": timestamp,
+    },
+  });
 }

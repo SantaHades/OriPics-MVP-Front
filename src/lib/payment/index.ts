@@ -56,19 +56,20 @@ export function selectGatewayForUser(_opts: {
 
 /**
  * 액션별 크레딧 비용 (백엔드 회계용, 사용자 비노출).
- * 2026-05-15 갱신: IMAGE_PROOF/VERIFIED_PROOF는 link 비용 통합. CERTIFICATE_PDF 신설.
+ * 2026-05-17 갱신: 인증 ↔ 간편링크 생성 2단계 분리. proof는 link 비용 미포함.
  *  - 검증 조회: 1
- *  - 간편링크 생성(standalone): 2
- *  - 이미지 인증(Standard, F/C) 1회 총비용: 3
- *  - 사진 인증(Verified, P) 1회 총비용: 4
- *  - 증명서 PDF 발급 1회: 10
+ *  - 간편링크 publish: 2 (인증 후 "간편링크 생성" 버튼 클릭 시)
+ *  - 이미지 인증(Standard, F/C): 3 — proof만
+ *  - 사진 인증(Verified, P): 4 — proof만
+ *  - 증명서 PDF 발급: 10
+ * 전체 흐름 (인증 + 공유): Standard 3+2=5, Verified 4+2=6
  */
 export const CREDIT_COSTS = {
   VERIFY_QUERY: 1,       // /api/verify 조회
-  LINK_CREATE: 2,        // 간편링크 단독 생성 (현재 통합 차감 흐름에는 미사용)
-  IMAGE_PROOF: 3,        // /api/links/confirm Standard 인증 (link 포함 통합 비용)
-  VERIFIED_PROOF: 4,     // 모바일 P 경로 Verified 인증 (link 포함 통합 비용, Pro 한정)
-  CERTIFICATE_PDF: 10,   // 증명서 PDF 발급
+  LINK_CREATE: 2,        // /api/links/[id]/publish — 간편링크 공개 (proof와 분리)
+  IMAGE_PROOF: 3,        // /api/links/confirm Standard 인증 (proof만, link 비용 별도)
+  VERIFIED_PROOF: 4,     // 모바일 P 경로 Verified 인증 (proof만, Pro 한정)
+  CERTIFICATE_PDF: 10,   // 증명서 PDF 발급 (published 링크 한정)
 } as const;
 
 export type CreditAction = keyof typeof CREDIT_COSTS;

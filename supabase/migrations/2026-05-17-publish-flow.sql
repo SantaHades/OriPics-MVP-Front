@@ -1,0 +1,12 @@
+-- 2026-05-17: 간편링크 publish 흐름 도입 (B-2: receipt JWT 방식)
+--
+-- 아키텍처 정리:
+--   - /api/links/confirm: stamped 이미지 바이트 + receipt JWT 응답. Storage/DB 변경 없음.
+--   - /api/links/publish: 클라가 stamped 이미지 + receipt JWT 전송 → Storage 업로드 + links DB row 생성.
+--   - links 테이블에는 published된 row만 존재 → published_at 컬럼 불필요.
+--   - ProofHistory도 publish 시점에 생성됨.
+--
+-- 결과적으로 **Supabase 측 스키마 변경 사항 없음.**
+-- 이 파일은 변경 이력 기록용으로 유지.
+--
+-- 만약 향후 다른 흐름(예: 미공개 draft를 서버에 보관)이 도입되면 그때 published_at 컬럼 추가 검토.

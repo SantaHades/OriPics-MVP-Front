@@ -23,9 +23,27 @@ export async function GET() {
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 50, // 최대 50개
+      select: {
+        id: true,
+        linkId: true,
+        thumbnail: true,
+        width: true,
+        height: true,
+        timestamp: true,
+        createdAt: true,
+        pdfStoragePath: true,
+        pdfIssuedAt: true,
+      },
     });
 
-    return NextResponse.json({ proofs }, { status: 200 });
+    // pdfStoragePath는 클라가 직접 접근하지 않음(존재 여부만 노출). PDF 다운로드는 /certificate 엔드포인트 경유.
+    const safeProofs = proofs.map((p) => ({
+      ...p,
+      pdfIssued: !!p.pdfStoragePath,
+      pdfStoragePath: undefined,
+    }));
+
+    return NextResponse.json({ proofs: safeProofs }, { status: 200 });
   } catch (error: any) {
     console.error("[Proof History GET] Error:", error);
     return NextResponse.json({ code: "server_error" }, { status: 500 });
