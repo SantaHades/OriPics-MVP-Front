@@ -749,7 +749,7 @@ export default function Home() {
       void refreshCredits();
 
       // 각 결과물에 대해 confirmStamped 호출 (C2PA 적용 + proof cost 차감). 병렬 처리.
-      // publish는 사용자가 "간편링크 생성" 버튼 클릭 시 별도 흐름.
+      // publish는 사용자가 "공개링크 생성" 버튼 클릭 시 별도 흐름.
       results.forEach((item, idx) => {
         confirmStamped(item.draft, { apiBase: "" })
           .then((confirmed) => {
@@ -826,7 +826,7 @@ export default function Home() {
     }
   };
 
-  // multi-result 카드별 간편링크 생성 핸들러 (LINK_CREATE -2 차감)
+  // multi-result 카드별 공개링크 생성 핸들러 (LINK_CREATE -2 차감)
   const handleMultiPublish = async (idx: number) => {
     if (!multiResults) return;
     const item = multiResults[idx];
@@ -931,7 +931,7 @@ export default function Home() {
       const linkUrl = `${window.location.origin}/${result.link_id}`;
       removeReceipt(unpublishedSelf.receiptRec.timestamp);
 
-      // 결과 화면으로 전환 (간편링크 생성된 상태)
+      // 결과 화면으로 전환 (공개링크 생성된 상태)
       setGeneratedLink(linkUrl);
       setResultData({
         status: "stamped",
@@ -997,7 +997,7 @@ export default function Home() {
 
   const handleDownload = () => {
     if (resultData?.image) {
-      // 파일명 결정: 간편링크가 있으면 링크ID, 없으면 oripics_타임스탬프
+      // 파일명 결정: 공개링크가 있으면 링크ID, 없으면 oripics_타임스탬프
       let filename = `oripics_${new Date().getTime()}.png`;
       if (generatedLink) {
         const parts = generatedLink.split('/');
@@ -1374,7 +1374,7 @@ export default function Home() {
         {status === "size_selection" && sizeSelection && (() => {
           const { originalWidth, originalHeight, standardChecked, originalChecked } = sizeSelection;
           // B-2 (2026-05-17): 사이즈 선택 화면은 인증(proof) 비용만 표시.
-          // 간편링크 생성(LINK_CREATE -2)은 publish 버튼 클릭 시 별도 차감 — 여기 합계에 포함 X.
+          // 공개링크 생성(LINK_CREATE -2)은 publish 버튼 클릭 시 별도 차감 — 여기 합계에 포함 X.
           const stdMult = 1;
           const origMult = getProofMultiplier(originalWidth, originalHeight);
           const stdCost = CREDIT_COSTS.IMAGE_PROOF * stdMult; // 3

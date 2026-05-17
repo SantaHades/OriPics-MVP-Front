@@ -109,7 +109,7 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// 간편링크 ID: counter obfuscation + CRC16 체크섬
+// 공개링크 ID: counter obfuscation + CRC16 체크섬
 // 형식: {prefix}{yymmdd}-{HHMMSS}-{ms 3}{obfCounter ≥1}{cs 2}
 // ────────────────────────────────────────────────────────────────────
 

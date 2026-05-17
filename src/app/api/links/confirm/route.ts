@@ -48,7 +48,7 @@ function verifySignJwt(token: string): Record<string, any> {
  * 응답: JSON { receipt, link_id, timestamp, proof_cost, size_multiplier, tier }
  *
  * **PNG 미전송, Storage 미접근, DB row 미생성** — 인증 완료된 stamped PNG는 클라이언트 메모리에만 존재.
- * 사용자가 "간편링크 생성" 버튼 클릭 시 /api/links/publish가 Storage 업로드 + C2PA + DB row 생성을 모두 처리.
+ * 사용자가 "공개링크 생성" 버튼 클릭 시 /api/links/publish가 Storage 업로드 + C2PA + DB row 생성을 모두 처리.
  */
 export async function POST(req: NextRequest) {
   if (!JWT_SECRET) {

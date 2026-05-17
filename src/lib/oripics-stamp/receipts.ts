@@ -4,7 +4,7 @@
  * 흐름 (2026-05-17 B-2):
  *   - /api/links/confirm 응답에 receipt JWT 포함 → 인증 완료 시점에 자동 저장
  *   - 같은 브라우저에서 미공개 stamped 이미지를 다시 드롭 → timestamp로 receipt 매칭
- *   - 매칭되면 "본인 미공개 인증" UI에서 "간편링크 생성" 버튼 활성
+ *   - 매칭되면 "본인 미공개 인증" UI에서 "공개링크 생성" 버튼 활성
  *   - publish 성공 시 해당 receipt 삭제 (이미 공개됨)
  *
  * 보안: receipt JWT는 user_id를 포함하지만 HS256 서명. 평문에서 user_id 노출은 base64이므로 가능 →
