@@ -1302,13 +1302,12 @@ export default function Home() {
 
         {status === "size_selection" && sizeSelection && (() => {
           const { originalWidth, originalHeight, standardChecked, originalChecked } = sizeSelection;
-          // 사이즈별 비용 미리보기
+          // B-2 (2026-05-17): 사이즈 선택 화면은 인증(proof) 비용만 표시.
+          // 간편링크 생성(LINK_CREATE -2)은 publish 버튼 클릭 시 별도 차감 — 여기 합계에 포함 X.
           const stdMult = 1;
           const origMult = getProofMultiplier(originalWidth, originalHeight);
-          const stdProof = CREDIT_COSTS.IMAGE_PROOF * stdMult; // 2
-          const origProof = CREDIT_COSTS.IMAGE_PROOF * origMult; // 4 or 6
-          const stdCost = stdProof + CREDIT_COSTS.LINK_CREATE; // 3
-          const origCost = origProof + CREDIT_COSTS.LINK_CREATE; // 5 or 7
+          const stdCost = CREDIT_COSTS.IMAGE_PROOF * stdMult; // 3
+          const origCost = CREDIT_COSTS.IMAGE_PROOF * origMult; // 6 or 9
           const totalCost =
             (standardChecked ? stdCost : 0) + (originalChecked ? origCost : 0);
           const longest = Math.max(originalWidth, originalHeight);
@@ -1395,11 +1394,16 @@ export default function Home() {
               </div>
 
               {!noneSelected && (
-                <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200 flex justify-between items-center text-sm">
-                  <span className="text-slate-600">{t("size_select.total_label")}</span>
-                  <span className="font-bold text-slate-900">
-                    {totalCost} {t("size_select.credits")}
-                  </span>
+                <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-600">{t("size_select.total_label")}</span>
+                    <span className="font-bold text-slate-900">
+                      {totalCost} {t("size_select.credits")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1.5">
+                    {t("size_select.link_extra_note", { cost: CREDIT_COSTS.LINK_CREATE })}
+                  </p>
                 </div>
               )}
 

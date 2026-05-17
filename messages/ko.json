@@ -113,6 +113,7 @@
       "original_desc": "촬영 그대로의 해상도로 보관. 인쇄·법정 제출에 권장.",
       "credits": "크레딧",
       "total_label": "합계",
+      "link_extra_note": "인증 후 간편링크 생성 시 추가 −{cost} 크레딧 차감",
       "confirm": "인증 처리 시작",
       "cancel": "취소"
     },
