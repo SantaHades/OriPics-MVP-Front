@@ -236,6 +236,11 @@
       "yes": "Yes, verify",
       "no": "No"
     },
+    "unpublished_self": {
+      "title": "Your unpublished proof",
+      "body": "You proofed this image with OriPics earlier but haven't created a share link yet. Create one now to enable external verification and certificate issuance.",
+      "cancel": "Cancel"
+    },
     "errors": {
       "unsupported_format": "Unsupported image format. (PNG, JPG, WebP, BMP, TIFF, GIF supported)",
       "size_limit": "File size must be 50MB or less.",

@@ -127,6 +127,10 @@ export default function Home() {
   const [debugMessage, setDebugMessage] = useState<string | null>(null);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [verifyConfirm, setVerifyConfirm] = useState<{ file: File; detect: DetectResult } | null>(null);
+  // B-1 (2026-05-17): 본인 미공개 인증 이미지 재드롭 — receipt JWT 매칭 시 publish 버튼 표시
+  const [unpublishedSelf, setUnpublishedSelf] = useState<{ file: File; receiptRec: import("@/lib/oripics-stamp/receipts").ReceiptRecord } | null>(null);
+  const [publishingUnpublished, setPublishingUnpublished] = useState(false);
+  const [unpublishedUploadProgress, setUnpublishedUploadProgress] = useState<{ loaded: number; total: number } | null>(null);
   const { data: credits, refresh: refreshCredits } = useCredits();
 
   // 원본 사이즈 옵션 — 긴 변 > 1800px 이미지가 들어왔을 때 사용자가 선택
@@ -518,6 +522,17 @@ export default function Home() {
         // 무료 detect — magic byte만 확인. 해시·서버 호출 없음.
         const detect = await detectStamp(file);
         if (detect.hasStamp) {
+          // B-1 (2026-05-17): 같은 브라우저에서 본인이 미공개 인증한 이미지인지 확인.
+          // localStorage receipt 매칭 → 본인 미공개 UI로 분기 (publish 버튼 노출).
+          const ts = detect.preview?.timestamp;
+          if (ts && session?.user) {
+            const receiptRec = getReceipt(ts);
+            if (receiptRec) {
+              setStatus("idle");
+              setUnpublishedSelf({ file, receiptRec });
+              return;
+            }
+          }
           // 이미 인증된 이미지 — 풀 verify는 차감이라 사용자 확인 필요.
           setStatus("idle");
           setVerifyConfirm({ file, detect });
@@ -873,6 +888,74 @@ export default function Home() {
         copy[idx] = { ...copy[idx], phase: "ready", error: raw, uploadProgress: undefined };
         return copy;
       });
+    }
+  };
+
+  // B-1: 본인 미공개 인증 이미지를 재드롭한 후 publish 버튼 클릭
+  const handleUnpublishedSelfPublish = async () => {
+    if (!unpublishedSelf || publishingUnpublished) return;
+    setPublishingUnpublished(true);
+    setUnpublishedUploadProgress({ loaded: 0, total: unpublishedSelf.file.size });
+    try {
+      // 썸네일 생성
+      let thumbnailDataUrl: string | null = null;
+      try {
+        const img = new window.Image();
+        img.src = URL.createObjectURL(unpublishedSelf.file);
+        await new Promise<void>((r) => { img.onload = () => r(); });
+        const canvas = document.createElement("canvas");
+        const maxSize = 150;
+        const scale = Math.min(maxSize / img.width, maxSize / img.height);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        thumbnailDataUrl = canvas.toDataURL("image/webp", 0.6);
+        URL.revokeObjectURL(img.src);
+      } catch { /* best-effort */ }
+
+      // signedUploadUrl 미제공 → publishStamped가 /api/links/publish/upload-url로 fresh 발급받음
+      const result = await publishStamped({
+        apiBase: "",
+        blob: unpublishedSelf.file,
+        receipt: unpublishedSelf.receiptRec.receipt,
+        thumbnailDataUrl,
+        onUploadProgress: (loaded, total) => setUnpublishedUploadProgress({ loaded, total }),
+      });
+
+      const linkUrl = `${window.location.origin}/${result.link_id}`;
+      removeReceipt(unpublishedSelf.receiptRec.timestamp);
+
+      // 결과 화면으로 전환 (간편링크 생성된 상태)
+      setGeneratedLink(linkUrl);
+      setResultData({
+        status: "stamped",
+        image: URL.createObjectURL(unpublishedSelf.file),
+        session_id: result.link_id,
+        metadata: {
+          timestamp: result.timestamp,
+          width: unpublishedSelf.receiptRec.width,
+          height: unpublishedSelf.receiptRec.height,
+        },
+      });
+      setStatus("result_stamped");
+      setUnpublishedSelf(null);
+      setSessionID(null);
+      setStampedDraft(null);
+      setConfirmedSingle(null);
+      void refreshCredits();
+    } catch (err: any) {
+      const raw = String(err?.message || err || "");
+      // 402 잔액 부족 → 별도 모달
+      const m = raw.match(/^publish_failed:(\d+):(.*)$/);
+      if (m && m[1] === "402") {
+        setShowInsufficientModal(true);
+        void refreshCredits();
+      } else {
+        alert(t("errors.link_creation_failed") + (raw ? `\n${raw.slice(0, 120)}` : ""));
+      }
+    } finally {
+      setPublishingUnpublished(false);
+      setUnpublishedUploadProgress(null);
     }
   };
 
@@ -2162,6 +2245,79 @@ export default function Home() {
         ref={cameraInputRef}
         onChange={handleFileSelect}
       />
+
+      {unpublishedSelf && (() => {
+        const previewUrl = URL.createObjectURL(unpublishedSelf.file);
+        const pct = unpublishedUploadProgress && unpublishedUploadProgress.total > 0
+          ? Math.min(100, Math.round((unpublishedUploadProgress.loaded / unpublishedUploadProgress.total) * 100))
+          : 0;
+        return (
+          <div
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60"
+            onClick={() => !publishingUnpublished && setUnpublishedSelf(null)}
+          >
+            <div
+              className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
+                <ShieldCheck size={22} />
+              </div>
+              <h3 className="text-xl font-bold mb-2">{t("unpublished_self.title")}</h3>
+              <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                {t("unpublished_self.body")}
+              </p>
+              <div className="flex justify-center mb-4 bg-slate-50 rounded-xl p-3">
+                <img
+                  src={previewUrl}
+                  alt="Unpublished proof"
+                  className="max-w-full max-h-[220px] object-contain rounded"
+                  onLoad={() => URL.revokeObjectURL(previewUrl)}
+                />
+              </div>
+              <p className="text-xs text-slate-500 mb-4 text-center">
+                {t("result.c2pa_after_publish_note")}
+              </p>
+
+              {publishingUnpublished && (
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <RefreshCw size={12} className="animate-spin" />
+                      {unpublishedUploadProgress ? t("result.uploading") : t("result.publishing")}
+                    </span>
+                    {unpublishedUploadProgress && unpublishedUploadProgress.total > 0 && (
+                      <span className="font-mono">
+                        {pct}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-150" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleUnpublishedSelfPublish}
+                  disabled={publishingUnpublished}
+                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {t("result.create_link_button", { cost: CREDIT_COSTS.LINK_CREATE })}
+                </button>
+                <button
+                  onClick={() => setUnpublishedSelf(null)}
+                  disabled={publishingUnpublished}
+                  className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors disabled:opacity-60"
+                >
+                  {t("unpublished_self.cancel")}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {verifyConfirm && (() => {
         const preview = verifyConfirm.detect.preview;

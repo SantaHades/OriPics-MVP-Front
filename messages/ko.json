@@ -236,6 +236,11 @@
       "yes": "예, 확인",
       "no": "아니오"
     },
+    "unpublished_self": {
+      "title": "본인이 인증한 미공개 이미지",
+      "body": "이전에 OriPics로 인증했지만 아직 간편링크를 생성하지 않은 이미지입니다. 지금 간편링크를 생성하면 외부 검증과 증명서 발급이 가능해집니다.",
+      "cancel": "취소"
+    },
     "errors": {
       "unsupported_format": "지원하지 않는 이미지 형식입니다. (PNG, JPG, WebP, BMP, TIFF, GIF 지원)",
       "size_limit": "파일 사이즈는 50MB 이하여야 합니다.",

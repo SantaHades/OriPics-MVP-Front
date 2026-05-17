@@ -251,25 +251,50 @@ export function uploadToStorage(
  *   1. signedUploadUrl로 Supabase Storage에 stamped PNG PUT (클라가 직접)
  *   2. /api/links/publish에 receipt JWT POST (서버가 C2PA 적용 + DB row 생성)
  *
- * 같은 페이지 세션에서만 동작 (Blob과 signedUploadUrl이 메모리에 있어야 함).
- * TTL 약 2시간 (signed_upload_url).
+ * signedUploadUrl 미제공 시(예: 다른 세션에서 재드롭 publish) /api/links/publish/upload-url로
+ * fresh URL 발급받아 사용. TTL 약 2시간이지만 매번 새로 발급하므로 무관.
  */
 export async function publishStamped(
   args: {
     apiBase: string;
     blob: Blob;
-    signedUploadUrl: string;
     receipt: string;
+    /** /api/sign 직후 같은 세션이면 사용 가능. 없으면 서버에서 fresh URL 발급. */
+    signedUploadUrl?: string;
     thumbnailDataUrl?: string | null;
     onUploadProgress?: (loaded: number, total: number) => void;
   },
 ): Promise<PublishResponse> {
   const apiBase = args.apiBase.replace(/\/$/, '');
 
-  // 1. Storage 업로드 (대용량 PNG)
-  await uploadToStorage(args.blob, args.signedUploadUrl, args.onUploadProgress);
+  // 1. signed_upload_url 확보 (제공되지 않으면 서버에서 fresh 발급)
+  let uploadUrl = args.signedUploadUrl;
+  if (!uploadUrl) {
+    let r: Response;
+    try {
+      r = await fetch(`${apiBase}/api/links/publish/upload-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ receipt: args.receipt }),
+      });
+    } catch (e: any) {
+      throw new Error(`publish_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
+    }
+    if (!r.ok) {
+      const detail = await r.text();
+      throw new Error(`publish_failed:${r.status}:${detail}`);
+    }
+    const { signed_upload_url } = await r.json();
+    if (!signed_upload_url) {
+      throw new Error('publish_failed:500:no_signed_url');
+    }
+    uploadUrl = signed_upload_url;
+  }
 
-  // 2. 서버 publish 요청 (작은 JSON)
+  // 2. Storage 업로드 (대용량 PNG)
+  await uploadToStorage(args.blob, uploadUrl!, args.onUploadProgress);
+
+  // 3. 서버 publish 요청 (작은 JSON)
   let res: Response;
   try {
     res = await fetch(`${apiBase}/api/links/publish`, {
