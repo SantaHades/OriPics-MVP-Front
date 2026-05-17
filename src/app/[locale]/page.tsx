@@ -1183,10 +1183,10 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openGpsHelpModal(); }}
-                        className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold"
+                        className="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center"
                         aria-label={t('gps.help_button')}
                       >
-                        ?
+                        <HelpCircle size={14} />
                       </button>
                     )}
                     <label
