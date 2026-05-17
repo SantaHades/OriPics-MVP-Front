@@ -247,8 +247,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ match: false, reason: e.message });
   }
 
-  // 옵션 A: V4 메타에서 timestamp 추출 → DB 조회로 owner 매칭 → 본인이면 면책.
-  // V2/V3는 메타에 counter 없어서 면책 불가 (옛 이미지 호환만 유지).
+  // 2026-05-17 (B-2'' 후속): V4 메타 timestamp로 DB 조회.
+  //   - row 없음(미공개) → 무차감 404 응답. 의미 없는 seal-only 검증에 크레딧 소모 방지.
+  //   - row 있고 본인이면 → ownerExempt (무차감).
+  //   - row 있고 타인이면 → 차감 후 정상 검증.
+  // V2/V3는 timestamp uniqueness 없어 미공개 판정 불가 → 기존 흐름 유지(차감).
   let ownerExempt = false;
   if (version === 4 && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
@@ -258,12 +261,27 @@ export async function POST(req: NextRequest) {
         .select("link_id, user_id")
         .eq("timestamp", metaTimestamp)
         .limit(2);
-      if (rows && rows.length === 1 && rows[0].user_id === userId) {
+      if (!rows || rows.length === 0) {
+        // 미공개 인증 — 워터마크는 진짜지만 DB row 없음 → 무차감 404
+        return NextResponse.json(
+          {
+            match: false,
+            reason: "not_published",
+            metadata: {
+              timestamp: metaTimestamp,
+              width: metaWidth,
+              height: metaHeight,
+            },
+          },
+          { status: 404 },
+        );
+      }
+      if (rows.length === 1 && rows[0].user_id === userId) {
         ownerExempt = true;
       }
     } catch (e) {
-      // 면책 판정 실패해도 검증 흐름은 진행 (단지 -N 차감)
-      console.warn("[verify] owner exemption lookup failed:", e);
+      // 조회 실패 시 안전을 위해 차감 흐름으로 (정상 검증은 진행). owner 면책만 못 받음.
+      console.warn("[verify] db lookup failed:", e);
     }
   }
 

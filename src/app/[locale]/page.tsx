@@ -464,6 +464,12 @@ export default function Home() {
         void refreshCredits();
         return;
       }
+      // 미공개 인증 — 무차감, 안내 에러 화면
+      if (verifyRes.reason === "not_published") {
+        setStatus("error");
+        setErrorMessage(t("errors.verify_not_published"));
+        return;
+      }
       if (verifyRes.metadata) {
         setResultData({
           status: "verified",

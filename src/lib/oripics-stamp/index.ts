@@ -474,6 +474,15 @@ export async function verifyImage(file: Blob, opts: { apiBase: string }): Promis
       }),
     });
     if (!res.ok) {
+      // 404 미공개 응답은 body의 reason을 보존 (not_published)
+      if (res.status === 404) {
+        try {
+          const body = await res.json();
+          if (body?.reason === 'not_published') {
+            return { match: false, reason: 'not_published', metadata: body.metadata };
+          }
+        } catch { /* fall through */ }
+      }
       return { match: false, reason: `verify_http_${res.status}` };
     }
     const result: VerifyResponse = await res.json();

@@ -247,6 +247,7 @@
       "server_error": "서버 통신 중 에러가 발생했습니다.",
       "unknown_error": "알 수 없는 오류가 발생했습니다.",
       "link_creation_failed": "링크 생성에 실패했습니다.",
+      "verify_not_published": "이 이미지는 OriPics로 인증되었지만 아직 간편링크가 생성되지 않아 검증할 수 없습니다. 작성자에게 간편링크 생성을 요청해 주세요.",
       "clipboard_success": "링크가 클립보드에 복사되었습니다!",
       "empty_file": "빈 파일입니다. 올바른 이미지 파일을 업로드해 주세요.",
       "invalid_image": "이미지 파일을 읽을 수 없습니다. 손상되지 않은 PNG, JPG, WebP 파일을 업로드해 주세요.",

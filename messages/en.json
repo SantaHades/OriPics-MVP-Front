@@ -247,6 +247,7 @@
       "server_error": "An error occurred during server communication.",
       "unknown_error": "An unknown error has occurred.",
       "link_creation_failed": "Failed to create link.",
+      "verify_not_published": "This image was proofed with OriPics but verification is unavailable until the owner creates a share link.",
       "clipboard_success": "Link copied to clipboard!",
       "empty_file": "The file is empty. Please upload a valid image file.",
       "invalid_image": "Cannot read the image file. Please upload an uncorrupted PNG, JPG, or WebP file.",
