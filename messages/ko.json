@@ -100,7 +100,8 @@
       "short_link": "간편링크",
       "copy_link": "링크 복사",
       "download_stamped": "이미지 다운로드",
-      "create_link_button": "간편링크 생성 (−{cost})"
+      "create_link_button": "간편링크 생성 (−{cost})",
+      "c2pa_after_publish_note": "Content Credentials(C2PA) 매니페스트와 증명서(PDF) 발급은 간편링크 생성 후에 사용 가능합니다."
     },
     "size_select": {
       "title": "사이즈 선택",

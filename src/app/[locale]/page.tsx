@@ -1473,6 +1473,9 @@ export default function Home() {
 
             {sessionID && !generatedLink && timeLeft > 0 && (
               <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-300 w-full">
+                <p className="text-xs text-slate-500 mb-3 text-center max-w-md">
+                  {t("result.c2pa_after_publish_note")}
+                </p>
                 <button
                   onClick={handleCreateLink}
                   disabled={isLinking}
@@ -1650,12 +1653,17 @@ export default function Home() {
                   )}
 
                   {item.phase === "ready" && (
-                    <button
-                      onClick={() => handleMultiPublish(idx)}
-                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg flex items-center justify-center gap-2 text-sm transition-colors mb-3"
-                    >
-                      {t("result.create_link_button", { cost: CREDIT_COSTS.LINK_CREATE })}
-                    </button>
+                    <>
+                      <p className="text-xs text-slate-500 mb-2">
+                        {t("result.c2pa_after_publish_note")}
+                      </p>
+                      <button
+                        onClick={() => handleMultiPublish(idx)}
+                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg flex items-center justify-center gap-2 text-sm transition-colors mb-3"
+                      >
+                        {t("result.create_link_button", { cost: CREDIT_COSTS.LINK_CREATE })}
+                      </button>
+                    </>
                   )}
 
                   {item.link && (

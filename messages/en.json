@@ -100,7 +100,8 @@
       "short_link": "Short link",
       "copy_link": "Copy link",
       "download_stamped": "Download image",
-      "create_link_button": "Create share link (−{cost})"
+      "create_link_button": "Create share link (−{cost})",
+      "c2pa_after_publish_note": "Content Credentials (C2PA) manifest and Certificate PDF become available after creating the share link."
     },
     "size_select": {
       "title": "Choose proof size",
