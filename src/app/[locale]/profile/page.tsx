@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
-import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet } from "lucide-react";
+import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw } from "lucide-react";
 import { Link } from "@/navigation";
 import { supabase } from "@/lib/supabase";
 import { useTranslations } from "next-intl";
@@ -18,6 +18,10 @@ interface ProofRecord {
   height: number;
   timestamp: string;
   createdAt: string;
+  /** 증명서 PDF 발급 여부 */
+  pdfIssued?: boolean;
+  /** PDF 발급 시점 ISO (재발급 시점 표시용) */
+  pdfIssuedAt?: string | null;
 }
 
 export default function ProfilePage() {
@@ -40,7 +44,12 @@ export default function ProfilePage() {
   const [proofs, setProofs] = useState<ProofRecord[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(true);
   const [previewProof, setPreviewProof] = useState<ProofRecord | null>(null);
-  
+  // B-2 (2026-05-17): PDF 발급/재발급/다운로드, 인증 삭제 상태
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ProofRecord | null>(null);
+  const [deletingProof, setDeletingProof] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 증명 히스토리 불러오기
@@ -172,6 +181,78 @@ export default function ProfilePage() {
       setMessage({ type: "error", text: t("messages.save_error", { error: error.message }) });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // PDF 발급/다운로드/재발급 — /api/links/[linkId]/certificate
+  // 동작 (서버):
+  //   - 캐시 없으면: 발급 -10 + 캐시 저장 + PDF 응답
+  //   - 캐시 있으면 (기본): 무료 다운로드
+  //   - ?reissue=1: 캐시 무시하고 재발급 -10
+  const handlePdfAction = async (proof: ProofRecord, mode: "issue_or_download" | "reissue") => {
+    if (pdfBusy) return;
+    setPdfBusy(true);
+    setPdfError(null);
+    try {
+      const url = `/api/links/${proof.linkId}/certificate${mode === "reissue" ? "?reissue=1" : ""}`;
+      const res = await fetch(url, { method: "GET" });
+      if (!res.ok) {
+        let detail = `${res.status}`;
+        try {
+          const j = await res.json();
+          detail = j.detail || detail;
+        } catch { /* ignore */ }
+        throw new Error(detail);
+      }
+      // PDF blob 다운로드
+      const blob = await res.blob();
+      const cached = res.headers.get("X-Oripics-Cached") === "1";
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `OriPics_Certificate_${proof.linkId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+
+      // 발급(혹은 재발급)된 경우 — pdfIssued 상태 갱신
+      if (!cached || mode === "reissue") {
+        setProofs((prev) => prev.map((p) =>
+          p.linkId === proof.linkId ? { ...p, pdfIssued: true, pdfIssuedAt: new Date().toISOString() } : p,
+        ));
+        setPreviewProof((prev) => prev && prev.linkId === proof.linkId
+          ? { ...prev, pdfIssued: true, pdfIssuedAt: new Date().toISOString() }
+          : prev);
+      }
+    } catch (e: any) {
+      setPdfError(e?.message || "unknown");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  // 인증 이미지 삭제 (DELETE /api/links/[id])
+  const handleProofDelete = async () => {
+    if (!deleteTarget || deletingProof) return;
+    setDeletingProof(true);
+    try {
+      const res = await fetch(`/api/links/${deleteTarget.linkId}`, { method: "DELETE" });
+      if (!res.ok) {
+        let detail = `${res.status}`;
+        try {
+          const j = await res.json();
+          detail = j.detail || detail;
+        } catch { /* ignore */ }
+        throw new Error(detail);
+      }
+      setProofs((prev) => prev.filter((p) => p.linkId !== deleteTarget.linkId));
+      setDeleteTarget(null);
+      setPreviewProof(null);
+    } catch (e: any) {
+      alert(`삭제 실패: ${e?.message || "unknown"}`);
+    } finally {
+      setDeletingProof(false);
     }
   };
 
@@ -438,6 +519,11 @@ export default function ProfilePage() {
                           {t("proof_history.expired")}
                         </div>
                       )}
+                      {proof.pdfIssued && (
+                        <div className="absolute top-1 left-1 bg-blue-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title={t("proof_history.pdf_issued") as string}>
+                          <FileText size={9} /> PDF
+                        </div>
+                      )}
                     </div>
 
                     {/* 메타 정보 (시간만) */}
@@ -543,16 +629,107 @@ export default function ProfilePage() {
               />
             ) : null;
           })()}
-          {!isExpired(previewProof.createdAt) && (
-            <Link
-              href={`/${previewProof.linkId}`}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg"
+          <div
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center flex-wrap gap-2 max-w-[95vw] justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {!isExpired(previewProof.createdAt) && (
+              <Link
+                href={`/${previewProof.linkId}`}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg"
+              >
+                <ExternalLink size={14} />
+                {t("proof_history.view_link")}
+              </Link>
+            )}
+
+            {previewProof.pdfIssued ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handlePdfAction(previewProof, "issue_or_download")}
+                  disabled={pdfBusy}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
+                >
+                  {pdfBusy ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
+                  {t("proof_history.pdf_download")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePdfAction(previewProof, "reissue")}
+                  disabled={pdfBusy}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
+                  title={t("proof_history.pdf_reissue_tooltip", { cost: CREDIT_COSTS.CERTIFICATE_PDF }) as string}
+                >
+                  <RotateCw size={14} />
+                  {t("proof_history.pdf_reissue", { cost: CREDIT_COSTS.CERTIFICATE_PDF })}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handlePdfAction(previewProof, "issue_or_download")}
+                disabled={pdfBusy}
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
+              >
+                {pdfBusy ? <RefreshCw size={14} className="animate-spin" /> : <FileText size={14} />}
+                {t("proof_history.pdf_issue", { cost: CREDIT_COSTS.CERTIFICATE_PDF })}
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(previewProof)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-red-600/90 hover:bg-red-600 text-white font-medium rounded-full transition-colors text-sm shadow-lg"
             >
-              <ExternalLink size={16} />
-              {t("proof_history.view_link")}
-            </Link>
+              <Trash2 size={14} />
+              {t("proof_history.delete_proof")}
+            </button>
+          </div>
+
+          {pdfError && (
+            <div className="absolute bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 bg-red-600/90 text-white text-xs rounded-lg max-w-[80vw]" onClick={(e) => e.stopPropagation()}>
+              {t("proof_history.pdf_error", { error: pdfError.slice(0, 80) })}
+            </div>
           )}
+        </div>
+      )}
+
+      {/* 인증 삭제 확인 모달 */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-6 animate-in fade-in duration-200" onClick={() => !deletingProof && setDeleteTarget(null)}>
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={28} className="text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">{t("proof_history.delete_modal_title")}</h3>
+              <p className="text-sm text-slate-600 mt-3 leading-relaxed">
+                {t("proof_history.delete_modal_description")}
+              </p>
+              <p className="text-xs font-mono text-slate-500 mt-2 break-all">{deleteTarget.linkId}</p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deletingProof}
+                className="flex-1 py-3 border border-slate-300 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-all disabled:opacity-50"
+              >
+                {t("proof_history.delete_modal_cancel")}
+              </button>
+              <button
+                type="button"
+                onClick={handleProofDelete}
+                disabled={deletingProof}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deletingProof ? <RefreshCw className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                {t("proof_history.delete_modal_confirm")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

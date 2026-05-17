@@ -403,7 +403,18 @@
       "view_link": "링크 보기",
       "expired": "만료됨",
       "certified_at": "증명 일시",
-      "resolution": "해상도"
+      "resolution": "해상도",
+      "pdf_issued": "증명서 PDF 발급됨",
+      "pdf_issue": "증명서 PDF 발급 (−{cost})",
+      "pdf_download": "증명서 다운로드",
+      "pdf_reissue": "재발급 (−{cost})",
+      "pdf_reissue_tooltip": "새 시점으로 다시 발급합니다. −{cost} 크레딧 차감.",
+      "pdf_error": "PDF 처리 실패: {error}",
+      "delete_proof": "삭제",
+      "delete_modal_title": "이 인증을 삭제할까요?",
+      "delete_modal_description": "원본 이미지와 발급된 증명서가 영구 삭제되며, 간편링크도 더 이상 동작하지 않습니다. 차감된 크레딧은 환불되지 않습니다.",
+      "delete_modal_cancel": "취소",
+      "delete_modal_confirm": "삭제"
     }
   },
   "ForgotPassword": {

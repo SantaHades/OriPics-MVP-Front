@@ -403,7 +403,18 @@
       "view_link": "View Link",
       "expired": "Expired",
       "certified_at": "Certified At",
-      "resolution": "Resolution"
+      "resolution": "Resolution",
+      "pdf_issued": "Certificate PDF issued",
+      "pdf_issue": "Issue Certificate PDF (−{cost})",
+      "pdf_download": "Download Certificate",
+      "pdf_reissue": "Re-issue (−{cost})",
+      "pdf_reissue_tooltip": "Generates a fresh PDF. Charges −{cost} credits.",
+      "pdf_error": "PDF action failed: {error}",
+      "delete_proof": "Delete",
+      "delete_modal_title": "Delete this proof?",
+      "delete_modal_description": "The original image and the issued certificate will be permanently deleted, and the share link will no longer work. Charged credits are not refunded.",
+      "delete_modal_cancel": "Cancel",
+      "delete_modal_confirm": "Delete"
     }
   },
   "ForgotPassword": {
