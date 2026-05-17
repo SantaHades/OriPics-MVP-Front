@@ -143,7 +143,7 @@
     "why": {
       "eyebrow": "Open standard",
       "title": "We follow open international standards, not a walled garden",
-      "body": "Every proof image OriPics issues automatically carries a C2PA standard manifest.\nEven if our site disappears, provenance is independently verifiable in any C2PA-aware tool.",
+      "body": "Every proof image with a share link automatically carries a C2PA standard manifest.\nEven if our site disappears, provenance is independently verifiable in any C2PA-aware tool.",
       "point_c2pa": "The content provenance and authenticity standard built by Adobe, Microsoft, Sony, BBC, and Intel — auto-attached to every proof image.",
       "point_jpeg_trust": "ISO/IEC 21617 (JPEG Trust) compatible. Verification responds in the Trust Report shape with an overall trust level.",
       "point_open_label": "OPEN",
