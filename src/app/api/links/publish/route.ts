@@ -6,11 +6,13 @@ import { authOptions } from "@/lib/authOptions";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 import { prisma } from "@/lib/prisma";
+import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 const JWT_SECRET = process.env.ORIPICS_JWT_SECRET!;
 const BUCKET_NAME = "oripics-proofs";
+const C2PA_ENABLED = process.env.ORIPICS_C2PA_ENABLED === "true";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,21 +32,25 @@ function verifyReceiptJwt(token: string): Record<string, any> {
 }
 
 /**
- * /api/links/publish — 2026-05-17 신설 (B-2 흐름)
+ * /api/links/publish — 2026-05-17 B-2'' (최종)
  *
- * 입력: multipart/form-data
- *   - receipt: confirm 응답 헤더 X-Oripics-Receipt 값 (publish용 JWT)
- *   - image: stamped+C2PA PNG (confirm 응답 body)
- *   - thumbnail (선택): 작은 webp/png base64 또는 dataURL (히스토리 표시용)
+ * 입력: JSON { receipt, thumbnail? }
+ *   - receipt: /api/links/confirm에서 발급된 JWT (publish용)
+ *   - thumbnail: 선택 — base64 dataURL (ProofHistory 표시용)
+ *
+ * 전제: 클라이언트가 stamped PNG를 sign 응답의 signed_upload_url을 통해
+ * Supabase Storage에 이미 업로드 완료한 상태.
  *
  * 처리:
- *   - receipt JWT 검증 (만료, 본인 매칭)
- *   - LINK_CREATE(2) 차감
- *   - Supabase Storage 업로드 (receipt의 storage_path)
- *   - links DB row insert (link_id, user_id, storage_path, timestamp, ...)
- *   - ProofHistory 생성
+ *   1. receipt JWT 검증 (만료, 본인 매칭)
+ *   2. LINK_CREATE(-2) 차감
+ *   3. Storage에서 LSB-stamped PNG 다운로드
+ *   4. C2PA 매니페스트 적용
+ *   5. C2PA-적용된 PNG를 Storage에 재업로드 (덮어쓰기)
+ *   6. links DB row insert
+ *   7. ProofHistory insert
  *
- * 응답: JSON { link_id, public_url, timestamp }
+ * 응답: JSON { link_id, timestamp, public_url, already_published? }
  */
 export async function POST(req: NextRequest) {
   if (!JWT_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
@@ -57,22 +63,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }
 
-  let form: FormData;
+  let body: any;
   try {
-    form = await req.formData();
+    body = await req.json();
   } catch {
-    return NextResponse.json({ detail: "invalid_form_data" }, { status: 400 });
+    return NextResponse.json({ detail: "invalid_json" }, { status: 400 });
   }
-
-  const receipt = form.get("receipt");
-  const imageEntry = form.get("image");
-  const thumbnail = form.get("thumbnail");
-
+  const { receipt, thumbnail } = body || {};
   if (typeof receipt !== "string" || !receipt) {
     return NextResponse.json({ detail: "missing_receipt" }, { status: 400 });
-  }
-  if (!(imageEntry instanceof Blob)) {
-    return NextResponse.json({ detail: "missing_image" }, { status: 400 });
   }
 
   let claims: Record<string, any>;
@@ -88,10 +87,12 @@ export async function POST(req: NextRequest) {
 
   const {
     user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6,
+    tier, verified_info,
   } = claims;
 
-  // 0. 이미 publish된 동일 link_id가 있으면 idempotent — 중복 차감 방지
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  // 0. 이미 publish된 동일 link_id가 있으면 idempotent
   {
     const { data: existing } = await supabase
       .from("links")
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 1. LINK_CREATE 차감
+  // 1. LINK_CREATE(-2) 차감
   const consume = await consumeCredits({
     userId: user_id,
     amount: CREDIT_COSTS.LINK_CREATE,
@@ -140,23 +141,60 @@ export async function POST(req: NextRequest) {
     }
   };
 
-  // 2. Supabase Storage 업로드
+  // 2. Storage에서 LSB-stamped PNG 다운로드 (클라가 sign signed_upload_url로 업로드한 결과)
+  let pngBuffer: Buffer;
   try {
-    const buffer = Buffer.from(await imageEntry.arrayBuffer());
-    const { error: upErr } = await supabase.storage
+    const { data: blob, error: dlErr } = await supabase.storage
       .from(BUCKET_NAME)
-      .upload(storage_path, buffer, {
-        contentType: "image/png",
-        upsert: true,
-      });
-    if (upErr) throw new Error(`upload_failed:${upErr.message}`);
+      .download(storage_path);
+    if (dlErr || !blob) throw new Error(`download_failed:${dlErr?.message || "no_blob"}`);
+    pngBuffer = Buffer.from(await blob.arrayBuffer());
   } catch (e: any) {
-    console.error(`[publish] storage upload failed link_id=${link_id}:`, e?.message || e);
-    await refund(`storage_error:${e?.message || "unknown"}`);
-    return NextResponse.json({ detail: `storage_error:${e?.message || "unknown"}` }, { status: 500 });
+    console.error(`[publish] storage download failed link_id=${link_id}:`, e?.message || e);
+    await refund(`storage_download_error:${e?.message || "unknown"}`);
+    return NextResponse.json({ detail: `storage_download_error:${e?.message || "unknown"}` }, { status: 500 });
   }
 
-  // 3. links DB row insert
+  // 3. C2PA 매니페스트 적용 + Storage 재업로드
+  if (C2PA_ENABLED) {
+    try {
+      const c2paStart = Date.now();
+      const stampVersion = lat_e6 != null && lng_e6 != null ? 3 : 2;
+      const c2paTier: Tier = tier === "verified" ? "verified" : "standard";
+
+      const signResult = await attachC2paManifest({
+        pngBuffer,
+        tier: c2paTier,
+        linkId: link_id,
+        timestamp: oripicsTimestampToISO8601(timestamp),
+        width,
+        height,
+        lat: lat_e6 != null ? lat_e6 / 1_000_000 : null,
+        lng: lng_e6 != null ? lng_e6 / 1_000_000 : null,
+        stampVersion,
+        ...(c2paTier === "verified" && verified_info
+          ? { verifiedInfo: verified_info }
+          : {}),
+      });
+
+      const { error: upErr } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(storage_path, signResult.buffer, {
+          contentType: "image/png",
+          upsert: true,
+        });
+      if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
+
+      console.log(
+        `[publish] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded} ms=${Date.now() - c2paStart}`,
+      );
+    } catch (e: any) {
+      console.error(`[publish] c2pa attach failed link_id=${link_id}:`, e?.message || e);
+      // C2PA 실패해도 LSB stamped 원본은 Storage에 있음 — publish 계속 진행 (LSB만으로도 가치 있음).
+    }
+  }
+
+  // 4. links DB row insert
   const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${storage_path}`;
   const row: Record<string, any> = {
     link_id,
@@ -174,14 +212,12 @@ export async function POST(req: NextRequest) {
 
   const { error: dbErr } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
   if (dbErr) {
-    console.error("[publish] db upsert failed:", dbErr);
-    // 업로드된 Storage 파일 정리
-    await supabase.storage.from(BUCKET_NAME).remove([storage_path]).catch(() => {});
+    console.error(`[publish] db upsert failed link_id=${link_id}:`, dbErr.message);
     await refund(`db_error:${dbErr.message}`);
     return NextResponse.json({ detail: `db_error:${dbErr.message}` }, { status: 500 });
   }
 
-  // 4. ProofHistory 생성 (best-effort, 실패해도 publish는 성공으로 응답)
+  // 5. ProofHistory 생성 (best-effort — publish 자체는 성공으로 응답)
   try {
     let thumbnailStr: string | null = null;
     if (typeof thumbnail === "string" && thumbnail.length > 0 && thumbnail.length < 200_000) {

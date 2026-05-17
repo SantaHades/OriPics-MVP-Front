@@ -58,14 +58,14 @@ export interface SignResponse {
 }
 
 export interface ConfirmResponse {
-  /** stamped + C2PA 적용된 PNG (브라우저 메모리에서 보관, publish 시 재전송) */
-  stampedBlob: Blob;
   link_id: string;
   timestamp: string;
   /** publish 시 재제출할 receipt JWT (localStorage 보관 권장) */
   receipt: string;
   /** 차감된 proof 크레딧 (UI 표시용) */
   proofCost: number;
+  sizeMultiplier?: number;
+  tier?: "standard" | "verified";
 }
 
 export interface PublishResponse {
@@ -169,116 +169,125 @@ export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promi
 }
 
 /**
- * confirmStamped — B-2 흐름 (2026-05-17):
- *   - 클라가 stamped PNG + JWT를 multipart로 confirm 라우트에 전송
- *   - 서버는 C2PA 적용 후 image bytes + receipt JWT 응답 (Storage/DB 변경 없음)
- *   - 응답으로 받은 stamped+C2PA Blob과 receipt를 반환 — publish 시 재전송
+ * confirmStamped — B-2'' (2026-05-17): JSON-only, 작은 페이로드.
  *
- * onUploadProgress: 요청 바이트 업로드 진행률 (XHR 채택)
+ * 서버는 proof 비용만 차감하고 receipt JWT를 발급. Storage/DB 미접근.
+ * stamped PNG는 클라이언트 메모리에 그대로 보관됨 (publish 시점에 Storage 업로드).
  */
-export function confirmStamped(
+export async function confirmStamped(
   draft: StampedDraft,
-  opts: {
-    apiBase: string;
-    onUploadProgress?: (loaded: number, total: number) => void;
-  },
+  opts: { apiBase: string },
 ): Promise<ConfirmResponse> {
   const apiBase = opts.apiBase.replace(/\/$/, '');
-  return new Promise<ConfirmResponse>((resolve, reject) => {
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}/api/links/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jwt_token: draft.sign.jwt }),
+    });
+  } catch (e: any) {
+    throw new Error(`confirm_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
+  }
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`confirm_failed:${res.status}:${detail}`);
+  }
+  const data = await res.json() as {
+    receipt: string;
+    link_id: string;
+    timestamp: string;
+    proof_cost: number;
+    size_multiplier?: number;
+    tier?: "standard" | "verified";
+  };
+  return {
+    receipt: data.receipt,
+    link_id: data.link_id,
+    timestamp: data.timestamp,
+    proofCost: data.proof_cost,
+    sizeMultiplier: data.size_multiplier,
+    tier: data.tier,
+  };
+}
+
+/**
+ * uploadToStorage — Supabase Storage에 stamped PNG 직접 PUT.
+ * Vercel Functions 우회 (4.5MB body 한도 회피).
+ *
+ * signed_upload_url은 /api/sign 응답에 포함됨. TTL 약 2시간.
+ */
+export function uploadToStorage(
+  blob: Blob,
+  signedUploadUrl: string,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${apiBase}/api/links/confirm`);
-    xhr.responseType = 'blob';
-    if (opts.onUploadProgress) {
+    xhr.open('PUT', signedUploadUrl);
+    xhr.setRequestHeader('Content-Type', 'image/png');
+    if (onProgress) {
       xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) opts.onUploadProgress!(e.loaded, e.total);
-        else opts.onUploadProgress!(e.loaded, draft.blob.size || 0);
+        if (e.lengthComputable) onProgress(e.loaded, e.total);
+        else onProgress(e.loaded, blob.size || 0);
       });
     }
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        if (opts.onUploadProgress) opts.onUploadProgress(draft.blob.size, draft.blob.size);
-        const receipt = xhr.getResponseHeader('X-Oripics-Receipt') || '';
-        const linkId = xhr.getResponseHeader('X-Oripics-Link-Id') || draft.sign.link_id;
-        const timestamp = xhr.getResponseHeader('X-Oripics-Timestamp') || draft.sign.timestamp;
-        const proofCost = parseInt(xhr.getResponseHeader('X-Oripics-Proof-Cost') || '0', 10);
-        if (!receipt) {
-          reject(new Error('confirm_failed:200:missing_receipt_header'));
-          return;
-        }
-        resolve({
-          stampedBlob: xhr.response as Blob,
-          link_id: linkId,
-          timestamp,
-          receipt,
-          proofCost,
-        });
+        if (onProgress) onProgress(blob.size, blob.size);
+        resolve();
       } else {
-        // 에러 응답은 JSON일 가능성 → blob을 텍스트로 변환
-        const blob = xhr.response as Blob | null;
-        if (blob && blob.type.includes('json')) {
-          blob.text().then((t) => {
-            reject(new Error(`confirm_failed:${xhr.status}:${t}`));
-          }).catch(() => {
-            reject(new Error(`confirm_failed:${xhr.status}:`));
-          });
-        } else {
-          reject(new Error(`confirm_failed:${xhr.status}:`));
-        }
+        reject(new Error(`upload_failed:${xhr.status}:${xhr.responseText}`));
       }
     };
-    xhr.onerror = () => reject(new Error(`confirm_failed:0:network_error`));
-    xhr.onabort = () => reject(new Error('confirm_failed:0:aborted'));
-
-    const form = new FormData();
-    form.append('jwt_token', draft.sign.jwt);
-    form.append('image', draft.blob, 'stamped.png');
-    xhr.send(form);
+    xhr.onerror = () => reject(new Error(`upload_failed:0:network_error`));
+    xhr.onabort = () => reject(new Error('upload_failed:0:aborted'));
+    xhr.send(blob);
   });
 }
 
 /**
- * publishStamped — B-2 흐름:
- *   - stamped+C2PA Blob과 receipt JWT를 publish 라우트에 전송
- *   - 서버: Storage 업로드 + links DB row 생성 + LINK_CREATE 차감
+ * publishStamped — B-2'' (2026-05-17):
+ *   1. signedUploadUrl로 Supabase Storage에 stamped PNG PUT (클라가 직접)
+ *   2. /api/links/publish에 receipt JWT POST (서버가 C2PA 적용 + DB row 생성)
+ *
+ * 같은 페이지 세션에서만 동작 (Blob과 signedUploadUrl이 메모리에 있어야 함).
+ * TTL 약 2시간 (signed_upload_url).
  */
 export async function publishStamped(
   args: {
     apiBase: string;
-    stampedBlob: Blob;
+    blob: Blob;
+    signedUploadUrl: string;
     receipt: string;
     thumbnailDataUrl?: string | null;
     onUploadProgress?: (loaded: number, total: number) => void;
   },
 ): Promise<PublishResponse> {
   const apiBase = args.apiBase.replace(/\/$/, '');
-  return new Promise<PublishResponse>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${apiBase}/api/links/publish`);
-    xhr.responseType = 'json';
-    if (args.onUploadProgress) {
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) args.onUploadProgress!(e.loaded, e.total);
-      });
-    }
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve(xhr.response as PublishResponse);
-      } else {
-        const detail = xhr.response ? JSON.stringify(xhr.response) : '';
-        reject(new Error(`publish_failed:${xhr.status}:${detail}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error('publish_failed:0:network_error'));
-    xhr.onabort = () => reject(new Error('publish_failed:0:aborted'));
 
-    const form = new FormData();
-    form.append('receipt', args.receipt);
-    form.append('image', args.stampedBlob, 'stamped.png');
-    if (args.thumbnailDataUrl) {
-      form.append('thumbnail', args.thumbnailDataUrl);
-    }
-    xhr.send(form);
-  });
+  // 1. Storage 업로드 (대용량 PNG)
+  await uploadToStorage(args.blob, args.signedUploadUrl, args.onUploadProgress);
+
+  // 2. 서버 publish 요청 (작은 JSON)
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}/api/links/publish`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        receipt: args.receipt,
+        ...(args.thumbnailDataUrl ? { thumbnail: args.thumbnailDataUrl } : {}),
+      }),
+    });
+  } catch (e: any) {
+    throw new Error(`publish_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
+  }
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`publish_failed:${res.status}:${detail}`);
+  }
+  return res.json();
 }
 
 /**

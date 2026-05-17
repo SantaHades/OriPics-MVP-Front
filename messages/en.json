@@ -114,6 +114,7 @@
       "credits": "credits",
       "total_label": "Total",
       "link_extra_note": "Creating a share link after proof costs an additional −{cost} credits",
+      "preview_alt": "Uploaded image preview",
       "confirm": "Start proof",
       "cancel": "Cancel"
     },

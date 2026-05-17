@@ -26,17 +26,16 @@ type ProcessStatus = "idle" | "dragover" | "processing" | "size_selection" | "re
 interface SingleResult {
   draft: StampedDraft;
   display: ApiResponse;
-  /** 인증(confirm) 단계 후 보관 — publish 버튼 클릭 시 재전송 */
-  stampedBlob: Blob | null;
+  /** 인증(confirm) 후 받은 receipt JWT — publish 버튼 클릭 시 재제출 */
   receipt: string | null;
   proofCost: number;
-  /** 단계: confirming(서버 C2PA 적용 중) → ready(publish 버튼 대기) → publishing → published */
+  /** 단계: confirming → ready(publish 버튼 대기) → publishing(Storage PUT + C2PA + DB) → published */
   phase: "confirming" | "ready" | "publishing" | "published" | "error";
   link: string | null;
   error: string | null;
   /** 사이즈 라벨 — 멀티 결과 카드 헤더에 표시 */
   variant: "standard" | "original";
-  /** 업로드 진행률 (loaded/total bytes) — confirming/publishing 중 표시 */
+  /** 업로드 진행률 (loaded/total bytes) — publishing 중 Storage PUT 진행률 */
   uploadProgress?: { loaded: number; total: number };
 }
 
@@ -113,8 +112,8 @@ export default function Home() {
   const { data: session, status: sessionStatus } = useSession();
   const [sessionID, setSessionID] = useState<string | null>(null);
   const [stampedDraft, setStampedDraft] = useState<StampedDraft | null>(null);
-  // B-2 (2026-05-17): confirm 후 보관되는 stamped+C2PA Blob과 receipt JWT. publish 버튼 클릭 시 사용.
-  const [confirmedSingle, setConfirmedSingle] = useState<{ stampedBlob: Blob; receipt: string; linkId: string; timestamp: string; proofCost: number } | null>(null);
+  // B-2'' (2026-05-17): confirm 후 publish에 필요한 정보 보관. 같은 페이지 세션에서만 publish 가능.
+  const [confirmedSingle, setConfirmedSingle] = useState<{ stampedBlob: Blob; signedUploadUrl: string; receipt: string; linkId: string; timestamp: string; proofCost: number } | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
@@ -551,15 +550,10 @@ export default function Home() {
         { apiBase: "", uploadType: source, gps, watermark: watermarkEnabled },
       );
       setStampedDraft(draft);
-      // B-2: 자동으로 confirm(C2PA 적용) 호출. publish는 사용자 버튼 클릭 시 별도.
+      // B-2'': proof 비용만 차감 (작은 JSON). Storage 업로드는 publish 버튼 클릭 시점.
       setConfirming(true);
-      setSingleUploadProgress({ loaded: 0, total: draft.blob.size });
-      const confirmed = await confirmStamped(draft, {
-        apiBase: "",
-        onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
-      });
+      const confirmed = await confirmStamped(draft, { apiBase: "" });
       setConfirming(false);
-      setSingleUploadProgress(null);
       saveReceipt({
         receipt: confirmed.receipt,
         timestamp: confirmed.timestamp,
@@ -567,9 +561,10 @@ export default function Home() {
         width: draft.width,
         height: draft.height,
       });
-      const stampedUrl = URL.createObjectURL(confirmed.stampedBlob);
+      const stampedUrl = URL.createObjectURL(draft.blob);
       setConfirmedSingle({
-        stampedBlob: confirmed.stampedBlob,
+        stampedBlob: draft.blob,
+        signedUploadUrl: draft.sign.signed_upload_url,
         receipt: confirmed.receipt,
         linkId: confirmed.link_id,
         timestamp: confirmed.timestamp,
@@ -653,13 +648,8 @@ export default function Home() {
         );
         setStampedDraft(draft);
         setConfirming(true);
-        setSingleUploadProgress({ loaded: 0, total: draft.blob.size });
-        const confirmed = await confirmStamped(draft, {
-          apiBase: "",
-          onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
-        });
+        const confirmed = await confirmStamped(draft, { apiBase: "" });
         setConfirming(false);
-        setSingleUploadProgress(null);
         saveReceipt({
           receipt: confirmed.receipt,
           timestamp: confirmed.timestamp,
@@ -667,9 +657,10 @@ export default function Home() {
           width: draft.width,
           height: draft.height,
         });
-        const stampedUrl = URL.createObjectURL(confirmed.stampedBlob);
+        const stampedUrl = URL.createObjectURL(draft.blob);
         setConfirmedSingle({
-          stampedBlob: confirmed.stampedBlob,
+          stampedBlob: draft.blob,
+          signedUploadUrl: draft.sign.signed_upload_url,
           receipt: confirmed.receipt,
           linkId: confirmed.link_id,
           timestamp: confirmed.timestamp,
@@ -725,7 +716,7 @@ export default function Home() {
         };
         results.push({
           draft, display, variant,
-          stampedBlob: null, receipt: null, proofCost: 0,
+          receipt: null, proofCost: 0,
           phase: "confirming",
           link: null, error: null,
         });
@@ -738,19 +729,8 @@ export default function Home() {
       // 각 결과물에 대해 confirmStamped 호출 (C2PA 적용 + proof cost 차감). 병렬 처리.
       // publish는 사용자가 "간편링크 생성" 버튼 클릭 시 별도 흐름.
       results.forEach((item, idx) => {
-        confirmStamped(item.draft, {
-          apiBase: "",
-          onUploadProgress: (loaded, total) => {
-            setMultiResults((prev) => {
-              if (!prev) return prev;
-              const copy = [...prev];
-              copy[idx] = { ...copy[idx], uploadProgress: { loaded, total } };
-              return copy;
-            });
-          },
-        })
+        confirmStamped(item.draft, { apiBase: "" })
           .then((confirmed) => {
-            // receipt JWT를 localStorage에 저장 (브라우저 재방문 시 미공개 detect용)
             saveReceipt({
               receipt: confirmed.receipt,
               timestamp: confirmed.timestamp,
@@ -758,23 +738,14 @@ export default function Home() {
               width: item.draft.width,
               height: item.draft.height,
             });
-            // stamped+C2PA 결과 이미지 URL 갱신
-            const newUrl = URL.createObjectURL(confirmed.stampedBlob);
             setMultiResults((prev) => {
               if (!prev) return prev;
               const copy = [...prev];
-              // 이전 LSB-only URL 회수
-              if (copy[idx].display.image && copy[idx].display.image!.startsWith("blob:")) {
-                URL.revokeObjectURL(copy[idx].display.image!);
-              }
               copy[idx] = {
                 ...copy[idx],
-                stampedBlob: confirmed.stampedBlob,
                 receipt: confirmed.receipt,
                 proofCost: confirmed.proofCost,
                 phase: "ready",
-                display: { ...copy[idx].display, image: newUrl },
-                uploadProgress: undefined,
               };
               return copy;
             });
@@ -837,7 +808,7 @@ export default function Home() {
   const handleMultiPublish = async (idx: number) => {
     if (!multiResults) return;
     const item = multiResults[idx];
-    if (!item || item.phase !== "ready" || !item.stampedBlob || !item.receipt) return;
+    if (!item || item.phase !== "ready" || !item.receipt) return;
 
     setMultiResults((prev) => {
       if (!prev) return prev;
@@ -851,7 +822,7 @@ export default function Home() {
       let thumbnailDataUrl: string | null = null;
       try {
         const img = new window.Image();
-        img.src = URL.createObjectURL(item.stampedBlob);
+        img.src = URL.createObjectURL(item.draft.blob);
         await new Promise<void>((r) => { img.onload = () => r(); });
         const canvas = document.createElement("canvas");
         const maxSize = 150;
@@ -865,7 +836,8 @@ export default function Home() {
 
       const result = await publishStamped({
         apiBase: "",
-        stampedBlob: item.stampedBlob,
+        blob: item.draft.blob,
+        signedUploadUrl: item.draft.sign.signed_upload_url,
         receipt: item.receipt,
         thumbnailDataUrl,
         onUploadProgress: (loaded, total) => {
@@ -1004,7 +976,8 @@ export default function Home() {
 
       const result = await publishStamped({
         apiBase: "",
-        stampedBlob: confirmedSingle.stampedBlob,
+        blob: confirmedSingle.stampedBlob,
+        signedUploadUrl: confirmedSingle.signedUploadUrl,
         receipt: confirmedSingle.receipt,
         thumbnailDataUrl,
         onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
@@ -1334,6 +1307,17 @@ export default function Home() {
                   : t("size_select.hint_large")}
               </p>
 
+              {/* 업로드한 이미지 미리보기 — Blob URL이 있을 때만 표시 (페이지 새로고침 시 손실) */}
+              {originalImagePreview && (
+                <div className="flex justify-center mb-6">
+                  <img
+                    src={originalImagePreview}
+                    alt={t("size_select.preview_alt") as string}
+                    className="max-w-full max-h-[260px] object-contain rounded-lg border border-slate-200 bg-slate-50"
+                  />
+                </div>
+              )}
+
               <div className="space-y-3 mb-6">
                 <label
                   className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -1628,7 +1612,7 @@ export default function Home() {
                   </div>
 
                   {(item.phase === "confirming" || item.phase === "publishing") && (() => {
-                    const total = item.uploadProgress?.total ?? item.stampedBlob?.size ?? item.draft.blob.size;
+                    const total = item.uploadProgress?.total ?? item.draft.blob.size;
                     const loaded = item.uploadProgress?.loaded ?? 0;
                     const pct = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
                     return (
