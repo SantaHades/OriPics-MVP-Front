@@ -154,6 +154,7 @@ export default function Home() {
   const [gpsIncludeEnabled, setGpsIncludeEnabled] = useState(true);
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
   const [showGpsHelpModal, setShowGpsHelpModal] = useState(false);
+  const [showWatermarkHelpModal, setShowWatermarkHelpModal] = useState(false);
   const [helpOpenSection, setHelpOpenSection] = useState<HelpPlatform | null>(null);
 
   const detectHelpPlatform = (): HelpPlatform => {
@@ -1135,7 +1136,7 @@ export default function Home() {
           {status !== "result_stamped" && status !== "result_verified" && (
             <div className="w-full max-w-2xl flex flex-col items-center">
               {(status === "idle" || status === "dragover") && (
-                <div className="w-full flex justify-start mb-2 text-xs">
+                <div className="w-full flex justify-start mb-2 text-xs gap-1">
                   <label className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none">
                     <input
                       type="checkbox"
@@ -1145,6 +1146,14 @@ export default function Home() {
                     />
                     <span>{t('upload.watermark_include')}</span>
                   </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowWatermarkHelpModal(true)}
+                    className="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center"
+                    aria-label={t('upload.watermark_help_aria') as string}
+                  >
+                    <HelpCircle size={14} />
+                  </button>
                 </div>
               )}
               <div
@@ -2313,6 +2322,39 @@ export default function Home() {
           </div>
         );
       })()}
+
+      {showWatermarkHelpModal && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60"
+          onClick={() => setShowWatermarkHelpModal(false)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-5 border-b border-slate-100">
+              <h3 className="text-lg font-bold">{t("upload.watermark_help_title")}</h3>
+              <button
+                onClick={() => setShowWatermarkHelpModal(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500"
+                aria-label="close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 text-sm text-slate-700 space-y-4 leading-relaxed">
+              <div className="flex justify-center">
+                <img
+                  src="/watermark-logo.png"
+                  alt="OriPics logo"
+                  className="h-16 w-auto object-contain"
+                />
+              </div>
+              <p className="text-center">{t("upload.watermark_help_body")}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

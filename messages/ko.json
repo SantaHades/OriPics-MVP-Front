@@ -28,6 +28,9 @@
       "login_required": "로그인 후 사용 가능 — 클릭하면 로그인 페이지로 이동합니다",
       "toggle_camera": "카메라로도 촬영하기",
       "watermark_include": "인증마크 포함",
+      "watermark_help_aria": "인증마크 안내",
+      "watermark_help_title": "인증마크란?",
+      "watermark_help_body": "체크 시 이미지의 좌측 상단에 OriPics 로고가 인증마크로 표시됩니다. 누구나 한눈에 OriPics로 인증된 이미지임을 알 수 있습니다.",
       "upload_menu": {
         "title": "이미지 업로드",
         "library": "사진 보관함",

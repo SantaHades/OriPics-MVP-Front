@@ -28,6 +28,9 @@
       "login_required": "Sign in required — click to go to login",
       "toggle_camera": "Enable camera capture",
       "watermark_include": "Include badge",
+      "watermark_help_aria": "Badge info",
+      "watermark_help_title": "What is the badge?",
+      "watermark_help_body": "When enabled, the OriPics logo is overlaid on the top-left of your image as an authentication badge — anyone can recognize at a glance that it's an OriPics-proofed image.",
       "upload_menu": {
         "title": "Upload Image",
         "library": "Photo Library",
