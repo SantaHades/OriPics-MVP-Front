@@ -107,7 +107,7 @@ OriPics embeds an invisible digital fingerprint plus a C2PA-standard manifest in
 • Verified (mobile) — direct capture with device-integrity attestation
 • Standard — gallery upload, paste-from-clipboard
 • GPS coordinates (optional) — preserve where the photo was taken
-• Shareable links — 7-day or permanent retention
+• Public links — 7-day or permanent retention
 • Content Credentials auto-attached — verify in Adobe Photoshop, Truepic Verify, and more
 
 ▣ Open standards, not a walled garden

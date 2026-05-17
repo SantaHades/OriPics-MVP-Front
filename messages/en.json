@@ -100,11 +100,11 @@
       "confirming": "Processing proof…",
       "uploading": "Uploading image…",
       "publish_error": "Link creation failed",
-      "short_link": "Short link",
+      "short_link": "Public link",
       "copy_link": "Copy link",
       "download_stamped": "Download image",
-      "create_link_button": "Create share link (−{cost})",
-      "c2pa_after_publish_note": "Content Credentials (C2PA) manifest and Certificate PDF become available after creating the share link."
+      "create_link_button": "Create public link (−{cost})",
+      "c2pa_after_publish_note": "Content Credentials (C2PA) manifest and Certificate PDF become available after creating the public link."
     },
     "size_select": {
       "title": "Choose proof size",
@@ -117,7 +117,7 @@
       "original_desc": "Keep capture resolution. Recommended for print and legal submission.",
       "credits": "credits",
       "total_label": "Total",
-      "link_extra_note": "Creating a share link after proof costs an additional −{cost} credits",
+      "link_extra_note": "Creating a public link after proof costs an additional −{cost} credits",
       "preview_alt": "Uploaded image preview",
       "confirm": "Start proof",
       "cancel": "Cancel"
@@ -146,7 +146,7 @@
     "why": {
       "eyebrow": "Open standard",
       "title": "We follow open international standards, not a walled garden",
-      "body": "Every proof image with a share link automatically carries a C2PA standard manifest.\nEven if our site disappears, provenance is independently verifiable in any C2PA-aware tool.",
+      "body": "Every proof image with a public link automatically carries a C2PA standard manifest.\nEven if our site disappears, provenance is independently verifiable in any C2PA-aware tool.",
       "point_c2pa": "The content provenance and authenticity standard built by Adobe, Microsoft, Sony, BBC, and Intel — auto-attached to every proof image.",
       "point_jpeg_trust": "ISO/IEC 21617 (JPEG Trust) compatible. Verification responds in the Trust Report shape with an overall trust level.",
       "point_open_label": "OPEN",
@@ -190,7 +190,7 @@
         "name": "Free",
         "tagline": "Just sign up to start",
         "f1": "20 credits / month (5 verified proofs)",
-        "f2": "Share links — 7-day storage",
+        "f2": "Public links — 7-day storage",
         "f3": "Content Credentials (C2PA) auto-attached",
         "f4_excluded": "Mobile photo (Verified) tier excluded",
         "cta": "Start free",
@@ -202,7 +202,7 @@
         "tagline": "Best for individual work",
         "annual_hint": "Annual ₩99,000 (2 months free)",
         "f1": "1,000 credits / month (250 verified proofs)",
-        "f2": "Share links — permanent storage",
+        "f2": "Public links — permanent storage",
         "f3": "Mobile photo (Verified) tier included",
         "f4": "Certificate PDF available",
         "f5": "API access (10 req/min)",
@@ -222,7 +222,7 @@
       "guide": {
         "title": "Credit cost guide",
         "verify_query": "Verification query — checking authenticity of someone else's OriPics image",
-        "link_create": "Share link creation",
+        "link_create": "Public link creation",
         "image_proof": "Image proof — File (F) or Clipboard (C) path (Standard)",
         "verified_proof": "Photo proof — Mobile camera (P) path (Verified)",
         "certificate_pdf": "Certificate PDF issuance"
@@ -238,7 +238,7 @@
     },
     "unpublished_self": {
       "title": "Your unpublished proof",
-      "body": "You proofed this image with OriPics earlier but haven't created a share link yet. Create one now to enable external verification and certificate issuance.",
+      "body": "You proofed this image with OriPics earlier but haven't created a public link yet. Create one now to enable external verification and certificate issuance.",
       "cancel": "Cancel"
     },
     "errors": {
@@ -247,7 +247,7 @@
       "server_error": "An error occurred during server communication.",
       "unknown_error": "An unknown error has occurred.",
       "link_creation_failed": "Failed to create link.",
-      "verify_not_published": "This image was proofed with OriPics but verification is unavailable until the owner creates a share link.",
+      "verify_not_published": "This image was proofed with OriPics but verification is unavailable until the owner creates a public link.",
       "clipboard_success": "Link copied to clipboard!",
       "empty_file": "The file is empty. Please upload a valid image file.",
       "invalid_image": "Cannot read the image file. Please upload an uncorrupted PNG, JPG, or WebP file.",
@@ -418,7 +418,7 @@
       "pdf_error": "PDF action failed: {error}",
       "delete_proof": "Delete",
       "delete_modal_title": "Delete this proof?",
-      "delete_modal_description": "The original image and the issued certificate will be permanently deleted, and the share link will no longer work. Charged credits are not refunded.",
+      "delete_modal_description": "The original image and the issued certificate will be permanently deleted, and the public link will no longer work. Charged credits are not refunded.",
       "delete_modal_cancel": "Cancel",
       "delete_modal_confirm": "Delete"
     }
