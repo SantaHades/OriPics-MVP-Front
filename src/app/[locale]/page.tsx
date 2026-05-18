@@ -2130,6 +2130,10 @@ export default function Home() {
           </Link>
         </div>
         <p>{tLV("footer")}</p>
+        <div className="text-xs text-slate-400 text-center leading-relaxed mt-2">
+          <p>{tLV("business_info_line1")}</p>
+          <p>{tLV("business_info_line2")}</p>
+        </div>
       </footer>
       {/* Custom Upload Menu (Action Sheet) */}
       {showUploadMenu && (

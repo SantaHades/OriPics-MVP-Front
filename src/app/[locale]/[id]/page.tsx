@@ -510,6 +510,10 @@ export default function LinkViewer() {
           </Link>
         </div>
         <p>{t("footer")}</p>
+        <div className="text-[10px] text-slate-400 text-center leading-relaxed mt-1">
+          <p>{t("business_info_line1")}</p>
+          <p>{t("business_info_line2")}</p>
+        </div>
       </footer>
 
       {isFullscreen && imageObjectUrl && (
