@@ -11,7 +11,8 @@
     "meta_description": "이미지가 원본임을 증명하세요. 보이지 않는 디지털 지문을 새깁니다.",
     "contact": "문의하기",
     "privacy": "개인정보 처리방침",
-    "terms": "이용약관"
+    "terms": "이용약관",
+    "refund": "환불 정책"
   },
   "Home": {
     "hero": {
@@ -206,7 +207,8 @@
         "f3": "모바일 사진 인증(Verified) 포함",
         "f4": "증명서(PDF) 발급 가능",
         "f5": "API 액세스 (10 req/min)",
-        "coming_soon": "곧 출시"
+        "coming_soon": "곧 출시",
+        "cta_pay": "결제하기"
       },
       "business": {
         "name": "Business",
@@ -489,8 +491,37 @@
     "c2pa_inspect": "Content Credentials 자세히 보기",
     "privacy_link": "개인정보 처리방침",
     "terms_link": "이용약관",
+    "refund_link": "환불 정책",
     "footer": "OriPics © 2026  원본 인증.",
     "business_info_line1": "(주)산타하데스 · 사업자등록번호 444-88-02865 · 대표자 손용석 · 010-3717-9717",
     "business_info_line2": "경기도 용인시 기흥구 공세로 150-29, B01-H306호(공세동, 테라스가든)"
+  },
+  "Billing": {
+    "title": "결제 진행",
+    "subtitle": "결제 정보를 확인하고 결제를 진행해 주세요.",
+    "back": "요금제로 돌아가기",
+    "invalid_plan": "유효하지 않은 플랜입니다.",
+    "loading": "불러오는 중…",
+    "plan_period_monthly": "월간 구독 · 30일간 유효",
+    "plan_tax_note": "부가세 포함",
+    "test_mode_title": "테스트 모드",
+    "test_mode_desc": "현재 테스트 채널로 동작 중이므로 실제 카드 청구가 발생하지 않습니다. 테스트 카드만 사용 가능합니다.",
+    "portone_keys_missing": "결제 키가 설정되지 않았습니다. 관리자에게 문의해 주세요.",
+    "error_generic": "결제 처리 중 오류가 발생했습니다.",
+    "pay_button": "결제하기",
+    "processing": "결제창을 여는 중…",
+    "powered_by": "Powered by PortOne",
+    "confirming_title": "결제 승인 중",
+    "confirming_desc": "결제를 안전하게 확인하고 있습니다. 잠시만 기다려 주세요.",
+    "success_title": "결제가 완료되었습니다",
+    "success_desc": "Pro 플랜이 활성화되었습니다.",
+    "granted_credits": "{count} 크레딧이 적립되었습니다",
+    "go_profile": "내 정보로 이동",
+    "go_home": "홈으로",
+    "error_title": "결제 처리 오류",
+    "error_desc": "결제는 완료되었으나 확인 단계에서 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+    "retry": "다시 시도",
+    "fail_title": "결제 실패",
+    "fail_desc": "결제가 취소되었거나 완료되지 않았습니다."
   }
 }

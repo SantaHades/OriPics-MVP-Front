@@ -14,6 +14,8 @@
   "dependencies": {
     "@contentauth/c2pa-node": "^0.5.5",
     "@next-auth/prisma-adapter": "^1.0.7",
+    "@portone/browser-sdk": "^0.1.7",
+    "@portone/server-sdk": "^0.19.0",
     "@prisma/client": "^6.19.3",
     "@react-pdf/renderer": "^4.5.1",
     "@supabase/supabase-js": "^2.105.4",

@@ -508,6 +508,9 @@ export default function LinkViewer() {
           <Link href="/privacy" className="hover:text-slate-900 transition-colors">
             {t("privacy_link")}
           </Link>
+          <Link href="/refund" className="hover:text-slate-900 transition-colors">
+            {t("refund_link")}
+          </Link>
         </div>
         <p>{t("footer")}</p>
         <div className="text-[10px] text-slate-400 text-center leading-relaxed mt-1">

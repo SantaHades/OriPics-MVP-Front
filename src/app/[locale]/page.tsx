@@ -2018,9 +2018,12 @@ export default function Home() {
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f4")}</li>
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f5")}</li>
               </ul>
-              <span className="w-full py-3 text-center text-sm font-bold rounded-xl bg-blue-50 text-blue-700 border border-blue-200">
-                {t("pricing.pro.coming_soon")}
-              </span>
+              <Link
+                href="/billing/checkout?plan=pro_monthly"
+                className="w-full py-3 text-center text-sm font-bold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                {t("pricing.pro.cta_pay")}
+              </Link>
             </div>
 
             {/* Business */}
@@ -2127,6 +2130,9 @@ export default function Home() {
           </Link>
           <Link href="/privacy" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
             {tc("privacy")}
+          </Link>
+          <Link href="/refund" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
+            {tc("refund")}
           </Link>
         </div>
         <p>{tLV("footer")}</p>

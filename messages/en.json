@@ -11,7 +11,8 @@
     "meta_description": "Prove your image is original. Embed invisible digital fingerprints.",
     "contact": "Contact Us",
     "privacy": "Privacy Policy",
-    "terms": "Terms of Service"
+    "terms": "Terms of Service",
+    "refund": "Refund Policy"
   },
   "Home": {
     "hero": {
@@ -206,7 +207,8 @@
         "f3": "Mobile photo (Verified) tier included",
         "f4": "Certificate PDF available",
         "f5": "API access (10 req/min)",
-        "coming_soon": "Coming soon"
+        "coming_soon": "Coming soon",
+        "cta_pay": "Subscribe"
       },
       "business": {
         "name": "Business",
@@ -489,8 +491,37 @@
     "c2pa_inspect": "Inspect Content Credentials",
     "privacy_link": "Privacy Policy",
     "terms_link": "Terms of Service",
+    "refund_link": "Refund Policy",
     "footer": "OriPics © 2026  the original proof.",
     "business_info_line1": "SantaHades Co., Ltd. · Business Reg. No. 444-88-02865 · CEO: YONGSEOG SON · +82-10-3717-9717",
     "business_info_line2": "150-29 Gongse-ro, B01-H306 (Gongse-dong, Terrace Garden), Giheung-gu, Yongin-si, Gyeonggi-do, Republic of Korea"
+  },
+  "Billing": {
+    "title": "Checkout",
+    "subtitle": "Review your order and proceed to payment.",
+    "back": "Back to plans",
+    "invalid_plan": "Invalid plan.",
+    "loading": "Loading…",
+    "plan_period_monthly": "Monthly subscription · valid for 30 days",
+    "plan_tax_note": "VAT included",
+    "test_mode_title": "Test Mode",
+    "test_mode_desc": "Running on a test channel. No real charges will be made. Only test cards are accepted.",
+    "portone_keys_missing": "Payment key is not configured. Please contact the administrator.",
+    "error_generic": "An error occurred while processing payment.",
+    "pay_button": "Pay",
+    "processing": "Opening payment window…",
+    "powered_by": "Powered by PortOne",
+    "confirming_title": "Confirming payment",
+    "confirming_desc": "Verifying your payment securely. Please wait a moment.",
+    "success_title": "Payment complete",
+    "success_desc": "Your Pro plan is now active.",
+    "granted_credits": "{count} credits added",
+    "go_profile": "Go to my profile",
+    "go_home": "Go to home",
+    "error_title": "Confirmation error",
+    "error_desc": "The payment went through but confirmation failed. Please try again shortly.",
+    "retry": "Try again",
+    "fail_title": "Payment failed",
+    "fail_desc": "The payment was canceled or did not complete."
   }
 }
