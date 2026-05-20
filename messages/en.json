@@ -12,7 +12,8 @@
     "contact": "Contact Us",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
-    "refund": "Refund Policy"
+    "refund": "Refund Policy",
+    "security": "Security"
   },
   "Home": {
     "hero": {
@@ -492,6 +493,7 @@
     "privacy_link": "Privacy Policy",
     "terms_link": "Terms of Service",
     "refund_link": "Refund Policy",
+    "security_link": "Security",
     "footer": "OriPics © 2026  the original proof.",
     "business_info_line1": "SantaHades Co., Ltd. · Business Reg. No. 444-88-02865 · CEO: YONGSEOG SON · +82-10-3717-9717",
     "business_info_line2": "150-29 Gongse-ro, B01-H306 (Gongse-dong, Terrace Garden), Giheung-gu, Yongin-si, Gyeonggi-do, Republic of Korea"

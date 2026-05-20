@@ -1,0 +1,4 @@
+Contact: mailto:security@ori.pics
+Expires: 2027-05-20T00:00:00.000Z
+Preferred-Languages: en, ko
+Canonical: https://www.ori.pics/.well-known/security.txt
