@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
+import { renewCreditsIfDue } from "@/lib/credits/renewCredits";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,25 @@ export async function GET() {
 
   if (!user) {
     return NextResponse.json({ detail: "user_not_found" }, { status: 404 });
+  }
+
+  // Lazy refresh: 갱신 도래 시 즉시 크레딧 리셋 (cron 대기 없이)
+  if (user.creditsRenewAt && user.creditsRenewAt <= new Date()) {
+    const result = await renewCreditsIfDue(userId);
+    if (result.renewed) {
+      const refreshed = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { tier: true, credits: true, creditsRenewAt: true },
+      });
+      if (refreshed) {
+        return NextResponse.json({
+          tier: refreshed.tier,
+          credits: refreshed.credits,
+          creditsRenewAt: refreshed.creditsRenewAt,
+          recentTransactions: transactions,
+        });
+      }
+    }
   }
 
   return NextResponse.json({
