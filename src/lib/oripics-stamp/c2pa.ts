@@ -84,14 +84,12 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   }
 
   // === Manifest ===
+  // c2pa.actions.v2: c2pa.created 액션. 두 tier 모두 digitalCapture (algorithmicMedia는 AI 생성 콘텐츠 전용)
   const actions: any[] = [
     {
       action: 'c2pa.created',
       when: input.timestamp,
-      digitalSourceType:
-        input.tier === 'verified'
-          ? 'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture'
-          : 'http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia',
+      digitalSourceType: 'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture',
       softwareAgent: { name: 'oripics' },
     },
     {
@@ -100,53 +98,49 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     },
   ];
 
-  const assertions: any[] = [
-    { label: 'c2pa.actions.v2', data: { actions } },
-    {
-      label: 'com.oripics.proof',
-      data: {
-        tier: input.tier,
-        link_id: input.linkId,
-        verify_url: `https://www.ori.pics/${input.linkId}`,
-        stamp_version: input.stampVersion,
-        dimensions: { width: input.width, height: input.height },
-        ...(input.lat != null && input.lng != null
-          ? { gps: { lat: input.lat, lng: input.lng } }
-          : {}),
-      },
-    },
-  ];
+  const proofData: any = {
+    tier: input.tier,
+    link_id: input.linkId,
+    verify_url: `https://www.ori.pics/${input.linkId}`,
+    stamp_version: input.stampVersion,
+    dimensions: { width: input.width, height: input.height },
+    ...(input.lat != null && input.lng != null
+      ? { gps: { lat: input.lat, lng: input.lng } }
+      : {}),
+  };
 
-  if (input.tier === 'verified' && input.verifiedInfo) {
-    assertions.push({
-      label: 'com.oripics.verified',
-      data: {
-        platform: input.verifiedInfo.platform,
-        attest_token_hash: input.verifiedInfo.attestTokenHash,
-        device_integrity: 'passed',
-        ...(input.verifiedInfo.zoomFactor != null
-          ? { zoom_factor: input.verifiedInfo.zoomFactor }
-          : {}),
-        ...(input.verifiedInfo.lensPosition
-          ? { lens_position: input.verifiedInfo.lensPosition }
-          : {}),
-      },
-    });
-  }
-
+  // assertions 배열을 manifestSpec에서 제외하고 addAssertion()으로 추가:
+  // → withJson spec의 assertions[]는 gathered_assertions로 분류되나,
+  //   addAssertion() API로 추가하면 created_assertions에 들어감 (c2pa-node v0.5.x)
   const manifestSpec = {
     claim_generator:
       input.tier === 'verified' ? 'oripics/0.1.0 (mobile-native)' : 'oripics/0.1.0',
     title: `OriPics Original Proof (${input.tier === 'verified' ? 'Verified' : 'Standard'})`,
     format: 'image/png',
     instance_id: `xmp:iid:${input.linkId}`,
-    assertions,
   };
 
   // === Sign ===
   const builder = settings
     ? Builder.withJson(manifestSpec as any, settings)
     : Builder.withJson(manifestSpec as any);
+
+  // created_assertions에 들어가도록 addAssertion() API 사용
+  builder.addAssertion('c2pa.actions.v2', { actions });
+  builder.addAssertion('com.oripics.proof', proofData);
+  if (input.tier === 'verified' && input.verifiedInfo) {
+    builder.addAssertion('com.oripics.verified', {
+      platform: input.verifiedInfo.platform,
+      attest_token_hash: input.verifiedInfo.attestTokenHash,
+      device_integrity: 'passed',
+      ...(input.verifiedInfo.zoomFactor != null
+        ? { zoom_factor: input.verifiedInfo.zoomFactor }
+        : {}),
+      ...(input.verifiedInfo.lensPosition
+        ? { lens_position: input.verifiedInfo.lensPosition }
+        : {}),
+    });
+  }
 
   const inputAsset = { buffer: input.pngBuffer, mimeType: 'image/png' };
   const outputAsset: { buffer: Buffer | null } = { buffer: null };
