@@ -22,6 +22,13 @@ function RefundKo() {
         를 따릅니다.
       </p>
 
+      <h2>서비스 제공기간</h2>
+      <ul>
+        <li>월간 구독: 결제일로부터 <strong>1개월</strong></li>
+        <li>연간 구독: 결제일로부터 <strong>12개월</strong></li>
+      </ul>
+      <p>구독 기간 종료 후 갱신하지 않으면 Free 플랜으로 자동 전환됩니다.</p>
+
       <h2>1. 청약철회 기간 (전자상거래법 §17)</h2>
       <ul>
         <li>
@@ -99,6 +106,13 @@ function RefundEn() {
         operated by {COMPANY_NAME_EN} (&quot;the Company&quot;). The full terms
         are set out in <Link href="/terms#refund">Terms of Service §7 (Refunds and Withdrawal)</Link>.
       </p>
+
+      <h2>Service Provision Period</h2>
+      <ul>
+        <li>Monthly subscription: <strong>1 month</strong> from the payment date</li>
+        <li>Annual subscription: <strong>12 months</strong> from the payment date</li>
+      </ul>
+      <p>If not renewed, your account is automatically downgraded to the Free plan at the end of the period.</p>
 
       <h2>1. Withdrawal Period (Korean E-Commerce Act §17)</h2>
       <ul>
