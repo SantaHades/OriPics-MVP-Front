@@ -62,7 +62,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   }
 
   const c2pa = await import('@contentauth/c2pa-node');
-  const { Builder, LocalSigner, createTrustSettings, createVerifySettings, mergeSettings } = c2pa;
+  const { Builder, LocalSigner, Reader, createTrustSettings, createVerifySettings, mergeSettings } = c2pa;
 
   // === Signer ===
   const signer = LocalSigner.newSigner(
@@ -83,20 +83,44 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     );
   }
 
+  // === Prior manifest 감지 (actions 결정보다 먼저) ===
+  // 기존 C2PA가 있으면 c2pa.opened, 없으면 c2pa.created
+  let priorManifest: { label: string; data: any } | null = null;
+  try {
+    const existingReader = await Reader.fromAsset({ buffer: input.pngBuffer, mimeType: 'image/png' }, settings);
+    if (existingReader) {
+      const store: any = existingReader.json();
+      const activeLabel: string | undefined = store?.active_manifest;
+      const activeManifest: any = activeLabel ? store?.manifests?.[activeLabel] : undefined;
+      if (activeManifest) {
+        priorManifest = { label: activeLabel, data: activeManifest };
+      }
+    }
+  } catch {
+    // 기존 매니페스트 없음 또는 읽기 오류 — 계속 진행
+  }
+
   // === Manifest ===
-  // c2pa.actions.v2: c2pa.created 액션. 두 tier 모두 digitalCapture (algorithmicMedia는 AI 생성 콘텐츠 전용)
-  const actions: any[] = [
-    {
-      action: 'c2pa.created',
-      when: input.timestamp,
-      digitalSourceType: 'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture',
-      softwareAgent: { name: 'oripics' },
-    },
-    {
-      action: input.tier === 'verified' ? 'com.oripics.captured' : 'com.oripics.stamped',
-      parameters: { tier: input.tier, version: input.stampVersion },
-    },
-  ];
+  // Action selection (TOE boundary 기반):
+  //   prior manifest 있음  → c2pa.opened  (기존 C2PA 인제스트, C2PA §9.3.2)
+  //   verified tier (모바일, App Attest/Play Integrity 확인)
+  //                        → c2pa.created + digitalCapture (카메라 직접 캡처, TOE 내)
+  //   standard tier (web browser 업로드) → c2pa.published
+  //     * Web 브라우저는 TOE 경계 밖: 캡처 사실 검증 불가.
+  //       digitalCapture/c2pa.created 사용 불가 (C2PA GPSA §O.4).
+  let primaryAction: string;
+  const primaryActionBase: any = { when: input.timestamp, softwareAgent: { name: 'oripics' } };
+
+  if (priorManifest) {
+    primaryAction = 'c2pa.opened';
+  } else if (input.tier === 'verified') {
+    primaryAction = 'c2pa.created';
+    primaryActionBase.digitalSourceType =
+      'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture';
+  } else {
+    // Standard tier: web browser upload — publisher role only, no capture claim
+    primaryAction = 'c2pa.published';
+  }
 
   const proofData: any = {
     tier: input.tier,
@@ -109,9 +133,6 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
       : {}),
   };
 
-  // assertions 배열을 manifestSpec에서 제외하고 addAssertion()으로 추가:
-  // → withJson spec의 assertions[]는 gathered_assertions로 분류되나,
-  //   addAssertion() API로 추가하면 created_assertions에 들어감 (c2pa-node v0.5.x)
   const manifestSpec = {
     claim_generator:
       input.tier === 'verified' ? 'oripics/0.1.0 (mobile-native)' : 'oripics/0.1.0',
@@ -125,8 +146,14 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     ? Builder.withJson(manifestSpec as any, settings)
     : Builder.withJson(manifestSpec as any);
 
-  // created_assertions에 들어가도록 addAssertion() API 사용
-  builder.addAssertion('c2pa.actions.v2', { actions });
+  // builder.addAction() → c2pa.actions.v2 를 created_assertions에 배치 (C2PA spec 준수)
+  // builder.addAssertion('c2pa.actions.v2', ...) 는 gathered_assertions에 배치 → 비준수
+  builder.addAction(JSON.stringify({ action: primaryAction, ...primaryActionBase }));
+  builder.addAction(JSON.stringify({
+    action: input.tier === 'verified' ? 'com.oripics.captured' : 'com.oripics.stamped',
+    parameters: { tier: input.tier, version: input.stampVersion },
+  }));
+
   builder.addAssertion('com.oripics.proof', proofData);
   if (input.tier === 'verified' && input.verifiedInfo) {
     builder.addAssertion('com.oripics.verified', {
@@ -140,6 +167,23 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
         ? { lens_position: input.verifiedInfo.lensPosition }
         : {}),
     });
+  }
+
+  // === Ingredient: 기존 C2PA 매니페스트가 있으면 parentOf로 체인 ===
+  // c2pa.opened 액션 + prior manifest를 ingredient로 추가 (C2PA spec §9.3.2)
+  if (priorManifest) {
+    try {
+      const ingredientJson = JSON.stringify({
+        title: priorManifest.data.title || 'Prior Content',
+        format: 'image/png',
+        instance_id: priorManifest.data.instance_id || '',
+        relationship: 'parentOf',
+      });
+      await builder.addIngredient(ingredientJson, { buffer: input.pngBuffer, mimeType: 'image/png' });
+      console.log(`[c2pa] ingredient added: ${priorManifest.label}`);
+    } catch (e: any) {
+      console.warn(`[c2pa] ingredient add failed: ${e?.message}`);
+    }
   }
 
   const inputAsset = { buffer: input.pngBuffer, mimeType: 'image/png' };
