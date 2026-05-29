@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, createHash, timingSafeEqual } from "crypto";
 import {
   MAGIC_BYTES,
   OFFSET_MAGIC,
@@ -17,10 +17,14 @@ import {
   PAYLOAD_LENGTH,
   PAYLOAD_LENGTH_V3,
   PAYLOAD_LENGTH_V4,
+  PAYLOAD_BITS_V4,
+  OFFSET_FINAL_HASH_V4,
   HASH_LENGTH,
   TIMESTAMP_LENGTH,
   obfuscateCounter,
   checksum2,
+  selectEmbedModeV4,
+  getBorderCoordinates,
 } from "./common";
 
 const UPLOAD_TYPE_PREFIXES = ["F", "P", "C"] as const;
@@ -317,4 +321,92 @@ export function bytesToHex(bytes: Uint8Array): string {
 
 export function hexToBytes(hex: string): Uint8Array {
   return new Uint8Array(Buffer.from(hex, "hex"));
+}
+
+/**
+ * PNG 버퍼의 inner 픽셀(border 제외)로부터 inner_hash를 서버 측 재계산.
+ * inner_hash = SHA-256( uint32BE(width) ‖ uint32BE(height) ‖ inner_RGBA )
+ * v2.ts computeInnerHash와 동일한 로직을 Node.js로 포팅.
+ * /api/links/publish에서 JWT inner_hash_hex와 비교하여 inner 픽셀 무결성 검증.
+ */
+export async function computeInnerHashFromPngBuffer(
+  pngBuffer: Buffer,
+  width: number,
+  height: number,
+): Promise<Uint8Array> {
+  const innerW = width - 2;
+  const innerH = height - 2;
+  if (innerW <= 0 || innerH <= 0) throw new Error("image_too_small_for_inner_hash");
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PNG } = require("pngjs") as {
+    PNG: { sync: { read: (buf: Buffer) => { width: number; height: number; data: Buffer } } };
+  };
+  const png = PNG.sync.read(pngBuffer);
+  if (png.width !== width || png.height !== height) {
+    throw new Error(`png_dimensions_mismatch:${png.width}x${png.height}`);
+  }
+  const pixels = new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength);
+
+  // uint32BE(width) ‖ uint32BE(height) ‖ inner rows RGBA
+  // v2.ts computeInnerHash와 동일한 구조
+  const innerLen = innerW * innerH * 4;
+  const buf = Buffer.allocUnsafe(8 + innerLen);
+  buf.writeUInt32BE(width, 0);
+  buf.writeUInt32BE(height, 4);
+
+  let off = 8;
+  for (let y = 1; y < height - 1; y++) {
+    const rowStart = (y * width + 1) * 4;
+    const rowLen = innerW * 4;
+    buf.set(pixels.subarray(rowStart, rowStart + rowLen), off);
+    off += rowLen;
+  }
+
+  return new Uint8Array(createHash("sha256").update(buf).digest());
+}
+
+/**
+ * PNG 버퍼에서 LSB 스테가노그래피로 삽입된 V4 payload를 추출하고 finalHash를 반환.
+ * Edge-to-Backend 인증 (Level 1): /api/links/publish에서 receipt JWT의 final_hash_hex와 비교.
+ * pngjs(이미 설치됨)를 사용하여 PNG→RGBA 픽셀 변환 후 LSB 추출.
+ */
+export async function extractFinalHashFromPngBuffer(
+  pngBuffer: Buffer,
+  width: number,
+  height: number,
+): Promise<Uint8Array> {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { PNG } = require("pngjs") as {
+    PNG: { sync: { read: (buf: Buffer) => { width: number; height: number; data: Buffer } } };
+  };
+  const png = PNG.sync.read(pngBuffer);
+  if (png.width !== width || png.height !== height) {
+    throw new Error(`png_dimensions_mismatch:${png.width}x${png.height}`);
+  }
+  const pixels = new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength);
+
+  const mode = selectEmbedModeV4(width, height);
+  const coords = getBorderCoordinates(width, height);
+
+  // extractPayloadV4 ported to Node.js (no browser Canvas dependency)
+  const out = new Uint8Array(PAYLOAD_LENGTH_V4);
+  for (let bitIdx = 0; bitIdx < PAYLOAD_BITS_V4; bitIdx++) {
+    let coordIdx: number;
+    let channel: number;
+    if (mode === "b_only") {
+      coordIdx = bitIdx;
+      channel = 2; // blue
+    } else {
+      coordIdx = Math.floor(bitIdx / 3);
+      channel = bitIdx % 3; // R=0, G=1, B=2
+    }
+    const [y, x] = coords[coordIdx];
+    const off = (y * width + x) * 4 + channel;
+    const bit = pixels[off] & 1;
+    out[bitIdx >> 3] |= bit << (7 - (bitIdx & 7));
+  }
+
+  // splitPayloadV4 equivalent: finalHash is at OFFSET_FINAL_HASH_V4
+  return out.slice(OFFSET_FINAL_HASH_V4, OFFSET_FINAL_HASH_V4 + HASH_LENGTH);
 }

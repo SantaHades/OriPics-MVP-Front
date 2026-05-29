@@ -77,6 +77,8 @@ export async function POST(req: NextRequest) {
     user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6,
     tier: claimedTier,
     verified_info,
+    final_hash_hex,
+    inner_hash_hex,
   } = claims;
 
   if (!user_id) {
@@ -129,6 +131,12 @@ export async function POST(req: NextRequest) {
   }
   if (verified_info) {
     receiptPayload.verified_info = verified_info;
+  }
+  if (final_hash_hex) {
+    receiptPayload.final_hash_hex = final_hash_hex;
+  }
+  if (inner_hash_hex) {
+    receiptPayload.inner_hash_hex = inner_hash_hex;
   }
   const receipt = issueReceiptJwt(receiptPayload);
 

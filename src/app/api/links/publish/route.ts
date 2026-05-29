@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 import { prisma } from "@/lib/prisma";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
+import { extractFinalHashFromPngBuffer, computeInnerHashFromPngBuffer, hexToBytes } from "@/lib/oripics-stamp/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -153,6 +154,45 @@ export async function POST(req: NextRequest) {
     console.error(`[publish] storage download failed link_id=${link_id}:`, e?.message || e);
     await refund(`storage_download_error:${e?.message || "unknown"}`);
     return NextResponse.json({ detail: `storage_download_error:${e?.message || "unknown"}` }, { status: 500 });
+  }
+
+  // 2b. Edge-to-Backend 인증 (Level 1)
+  // PNG 다운로드 후 두 가지 hash를 검증:
+  //   (A) final_hash: border LSB 추출값 ↔ JWT final_hash_hex  — PNG 교체 공격 차단
+  //   (B) inner_hash: inner 픽셀 SHA-256 재계산 ↔ JWT inner_hash_hex  — inner 픽셀 교체 공격 차단
+  // hash 필드가 없으면 구 receipt (배포 전 발급) — 검증 생략 (하위호환)
+  if (claims.final_hash_hex || claims.inner_hash_hex) {
+    try {
+      // (A) border LSB → final_hash 검증
+      if (claims.final_hash_hex) {
+        const extractedFinalHash = await extractFinalHashFromPngBuffer(pngBuffer, width, height);
+        const expectedFinalHash = hexToBytes(claims.final_hash_hex as string);
+        if (
+          extractedFinalHash.length !== expectedFinalHash.length ||
+          !timingSafeEqual(Buffer.from(extractedFinalHash), Buffer.from(expectedFinalHash))
+        ) {
+          await refund("final_hash_mismatch");
+          return NextResponse.json({ detail: "final_hash_mismatch" }, { status: 422 });
+        }
+      }
+
+      // (B) inner 픽셀 재계산 → inner_hash 검증
+      if (claims.inner_hash_hex) {
+        const recomputedInnerHash = await computeInnerHashFromPngBuffer(pngBuffer, width, height);
+        const expectedInnerHash = hexToBytes(claims.inner_hash_hex as string);
+        if (
+          recomputedInnerHash.length !== expectedInnerHash.length ||
+          !timingSafeEqual(Buffer.from(recomputedInnerHash), Buffer.from(expectedInnerHash))
+        ) {
+          await refund("inner_hash_mismatch");
+          return NextResponse.json({ detail: "inner_hash_mismatch" }, { status: 422 });
+        }
+      }
+    } catch (e: any) {
+      console.error(`[publish] hash verify error link_id=${link_id}:`, e?.message || e);
+      await refund(`hash_verify_error:${e?.message || "unknown"}`);
+      return NextResponse.json({ detail: `hash_verify_error:${e?.message || "unknown"}` }, { status: 422 });
+    }
   }
 
   // 3. C2PA 매니페스트 적용 + Storage 재업로드

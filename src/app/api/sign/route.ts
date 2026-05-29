@@ -248,6 +248,8 @@ export async function POST(req: NextRequest) {
     timestamp,
     width,
     height,
+    inner_hash_hex: inner_hash,   // 클라이언트가 계산한 inner 픽셀 SHA-256 (hex)
+    final_hash_hex: bytesToHex(finalHash),
   };
   if (hasGps) {
     jwtPayload.lat_e6 = lat_e6;
