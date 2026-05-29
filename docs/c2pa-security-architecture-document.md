@@ -14,7 +14,7 @@
 |---|---|---|
 | `c2pa.actions.v2` assertion placement | `gathered_assertions` (via `addAssertion()`) — nonconformant | **`created_assertions`** (via `builder.addAction()` per action) — conformant |
 | Web client in TOE boundary | Included as Edge subsystem | **Explicitly excluded from TOE** — Web is content-submission portal only; Req 6.2.1.5/6 satisfied by mobile clients (App Attest/Play Integrity) |
-| Action for Standard tier (web/mobile file pick) | `c2pa.created` + `digitalCapture` — incorrect (capture not verifiable) | **`c2pa.published`** — no `digitalSourceType` assertion; only Verified tier (mobile camera) uses `c2pa.created` + `digitalCapture` |
+| Action for Standard tier (web/mobile file pick) | `c2pa.created` + `digitalCapture` — incorrect (capture not verifiable) | **`c2pa.created`** (no `digitalSourceType`); only Verified tier (mobile camera, App Attest/Play Integrity) uses `c2pa.created` + `digitalCapture` |
 | Signing key storage language | "SSL.com eSigner Cloud HSM (production)" — tentative/unimplemented | **Clearly stated**: current production = Vercel encrypted env vars (AES-256); HSM is planned Phase 2 post-conformance |
 | TOE for Req 6.2.1.5/6 | Web + Mobile | **Mobile only** (iOS App Attest + Android Play Integrity); Web explicitly excluded |
 
@@ -351,10 +351,12 @@ Action selection is determined by two factors: (a) whether a prior C2PA manifest
 | Scenario | Primary action | `digitalSourceType` | TOE |
 |---|---|---|---|
 | **Verified tier, no prior manifest** (mobile camera, App Attest/Play Integrity confirmed) | `c2pa.created` | `digitalCapture` | Within TOE |
-| **Standard tier, no prior manifest** (web upload or mobile file pick) | `c2pa.published` | None | Web = outside TOE |
+| **Standard tier, no prior manifest** (web upload or mobile file pick) | `c2pa.opened` | None | Web = outside TOE |
 | **Any tier, prior C2PA manifest present** | `c2pa.opened` | None | — |
 
-`digitalCapture` is asserted **only** when the mobile device hardware (confirmed via App Attest or Play Integrity) directly performed the camera capture. Web browser uploads cannot be verified as camera captures and therefore receive `c2pa.published` — no false provenance claim is made.
+`digitalCapture` is asserted **only** when the mobile device hardware (confirmed via App Attest or Play Integrity) directly performed the camera capture. Standard tier uploads use `c2pa.created` with **no `digitalSourceType`** — OriPics is creating a C2PA manifest for the submitted file but makes no claim about the capture method.
+
+> **C2PA spec note**: `c2pa.opened` requires an ingredient reference (spec constraint); it cannot be used as the first action for uploads with no prior C2PA manifest. `c2pa.created` without `digitalSourceType` is the correct action for Standard tier — it asserts that OriPics created this C2PA manifest, without making any claim about how the underlying image was originally produced.
 
 Implementation: `apps/web/src/lib/oripics-stamp/c2pa.ts` (`attachC2paManifest()`).
 
@@ -458,10 +460,10 @@ OriPics is a **photo provenance platform**. The `digitalCapture` DST is asserted
 
 | Client | Tier | TOE | Action | DST |
 |---|---|---|---|---|
-| OriPics Web | Standard | Outside TOE | `c2pa.published` | None |
-| OriPics iOS | Standard (file pick) | In TOE (device auth'd) | `c2pa.published` | None |
+| OriPics Web | Standard | Outside TOE | `c2pa.created` (no DST) | None |
+| OriPics iOS | Standard (file pick) | In TOE (device auth'd) | `c2pa.created` (no DST) | None |
 | OriPics iOS | Verified (camera capture) | In TOE (App Attest) | `c2pa.created` | `digitalCapture` |
-| OriPics Android | Standard (file pick) | In TOE (device auth'd) | `c2pa.published` | None |
+| OriPics Android | Standard (file pick) | In TOE (device auth'd) | `c2pa.created` (no DST) | None |
 | OriPics Android | Verified (camera capture) | In TOE (Play Integrity) | `c2pa.created` | `digitalCapture` |
 
 OriPics does not certify AI-generated images, screenshots, or composites. Claims of `digitalCapture` are issued only when device attestation (App Attest / Play Integrity) confirms in-app camera hardware capture.
@@ -486,9 +488,9 @@ Implementation (`apps/web/src/lib/oripics-stamp/c2pa.ts`):
 
 | Scenario | Action | Ingredient |
 |---|---|---|
-| Fresh capture, Verified/mobile (no prior C2PA) | `c2pa.created` + `digitalCapture` DST | None |
-| Standard/web upload (no prior C2PA) | `c2pa.published` | None |
-| Any tier, prior C2PA manifest present | `c2pa.opened` | `c2pa.ingredient.v3` with `relationship: "parentOf"` |
+| Verified tier, mobile camera, no prior C2PA | `c2pa.created` + `digitalCapture` DST | None |
+| Standard tier, web/file-pick, no prior C2PA | `c2pa.created` (no DST) | None |
+| Any tier, prior C2PA manifest present | `c2pa.opened` (no DST) | `c2pa.ingredient.v3` with `relationship: "parentOf"` |
 
 *(Note on Verified tier)*: Mobile native camera captures (Verified tier) produce fresh in-app captures with no prior C2PA manifest, so the ingredient path primarily applies to Standard tier uploads of already-certified images.
 

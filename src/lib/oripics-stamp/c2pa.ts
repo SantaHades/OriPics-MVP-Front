@@ -112,14 +112,20 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   const primaryActionBase: any = { when: input.timestamp, softwareAgent: { name: 'oripics' } };
 
   if (priorManifest) {
+    // 기존 C2PA manifest 있음 → c2pa.opened + parentOf ingredient (C2PA spec §9.3.2)
     primaryAction = 'c2pa.opened';
   } else if (input.tier === 'verified') {
+    // Verified tier (모바일 직접 촬영, App Attest/Play Integrity 확인):
+    // 하드웨어 카메라 캡처가 증명되므로 c2pa.created + digitalCapture 사용
     primaryAction = 'c2pa.created';
     primaryActionBase.digitalSourceType =
       'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture';
   } else {
-    // Standard tier: web browser upload — publisher role only, no capture claim
-    primaryAction = 'c2pa.published';
+    // Standard tier (web/file-pick, prior manifest 없음):
+    // c2pa.created — DST 없음. OriPics가 이 C2PA manifest를 생성했다는 사실만 주장.
+    // digitalCapture 미사용: 캡처 검증 불가 (TOE 외부, C2PA GPSA §O.4).
+    // c2pa.opened는 ingredient 필수(spec)이므로 사용 불가.
+    primaryAction = 'c2pa.created';
   }
 
   const proofData: any = {
@@ -146,9 +152,16 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     ? Builder.withJson(manifestSpec as any, settings)
     : Builder.withJson(manifestSpec as any);
 
-  // builder.addAction() → c2pa.actions.v2 를 created_assertions에 배치 (C2PA spec 준수)
-  // builder.addAssertion('c2pa.actions.v2', ...) 는 gathered_assertions에 배치 → 비준수
-  builder.addAction(JSON.stringify({ action: primaryAction, ...primaryActionBase }));
+  // c2pa.opened 케이스: setIntent("edit") 사용
+  //   c2pa-rs가 c2pa.opened + ingredient 참조(hash 포함)를 자동 생성.
+  //   addAction으로 c2pa.opened + parameters.ingredient.hash를 수동 설정하면
+  //   signing 전 hash를 알 수 없어 에러 발생.
+  // c2pa.created 케이스: addAction() 으로 created_assertions에 배치
+  if (primaryAction === 'c2pa.opened') {
+    builder.setIntent('edit');
+  } else {
+    builder.addAction(JSON.stringify({ action: primaryAction, ...primaryActionBase }));
+  }
   builder.addAction(JSON.stringify({
     action: input.tier === 'verified' ? 'com.oripics.captured' : 'com.oripics.stamped',
     parameters: { tier: input.tier, version: input.stampVersion },
