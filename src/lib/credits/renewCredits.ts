@@ -85,7 +85,7 @@ export async function renewCreditsIfDue(userId: string): Promise<RenewResult> {
           tier: user.tier,
           grant_amount: grantAmount,
           previous_credits: previousCredits,
-          previous_renew_at: user.creditsRenewAt.toISOString(),
+          previous_renew_at: user.creditsRenewAt!.toISOString(),
           next_renew_at: nextRenewAt.toISOString(),
         },
       },
