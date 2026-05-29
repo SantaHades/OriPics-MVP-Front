@@ -92,7 +92,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
       const store: any = existingReader.json();
       const activeLabel: string | undefined = store?.active_manifest;
       const activeManifest: any = activeLabel ? store?.manifests?.[activeLabel] : undefined;
-      if (activeManifest) {
+      if (activeManifest && activeLabel) {
         priorManifest = { label: activeLabel, data: activeManifest };
       }
     }
