@@ -105,9 +105,9 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   //   prior manifest 있음  → c2pa.opened  (기존 C2PA 인제스트, C2PA §9.3.2)
   //   verified tier (모바일, App Attest/Play Integrity 확인)
   //                        → c2pa.created + digitalCapture (카메라 직접 캡처, TOE 내)
-  //   standard tier (web browser 업로드) → c2pa.published
-  //     * Web 브라우저는 TOE 경계 밖: 캡처 사실 검증 불가.
-  //       digitalCapture/c2pa.created 사용 불가 (C2PA GPSA §O.4).
+  //   standard tier (web/file-pick) → c2pa.created (digitalSourceType 없음)
+  //     * Web 브라우저는 TOE 경계 밖: 캡처 사실 검증 불가 → DST(캡처 주장) 미부여.
+  //       digitalCapture는 Verified(모바일 캡처)에서만 사용 (C2PA GPSA §O.4).
   let primaryAction: string;
   const primaryActionBase: any = { when: input.timestamp, softwareAgent: { name: 'oripics' } };
 
@@ -122,9 +122,11 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
       'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture';
   } else {
     // Standard tier (web/file-pick, prior manifest 없음):
-    // c2pa.created — DST 없음. OriPics가 이 C2PA manifest를 생성했다는 사실만 주장.
-    // digitalCapture 미사용: 캡처 검증 불가 (TOE 외부, C2PA GPSA §O.4).
-    // c2pa.opened는 ingredient 필수(spec)이므로 사용 불가.
+    // c2pa.created — digitalSourceType 미부여. 캡처/생성 출처를 주장하지 않음.
+    //   * Scott(C2PA) 지적의 핵심은 "캡처 주장(digitalCapture)" 이므로 DST만 제거.
+    //   * c2pa.published 단독은 spec 위반(assertion.action.malformed):
+    //     parentless 매니페스트의 첫 action은 c2pa.created/c2pa.opened 여야 함.
+    //   * c2pa.opened는 ingredient 필수(spec)이므로 사용 불가.
     primaryAction = 'c2pa.created';
   }
 
