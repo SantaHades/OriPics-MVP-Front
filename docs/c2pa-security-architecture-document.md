@@ -2,11 +2,27 @@
 
 > **Applicant**: SantaHades Co., Ltd.
 > **Record ID**: 019e4988-9d7c-72f8-8675-22eacf3e1904
-> **Version**: 2.2.1 (2026-05-29)
-> **Supersedes**: v2.2 (2026-05-29), v2.1 (2026-05-28), v2.0 (2026-05-24), v1.0 (2026-05-22)
+> **Version**: 2.2.2 (2026-05-30)
+> **Supersedes**: v2.2.1 (2026-05-29), v2.2 (2026-05-29), v2.1 (2026-05-28), v2.0 (2026-05-24), v1.0 (2026-05-22)
 > **Target Assurance Level**: Level 1
 
 ---
+
+## Summary of Changes in v2.2.2
+
+v2.2.2 remediates the two nonconformities identified in the C2PA conformance review of v2.2.1 (Scott S. Perry, 2026-05-30):
+
+**1. Validation logic now consults the C2PA Trust List.** The OriPics verification function (used by the public verify feature) previously did not load the C2PA Trust List when running in production mode, so even a manifest signed by a certificate chaining to the Trust List would be reported as `untrusted`. The verifier now loads the official **C2PA Conformance Trust List** — `C2PA-TRUST-LIST.pem` (signing CAs) and `C2PA-TSA-TRUST-LIST.pem` (timestamp CAs) from `c2pa-org/conformance-public`, plus the EKU trust configuration — via `createTrustSettings()`, with `verifyTrust` and `verifyTimestampTrust` enabled. A signing certificate chaining to the Trust List (e.g. `SSL.com C2PA ECC/RSA Root CA 2025`) now yields a `trusted` verdict.
+
+**2. Standard-tier (ingested file) action corrected to `c2pa.opened`.** OriPics does not create the asset for a Web upload / file pick — the user supplies it — so the Generator Product has no right to assert `c2pa.created` (which claims creation of the asset itself, not merely of the manifest). The only conformant inception action for an ingested file is **`c2pa.opened`** (no `digitalSourceType`), with the uploaded file recorded as a **`parentOf` ingredient of unknown provenance** (OriPics did not create it and cannot prove C2PA creation provenance). This supersedes the v2.2.1 `c2pa.created` decision.
+
+| Scenario | Action (v2.2.2, as implemented and as in the attached samples) |
+|---|---|
+| **Standard tier** (Web upload / mobile file pick), no prior manifest | **`c2pa.opened`** (no `digitalSourceType`) + uploaded file as `parentOf` ingredient of **unknown provenance** |
+| **Verified tier** (mobile native camera, App Attest / Play Integrity) | `c2pa.created` + `digitalSourceType: digitalCapture` |
+| **Any tier, prior C2PA manifest present** | `c2pa.opened` (no `digitalSourceType`) + prior manifest as `parentOf` ingredient |
+
+**Rationale**: `c2pa.created` asserts creation of the asset; OriPics may legitimately assert it only for Verified-tier captures, where in-app camera hardware (confirmed by App Attest / Play Integrity) actually produces the asset within the TOE. For all ingested files, OriPics asserts only that it opened an existing file (`c2pa.opened`) and seals it; if creation attribution were ever required, the CAWG identity assertion (in `gathered_assertions`) would be the conformant mechanism — OriPics does not claim creation and therefore does not use it.
 
 ## Summary of Changes in v2.2.1
 
@@ -82,9 +98,9 @@ OriPics is a photo provenance and authenticity platform for the Korean consumer 
 |---|---|---|
 | **OriPics iOS** | **Within TOE** | Native camera capture (Verified tier, App Attest) + file pick (Standard tier). Device integrity: Apple App Attest. |
 | **OriPics Android** | **Within TOE** | Native camera capture (Verified tier, Play Integrity) + file pick (Standard tier). Device integrity: Google Play Integrity. |
-| **OriPics Web** | **Outside TOE** | Browser-based content submission portal only. Browser JS cannot provide cryptographic subsystem authentication. Web uploads receive a `c2pa.created` action with **no `digitalSourceType`** (no capture claim). Not a conformant Edge subsystem. |
+| **OriPics Web** | **Outside TOE** | Browser-based content submission portal only. Browser JS cannot provide cryptographic subsystem authentication. Web uploads are ingested via a **`c2pa.opened`** action (no `digitalSourceType`) with the uploaded file recorded as a `parentOf` ingredient of **unknown provenance** — OriPics did not create the asset. Not a conformant Edge subsystem. |
 
-> **TOE boundary justification**: The C2PA Generator Product TOE requires that Edge subsystems be mutually authenticated with the Backend (Req 6.2.1.5/6). The mobile clients satisfy this requirement via Apple App Attest (iOS) and Google Play Integrity (Android). The Web client runs in a browser JavaScript environment that provides no secure storage or execution boundary; it cannot be cryptographically authenticated as a subsystem instance. Accordingly, the Web client is **explicitly excluded from the TOE** for C2PA manifest generation purposes. Web uploads are accepted as user-submitted content; the Backend issues `c2pa.created` claims **without any `digitalSourceType`** for these assets — asserting only that OriPics created the C2PA manifest, and making no claim that the underlying image was captured or originated by OriPics.
+> **TOE boundary justification**: The C2PA Generator Product TOE requires that Edge subsystems be mutually authenticated with the Backend (Req 6.2.1.5/6). The mobile clients satisfy this requirement via Apple App Attest (iOS) and Google Play Integrity (Android). The Web client runs in a browser JavaScript environment that provides no secure storage or execution boundary; it cannot be cryptographically authenticated as a subsystem instance. Accordingly, the Web client is **explicitly excluded from the TOE** for C2PA manifest generation purposes. Web uploads are accepted as user-submitted content; the Backend ingests them with a **`c2pa.opened`** action and records the uploaded file as a `parentOf` ingredient of **unknown provenance** — asserting only that OriPics opened and sealed an existing file, and making no claim that OriPics created, captured, or originated the underlying image.
 
 The mobile and backend clients share a common backend signing service hosted on Vercel Functions. The backend holds the C2PA signing certificate; no signing key material is present on any edge device.
 
@@ -162,7 +178,7 @@ The OriPics Generator Product TOE uses a **Distributed Implementation Class**. C
   │  • LSB stamp PNG (client-side)                                   │  │
   │  • Compute hashes                                                │  │
   │  • No cryptographic subsystem authentication possible            │  │
-  │  • Backend issues c2pa.created for uploads (no DST)              │  │
+  │  • Backend issues c2pa.opened for uploads (unknown-prov. ingr.)  │  │
   └──────────────────────────────────┬──────────────────────────────┘  │
                                      │ HTTPS/TLS 1.3                   │
                                      └─────────────────────────────────┘
@@ -195,7 +211,7 @@ The OriPics Generator Product is classified as **Distributed** because claim gen
 |---|---|---|
 | **Edge — OriPics iOS** | **In TOE** | Native camera capture; steganographic LSB stamping; HMAC hash computation; App Attest token for Verified tier; PNG upload via signed URL |
 | **Edge — OriPics Android** | **In TOE** | Same as iOS; Google Play Integrity for Verified tier |
-| **Edge — OriPics Web** | **Outside TOE** | Content submission portal only. LSB stamping and hash computation performed client-side, but no cryptographic subsystem authentication possible. Backend issues `c2pa.created` (no `digitalSourceType`) for all Web uploads. |
+| **Edge — OriPics Web** | **Outside TOE** | Content submission portal only. LSB stamping and hash computation performed client-side, but no cryptographic subsystem authentication possible. Backend ingests all Web uploads with `c2pa.opened` (no `digitalSourceType`) + uploaded file as `parentOf` ingredient of unknown provenance. |
 | **Backend — Vercel Functions** | **In TOE** | Receives hashes from Edge via HTTPS; verifies mobile Edge identity via JWT chain + LSB hash extraction + App Attest/Play Integrity; constructs C2PA manifest; signs manifest using `@contentauth/c2pa-node`; writes to Supabase |
 
 **Signing key location**: The C2PA signing private key is held exclusively by the Backend. **Current production**: Vercel Encrypted Environment Variables (AES-256). **Planned Phase 2**: SSL.com eSigner Cloud HSM via CSC API (not yet implemented as of v2.2). No signing key material is present on any Edge device.
@@ -214,7 +230,7 @@ The OriPics Generator Product is classified as **Distributed** because claim gen
 - Still image media types:
   - image/png
 
-**Claim validation**: None (Generator Product only; validation is delegated to external C2PA-compatible tools such as contentcredentials.org/verify).
+**Claim validation**: OriPics is submitted as a **Generator Product**. It additionally operates an internal verification function (`readC2paManifest()`, backing the user-facing verify feature) that reads a manifest and reports its trust status. This verifier **consults the C2PA Trust List** (see §C.2.4 §5): it loads the official C2PA Conformance Trust List (signing + TSA CAs) and reports `trusted` only when the signing certificate chains to it within validity, as established by the trusted timestamp. Authoritative third-party validation remains available via tools such as contentcredentials.org/verify.
 
 ---
 
@@ -281,7 +297,7 @@ OriPics uses SSL.com as its Certification Authority (CA), which is on the C2PA T
 
 **4. Edge-to-Backend mutual authentication** (Distributed Implementation Class):
 
-> **TOE scope**: Req 6.2.1.5/6 (mutual authentication of Edge and Backend subsystems) applies **only to the mobile Edge clients (iOS, Android)** which are within the TOE. The Web client is explicitly outside the TOE and is not subject to subsystem mutual authentication requirements. The Backend accepts Web uploads but issues `c2pa.created` claims **without `digitalSourceType`** (i.e., no `digitalCapture` capture claim) for those assets, consistent with its content-submission-only role.
+> **TOE scope**: Req 6.2.1.5/6 (mutual authentication of Edge and Backend subsystems) applies **only to the mobile Edge clients (iOS, Android)** which are within the TOE. The Web client is explicitly outside the TOE and is not subject to subsystem mutual authentication requirements. The Backend accepts Web uploads but ingests them with a `c2pa.opened` action (no `digitalSourceType`; uploaded file recorded as a `parentOf` ingredient of unknown provenance) — making no creation or capture claim, consistent with its content-submission-only role.
 
 The OriPics Distributed architecture uses a three-stage JWT chain to authenticate the **mobile** Edge client to the Backend signing service. This mechanism verifies that:
 (a) the user is authenticated (NextAuth session); and
@@ -360,15 +376,15 @@ The software that processes and/or modifies Digital Content in the OriPics TOE i
 
 Action selection is determined by two factors: (a) whether a prior C2PA manifest exists in the input asset, and (b) whether the claim was generated from a verified mobile camera capture (Verified tier, within TOE) or a web/file-pick upload (Standard tier, outside or peripheral to TOE):
 
-| Scenario | Primary action | `digitalSourceType` | TOE |
-|---|---|---|---|
-| **Verified tier, no prior manifest** (mobile camera, App Attest/Play Integrity confirmed) | `c2pa.created` | `digitalCapture` | Within TOE |
-| **Standard tier, no prior manifest** (web upload or mobile file pick) | `c2pa.created` | None | Web = outside TOE |
-| **Any tier, prior C2PA manifest present** | `c2pa.opened` | None | — |
+| Scenario | Primary action | `digitalSourceType` | Ingredient | TOE |
+|---|---|---|---|---|
+| **Verified tier, no prior manifest** (mobile camera, App Attest/Play Integrity confirmed) | `c2pa.created` | `digitalCapture` | None | Within TOE |
+| **Standard tier, no prior manifest** (web upload or mobile file pick) | **`c2pa.opened`** | None | uploaded file, `parentOf`, **unknown provenance** | Web = outside TOE |
+| **Any tier, prior C2PA manifest present** | `c2pa.opened` | None | prior manifest, `parentOf` | — |
 
-`digitalCapture` is asserted **only** when the mobile device hardware (confirmed via App Attest or Play Integrity) directly performed the camera capture. Standard tier uploads use `c2pa.created` with **no `digitalSourceType`** — OriPics is creating a C2PA manifest for the submitted file but makes no claim about the capture method.
+`c2pa.created` asserts creation of the **asset itself** and is therefore used **only** for Verified-tier captures, where in-app camera hardware (confirmed via App Attest or Play Integrity) directly produced the asset within the TOE; in that case `digitalSourceType: digitalCapture` is also asserted. For all ingested files (Standard tier and any upload carrying a prior manifest), OriPics did not create the asset and uses **`c2pa.opened`** instead.
 
-> **C2PA spec note**: `c2pa.opened` requires an ingredient reference (spec constraint); it cannot be used as the first action for uploads with no prior C2PA manifest. `c2pa.created` without `digitalSourceType` is the correct action for Standard tier — it asserts that OriPics created this C2PA manifest, without making any claim about how the underlying image was originally produced. A standalone `c2pa.published` first action is **not** conformant for a parentless manifest (it fails validation with `assertion.action.malformed`), so `c2pa.created` with no `digitalSourceType` is the only conformant action that makes no capture claim.
+> **C2PA spec / conformance note** (per Scott S. Perry, 2026-05-30): A Generator Product must not assert `c2pa.created` for an asset it did not create — `created` is a claim about creation of the asset, not merely of the manifest. The only conformant inception action for an ingested file is **`c2pa.opened`**, with the ingested file recorded as a `parentOf` ingredient of **unknown provenance** (OriPics did not create it and cannot prove C2PA creation provenance). `c2pa.opened` requires that ingredient; the SDK adds it automatically via `builder.setIntent('edit')` after `builder.addIngredient(... relationship: "parentOf")`. (A standalone `c2pa.published` first action is likewise nonconformant for a parentless manifest, failing with `assertion.action.malformed`.) If creation attribution were ever required, the conformant mechanism would be a CAWG identity assertion in `gathered_assertions`; OriPics makes no creation claim and does not use it.
 
 Implementation: `apps/web/src/lib/oripics-stamp/c2pa.ts` (`attachC2paManifest()`).
 
@@ -376,14 +392,14 @@ Implementation: `apps/web/src/lib/oripics-stamp/c2pa.ts` (`attachC2paManifest()`
 
 OriPics uses `@contentauth/c2pa-node v0.5.x` (backed by `c2pa-rs v0.82.1`) with Claim v2.
 
-**Actions are added via `builder.addAction(JSON.stringify(action))`** (one call per action). This uses the `builderAddAction` Neon binding which places `c2pa.actions.v2` in `created_assertions` — the conformant location per C2PA Claim v2 spec. (Using `builder.addAssertion('c2pa.actions.v2', ...)` would place it in `gathered_assertions`, which is nonconformant; this approach is not used.)
+**Actions are placed in `created_assertions`** — the conformant location per C2PA Claim v2 spec. For the `c2pa.created` case (Verified capture), each action is added via `builder.addAction(JSON.stringify(action))` (the `builderAddAction` Neon binding). For the `c2pa.opened` case (Standard upload / prior manifest), the inception action is generated by the SDK from `builder.setIntent('edit')` after `builder.addIngredient(... relationship: "parentOf")`, which lets c2pa-rs compute the ingredient hash reference at signing time; the platform action (`com.oripics.*`) is then appended via `addAction()`. In all cases `c2pa.actions.v2` lands in `created_assertions`. (Using `builder.addAssertion('c2pa.actions.v2', ...)` would place it in `gathered_assertions`, which is nonconformant; this approach is not used.)
 
 Custom assertions (`com.oripics.*`) are added via `builder.addAssertion()` and are placed in `gathered_assertions`. This is correct for non-standard vendor assertions.
 
 | Assertion label | Claim v2 placement | How added | Content |
 |---|---|---|---|
 | `c2pa.hash.data` | `created_assertions` | Auto-generated by c2pa-rs | Cryptographic hash binding |
-| `c2pa.actions.v2` | **`created_assertions`** | `builder.addAction()` per action | `c2pa.created` (Standard/Verified) or `c2pa.opened` (prior manifest) + platform action |
+| `c2pa.actions.v2` | **`created_assertions`** | `builder.addAction()` / `setIntent('edit')` | `c2pa.created` (Verified capture) or `c2pa.opened` (Standard upload / prior manifest) + platform action |
 | `com.oripics.proof` | `gathered_assertions` | `builder.addAssertion()` | Tier, link_id, verify_url, stamp_version, dimensions, optional GPS |
 | `com.oripics.verified` | `gathered_assertions` | `builder.addAssertion()` | Platform, attest_token_hash, device_integrity *(Verified tier only)* |
 
@@ -398,6 +414,18 @@ Custom assertions (`com.oripics.*`) are added via `builder.addAssertion()` and a
 
 - Same 90-day CRITICAL/HIGH remediation policy as §C.2.3
 - The `@contentauth/c2pa-node` package includes native binary addons (Rust-compiled); Dependabot monitors its npm advisory entries
+
+**5. C2PA Trust List consumption in the verification function (validation logic)**:
+
+The OriPics verification function (`readC2paManifest()` in `apps/web/src/lib/oripics-stamp/c2pa.ts`, backing the public verify feature and the `/api/verify` and `/api/links/[id]/c2pa` routes) loads the **official C2PA Trust List** when validating a manifest's signature, so that a certificate chaining to the Trust List yields a `trusted` verdict:
+
+- **Trust anchors**: the C2PA Conformance Trust List — `C2PA-TRUST-LIST.pem` (signing CAs) combined with `C2PA-TSA-TRUST-LIST.pem` (timestamp CAs) from the `c2pa-org/conformance-public` repository — is bundled in the product (`apps/web/src/lib/oripics-stamp/c2pa-trust-list.ts`; refreshed via `scripts/update-c2pa-trust-list.mjs`) and supplied to `createTrustSettings({ verifyTrustList: true, trustAnchors, trustConfig })`.
+- **Verification flags**: `createVerifySettings({ verifyTrust: true, verifyTimestampTrust: true })` — the signing certificate is validated against the Trust List, and a cert that is expired at validation time but was within validity at the trusted-timestamp time is accepted on that basis.
+- **Trust configuration**: the EKU allow-list (`store.cfg`) constrains acceptable extended key usages to the C2PA-recognized set.
+- A signing certificate chaining to a Trust List CA (e.g. `SSL.com C2PA ECC/RSA Root CA 2025`, the OriPics production CA) is reported `trusted`; the current sandbox/dev certificate is self-signed and therefore reported `untrusted` (expected until production credentials are issued).
+- In self-signed sandbox mode (`ORIPICS_C2PA_CA_PEM` set), the dev CA is used as the trust anchor instead; production mode (no `ORIPICS_C2PA_CA_PEM`) uses the C2PA Trust List above.
+
+> **Note on SDK version**: OriPics pins `@contentauth/c2pa-node v0.5.x` (c2pa-rs v0.82.1). When this version validates an ingested third-party manifest whose per-image certificate is already expired (e.g. a Google Pixel Camera ingredient), it reports `signingCredential.expired` even though the manifest carries a trusted timestamp proving validity at signing time; conformant validators (e.g. current `c2patool`) resolve such a manifest to `trusted`. This affects only the *ingredient's* status; the OriPics active manifest is validated independently.
 
 ### C.2.5. Protections Against Interception and/or Modification of Traffic
 
@@ -470,15 +498,15 @@ Custom assertions (`com.oripics.*`) are added via `builder.addAssertion()` and a
 
 OriPics is a **photo provenance platform**. The `digitalCapture` DST is asserted only when the Generator Product can cryptographically confirm that the asset was captured by a hardware camera under the control of an authenticated device:
 
-| Client | Tier | TOE | Action | DST |
-|---|---|---|---|---|
-| OriPics Web | Standard | Outside TOE | `c2pa.created` (no DST) | None |
-| OriPics iOS | Standard (file pick) | In TOE (device auth'd) | `c2pa.created` (no DST) | None |
-| OriPics iOS | Verified (camera capture) | In TOE (App Attest) | `c2pa.created` | `digitalCapture` |
-| OriPics Android | Standard (file pick) | In TOE (device auth'd) | `c2pa.created` (no DST) | None |
-| OriPics Android | Verified (camera capture) | In TOE (Play Integrity) | `c2pa.created` | `digitalCapture` |
+| Client | Tier | TOE | Action | DST | Ingredient |
+|---|---|---|---|---|---|
+| OriPics Web | Standard | Outside TOE | `c2pa.opened` | None | uploaded file, `parentOf`, unknown provenance |
+| OriPics iOS | Standard (file pick) | In TOE (device auth'd) | `c2pa.opened` | None | uploaded file, `parentOf`, unknown provenance |
+| OriPics iOS | Verified (camera capture) | In TOE (App Attest) | `c2pa.created` | `digitalCapture` | None |
+| OriPics Android | Standard (file pick) | In TOE (device auth'd) | `c2pa.opened` | None | uploaded file, `parentOf`, unknown provenance |
+| OriPics Android | Verified (camera capture) | In TOE (Play Integrity) | `c2pa.created` | `digitalCapture` | None |
 
-OriPics does not certify AI-generated images, screenshots, or composites. Claims of `digitalCapture` are issued only when device attestation (App Attest / Play Integrity) confirms in-app camera hardware capture.
+`c2pa.created` (asserting creation of the asset) is issued only for Verified-tier captures, where device attestation (App Attest / Play Integrity) confirms in-app camera hardware capture; `digitalCapture` accompanies it. All file-pick / Web uploads are ingested via `c2pa.opened` because OriPics did not create the asset. OriPics does not certify AI-generated images, screenshots, or composites.
 
 #### Pre-Existing C2PA Manifest Handling
 
@@ -486,26 +514,23 @@ When an uploaded image contains a pre-existing C2PA manifest (e.g., a photo prev
 
 **Implemented: Approach A — Ingredient (parentOf)**
 
-OriPics implements **Approach A**: when a pre-existing C2PA manifest is detected, the prior manifest is preserved as a `c2pa.ingredient` assertion (`relationship: "parentOf"`) in the new OriPics manifest. This maintains the full provenance chain.
+OriPics implements **Approach A**: every ingested file is recorded as a `c2pa.ingredient` assertion (`relationship: "parentOf"`) in the new OriPics manifest, under a `c2pa.opened` action. When a pre-existing C2PA manifest is detected, that manifest is preserved in the ingredient, maintaining the full provenance chain; when none is present, the ingredient simply records the uploaded file as unknown provenance.
 
 Implementation (`apps/web/src/lib/oripics-stamp/c2pa.ts`):
 
 1. Before constructing the new manifest, `Reader.fromAsset()` attempts to read the active manifest from the input PNG
-2. If a prior manifest is found:
-   - The primary action is set to **`c2pa.opened`** (C2PA spec §9.3.2; indicates the content was opened from an existing certified source, not created from scratch)
-   - `builder.addIngredient()` is called with `relationship: "parentOf"` to chain the prior manifest
-3. If no prior manifest is found:
-   - **Verified tier** (mobile native camera, App Attest / Play Integrity confirmed): the primary action is **`c2pa.created`** with `digitalSourceType: digitalCapture`
-   - **Standard tier** (Web upload or mobile file pick): the primary action is **`c2pa.created`** with **no `digitalSourceType`** (no capture claim)
-   - No ingredient is added
+2. **Verified tier** (mobile native camera, App Attest / Play Integrity confirmed): OriPics created the asset via attested hardware capture, so the primary action is **`c2pa.created`** with `digitalSourceType: digitalCapture`; no ingredient is added
+3. **All ingested files** (Standard-tier Web/file-pick uploads, and any upload — verified or not — that already carries a prior C2PA manifest): OriPics did not create the asset, so the primary action is **`c2pa.opened`** (C2PA spec §9.3.2) and the ingested file is recorded as a `parentOf` ingredient via `builder.addIngredient(... relationship: "parentOf")` + `builder.setIntent('edit')`:
+   - **Prior C2PA manifest present**: the ingredient preserves that manifest, maintaining the full provenance chain
+   - **No prior manifest** (plain upload): the ingredient has **unknown provenance** — OriPics neither created it nor can prove its C2PA provenance
 
 | Scenario | Action | Ingredient |
 |---|---|---|
 | Verified tier, mobile camera, no prior C2PA | `c2pa.created` + `digitalCapture` DST | None |
-| Standard tier, web/file-pick, no prior C2PA | `c2pa.created` (no DST) | None |
-| Any tier, prior C2PA manifest present | `c2pa.opened` (no DST) | `c2pa.ingredient.v3` with `relationship: "parentOf"` |
+| Standard tier, web/file-pick, no prior C2PA | **`c2pa.opened`** (no DST) | uploaded file, `parentOf`, **unknown provenance** |
+| Any tier, prior C2PA manifest present | `c2pa.opened` (no DST) | `c2pa.ingredient.v3` with `relationship: "parentOf"` (prior manifest preserved) |
 
-*(Note on Verified tier)*: Mobile native camera captures (Verified tier) produce fresh in-app captures with no prior C2PA manifest, so the ingredient path primarily applies to Standard tier uploads of already-certified images.
+*(Note on Verified tier)*: Mobile native camera captures (Verified tier) produce fresh in-app captures with no prior C2PA manifest and are the only case where OriPics asserts `c2pa.created`. Every other path ingests an existing file via `c2pa.opened`.
 
 ---
 
@@ -513,9 +538,9 @@ Implementation (`apps/web/src/lib/oripics-stamp/c2pa.ts`):
 
 The following sample output files are provided with this submission:
 
-1. **sample-oripics-standard.png** — Sample PNG with OriPics C2PA manifest (Standard tier, sandbox cert). Action: `c2pa.created` with **no `digitalSourceType`** (no capture claim). No prior manifest.
+1. **sample-oripics-standard.png** — Sample PNG with OriPics C2PA manifest (Standard tier, sandbox cert). Action: **`c2pa.opened`** (no `digitalSourceType`); the uploaded file is recorded as a `parentOf` ingredient of **unknown provenance**. `validation_state: Valid` (only the expected sandbox `signingCredential.untrusted` notice).
 2. **sample-oripics-standard-manifest.json** — Extracted C2PA manifest JSON from the above sample.
-3. **sample-oripics-with-ingredient.png** — Sample PNG demonstrating §C.2.7 Approach A: a Google Pixel Camera image (`PXL_20250708_194721212.MP.jpg` from the C2PA Interoperability Testing Library) processed by OriPics. Action: `c2pa.opened`. Prior Pixel Camera manifest included as `c2pa.ingredient.v3` with `relationship: "parentOf"`.
+3. **sample-oripics-with-ingredient.png** — Sample PNG demonstrating §C.2.7 ingestion of a prior-manifest file: a Google Pixel Camera image (`PXL_20250708_194721212.MP.jpg` from the C2PA Interoperability Testing Library) processed by OriPics. Action: `c2pa.opened`; the prior Pixel Camera manifest is preserved as `c2pa.ingredient.v3` with `relationship: "parentOf"`. The OriPics active manifest is valid (sandbox `untrusted` only); the additional `signingCredential.expired` / `untrusted` statuses belong to the **ingested Pixel ingredient**, whose per-image certificate is already expired and is validated through its trusted timestamp by conformant validators (see §C.2.4 §5 SDK note).
 4. **sample-oripics-with-ingredient-manifest.json** — Extracted C2PA manifest JSON from the above sample.
 
-*(Note: Samples are signed with a sandbox test certificate. The manifest structure is identical to production; only the signing certificate changes when production credentials are issued from SSL.com.)*
+*(Note: Samples are signed with a sandbox test certificate, so the OriPics active manifest is reported `untrusted` (expected). The manifest structure is identical to production; when production credentials are issued from SSL.com — a CA on the C2PA Trust List — the active manifest is reported `trusted`. The validation logic (§C.2.4 §5) loads the C2PA Trust List in both cases.)*

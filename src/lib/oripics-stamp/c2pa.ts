@@ -8,6 +8,11 @@
 //
 // 주의: c2pa-node v0.5.x 기준. builder.sign()은 동기 함수이고 반환값이 Buffer.
 
+import {
+  C2PA_TRUST_ANCHORS,
+  C2PA_TRUST_CONFIG,
+} from './c2pa-trust-list';
+
 export type Tier = 'standard' | 'verified';
 
 export interface C2paAttachInput {
@@ -38,6 +43,37 @@ const KEY_PEM = process.env.ORIPICS_C2PA_KEY_PEM;
 const CA_PEM = process.env.ORIPICS_C2PA_CA_PEM;
 const TSA_URL = process.env.ORIPICS_C2PA_TSA_URL;
 
+/**
+ * Trust 검증 settings 생성 (GPSA Issue ① 대응 — 검증 로직이 C2PA Trust List를 소비).
+ *
+ *   - dev/self-signed 모드 (ORIPICS_C2PA_CA_PEM 설정): dev CA를 trust anchor로.
+ *   - production 모드 (CA_PEM 미설정): 공식 C2PA Trust List(anchors + allowedList +
+ *     trustConfig) 로드. 공식 list에 체인이 연결된 인증서(예: SSL.com)는 'trusted' 판정.
+ *
+ * 과거에는 production 모드에서 settings=undefined 였고, 그 결과 Trust List를 전혀
+ * 참조하지 않아 정상 인증서도 untrusted로 판정되었음. 이를 바로잡음.
+ */
+function buildTrustSettings(
+  c2pa: any,
+  opts: { verifyAfterSign?: boolean } = {},
+): any {
+  const { createTrustSettings, createVerifySettings, mergeSettings } = c2pa;
+  const trust = CA_PEM
+    ? createTrustSettings({ verifyTrustList: true, trustAnchors: CA_PEM })
+    : createTrustSettings({
+        verifyTrustList: true,
+        // 서명 CA + TSA CA 결합 번들 (C2PA-TRUST-LIST.pem + C2PA-TSA-TRUST-LIST.pem)
+        trustAnchors: C2PA_TRUST_ANCHORS,
+        trustConfig: C2PA_TRUST_CONFIG,
+      });
+  const verify = createVerifySettings({
+    verifyTrust: true,
+    verifyTimestampTrust: true,
+    ...(opts.verifyAfterSign ? { verifyAfterSign: true } : {}),
+  });
+  return mergeSettings(trust, verify);
+}
+
 /** OriPics timestamp(yymmddHHMMSS+ms2) → ISO 8601 (UTC). */
 export function oripicsTimestampToISO8601(ts: string): string {
   // 첫 글자가 prefix(F/P/C 등)이면 제거
@@ -62,7 +98,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   }
 
   const c2pa = await import('@contentauth/c2pa-node');
-  const { Builder, LocalSigner, Reader, createTrustSettings, createVerifySettings, mergeSettings } = c2pa;
+  const { Builder, LocalSigner, Reader } = c2pa;
 
   // === Signer ===
   const signer = LocalSigner.newSigner(
@@ -73,15 +109,9 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   );
 
   // === Settings ===
-  // CA_PEM 있으면 self-signed dev 모드 (CA를 trust anchor로 등록).
-  // 없으면 production 모드 (cert가 C2PA Trust List CA에서 발급된 것으로 간주).
-  let settings: any = undefined;
-  if (CA_PEM) {
-    settings = mergeSettings(
-      createTrustSettings({ verifyTrustList: true, trustAnchors: CA_PEM }),
-      createVerifySettings({ verifyAfterSign: true }),
-    );
-  }
+  // dev 모드(CA_PEM): dev CA를 trust anchor로. production: 공식 C2PA Trust List.
+  // (서명 후 verifyAfterSign으로 즉시 검증)
+  const settings: any = buildTrustSettings(c2pa, { verifyAfterSign: true });
 
   // === Prior manifest 감지 (actions 결정보다 먼저) ===
   // 기존 C2PA가 있으면 c2pa.opened, 없으면 c2pa.created
@@ -101,34 +131,22 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   }
 
   // === Manifest ===
-  // Action selection (TOE boundary 기반):
-  //   prior manifest 있음  → c2pa.opened  (기존 C2PA 인제스트, C2PA §9.3.2)
-  //   verified tier (모바일, App Attest/Play Integrity 확인)
-  //                        → c2pa.created + digitalCapture (카메라 직접 캡처, TOE 내)
-  //   standard tier (web/file-pick) → c2pa.created (digitalSourceType 없음)
-  //     * Web 브라우저는 TOE 경계 밖: 캡처 사실 검증 불가 → DST(캡처 주장) 미부여.
-  //       digitalCapture는 Verified(모바일 캡처)에서만 사용 (C2PA GPSA §O.4).
-  let primaryAction: string;
-  const primaryActionBase: any = { when: input.timestamp, softwareAgent: { name: 'oripics' } };
-
-  if (priorManifest) {
-    // 기존 C2PA manifest 있음 → c2pa.opened + parentOf ingredient (C2PA spec §9.3.2)
-    primaryAction = 'c2pa.opened';
-  } else if (input.tier === 'verified') {
-    // Verified tier (모바일 직접 촬영, App Attest/Play Integrity 확인):
-    // 하드웨어 카메라 캡처가 증명되므로 c2pa.created + digitalCapture 사용
-    primaryAction = 'c2pa.created';
-    primaryActionBase.digitalSourceType =
-      'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture';
-  } else {
-    // Standard tier (web/file-pick, prior manifest 없음):
-    // c2pa.created — digitalSourceType 미부여. 캡처/생성 출처를 주장하지 않음.
-    //   * Scott(C2PA) 지적의 핵심은 "캡처 주장(digitalCapture)" 이므로 DST만 제거.
-    //   * c2pa.published 단독은 spec 위반(assertion.action.malformed):
-    //     parentless 매니페스트의 첫 action은 c2pa.created/c2pa.opened 여야 함.
-    //   * c2pa.opened는 ingredient 필수(spec)이므로 사용 불가.
-    primaryAction = 'c2pa.created';
-  }
+  // Action selection (C2PA conformance — Scott S. Perry 2026-05-30 지침 반영):
+  //
+  //   Verified tier (모바일 네이티브 카메라, App Attest/Play Integrity 확인), prior 없음
+  //     → c2pa.created + digitalCapture
+  //       하드웨어 캡처가 증명되어 OriPics가 그 자산을 "생성"했다고 주장 가능 (TOE 내).
+  //
+  //   그 외 모든 경우 (Standard: web upload / file-pick, 또는 기존 C2PA 인제스트)
+  //     → c2pa.opened + parentOf ingredient
+  //       * OriPics는 사용자가 업로드한 자산을 "생성"하지 않았으므로 c2pa.created를
+  //         주장할 권리가 없음. inception 액션은 c2pa.opened 만 적법.
+  //       * 업로드된 원본을 parentOf ingredient로 포함:
+  //           - prior C2PA manifest 있음 → 그 provenance가 ingredient로 보존됨.
+  //           - 없음 → ingredient는 unknown provenance (우리가 만들지도, 검증하지도 못함).
+  //       * 창작 귀속이 필요하면 CAWG 어서션(gathered_assertions)을 쓰라는 게 spec 권고지만,
+  //         OriPics는 "봉인/스탬프"만 주장하므로(com.oripics.proof) CAWG는 사용하지 않음.
+  const useCreated = input.tier === 'verified' && !priorManifest;
 
   const proofData: any = {
     tier: input.tier,
@@ -150,22 +168,47 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   };
 
   // === Sign ===
-  const builder = settings
-    ? Builder.withJson(manifestSpec as any, settings)
-    : Builder.withJson(manifestSpec as any);
+  const builder = Builder.withJson(manifestSpec as any, settings);
 
-  // c2pa.opened 케이스: setIntent("edit") 사용
-  //   c2pa-rs가 c2pa.opened + ingredient 참조(hash 포함)를 자동 생성.
-  //   addAction으로 c2pa.opened + parameters.ingredient.hash를 수동 설정하면
-  //   signing 전 hash를 알 수 없어 에러 발생.
-  // c2pa.created 케이스: addAction() 으로 created_assertions에 배치
-  if (primaryAction === 'c2pa.opened') {
-    builder.setIntent('edit');
+  // 액션 배치:
+  //   c2pa.created (verified): addAction()으로 created_assertions에 직접 배치.
+  //     digitalCapture DST 포함 — 하드웨어 캡처 증명.
+  //   c2pa.opened (그 외): 먼저 parentOf ingredient를 추가하고 setIntent("edit").
+  //     c2pa-rs가 c2pa.opened + ingredient 참조(hash 포함)를 자동 생성.
+  //     (addAction으로 c2pa.opened + parameters.ingredient.hash를 수동 설정하면
+  //      signing 전 hash를 알 수 없어 에러 발생.)
+  if (useCreated) {
+    builder.addAction(JSON.stringify({
+      action: 'c2pa.created',
+      when: input.timestamp,
+      softwareAgent: { name: 'oripics' },
+      digitalSourceType:
+        'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture',
+    }));
   } else {
-    builder.addAction(JSON.stringify({ action: primaryAction, ...primaryActionBase }));
+    // 업로드 원본을 parentOf ingredient로. prior manifest 있으면 그 메타를 승계,
+    // 없으면 unknown provenance ingredient.
+    try {
+      const ingredientJson = JSON.stringify({
+        title: priorManifest?.data?.title || 'Uploaded image (user-submitted)',
+        format: 'image/png',
+        ...(priorManifest?.data?.instance_id
+          ? { instance_id: priorManifest.data.instance_id }
+          : {}),
+        relationship: 'parentOf',
+      });
+      await builder.addIngredient(ingredientJson, { buffer: input.pngBuffer, mimeType: 'image/png' });
+      console.log(
+        `[c2pa] ingredient added (${priorManifest ? `prior=${priorManifest.label}` : 'unknown provenance'})`,
+      );
+    } catch (e: any) {
+      console.warn(`[c2pa] ingredient add failed: ${e?.message}`);
+    }
+    builder.setIntent('edit'); // → c2pa.opened 자동
   }
+
   builder.addAction(JSON.stringify({
-    action: input.tier === 'verified' ? 'com.oripics.captured' : 'com.oripics.stamped',
+    action: useCreated ? 'com.oripics.captured' : 'com.oripics.stamped',
     parameters: { tier: input.tier, version: input.stampVersion },
   }));
 
@@ -184,22 +227,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     });
   }
 
-  // === Ingredient: 기존 C2PA 매니페스트가 있으면 parentOf로 체인 ===
-  // c2pa.opened 액션 + prior manifest를 ingredient로 추가 (C2PA spec §9.3.2)
-  if (priorManifest) {
-    try {
-      const ingredientJson = JSON.stringify({
-        title: priorManifest.data.title || 'Prior Content',
-        format: 'image/png',
-        instance_id: priorManifest.data.instance_id || '',
-        relationship: 'parentOf',
-      });
-      await builder.addIngredient(ingredientJson, { buffer: input.pngBuffer, mimeType: 'image/png' });
-      console.log(`[c2pa] ingredient added: ${priorManifest.label}`);
-    } catch (e: any) {
-      console.warn(`[c2pa] ingredient add failed: ${e?.message}`);
-    }
-  }
+  // (parentOf ingredient는 위 c2pa.opened 분기에서 이미 추가됨)
 
   const inputAsset = { buffer: input.pngBuffer, mimeType: 'image/png' };
   const outputAsset: { buffer: Buffer | null } = { buffer: null };
@@ -244,14 +272,11 @@ export async function readC2paManifest(
   mimeType: string = 'image/png',
 ): Promise<C2paReadResult> {
   const c2pa = await import('@contentauth/c2pa-node');
-  const { Reader, createTrustSettings, mergeSettings } = c2pa;
+  const { Reader } = c2pa;
 
-  let settings: any = undefined;
-  if (CA_PEM) {
-    settings = mergeSettings(
-      createTrustSettings({ verifyTrustList: true, trustAnchors: CA_PEM }),
-    );
-  }
+  // 검증 시 Trust List를 반드시 소비 (GPSA Issue ①):
+  //   dev 모드는 dev CA, production은 공식 C2PA Trust List(anchors+allowedList+config).
+  const settings: any = buildTrustSettings(c2pa);
 
   const reader = await Reader.fromAsset({ buffer: pngBuffer, mimeType }, settings);
 
