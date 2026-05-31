@@ -43,6 +43,19 @@ const KEY_PEM = process.env.ORIPICS_C2PA_KEY_PEM;
 const CA_PEM = process.env.ORIPICS_C2PA_CA_PEM;
 const TSA_URL = process.env.ORIPICS_C2PA_TSA_URL;
 
+// C2PA Claim v2: created_assertions vs gathered_assertions.
+// c2pa-rs 기본값은 hard binding(c2pa.hash.data)만 created, 나머지(actions/ingredient/
+// thumbnail 포함)는 전부 gathered로 보냄 — 이는 nonconformant (c2pa.actions는 signer가
+// 생성/귀속하는 created assertion 이어야 함, Scott S. Perry 2026-05-31).
+// builder.created_assertion_labels(base label, snake_case)로 명시 설정해야 created에 배치됨.
+// com.oripics.* (vendor 데이터)는 의도적으로 gathered에 둠.
+const CREATED_ASSERTION_LABELS = [
+  'c2pa.actions',
+  'c2pa.ingredient',
+  'c2pa.thumbnail.claim',
+  'c2pa.thumbnail.ingredient',
+];
+
 /**
  * Trust 검증 settings 생성 (GPSA Issue ① 대응 — 검증 로직이 C2PA Trust List를 소비).
  *
@@ -71,7 +84,13 @@ function buildTrustSettings(
     verifyTimestampTrust: true,
     ...(opts.verifyAfterSign ? { verifyAfterSign: true } : {}),
   });
-  return mergeSettings(trust, verify);
+  // 서명 시 c2pa.actions/ingredient/thumbnail을 created_assertions에 배치 (위 주석 참조).
+  // snake_case 키 필수 — BuilderSettings는 camelCase 변환을 하지 않음.
+  // Reader 경로에서는 무시되는 builder 설정이므로 서명 경로(verifyAfterSign)에만 추가.
+  const builder = opts.verifyAfterSign
+    ? [{ builder: { created_assertion_labels: CREATED_ASSERTION_LABELS } }]
+    : [];
+  return mergeSettings(trust, verify, ...builder);
 }
 
 /** OriPics timestamp(yymmddHHMMSS+ms2) → ISO 8601 (UTC). */
