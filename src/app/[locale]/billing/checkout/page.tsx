@@ -25,6 +25,7 @@ export default function CheckoutPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -57,9 +58,17 @@ export default function CheckoutPage() {
   const isTestMode = !storeId || !channelKey ||
     /test/i.test(channelKey ?? "") || /test/i.test(storeId ?? "");
 
+  // KG이니시스 V2 일반결제는 구매자 휴대폰번호가 필수.
+  const normalizedPhone = phone.replace(/[^0-9]/g, "");
+  const phoneValid = /^01[0-9]{8,9}$/.test(normalizedPhone);
+
   const handlePay = async () => {
     if (!storeId || !channelKey) {
       setError(t("portone_keys_missing"));
+      return;
+    }
+    if (!phoneValid) {
+      setError(t("phone_invalid"));
       return;
     }
     setSubmitting(true);
@@ -81,6 +90,7 @@ export default function CheckoutPage() {
         customer: {
           fullName: session?.user?.name ?? undefined,
           email: session?.user?.email ?? undefined,
+          phoneNumber: normalizedPhone,
         },
         redirectUrl,
       });
@@ -133,6 +143,23 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          <div className="mb-4">
+            <label htmlFor="phone" className="block text-xs font-medium text-slate-600 mb-1.5">
+              {t("phone_label")}
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder={t("phone_placeholder")}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+            />
+            <p className="mt-1.5 text-[11px] text-slate-400">{t("phone_hint")}</p>
+          </div>
+
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
               {error}
@@ -141,7 +168,7 @@ export default function CheckoutPage() {
 
           <button
             onClick={handlePay}
-            disabled={submitting}
+            disabled={submitting || !phoneValid}
             className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
           >
             {submitting ? t("processing") : t("pay_button")}
