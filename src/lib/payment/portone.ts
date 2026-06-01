@@ -11,9 +11,9 @@
 // 환경변수 (J-7 시점에 추가):
 //  - PORTONE_STORE_ID
 //  - PORTONE_API_SECRET (server-side, sensitive)
-//  - PORTONE_CHANNEL_KEY_CARD (PG: 토스페이먼츠 등)
-//  - PORTONE_CHANNEL_KEY_KAKAO (간편결제: 카카오페이)
-//  - PORTONE_CHANNEL_KEY_TOSS (간편결제: 토스페이)
+//  - NEXT_PUBLIC_PORTONE_STORE_ID (client, 결제 호출용)
+//  - NEXT_PUBLIC_PORTONE_CHANNEL_KEY_INICIS (1차 PG: KG이니시스 — 현재 활성)
+//  - NEXT_PUBLIC_PORTONE_CHANNEL_KEY_NICE (추후 멀티PG 라우팅 시 추가)
 //  - PORTONE_WEBHOOK_SECRET
 
 import type { PaymentGateway } from "./types";

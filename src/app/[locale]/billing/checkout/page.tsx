@@ -49,7 +49,10 @@ export default function CheckoutPage() {
   }
 
   const storeId = process.env.NEXT_PUBLIC_PORTONE_STORE_ID;
-  const channelKey = process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_NICE;
+  // 1차 PG: KG이니시스. NICE는 추후 멀티PG 라우팅 시점에 추가.
+  const channelKey =
+    process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_INICIS ??
+    process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_NICE;
   // 채널 키 또는 스토어 ID에 "test"가 포함되어 있으면 테스트 모드로 안내
   const isTestMode = !storeId || !channelKey ||
     /test/i.test(channelKey ?? "") || /test/i.test(storeId ?? "");
