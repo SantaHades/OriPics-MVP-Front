@@ -270,8 +270,22 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
 
 export interface C2paReadResult {
   present: boolean;
+  /**
+   * Active manifest 무결성 — 서명·해시·assertion이 변조되지 않았는지.
+   * 신뢰(trust)와 ingredient 상태는 별개. ingredient(예: 만료된 Pixel 인증서)는
+   * active manifest 무결성을 무효화하지 않는다.
+   */
   valid: boolean;
+  /** Active manifest 서명자가 trust list에 있고 만료/폐기되지 않았는지 (valid를 전제). */
+  trusted: boolean;
+  /** Active manifest의 검증 이슈 (무결성+신뢰). */
   validation_status: Array<{ code: string; url?: string; explanation?: string }>;
+  /**
+   * Ingredient(부모 자산)의 검증 이슈. 별도 노출 — 전체 verdict를 무효화하지 않되
+   * 은폐하지도 않는다. 주의: c2pa-node 0.5.x는 만료된 ingredient 인증서를
+   * timestamp 기반 유효성으로 해소하지 못함(c2patool과 차이). 권위 기준은 c2patool.
+   */
+  ingredient_validation_status?: Array<{ code: string; url?: string; explanation?: string }>;
   active_manifest_label?: string;
   claim_generator?: string;
   title?: string;
@@ -300,23 +314,57 @@ export async function readC2paManifest(
   const reader = await Reader.fromAsset({ buffer: pngBuffer, mimeType }, settings);
 
   if (!reader) {
-    return { present: false, valid: false, validation_status: [] };
+    return { present: false, valid: false, trusted: false, validation_status: [] };
   }
 
   const store: any = reader.json();
   const activeLabel: string | undefined = store?.active_manifest;
   const manifest: any = activeLabel ? store?.manifests?.[activeLabel] : undefined;
-  const validationIssues: any[] = Array.isArray(store?.validation_status)
-    ? store.validation_status
-    : [];
-  const valid = validationIssues.length === 0 && !!manifest;
+
+  // active manifest 이슈와 ingredient 이슈를 분리한다.
+  // 구조화된 validation_results(c2pa-node가 노출)를 우선 사용하고, 없으면
+  // legacy 평면 validation_status로 폴백(분리 불가 → 전부 active로 간주).
+  const norm = (arr: any[]): Array<{ code: string; url?: string; explanation?: string }> =>
+    (Array.isArray(arr) ? arr : []).map((v: any) => ({
+      code: v.code,
+      ...(v.url ? { url: v.url } : {}),
+      ...(v.explanation ? { explanation: v.explanation } : {}),
+    }));
+
+  const vr: any = store?.validation_results;
+  let activeFailures: any[] = [];
+  const ingredientFailures: any[] = [];
+  if (vr && typeof vr === 'object') {
+    activeFailures = Array.isArray(vr.activeManifest?.failure) ? vr.activeManifest.failure : [];
+    for (const d of Array.isArray(vr.ingredientDeltas) ? vr.ingredientDeltas : []) {
+      const vd = d?.validationDeltas ?? d ?? {};
+      if (Array.isArray(vd.failure)) ingredientFailures.push(...vd.failure);
+    }
+  } else {
+    activeFailures = Array.isArray(store?.validation_status) ? store.validation_status : [];
+  }
+
+  const activeStatus = norm(activeFailures);
+  const ingredientStatus = norm(ingredientFailures);
+
+  // trust 관련 코드(서명자/타임스탬프 신뢰)는 무결성과 구분한다.
+  const isTrustCode = (c?: string) =>
+    !!c && (c.startsWith('signingCredential') || c.startsWith('timeStamp'));
+  const integrityFailures = activeStatus.filter((s) => !isTrustCode(s.code));
+
+  // valid = active manifest가 존재하고 무결성 실패가 없음 (변조 아님).
+  const valid = !!manifest && integrityFailures.length === 0;
+  // trusted = active 서명자가 신뢰됨 (signingCredential 실패 없음). valid 전제.
+  const trusted = valid && !activeStatus.some((s) => s.code?.startsWith('signingCredential'));
 
   const sig = manifest?.signature_info;
 
   return {
     present: true,
     valid,
-    validation_status: validationIssues,
+    trusted,
+    validation_status: activeStatus,
+    ...(ingredientStatus.length > 0 ? { ingredient_validation_status: ingredientStatus } : {}),
     active_manifest_label: activeLabel,
     claim_generator: manifest?.claim_generator,
     title: manifest?.title,

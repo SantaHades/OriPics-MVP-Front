@@ -25,6 +25,7 @@ interface LinkData {
 interface C2paStatus {
   present: boolean;
   valid: boolean;
+  trusted?: boolean;
   claim_generator?: string;
   signature?: { issuer?: string; time?: string; alg?: string };
   validation_status?: Array<{ code: string; explanation?: string }>;
@@ -438,14 +439,14 @@ export default function LinkViewer() {
               <div className="flex items-center gap-2 mb-3">
                 <BadgeCheck
                   size={20}
-                  className={c2pa.valid ? "text-emerald-600" : "text-amber-600"}
+                  className={c2pa.valid && c2pa.trusted ? "text-emerald-600" : "text-amber-600"}
                 />
                 <h3 className="text-sm font-bold text-slate-900">
                   {t("c2pa_title")}
                 </h3>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                {c2pa.valid ? t("c2pa_valid_desc") : t("c2pa_invalid_desc")}
+                {c2pa.valid && c2pa.trusted ? t("c2pa_valid_desc") : t("c2pa_invalid_desc")}
               </p>
               {(c2pa.signature?.issuer || c2pa.claim_generator) && (
                 <dl className="space-y-1.5 mb-4 text-[11px]">

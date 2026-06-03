@@ -167,11 +167,9 @@ export async function GET(
       const buf = Buffer.from(await blob.arrayBuffer());
       const result = await readC2paManifest(buf);
       if (result.present) {
-        const valid =
-          result.valid &&
-          !result.validation_status.some((s) =>
-            s.code?.startsWith("assertion.") || s.code?.startsWith("signing"),
-          );
+        // 증명서는 active manifest가 무결하고 서명자가 신뢰될 때만 valid 표기.
+        // (ingredient 만료는 active 무효화 안 함 — 새 verifier 의미와 일치.)
+        const valid = result.valid && result.trusted;
         c2paSummary = {
           present: true,
           valid,

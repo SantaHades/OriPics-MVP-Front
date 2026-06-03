@@ -96,10 +96,12 @@ function buildC2paEvidence(c2pa: C2paReadResult): C2paEvidence {
     code: v.code,
     ...(v.explanation ? { explanation: v.explanation } : {}),
   }));
-  const result: C2paEvidence["result"] = c2pa.valid
-    ? "trusted"
-    : validationIssues.length > 0
-      ? "invalid"
+  // 무결성(valid)과 신뢰(trusted)를 구분: 변조면 invalid, 무결하나 미신뢰면
+  // untrusted, 무결+신뢰면 trusted. ingredient 만료는 active를 무효화하지 않음.
+  const result: C2paEvidence["result"] = !c2pa.valid
+    ? "invalid"
+    : c2pa.trusted
+      ? "trusted"
       : "untrusted";
   return {
     type: "c2pa.manifest",
@@ -348,7 +350,8 @@ export async function POST(req: NextRequest) {
     overall_trust: deriveOverallTrust(
       seal.match,
       c2paLookup.checked,
-      c2paLookup.checked ? c2paLookup.result.valid : false,
+      // "high"는 무결+신뢰 모두 충족 시에만 — ingredient 상태는 무관.
+      c2paLookup.checked ? c2paLookup.result.valid && c2paLookup.result.trusted : false,
     ),
   };
 
