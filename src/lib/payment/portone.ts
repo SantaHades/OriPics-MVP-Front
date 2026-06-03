@@ -14,7 +14,9 @@
 //  - NEXT_PUBLIC_PORTONE_STORE_ID (client, 결제 호출용)
 //  - NEXT_PUBLIC_PORTONE_CHANNEL_KEY_INICIS (1차 PG: KG이니시스 — 현재 활성)
 //  - NEXT_PUBLIC_PORTONE_CHANNEL_KEY_NICE (추후 멀티PG 라우팅 시 추가)
-//  - PORTONE_WEBHOOK_SECRET
+//  - PORTONE_WEBHOOK_SECRET (server, sensitive) — /api/billing/portone/webhook
+//      시그니처 검증용. PortOne 콘솔 → 결제알림(Webhook) 관리에서 발급한 secret.
+//  - NEXT_PUBLIC_PORTONE_TEST_MODE ("true"면 체크아웃에 테스트 모드 배너 표시)
 
 import type { PaymentGateway } from "./types";
 

@@ -54,9 +54,13 @@ export default function CheckoutPage() {
   const channelKey =
     process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_INICIS ??
     process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_NICE;
-  // 채널 키 또는 스토어 ID에 "test"가 포함되어 있으면 테스트 모드로 안내
-  const isTestMode = !storeId || !channelKey ||
-    /test/i.test(channelKey ?? "") || /test/i.test(storeId ?? "");
+  // 테스트 모드 안내 배너 표시 여부.
+  // 실제 포트원 테스트 채널키엔 "test" 문자열이 없으므로 명시 플래그를 1순위로 사용.
+  // (휴리스틱은 플래그 미설정 시 안전망.)
+  const isTestMode =
+    process.env.NEXT_PUBLIC_PORTONE_TEST_MODE === "true" ||
+    /test/i.test(channelKey ?? "") ||
+    /test/i.test(storeId ?? "");
 
   // KG이니시스 V2 일반결제는 구매자 휴대폰번호가 필수.
   const normalizedPhone = phone.replace(/[^0-9]/g, "");
@@ -92,6 +96,10 @@ export default function CheckoutPage() {
           email: session?.user?.email ?? undefined,
           phoneNumber: normalizedPhone,
         },
+        // webhook(비동기 경로)이 userId·plan을 복원하기 위해 주입.
+        // 리다이렉트 실패 시에도 크레딧 지급 보장.
+        // 브라우저 SDK는 객체를 받고, 서버 getPayment는 JSON 문자열로 반환.
+        customData: { userId, plan },
         redirectUrl,
       });
 
