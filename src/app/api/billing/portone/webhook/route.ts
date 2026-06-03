@@ -71,7 +71,13 @@ export async function POST(req: NextRequest) {
   try {
     payment = await client.getPayment({ paymentId });
   } catch (e: any) {
-    // 조회 실패 → 500 반환 시 PortOne이 재시도하므로 일시 장애에 강건
+    // 결제 건이 존재하지 않음(영구) → 재시도해도 동일하므로 200 ack.
+    // (포트원 "호출 테스트"의 더미 paymentId, 삭제된 결제 등이 여기 해당.)
+    if (e?.data?.type === "PAYMENT_NOT_FOUND") {
+      console.warn("[portone/webhook] payment not found; ack", { paymentId });
+      return NextResponse.json({ ok: true, ignored: "payment_not_found" });
+    }
+    // 그 외(네트워크/일시 장애) → 500 반환 시 PortOne이 재시도하므로 강건.
     console.error("[portone/webhook] getPayment failed", { paymentId, error: e?.message });
     return NextResponse.json({ detail: "lookup_failed" }, { status: 500 });
   }
