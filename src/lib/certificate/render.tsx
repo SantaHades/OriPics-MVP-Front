@@ -10,12 +10,24 @@ import {
   Font,
 } from "@react-pdf/renderer";
 
-// 한글 폰트 — Google Fonts gstatic CDN
-// 깨질 경우: https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700 에서 최신 ttf URL 확인
-const NOTO_KR_REGULAR =
-  "https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLTq8H4hfeE.ttf";
-const NOTO_KR_BOLD =
-  "https://fonts.gstatic.com/s/notosanskr/v36/PbykFmXiEBPT4ITbgNA5Cgm203Tq4JJWq209pU0DPdaY3aE.ttf";
+// 한글 폰트 — @fontsource/noto-sans-kr (npm 의존성, 로컬 번들).
+// 과거 gstatic CDN URL을 직접 참조했으나 URL이 불안정해(bold URL이 실제로 404가
+// 되어 bold 한글이 □로 렌더됨) 런타임 CDN 의존을 제거하고 npm 패키지로 전환.
+// woff(woff2 아님) — @react-pdf/renderer(fontkit)가 woff를 지원. korean 서브셋은
+// 전체 현대 한글을 커버하므로 임의 한글 이름도 렌더 가능.
+//
+// webpack의 require.resolve는 실제 경로가 아닌 모듈 ID를 반환하므로 사용 불가.
+// 런타임 fs 경로(process.cwd 기준 node_modules)를 직접 구성한다. 서버리스 함수
+// 번들 포함은 next.config.js의 outputFileTracingIncludes가 동일 경로로 보장.
+function resolveKrFont(weight: "400" | "700"): string {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const path = require("path") as typeof import("path");
+  return path.join(
+    process.cwd(),
+    "node_modules/@fontsource/noto-sans-kr/files",
+    `noto-sans-kr-korean-${weight}-normal.woff`,
+  );
+}
 
 let fontRegistered = false;
 function ensureFontRegistered() {
@@ -24,15 +36,16 @@ function ensureFontRegistered() {
     Font.register({
       family: "NotoSansKR",
       fonts: [
-        { src: NOTO_KR_REGULAR, fontWeight: "normal" },
-        { src: NOTO_KR_BOLD, fontWeight: "bold" },
+        { src: resolveKrFont("400"), fontWeight: "normal" },
+        { src: resolveKrFont("700"), fontWeight: "bold" },
       ],
     });
     // 자동 줄바꿈 비활성화 — 한국어/영문 혼용 줄 단위 분리 방지
     Font.registerHyphenationCallback((word) => [word]);
     fontRegistered = true;
-  } catch {
+  } catch (e) {
     // 실패 시에도 영문 텍스트는 기본 폰트로 렌더됨
+    console.error("[certificate] Korean font register failed", (e as any)?.message);
   }
 }
 
