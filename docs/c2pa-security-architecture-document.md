@@ -257,34 +257,36 @@ The OriPics Generator Product is classified as **Distributed** because claim gen
 
 #### Certificate Enrollment Process
 
-OriPics uses SSL.com as its Certification Authority (CA), which is on the C2PA Trust List.
+OriPics uses SSL.com as its Certification Authority (CA), which is on the C2PA Trust List. OriPics is a Level 1 (software assurance) Generator Product: the claim signing key pair is generated and held by OriPics, and SSL.com issues the certificate against OriPics's CSR.
 
 **Current (pre-production / sandbox)**:
-1. CSR generated with OpenSSL (ECC P-256)
+1. CSR generated with OpenSSL (ECDSA P-256) on a secured workstation
 2. CSR submitted to SSL.com c2pasign.com sandbox for test cert issuance
 3. Test cert + private key stored as Vercel encrypted environment variables
 4. LocalSigner in `@contentauth/c2pa-node` uses the cert+key to sign manifests
 
-**Production (post-Conformance Letter)**:
-1. SSL.com issues a C2PA Claim Signing Certificate to OriPics after identity verification (OV-level KYC)
-2. Private key is generated and stored within SSL.com eSigner Cloud HSM — the private key never leaves the HSM
-3. OriPics backend authenticates to SSL.com eSigner CSC API using OAuth 2.0 client credentials (client_id + client_secret)
-4. Each signing operation is a remote API call: the backend sends the hash to be signed, SSL.com HSM signs it, and returns the signature
-5. Certificate rotation: SSL.com manages certificate lifecycle; OriPics updates Vercel environment variables when a new cert is issued
+**Production (post-Conformance Letter)** — per SSL.com's C2PA certificate issuance process:
+1. OriPics generates an ECDSA P-256 key pair and CSR on a secured, network-isolated workstation (DN: `CN=OriPics, O=SantaHades Co., Ltd., C=KR`). The local private-key file is securely deleted after it is loaded into the production secret store (below).
+2. OriPics submits, via secure email, (a) the Conformance Letter received from the C2PA Conformance Program and (b) the CSR.
+3. **Identity verification**: an officer authorized to legally bind SantaHades Co., Ltd. (the Representative Director & CEO) creates an account on the SSL.com portal and completes SSL.com's AI-based identity check to obtain Individual Validation (IV) approval. (Alternatively, a signed Delegation of Authority letter authorizes a designated requestor.)
+4. SSL.com's validation team verifies the request and issues the C2PA Claim Signing Certificate, delivered via the OriPics SSL.com account.
+5. OriPics installs the issued certificate and corresponding private key into Vercel encrypted environment variables (Production scope); the `@contentauth/c2pa-node` LocalSigner uses them to sign manifests server-side.
+
+**Future enhancement (Phase 2, not evaluated in this submission)**: Migrate signing-key custody to SSL.com eSigner Cloud HSM (FIPS 140-2 Level 3) via the CSC API, so the private key is generated within and never leaves the HSM, with OriPics authenticating over OAuth 2.0 client credentials. This is a post-conformance hardening step outside the current Level 1 evaluation.
 
 #### Management of Certificate Enrollment Authentication Secrets
 
 *(Required for Assurance Level 1)*
 
-**Authentication method**: OAuth 2.0 client credentials (client_id + client_secret) for SSL.com eSigner CSC API.
+Two distinct secret sets are involved:
 
-**Secret management**:
-- `ORIPICS_ESIGNER_CLIENT_ID` and `ORIPICS_ESIGNER_CLIENT_SECRET` are stored in Vercel encrypted environment variables
-- Vercel encrypts environment variables at rest using AES-256 and restricts access via team RBAC
-- Environment variables are scoped to Production environment only (Preview/Development use separate sandbox credentials)
-- Secrets are never committed to source code; `.env` files are gitignored
-- GitHub secret scanning is enabled on the repository to detect accidental credential exposure
-- Access to Vercel project settings (where env vars are managed) requires team owner authentication with MFA enabled
+**1. CA portal authentication (enrollment time)**: Access to the SSL.com portal for identity verification and certificate retrieval uses username + password + 2FA, combined with SSL.com's Individual Validation (IV) identity check. SSL.com stores its C2PA root signing keys in its own hardware HSMs per its CP/CPS (`https://legal.ssl.com/documents/SSLcom-CP-CPS.pdf`).
+
+**2. OriPics claim signing private key (runtime)**:
+- Stored as a Vercel encrypted environment variable (`ORIPICS_C2PA_KEY_PEM`), encrypted at rest with AES-256, scoped to the Production environment only.
+- Preview/Development use separate sandbox credentials.
+- Secrets are never committed to source code; `.env` files are gitignored; GitHub secret scanning is enabled to detect accidental exposure.
+- Access to Vercel project settings (where env vars are managed) requires team-owner authentication with MFA enabled; no other team members exist.
 
 ### C.2.2. Key Generation, Storage, and Usage
 
@@ -308,9 +310,20 @@ OriPics uses SSL.com as its Certification Authority (CA), which is on the C2PA T
 
 **3. Key rotation process**:
 
-- **Sandbox**: Manual rotation by generating a new key pair and updating Vercel env vars
-- **Production (SSL.com HSM)**: Certificate lifecycle managed by SSL.com. Upon certificate expiration or revocation, OriPics updates the credential ID in Vercel env vars. The old key is destroyed within the HSM by SSL.com per their key management policy
-- Key rotation can be performed with zero downtime by deploying updated env vars to Vercel (atomic deployment model)
+Rotation schedule:
+- **Regular**: annually (every 365 days)
+- **On certificate expiration**: 30 days before expiry
+- **Emergency**: immediately upon suspected key compromise
+
+Rotation procedure (consistent with the enrollment process in §C.2.1):
+1. Generate a new ECDSA P-256 key pair and CSR on the secured, network-isolated workstation
+2. Submit the new CSR to SSL.com and obtain the new certificate via the SSL.com account
+3. Install the new cert + key into Vercel encrypted environment variables (Production scope)
+4. Verify signing works with the new key (test signing request) before cutover
+5. Submit a revocation request for the old certificate to SSL.com
+6. Record the rotation in the key rotation log
+
+Because Vercel environment-variable deployment is atomic, rotation is performed with zero downtime. (When the Phase 2 eSigner Cloud HSM model is adopted, key custody and destruction move into the HSM per SSL.com's key management policy.)
 
 **4. Edge-to-Backend mutual authentication** (Distributed Implementation Class):
 
@@ -345,10 +358,11 @@ The OriPics Distributed architecture uses a three-stage JWT chain to authenticat
 
 This mechanism ensures that a tampered PNG (one where pixel content was swapped after the sign JWT was issued but before publish) will fail LSB verification and be rejected before C2PA signing.
 
-**Backend-to-SSL.com authentication**:
-- OriPics Backend authenticates to SSL.com eSigner CSC API using OAuth 2.0 client credentials
-- SSL.com authenticates the backend by validating the client credentials against the registered OriPics account
-- All communication between the backend and SSL.com is over HTTPS/TLS 1.3
+**Backend-to-SSL.com communication**:
+- At runtime (Level 1), signing is performed locally by the `@contentauth/c2pa-node` LocalSigner using the OriPics-held key; the Backend makes **no** per-signing call to SSL.com. The only runtime interaction with SSL.com is RFC 3161 timestamp requests to SSL.com's C2PA-conformant TSA.
+- Certificate retrieval occurs at enrollment/rotation time via the SSL.com portal (see §C.2.1).
+- All communication between the Backend and SSL.com is over HTTPS/TLS 1.3.
+- (Phase 2: if signing-key custody migrates to the eSigner Cloud HSM, the Backend would authenticate per-signing to the CSC API over OAuth 2.0 client credentials. Not part of this submission.)
 
 **Mobile Edge device attestation (Verified tier)**:
 - iOS: Edge client obtains an Apple App Attest attestation token (`DCAppAttestService`), bound to the device Secure Enclave key and a server-issued nonce. Backend verifies the attestation chain against Apple's root CA
@@ -468,8 +482,8 @@ The OriPics verification function (`readC2paManifest()` in `apps/web/src/lib/ori
 | Edge (all) → Vercel Backend (API calls) | TLS 1.3 | Enforced by Vercel CDN/Edge; HTTPS redirect enforced |
 | Edge (all) → Supabase Storage (PNG upload via signed URL) | TLS 1.3 | Supabase enforced |
 | Backend → Supabase (DB + Storage) | TLS 1.3 | Enforced via `tls.DEFAULT_MIN_VERSION = 'TLSv1.3'` in `src/instrumentation.ts`; Supabase endpoints support TLS 1.3 |
-| Backend → SSL.com eSigner CSC API | TLS 1.3 | SSL.com enforced |
-| Backend → SSL.com TSA (timestamp.ssl.com) | TLS 1.3 | SSL.com enforced |
+| Backend → SSL.com TSA (timestamp.ssl.com) | TLS 1.3 | SSL.com enforced; RFC 3161 timestamp requests |
+| Backend → SSL.com eSigner CSC API | TLS 1.3 | SSL.com enforced — **Phase 2 only** (not used in current Level 1 model) |
 
 - **All network communication** between subsystems is encrypted with TLS 1.3
 - Vercel enforces TLS 1.3 for all inbound connections; HTTP is automatically redirected to HTTPS
