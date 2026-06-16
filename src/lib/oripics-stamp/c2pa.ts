@@ -228,7 +228,12 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
 
   builder.addAction(JSON.stringify({
     action: useCreated ? 'com.oripics.captured' : 'com.oripics.stamped',
-    parameters: { tier: input.tier, version: input.stampVersion },
+    // C2PA actions: 비표준(vendor) 파라미터 키는 reverse-domain 네임스페이스(점 포함) 필수.
+    // 맨이름(tier/version)은 no_unrecognized_custom_action_parameters 위반.
+    parameters: {
+      'com.oripics.tier': input.tier,
+      'com.oripics.version': input.stampVersion,
+    },
   }));
 
   builder.addAssertion('com.oripics.proof', proofData);
