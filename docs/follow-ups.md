@@ -130,7 +130,6 @@
 | A-29 | ~~c2pasign.com sandbox cert로 Preview C2PA PoC 검증~~ → 완료 (2026-05-14). 진행 중 **중요 버그 발견·수정**: `builder.sign()`은 매니페스트 box(JUMBF)를 반환값으로 돌려주고, 실제 서명된 PNG는 `outputAsset.buffer`에 mutate. 코드가 반환값을 PNG로 가정 → Storage에 JUMBF 박스만 저장됨. 수정 커밋 `875faf6`. 향후 production cert로 전환 시 env vars 교체만으로 가동 가능 확인 | DONE | — |
 | A-30 | **Multi-result 미공개 재검출 미지원** — 사이즈 선택에서 양쪽 체크한 경우 multi-result 카드 2개가 생성됨. 현재 publish 안 한 채로 stamped PNG 다운로드 후 같은 브라우저에서 재드롭 시 single-result 흐름의 receipt만 매칭. multi-result 흐름에서도 `saveReceipt` 호출하도록 통일 필요 | 베타 직전 | P2 |
 | A-31 | **Multi-result confirm 진행률 UI** — 2026-05-17 B-2'' 흐름에서 confirm은 작은 JSON이라 거의 즉시 완료되지만 UI는 여전히 "confirming" phase 진행 바를 보여줌. phase 상수 단순화(confirming → ready를 단일 transition으로 합치고 진행률 표시 제거) | 정리 작업 | P3 |
-| A-32 | **인증 결과 화면 안내 강화** — 사용자가 인증만 받고 공개링크 안 만든 채로 stamped PNG 다운로드만 했을 때, 그 파일을 보관하면 같은 브라우저에서 재드롭으로 publish 가능하다는 안내 부재. result_stamped UI에 "이 파일을 저장해 두시면 나중에 같은 브라우저에서 다시 드래그해 공개링크를 만들 수 있습니다" 안내 한 줄 추가 | NOW (Phase B 보완) | P2 |
 | A-33 | **인증 후 미사용 30일 cleanup** — receipt JWT TTL이 30일이라 그 사이 사용자가 publish 안 하면 차감된 proof 비용은 사실상 소실. UX 측면에서 30일 도래 전 "사용 안 한 인증 X건 남았습니다" 알림 또는 환불 정책 검토 | 베타 운영 중 | P3 |
 
 ### 2.3 모바일·모노레포
@@ -219,3 +218,4 @@ SSL.com 회신 (U-1)
 | 2026-05-11 | 차감 정책 정합 강화 — verify_query 로그인 필수 + −1 / link_create 통합 −1 (Standard −3·Verified −4) / detectStamp 무료 분리(magic only) / 사용자 UI를 크레딧 + 차감기준으로 변경. pricing-policy §2 갱신, 테스트 anchor 갱신(33 tests) |
 | 2026-05-13 | A-23·A-24·A-25 추가 (J-9 PDF 발급 트레이드오프). A-26·A-27·A-28 추가 (업로드 진행률 후속 — confirm stage 라벨, stego chunking, 취소 버튼) |
 | 2026-05-17 | **B-2'' 흐름 분리·운영 강화** — pricing-policy §10 동일 항목 참조. A-26 라우트명 갱신(confirm→publish). A-30·A-31·A-32·A-33 신규 추가(multi-result 미공개 재검출 미지원, multi confirm 진행률 단순화, 인증 결과 안내 강화, 30일 미사용 cleanup). 용어 통일 간편링크→공개링크 |
+| 2026-06-18 | A-32 완료 — result_stamped UI에 `save_for_later_hint` 안내 한 줄 추가(다운로드 버튼 아래, `!generatedLink` 조건). 저장한 파일을 ~30일 내 같은 브라우저에서 재드롭하면 공개링크 생성 가능 안내. ko/en i18n 추가. [page.tsx](../src/app/[locale]/page.tsx) |

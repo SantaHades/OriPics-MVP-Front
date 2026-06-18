@@ -1569,6 +1569,12 @@ export default function Home() {
               </button>
             </div>
 
+            {!generatedLink && (
+              <p className="mt-4 text-xs text-slate-500 text-center max-w-md mx-auto">
+                {t("result.save_for_later_hint")}
+              </p>
+            )}
+
             {sessionID && !generatedLink && timeLeft > 0 && (
               <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-300 w-full">
                 <p className="text-xs text-slate-500 mb-3 text-center max-w-md">

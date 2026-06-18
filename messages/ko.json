@@ -106,7 +106,8 @@
       "copy_link": "링크 복사",
       "download_stamped": "이미지 다운로드",
       "create_link_button": "공개링크 생성 (−{cost})",
-      "c2pa_after_publish_note": "Content Credentials(C2PA) 매니페스트와 증명서(PDF) 발급은 공개링크 생성 후에 사용 가능합니다."
+      "c2pa_after_publish_note": "Content Credentials(C2PA) 매니페스트와 증명서(PDF) 발급은 공개링크 생성 후에 사용 가능합니다.",
+      "save_for_later_hint": "💾 다운로드한 이미지를 저장해 두시면, 약 30일 이내에 같은 브라우저에서 다시 드래그해 공개링크를 만들 수 있습니다."
     },
     "size_select": {
       "title": "사이즈 선택",
