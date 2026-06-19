@@ -2,11 +2,21 @@
 
 > **Applicant**: SantaHades Co., Ltd.
 > **Record ID**: 019e4988-9d7c-72f8-8675-22eacf3e1904
-> **Version**: 2.2.3 (2026-05-31)
-> **Supersedes**: v2.2.2 (2026-05-30), v2.2.1 (2026-05-29), v2.2 (2026-05-29), v2.1 (2026-05-28), v2.0 (2026-05-24), v1.0 (2026-05-22)
+> **Version**: 2.2.4 (2026-06-19)
+> **Supersedes**: v2.2.3 (2026-05-31), v2.2.2 (2026-05-30), v2.2.1 (2026-05-29), v2.2 (2026-05-29), v2.1 (2026-05-28), v2.0 (2026-05-24), v1.0 (2026-05-22)
 > **Target Assurance Level**: Level 1
 
 ---
+
+## Summary of Changes in v2.2.4
+
+v2.2.4 responds to the approver's Sample Evaluation Summary (2026-06-19):
+
+1. **Declared ingestion format corrected (§C.1.7).** The submission previously declared still-image support as `image/png` only, while `sample-oripics-with-ingredient.png` ingests a JPEG ingredient (a Google Pixel `image/jpeg`). §C.1.7 now declares **claim generation** (the asset OriPics writes) as `image/png`, and **claim ingestion / validation** (a prior-manifest asset the user uploads, preserved as a `parentOf` ingredient) as `image/png` and `image/jpeg`. This reflects actual product behaviour: OriPics ingests PNG or JPEG and always re-encodes its signed output to PNG.
+
+2. **Internal verifier scope clarified (§C.1.7, consistent with §C.2.4).** The user-facing convenience verifier is pinned to `@contentauth/c2pa-node v0.5.5` (`c2pa-rs v0.82.1`), which does not honor a trusted RFC 3161 timestamp for an *expired ingested ingredient* certificate (a known SDK version lag; current `c2patool`/`c2pa-rs` resolves such an ingredient to `trusted`). OriPics treats `c2patool` / contentcredentials.org as the authoritative validation reference and will align the internal verifier once a conformant newer SDK build is published upstream (a `c2pa-node v0.6.0` upgrade was attempted but its prebuilt binaries are not yet available). This limitation affects only the convenience verify feature's reporting of ingested ingredients, not claim generation.
+
+No code change to the signing/generation path; sample manifests are unchanged from v2.2.3 (regenerated 2026-06-16 with entity-namespaced custom action parameters).
 
 ## Summary of Changes in v2.2.3
 
@@ -243,11 +253,20 @@ The OriPics Generator Product is classified as **Distributed** because claim gen
 
 ### C.1.7. Target Generator Product Capabilities
 
-**Claim generation**:
+**Claim generation** (media type OriPics *writes* — the signed output asset):
 - Still image media types:
   - image/png
 
-**Claim validation**: OriPics is submitted as a **Generator Product**. It additionally operates an internal verification function (`readC2paManifest()`, backing the user-facing verify feature) that reads a manifest and reports its trust status. This verifier **consults the C2PA Trust List** (see §C.2.4 §5): it loads the official C2PA Conformance Trust List (signing + TSA CAs) and reports `trusted` only when the signing certificate chains to it within validity, as established by the trusted timestamp. Authoritative third-party validation remains available via tools such as contentcredentials.org/verify.
+OriPics always re-encodes the processed asset to PNG before signing (the steganographic proof layer is embedded in PNG), so every OriPics-generated manifest is carried by an `image/png` asset.
+
+**Claim ingestion / validation** (media types OriPics *reads* — a prior-manifest asset uploaded by the user and preserved as a `parentOf` ingredient, per §C.2.7):
+- Still image media types:
+  - image/png
+  - image/jpeg
+
+Users may upload an existing C2PA-bearing asset in either PNG or JPEG; OriPics reads its active manifest (`Reader.fromAsset()`), preserves it as a `c2pa.ingredient.v3` ingredient, and then generates a new PNG output. The `sample-oripics-with-ingredient.png` sample demonstrates ingestion of a JPEG ingredient (a Google Pixel Camera `image/jpeg`), consistent with this declaration.
+
+**Claim validation**: OriPics is submitted as a **Generator Product**, not a Validator. It additionally operates an internal verification function (`readC2paManifest()`, backing the convenience user-facing verify feature) that reads a manifest and reports a trust status. This verifier **consults the C2PA Trust List** (see §C.2.4 §5): it loads the official C2PA Conformance Trust List (signing + TSA CAs) and reports the active manifest signer as `trusted` when its certificate chains to that list. **Scope limitation (pinned SDK)**: this internal verifier is bound to `@contentauth/c2pa-node v0.5.x` (`c2pa-rs v0.82.1`), which does **not** honor a trusted RFC 3161 timestamp when an *ingested third-party ingredient*'s per-image certificate is already expired — it reports that ingredient as `signingCredential.expired`/`untrusted`, whereas a current conformant validator (e.g. `c2patool` with the same Trust List) correctly resolves it to `trusted` (see §C.2.4 *Note on SDK version*). OriPics therefore treats **`c2patool` / contentcredentials.org as the authoritative validation reference**, and will align the internal verifier once a conformant newer SDK build is available upstream. This limitation affects only the convenience verify feature's reporting of ingested ingredients; it does not affect claim *generation* (the OriPics-signed asset), which is what this Generator Product is assessed on.
 
 ---
 
