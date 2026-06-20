@@ -70,27 +70,40 @@ function buildTrustSettings(
   c2pa: any,
   opts: { verifyAfterSign?: boolean } = {},
 ): any {
+  // ── 검증(read) 경로 ──
+  // settings를 c2patool 포맷의 plain object로 직접 구성한다.
+  // c2pa-node 0.5.5의 createTrustSettings()/mergeSettings() 조합은 ingested ingredient의
+  // 타임스탬프 권한(Google Pixel Time Stamping Authority)을 trust list를 줘도 untrusted로
+  // 판정하여 만료된 ingredient 인증서를 구제하지 못한다(→ ingredient가 Invalid).
+  // 동일한 trust_anchors/trust_config를 plain object로 직접 넘기면 c2patool 0.26.x와
+  // 동일하게 timeStamp.trusted + signingCredential.trusted로 정확히 판정한다(실측 확인).
+  // 참고: C2PA_TRUST_ANCHORS = 서명 CA + TSA CA 결합 번들. dev CA가 있으면 함께 신뢰
+  // (우리 dev 서명 active manifest도 trusted 표시되도록)하되, production trust list는 항상 로드.
+  if (!opts.verifyAfterSign) {
+    const anchors = CA_PEM ? `${C2PA_TRUST_ANCHORS}\n${CA_PEM}` : C2PA_TRUST_ANCHORS;
+    return {
+      trust: { trust_anchors: anchors, trust_config: C2PA_TRUST_CONFIG },
+      verify: { verify_trust: true, verify_timestamp_trust: true },
+    };
+  }
+
+  // ── 서명(verifyAfterSign) 경로 ──
+  // created_assertion_labels 배치가 conformance에 중요(Scott 승인 경로)하므로 기존
+  // create*/mergeSettings 조합을 그대로 유지한다. snake_case 키 필수.
   const { createTrustSettings, createVerifySettings, mergeSettings } = c2pa;
   const trust = CA_PEM
     ? createTrustSettings({ verifyTrustList: true, trustAnchors: CA_PEM })
     : createTrustSettings({
         verifyTrustList: true,
-        // 서명 CA + TSA CA 결합 번들 (C2PA-TRUST-LIST.pem + C2PA-TSA-TRUST-LIST.pem)
         trustAnchors: C2PA_TRUST_ANCHORS,
         trustConfig: C2PA_TRUST_CONFIG,
       });
   const verify = createVerifySettings({
     verifyTrust: true,
     verifyTimestampTrust: true,
-    ...(opts.verifyAfterSign ? { verifyAfterSign: true } : {}),
+    verifyAfterSign: true,
   });
-  // 서명 시 c2pa.actions/ingredient/thumbnail을 created_assertions에 배치 (위 주석 참조).
-  // snake_case 키 필수 — BuilderSettings는 camelCase 변환을 하지 않음.
-  // Reader 경로에서는 무시되는 builder 설정이므로 서명 경로(verifyAfterSign)에만 추가.
-  const builder = opts.verifyAfterSign
-    ? [{ builder: { created_assertion_labels: CREATED_ASSERTION_LABELS } }]
-    : [];
-  return mergeSettings(trust, verify, ...builder);
+  return mergeSettings(trust, verify, { builder: { created_assertion_labels: CREATED_ASSERTION_LABELS } });
 }
 
 /** OriPics timestamp(yymmddHHMMSS+ms2) → ISO 8601 (UTC). */
