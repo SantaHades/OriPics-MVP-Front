@@ -1,16 +1,6 @@
 {
-  "note": "OriPics product validator (@contentauth/c2pa-node) with the C2PA Conformance Trust List passed as a plain settings object (c2patool format). Demonstrates the ingested Google Pixel ingredient resolves to trusted.",
+  "note": "OriPics product validator (@contentauth/c2pa-node) with the C2PA Conformance Trust List as a plain settings object. Ingested Google Pixel ingredient resolves to trusted; the only active-manifest failure is the expected pre-production sandbox signer.",
   "c2pa_node_version": "0.5.5",
-  "settings_shape": {
-    "trust": {
-      "trust_anchors": "<C2PA-TRUST-LIST.pem + C2PA-TSA-TRUST-LIST.pem bundle>",
-      "trust_config": "<store.cfg>"
-    },
-    "verify": {
-      "verify_trust": true,
-      "verify_timestamp_trust": true
-    }
-  },
   "validation_state": "Valid",
   "active_manifest": {
     "success": [
@@ -65,14 +55,6 @@
         {
           "code": "ingredient.manifest.validated",
           "explanation": "ingredient hash matched"
-        },
-        {
-          "code": "timeStamp.trusted",
-          "explanation": "timestamp cert trusted: Google Pixel Time Stamping Authority"
-        },
-        {
-          "code": "signingCredential.trusted",
-          "explanation": "signing certificate trusted, found in System trust anchors"
         }
       ],
       "informational": [],
