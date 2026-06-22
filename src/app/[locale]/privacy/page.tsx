@@ -90,7 +90,7 @@ function PrivacyKo() {
         <li>회원 정보: 회원 탈퇴 시까지. 탈퇴 즉시 파기.</li>
         <li>인증 이미지(Standard 플랜): 인증 처리 시점부터 7일 후 자동 삭제.</li>
         <li>인증 이미지(Pro·Business 플랜): 구독 유지 기간 동안 보관. 다운그레이드 시 30일 grace 후 7일 보관 정책으로 회귀.</li>
-        <li>크레딧 거래 이력: 회원 탈퇴 시까지 보관(부정 이용 방지·정산 목적).</li>
+        <li>이용 횟수 거래 이력: 회원 탈퇴 시까지 보관(부정 이용 방지·정산 목적).</li>
         <li>결제 기록: 「전자상거래 등에서의 소비자 보호에 관한 법률」에 따라 5년 보관.</li>
         <li>접속 로그: 「통신비밀보호법」에 따라 3개월 보관.</li>
       </ul>
@@ -284,7 +284,7 @@ function PrivacyEn() {
         <li>Account info: until account deletion. Erased upon deletion request.</li>
         <li>Proof images (Standard): 7 days from creation, then auto-deleted.</li>
         <li>Proof images (Pro / Business): retained for the subscription period. After downgrade, 30-day grace period followed by reversion to 7-day policy.</li>
-        <li>Credit transaction history: until account deletion (abuse prevention, billing reconciliation).</li>
+        <li>Usage (proof/verification) transaction history: until account deletion (abuse prevention, billing reconciliation).</li>
         <li>Payment records: 5 years (Korean Act on Consumer Protection in E-Commerce).</li>
         <li>Access logs: 3 months (Korean Communications Privacy Act).</li>
       </ul>

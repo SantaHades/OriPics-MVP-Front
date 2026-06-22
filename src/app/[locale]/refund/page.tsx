@@ -63,7 +63,7 @@ function RefundKo() {
       <p>
         시스템 장애, 서비스 결함, 약관·법령 위반 등 회사의 귀책사유로 서비스를
         정상적으로 이용하지 못한 경우, 회사는 영향을 받은 기간을 일할 계산하여
-        즉시 환불하거나 동일 가치의 크레딧·이용 기간을 보상합니다.
+        즉시 환불하거나 동일 가치의 이용 횟수·이용 기간을 보상합니다.
       </p>
 
       <h2>5. 환불 신청 방법</h2>
@@ -137,7 +137,7 @@ function RefundEn() {
       <p>
         If you cannot use the Service normally due to system failure, defects,
         or our breach of these Terms or law, we will refund the affected period
-        pro-rated, or compensate with equivalent credits or service days.
+        pro-rated, or compensate with equivalent usage or service days.
       </p>
 
       <h2>5. How to Request a Refund</h2>

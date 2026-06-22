@@ -33,7 +33,7 @@ function TermsKo() {
         <li>&quot;증명&quot;: 이용자가 업로드 또는 촬영한 이미지에 OriPics가 스테가노그래피 시일과 C2PA 표준 매니페스트를 첨부하여 원본 무결성을 보장하는 처리.</li>
         <li>&quot;Standard 티어&quot;: 웹·모바일의 파일 업로드·붙여넣기 경로로 처리되는 무결성 보장.</li>
         <li>&quot;Verified 티어&quot;: 모바일 앱의 카메라 직접 촬영 경로로 기기 무결성 검증까지 포함하는 보장.</li>
-        <li>&quot;크레딧&quot;: 서비스 이용을 위한 내부 단위. 자세한 사용량은 회사 정책에 따릅니다.</li>
+        <li>&quot;인증 횟수(건수)&quot;: 회원이 구독 플랜에 포함되어 이용할 수 있는 사진 인증·검증 등의 횟수. 내부적으로는 회계 단위로 관리되나, 이는 별도로 구매·충전하거나 현금으로 환급할 수 있는 선불 포인트(선불 전자지급수단)가 아니라 구독 플랜에 포함되어 제공되는 이용 한도입니다.</li>
       </ul>
 
       <h2>제3조 (약관의 효력 및 변경)</h2>
@@ -70,7 +70,7 @@ function TermsKo() {
         <li>타인의 사진·저작물을 무단으로 업로드하여 본인의 원본인 양 증명을 받는 행위</li>
         <li>음란물·폭력물·불법 콘텐츠를 업로드하는 행위</li>
         <li>서비스의 정상 운영을 방해하거나 시스템에 무단 접근하는 행위</li>
-        <li>크레딧·인증 결과를 매매·양도하는 행위</li>
+        <li>이용 횟수·인증 결과를 매매·양도하는 행위</li>
         <li>관련 법령 또는 공서양속에 위반하는 행위</li>
       </ul>
 
@@ -121,7 +121,7 @@ function TermsKo() {
         <li>유료 회원은 최초 결제일을 기준으로 매월(또는 매년) 동일 일자에 자동으로 결제(정기결제)됩니다. 다음 결제 7일 전까지 해지 또는 플랜 변경 신청이 없는 경우 기존 플랜으로 갱신됩니다.</li>
         <li>회원은 프로필 또는 결제 관리 페이지에서 언제든지 구독을 해지하거나 플랜을 변경할 수 있으며, 해지 후에도 이미 결제된 기간이 만료될 때까지 해당 플랜의 서비스를 이용할 수 있습니다.</li>
         <li>결제 수단의 한도 초과·유효기간 만료·잔액 부족 등의 사유로 자동 결제가 실패한 경우, 회사는 최대 7일간 재시도하며 그 기간 동안 회원에게 이메일로 안내합니다. 7일 이내에 결제가 완료되지 않으면 해당 회원은 Free 플랜으로 자동 다운그레이드되며, 영구 보관 자료는 제8조 제2호의 grace 정책에 따라 처리됩니다.</li>
-        <li>플랜에 포함된 월별 인증 한도(크레딧)는 결제일(가입일) 기준 매월 갱신되며, 사용하지 않은 한도는 다음 달로 이월되지 않습니다.</li>
+        <li>플랜에 포함된 월별 인증 한도(건수)는 결제일(가입일) 기준 매월 갱신되며, 사용하지 않은 한도는 다음 달로 이월되지 않습니다.</li>
         <li>회사는 요금·과금 주기·플랜 구성을 변경할 수 있으며, 회원에게 불리한 변경은 시행일 30일 전, 그 외 변경은 7일 전 서비스 내 공지 및 이메일로 안내합니다. 변경 후 회원이 계속하여 서비스를 이용하는 경우 변경된 조건에 동의한 것으로 간주합니다. 변경 전 결제된 구독은 해당 결제 주기 종료 시까지 변경 전 조건이 유지됩니다.</li>
         <li>미성년자(만 19세 미만)가 결제를 진행한 경우 법정대리인은 미성년자 본인 또는 법정대리인이 동의하지 아니한 결제에 대하여 취소를 요청할 수 있습니다.</li>
       </ol>
@@ -135,7 +135,7 @@ function TermsKo() {
             <li>회원의 귀책사유로 콘텐츠가 훼손·멸실된 경우.</li>
           </ul>
         </li>
-        <li><strong>회사 귀책사유로 인한 환불:</strong> 회사의 시스템 장애, 서비스 결함, 약관·법령 위반 등 회사의 귀책사유로 회원이 서비스를 정상적으로 이용하지 못한 경우, 회사는 영향을 받은 기간을 일할 계산하여 즉시 환불하거나 동일 가치의 크레딧·이용 기간을 보상합니다.</li>
+        <li><strong>회사 귀책사유로 인한 환불:</strong> 회사의 시스템 장애, 서비스 결함, 약관·법령 위반 등 회사의 귀책사유로 회원이 서비스를 정상적으로 이용하지 못한 경우, 회사는 영향을 받은 기간을 일할 계산하여 즉시 환불하거나 동일 가치의 이용 횟수·이용 기간을 보상합니다.</li>
         <li><strong>월간 구독 환불:</strong> 청약철회 기간(7일)이 경과한 후의 월간 구독 해지는 다음 결제 시점부터 효력이 발생하며, 이미 결제된 당월분은 환불되지 않습니다. 다만 회원은 해당 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다.</li>
         <li><strong>연간 구독 환불:</strong> 연간 구독의 경우, 청약철회 기간(7일)이 경과한 후의 환불은 다음 산식에 따라 계산합니다.
           <br />
@@ -217,7 +217,7 @@ function TermsEn() {
         <li><strong>Proof</strong>: the process of embedding a steganographic seal and C2PA standard manifest into an uploaded or captured image.</li>
         <li><strong>Standard tier</strong>: integrity assurance for files uploaded or pasted via web/mobile.</li>
         <li><strong>Verified tier</strong>: integrity + capture-source assurance for photos taken directly with the mobile app using device-integrity attestation.</li>
-        <li><strong>Credits</strong>: internal units used to meter Service usage.</li>
+        <li><strong>Proof allowance (count)</strong>: the number of photo proofs, verifications, and similar actions included with a subscription plan. It is metered internally as an accounting unit, but it is not a prepaid point or stored-value instrument that can be separately purchased, topped up, or refunded in cash — it is a usage allowance included in the plan.</li>
       </ul>
 
       <h2>3. Account</h2>
@@ -233,7 +233,7 @@ function TermsEn() {
         <li>upload images for which you do not hold the rights and seek to claim authorship via Proof;</li>
         <li>upload content that is illegal, obscene, violent, or infringes third-party rights;</li>
         <li>interfere with or attempt unauthorized access to the Service;</li>
-        <li>trade or transfer credits or proof results;</li>
+        <li>trade or transfer usage allowances or proof results;</li>
         <li>otherwise violate applicable law or public morals.</li>
       </ul>
 
@@ -258,7 +258,7 @@ function TermsEn() {
         <li>Paid plans are billed automatically on the same day each month (or year) from the initial subscription date. If no cancellation or plan change is requested at least 7 days before the next billing date, the subscription renews under the existing plan.</li>
         <li>You may cancel or change your plan at any time from the profile or billing page; access to the current plan continues until the end of the paid period.</li>
         <li>If an automatic charge fails (credit limit exceeded, expired card, insufficient balance), we retry for up to 7 days while notifying you by email. If payment is not completed within that period, the account is downgraded to Free, and permanent-retention content is handled under the grace policy in §5.3.</li>
-        <li>Monthly proof allowances (credits) reset on each billing-anniversary date; unused credits do not carry over.</li>
+        <li>Monthly proof allowances reset on each billing-anniversary date; unused allowances do not carry over.</li>
         <li>We may change pricing, billing cycles, or plan composition. Changes adverse to members take effect at least 30 days after in-Service and email notice; other changes take effect at least 7 days after notice. Continued use after the effective date constitutes acceptance. Subscriptions paid before the effective date retain prior terms until the end of that billing cycle.</li>
         <li>Where a minor (under 19 in Korea) made a payment without the consent of a legal guardian, the guardian or the minor may request cancellation under the Korean Civil Code.</li>
       </ol>
@@ -272,7 +272,7 @@ function TermsEn() {
             <li>content was damaged or lost due to the member&apos;s fault.</li>
           </ul>
         </li>
-        <li><strong>Refunds due to our fault:</strong> If you cannot use the Service normally due to system failure, defects, or our breach of these Terms or law, we will refund the affected period pro-rated, or compensate with equivalent credits or service days.</li>
+        <li><strong>Refunds due to our fault:</strong> If you cannot use the Service normally due to system failure, defects, or our breach of these Terms or law, we will refund the affected period pro-rated, or compensate with equivalent usage or service days.</li>
         <li><strong>Monthly subscription refunds:</strong> After the 7-day withdrawal window, a monthly cancellation takes effect at the next billing date; the current month is non-refundable, but access continues until the end of that paid period.</li>
         <li><strong>Annual subscription refunds:</strong> After the 7-day withdrawal window, the refundable amount is calculated as:
           <br />

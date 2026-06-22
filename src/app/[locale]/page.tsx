@@ -1377,10 +1377,10 @@ export default function Home() {
           // 공개링크 생성(LINK_CREATE -2)은 publish 버튼 클릭 시 별도 차감 — 여기 합계에 포함 X.
           const stdMult = 1;
           const origMult = getProofMultiplier(originalWidth, originalHeight);
-          const stdCost = CREDIT_COSTS.IMAGE_PROOF * stdMult; // 3
-          const origCost = CREDIT_COSTS.IMAGE_PROOF * origMult; // 6 or 9
-          const totalCost =
-            (standardChecked ? stdCost : 0) + (originalChecked ? origCost : 0);
+          // 사용자 노출은 '건'(사진 인증 건수)로 표기 — 1건 = 기준 사이즈 1회.
+          // 원본 사이즈는 픽셀 수에 따라 2~3건으로 차감(내부 크레딧 회계의 배수와 동일).
+          const totalCount =
+            (standardChecked ? stdMult : 0) + (originalChecked ? origMult : 0);
           const longest = Math.max(originalWidth, originalHeight);
           const pixels = originalWidth * originalHeight;
           const noneSelected = !standardChecked && !originalChecked;
@@ -1438,7 +1438,7 @@ export default function Home() {
                         {t("size_select.standard_label")}
                       </span>
                       <span className="text-xs font-mono text-slate-500">
-                        ≤ {MAX_DIMENSION}px · {stdCost} {t("size_select.credits")}
+                        ≤ {MAX_DIMENSION}px · {stdMult} {t("size_select.credits")}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600">{t("size_select.standard_desc")}</p>
@@ -1466,8 +1466,7 @@ export default function Home() {
                         {t("size_select.original_label")}
                       </span>
                       <span className="text-xs font-mono text-slate-500">
-                        {originalWidth}×{originalHeight} · {origCost} {t("size_select.credits")}{" "}
-                        <span className="text-purple-600">({origMult}×)</span>
+                        {originalWidth}×{originalHeight} · {origMult} {t("size_select.credits")}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600">{t("size_select.original_desc")}</p>
@@ -1480,7 +1479,7 @@ export default function Home() {
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-slate-600">{t("size_select.total_label")}</span>
                     <span className="font-bold text-slate-900">
-                      {totalCost} {t("size_select.credits")}
+                      {totalCount} {t("size_select.credits")}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1.5">
