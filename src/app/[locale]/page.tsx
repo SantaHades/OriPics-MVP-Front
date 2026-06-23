@@ -2014,8 +2014,7 @@ export default function Home() {
               <p className="text-3xl font-extrabold mb-1">
                 ₩9,900<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}</span>
               </p>
-              <p className="text-xs text-slate-500">{t("pricing.price_tax_note")}</p>
-              <p className="text-xs text-slate-500 mb-5">{t("pricing.pro.annual_hint")}</p>
+              <p className="text-xs text-slate-500 mb-5">{t("pricing.price_tax_note")}</p>
               <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f1")}</li>
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f2")}</li>
