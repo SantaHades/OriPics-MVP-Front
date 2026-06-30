@@ -121,6 +121,7 @@ model Subscription {
   gateway                  String
   gatewayCustomerId        String
   gatewaySubscriptionId    String?
+  billingKey               String?
   plan                     String
   status                   String
   currentPeriodStart       DateTime

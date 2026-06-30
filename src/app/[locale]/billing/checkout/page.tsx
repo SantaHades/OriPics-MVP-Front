@@ -79,39 +79,44 @@ export default function CheckoutPage() {
     setError(null);
     try {
       const userId = (session?.user as any)?.id ?? "anon";
-      const paymentId = `pay-${String(userId).slice(-8)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      // 정기결제(구독): 일반결제(1회성)가 아니라 빌링키를 발급한다.
+      // 카드를 등록해 빌링키를 받고, 서버가 그 빌링키로 첫 달을 즉시 청구한 뒤
+      // 매월 자동 청구한다 (KG이니시스 신용카드 정기결제창).
+      const issueId = `bk-${String(userId).slice(-8)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const origin = window.location.origin;
       const redirectUrl = `${origin}/${locale}/billing/success?plan=${plan}`;
 
-      const response = await PortOne.requestPayment({
+      const response = await PortOne.requestIssueBillingKey({
         storeId,
         channelKey,
-        paymentId,
-        orderName: planInfo.orderName,
-        totalAmount: planInfo.amount,
-        currency: "CURRENCY_KRW",
-        payMethod: "CARD",
+        billingKeyMethod: "CARD",
+        issueId,
+        issueName: planInfo.orderName,
         customer: {
           fullName: session?.user?.name ?? undefined,
           email: session?.user?.email ?? undefined,
           phoneNumber: normalizedPhone,
         },
-        // webhook(비동기 경로)이 userId·plan을 복원하기 위해 주입.
-        // 리다이렉트 실패 시에도 크레딧 지급 보장.
-        // 브라우저 SDK는 객체를 받고, 서버 getPayment는 JSON 문자열로 반환.
+        // webhook/서버가 userId·plan을 복원하기 위해 주입.
         customData: { userId, plan },
         redirectUrl,
       });
 
-      // 모바일 등 리다이렉트 환경에서는 여기까지 도달하지 않음.
+      // 모바일 등 리다이렉트 환경에서는 여기까지 도달하지 않음(redirectUrl로 billingKey 전달).
       // PC 팝업 환경에서는 Promise resolve.
       if (response?.code != null) {
         setSubmitting(false);
         setError(`${response.code}: ${response.message ?? ""}`);
         return;
       }
-      // 팝업 정상 완료 → success 페이지로 이동
-      const successUrl = `/${locale}/billing/success?plan=${plan}&paymentId=${encodeURIComponent(paymentId)}`;
+      // 빌링키 발급 성공 → success 페이지에서 첫 달 청구 + 구독 부여
+      const billingKey = response?.billingKey;
+      if (!billingKey) {
+        setSubmitting(false);
+        setError(t("error_generic"));
+        return;
+      }
+      const successUrl = `/${locale}/billing/success?plan=${plan}&billingKey=${encodeURIComponent(billingKey)}`;
       window.location.href = successUrl;
     } catch (e: any) {
       setSubmitting(false);

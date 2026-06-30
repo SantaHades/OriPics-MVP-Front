@@ -24,6 +24,10 @@ export const PLAN_PERIOD_DAYS: Record<PlanId, number> = {
   pro_monthly: 30,
 };
 
+export const PLAN_ORDER_NAMES: Record<PlanId, string> = {
+  pro_monthly: "OriPics Pro (월간 구독)",
+};
+
 export function isPlanId(v: unknown): v is PlanId {
   return typeof v === "string" && v in PLAN_PRICES;
 }
@@ -50,7 +54,8 @@ export type GrantResult =
         | "portone_lookup_failed"
         | "payment_not_paid"
         | "amount_mismatch"
-        | "db_update_failed";
+        | "db_update_failed"
+        | "billing_key_charge_failed";
       httpStatus: number;
       detail?: any;
     };
@@ -64,8 +69,10 @@ export async function verifyAndGrantSubscription(opts: {
   userId: string;
   plan: PlanId;
   secret: string;
+  /** 정기결제(빌링키) 결제일 경우 Subscription에 저장할 빌링키. */
+  billingKey?: string;
 }): Promise<GrantResult> {
-  const { paymentId, userId, plan, secret } = opts;
+  const { paymentId, userId, plan, secret, billingKey } = opts;
   const expectedAmount = PLAN_PRICES[plan];
 
   // 1) PortOne 결제 조회 (네트워크 호출은 트랜잭션 밖에서)
@@ -109,6 +116,11 @@ export async function verifyAndGrantSubscription(opts: {
         select: { id: true },
       });
       if (existing) {
+        // 이미 부여됨(webhook이 먼저 처리한 경우 등). 단 webhook 경로는 billingKey를
+        // 모르므로, 빌링키 경로에서 들어온 경우 빌링키만은 반드시 저장한다(갱신 cron에 필요).
+        if (billingKey) {
+          await tx.subscription.updateMany({ where: { userId }, data: { billingKey } });
+        }
         return {
           ok: true as const,
           alreadyProcessed: true,
@@ -129,6 +141,7 @@ export async function verifyAndGrantSubscription(opts: {
           gateway: "portone",
           gatewayCustomerId: userId,
           gatewaySubscriptionId: paymentId,
+          ...(billingKey ? { billingKey } : {}),
           plan,
           status: "active",
           currentPeriodStart: periodStart,
@@ -137,6 +150,7 @@ export async function verifyAndGrantSubscription(opts: {
         update: {
           gateway: "portone",
           gatewaySubscriptionId: paymentId,
+          ...(billingKey ? { billingKey } : {}),
           plan,
           status: "active",
           currentPeriodStart: periodStart,
@@ -178,4 +192,61 @@ export async function verifyAndGrantSubscription(opts: {
     });
     return { ok: false, code: "db_update_failed", httpStatus: 500, detail: paymentId };
   }
+}
+
+/**
+ * 정기결제(빌링키)로 한 주기 즉시 청구 후 구독·크레딧을 멱등 부여한다.
+ *
+ *   - 최초 구독: checkout에서 발급한 billingKey로 첫 달을 즉시 청구 (billing-key 라우트).
+ *   - 갱신: 매월 cron이 저장된 billingKey로 다음 달을 청구.
+ *
+ * payWithBillingKey는 즉시 승인되며, 그 paymentId로 verifyAndGrantSubscription을
+ * 재사용해 PAID·금액 검증 + 멱등 부여 + billingKey 저장을 한다.
+ */
+export async function chargeWithBillingKeyAndGrant(opts: {
+  billingKey: string;
+  userId: string;
+  plan: PlanId;
+  secret: string;
+  customer?: { fullName?: string | null; email?: string | null; phoneNumber?: string | null };
+  /** 멱등 청구를 위한 paymentId (cron에서 주기 식별자로 고정 가능). 미지정 시 자동 생성. */
+  paymentId?: string;
+}): Promise<GrantResult> {
+  const { billingKey, userId, plan, secret, customer } = opts;
+  const amount = PLAN_PRICES[plan];
+  const paymentId =
+    opts.paymentId ??
+    `bk-${String(userId).slice(-8)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const client = PortOne.PaymentClient({ secret });
+  try {
+    await client.payWithBillingKey({
+      paymentId,
+      billingKey,
+      orderName: PLAN_ORDER_NAMES[plan],
+      amount: { total: amount },
+      currency: "KRW",
+      ...(customer
+        ? {
+            customer: {
+              ...(customer.fullName ? { name: { full: customer.fullName } } : {}),
+              ...(customer.email ? { email: customer.email } : {}),
+              ...(customer.phoneNumber ? { phoneNumber: customer.phoneNumber } : {}),
+            },
+          }
+        : {}),
+      customData: JSON.stringify({ userId, plan }),
+    });
+  } catch (e: any) {
+    // 이미 같은 paymentId로 청구된 경우(PaymentAlreadyPaid 등)는 검증·부여 단계에서
+    // 멱등 처리되므로 통과시키고, 그 외 카드 거절 등은 실패로 반환.
+    const msg = String(e?.message ?? e);
+    const alreadyPaid = /already.?paid|이미.*결제|AlreadyPaid/i.test(msg);
+    if (!alreadyPaid) {
+      return { ok: false, code: "billing_key_charge_failed", httpStatus: 402, detail: msg };
+    }
+  }
+
+  // 청구 완료된 paymentId로 검증 + 멱등 부여 + billingKey 저장
+  return verifyAndGrantSubscription({ paymentId, userId, plan, secret, billingKey });
 }

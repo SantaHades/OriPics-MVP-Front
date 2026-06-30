@@ -17,6 +17,7 @@ export default function BillingSuccessPage() {
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   useEffect(() => {
+    const billingKey = searchParams?.get("billingKey");
     const paymentId = searchParams?.get("paymentId");
     const plan = searchParams?.get("plan") ?? "pro_monthly";
     // PortOne 리다이렉트 모드에서 실패 시 code/message 동봉됨
@@ -29,19 +30,24 @@ export default function BillingSuccessPage() {
       return;
     }
 
-    if (!paymentId) {
+    // 정기결제(빌링키) 경로 우선. 구버전 1회성(paymentId) 경로도 호환 유지.
+    if (!billingKey && !paymentId) {
       setPhase("error");
       setErrorDetail("missing_payment_id");
       return;
     }
+    const endpoint = billingKey
+      ? "/api/billing/portone/billing-key"
+      : "/api/billing/portone/complete";
+    const reqBody = billingKey ? { billingKey, plan } : { paymentId, plan };
 
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/billing/portone/complete", {
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId, plan }),
+          body: JSON.stringify(reqBody),
         });
         if (cancelled) return;
         const payload = await res.json().catch(() => ({}));
