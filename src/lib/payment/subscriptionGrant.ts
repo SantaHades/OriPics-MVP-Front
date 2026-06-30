@@ -220,18 +220,22 @@ export async function chargeWithBillingKeyAndGrant(opts: {
 
   const client = PortOne.PaymentClient({ secret });
   try {
+    // customer를 명시적으로 넘기지 않는다: payWithBillingKey에 부분 customer(name/email만,
+    // phoneNumber 없음)를 넘기면 INICIS가 "customer.phoneNumber REQUIRED"로 거절한다.
+    // 빌링키 발급(requestIssueBillingKey) 시 저장된 고객정보(휴대폰 포함)를 PortOne이
+    // 그대로 사용하도록 customer를 생략한다. (phoneNumber만 알면 함께 넘겨도 됨.)
     await client.payWithBillingKey({
       paymentId,
       billingKey,
       orderName: PLAN_ORDER_NAMES[plan],
       amount: { total: amount },
       currency: "KRW",
-      ...(customer
+      ...(customer?.phoneNumber
         ? {
             customer: {
               ...(customer.fullName ? { name: { full: customer.fullName } } : {}),
               ...(customer.email ? { email: customer.email } : {}),
-              ...(customer.phoneNumber ? { phoneNumber: customer.phoneNumber } : {}),
+              phoneNumber: customer.phoneNumber,
             },
           }
         : {}),
