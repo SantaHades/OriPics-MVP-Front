@@ -240,9 +240,12 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   } catch (e: any) {
     // 이미 같은 paymentId로 청구된 경우(PaymentAlreadyPaid 등)는 검증·부여 단계에서
     // 멱등 처리되므로 통과시키고, 그 외 카드 거절 등은 실패로 반환.
-    const msg = String(e?.message ?? e);
+    // PortOne server-sdk 에러는 구조화된 상세(e.data)를 담을 수 있어 함께 캡처.
+    const raw = e?.data ?? e?.response?.data ?? e?.message ?? e;
+    const msg = typeof raw === "string" ? raw : (() => { try { return JSON.stringify(raw); } catch { return String(raw); } })();
     const alreadyPaid = /already.?paid|이미.*결제|AlreadyPaid/i.test(msg);
     if (!alreadyPaid) {
+      console.error("[billing-key charge failed]", { userId, paymentId, plan, errorName: e?.name, error: msg });
       return { ok: false, code: "billing_key_charge_failed", httpStatus: 402, detail: msg };
     }
   }

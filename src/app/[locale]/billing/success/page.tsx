@@ -53,7 +53,13 @@ export default function BillingSuccessPage() {
         const payload = await res.json().catch(() => ({}));
         if (!res.ok) {
           setPhase("error");
-          setErrorDetail(payload?.detail ?? `HTTP ${res.status}`);
+          const info =
+            payload?.info != null
+              ? typeof payload.info === "string"
+                ? payload.info
+                : JSON.stringify(payload.info)
+              : "";
+          setErrorDetail(`${payload?.detail ?? `HTTP ${res.status}`}${info ? ` — ${info}` : ""}`);
           return;
         }
         setGranted(payload?.granted ?? null);
