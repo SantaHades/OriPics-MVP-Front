@@ -219,26 +219,33 @@ export async function chargeWithBillingKeyAndGrant(opts: {
     `bk-${String(userId).slice(-8)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   const client = PortOne.PaymentClient({ secret });
+
+  // INICIS payWithBillingKey는 customer.name/email/phoneNumber를 모두 필수로 요구하며,
+  // 빌링키에 저장된 고객정보를 자동 사용하지 않는다. 빌링키 발급(requestIssueBillingKey)
+  // 시 저장된 고객정보(특히 휴대폰)를 조회해 명시적으로 전달한다.
+  let bkCustomer: { name?: string; email?: string; phoneNumber?: string } = {};
   try {
-    // customer를 명시적으로 넘기지 않는다: payWithBillingKey에 부분 customer(name/email만,
-    // phoneNumber 없음)를 넘기면 INICIS가 "customer.phoneNumber REQUIRED"로 거절한다.
-    // 빌링키 발급(requestIssueBillingKey) 시 저장된 고객정보(휴대폰 포함)를 PortOne이
-    // 그대로 사용하도록 customer를 생략한다. (phoneNumber만 알면 함께 넘겨도 됨.)
+    const info: any = await PortOne.BillingKeyClient({ secret }).getBillingKeyInfo({ billingKey });
+    bkCustomer = info?.customer ?? {};
+  } catch {
+    // 조회 실패 시 전달된 customer로 폴백
+  }
+  const custName = bkCustomer.name || customer?.fullName || customer?.email || "OriPics 구독자";
+  const custEmail = bkCustomer.email || customer?.email || undefined;
+  const custPhone = bkCustomer.phoneNumber || customer?.phoneNumber || undefined;
+
+  try {
     await client.payWithBillingKey({
       paymentId,
       billingKey,
       orderName: PLAN_ORDER_NAMES[plan],
       amount: { total: amount },
       currency: "KRW",
-      ...(customer?.phoneNumber
-        ? {
-            customer: {
-              ...(customer.fullName ? { name: { full: customer.fullName } } : {}),
-              ...(customer.email ? { email: customer.email } : {}),
-              phoneNumber: customer.phoneNumber,
-            },
-          }
-        : {}),
+      customer: {
+        name: { full: custName },
+        ...(custEmail ? { email: custEmail } : {}),
+        ...(custPhone ? { phoneNumber: custPhone } : {}),
+      },
       customData: JSON.stringify({ userId, plan }),
     });
   } catch (e: any) {
