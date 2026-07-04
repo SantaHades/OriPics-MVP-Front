@@ -12,6 +12,10 @@ const COMPANY_ADDRESS_EN =
 const COMPANY_ADDRESS_KO =
   "경기도 용인시 기흥구 공세로 150-29, 테라스가든 #B01-H306, 17084, 대한민국";
 const DPO_NAME = "손용석";
+const DPO_NAME_EN = "Yongseog Son";
+const DPO_DEPT_KO = "경영지원";
+const DPO_DEPT_EN = "Management Support";
+const DPO_PHONE = "010-3717-9717";
 const DPO_EMAIL = "hi@ori.pics";
 
 function PrivacyKo() {
@@ -201,6 +205,8 @@ function PrivacyKo() {
         <li>회사: {COMPANY_NAME_KO}</li>
         <li>주소: {COMPANY_ADDRESS_KO}</li>
         <li>개인정보 보호 책임자: 대표이사 {DPO_NAME}</li>
+        <li>부서: {DPO_DEPT_KO}</li>
+        <li>연락처: {DPO_PHONE}</li>
         <li>이메일: <a href={`mailto:${DPO_EMAIL}`}>{DPO_EMAIL}</a></li>
       </ul>
 
@@ -238,7 +244,8 @@ function PrivacyEn() {
       <ul>
         <li>Company: {COMPANY_NAME_EN}</li>
         <li>Address: {COMPANY_ADDRESS_EN}</li>
-        <li>Data Protection Contact: <a href={`mailto:${DPO_EMAIL}`}>{DPO_EMAIL}</a></li>
+        <li>Data Protection Officer: {DPO_NAME_EN} (CEO), {DPO_DEPT_EN}</li>
+        <li>Contact: {DPO_PHONE} / <a href={`mailto:${DPO_EMAIL}`}>{DPO_EMAIL}</a></li>
       </ul>
 
       <h2>2. Purposes of Processing</h2>

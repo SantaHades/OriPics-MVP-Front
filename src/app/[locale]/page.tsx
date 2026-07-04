@@ -2141,6 +2141,9 @@ export default function Home() {
           <a href="mailto:security@ori.pics" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
             {tc("security")}
           </a>
+          <a href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4448802865" target="_blank" rel="noopener noreferrer" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
+            {tc("business_verify")}
+          </a>
         </div>
         <p>{tLV("footer")}</p>
         <div className="text-xs text-slate-400 text-center leading-relaxed mt-2">
