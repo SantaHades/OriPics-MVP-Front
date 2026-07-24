@@ -68,6 +68,9 @@ Apple CONSUMPTION_REQUEST(환불 판정 전 소비량 신고로 기각 유도).
   ③CS 수동 처리용 환불액 계산 스크립트+내부 절차 문서 ④dunning 검토.
   그 전까지 환불 처리는 수동: 이메일 접수→CreditTransaction으로 사용 횟수 확인→
   산식 계산→admin.portone.io에서 **부분 취소** 금액 입력→DB 수동 원복.
+  **수동 원복 시 크레딧은 Free 정액이 아니라 해당 결제의 `subscription_grant` TX
+  메타데이터 `previous_credits`(업그레이드 직전 잔액)로 되돌릴 것** — Pro 기간
+  사용분은 환불액 공제로 이미 정산되므로 크레딧 이중 차감 금지 (A-34 ⑤).
 
 *조사 출처: 각 서비스 공식 ToS/헬프 원문(Shutterstock license, iStock license agreement,
 Adobe subscription-terms, Depositphotos cancellation-policy, docs.midjourney.com,
