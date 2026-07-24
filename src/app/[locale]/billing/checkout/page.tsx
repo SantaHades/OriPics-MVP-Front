@@ -173,6 +173,22 @@ export default function CheckoutPage() {
             <p className="mt-1.5 text-[11px] text-slate-400">{t("phone_hint")}</p>
           </div>
 
+          {/* 청약철회 제한 사전 고지 (전자상거래법 제17조 제6항 요건) */}
+          <div className="mb-4 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
+            <p className="font-bold text-slate-700 mb-1">{t("withdrawal_notice_title")}</p>
+            <p className="mb-1.5">{t("withdrawal_notice_body")}</p>
+            <p className="text-slate-500">
+              {t("withdrawal_notice_agree")}{" "}
+              <Link href="/terms#refund" className="underline hover:text-slate-900" target="_blank">
+                {t("withdrawal_notice_link_terms")}
+              </Link>
+              {" · "}
+              <Link href="/refund" className="underline hover:text-slate-900" target="_blank">
+                {t("withdrawal_notice_link_refund")}
+              </Link>
+            </p>
+          </div>
+
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
               {error}
