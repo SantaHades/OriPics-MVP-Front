@@ -131,6 +131,7 @@
 | A-30 | **Multi-result 미공개 재검출 미지원** — 사이즈 선택에서 양쪽 체크한 경우 multi-result 카드 2개가 생성됨. 현재 publish 안 한 채로 stamped PNG 다운로드 후 같은 브라우저에서 재드롭 시 single-result 흐름의 receipt만 매칭. multi-result 흐름에서도 `saveReceipt` 호출하도록 통일 필요 | 베타 직전 | P2 |
 | A-31 | **Multi-result confirm 진행률 UI** — 2026-05-17 B-2'' 흐름에서 confirm은 작은 JSON이라 거의 즉시 완료되지만 UI는 여전히 "confirming" phase 진행 바를 보여줌. phase 상수 단순화(confirming → ready를 단일 transition으로 합치고 진행률 표시 제거) | 정리 작업 | P3 |
 | A-33 | **인증 후 미사용 30일 cleanup** — receipt JWT TTL이 30일이라 그 사이 사용자가 publish 안 하면 차감된 proof 비용은 사실상 소실. UX 측면에서 30일 도래 전 "사용 안 한 인증 X건 남았습니다" 알림 또는 환불 정책 검토 | 베타 운영 중 | P3 |
+| A-34 | **환불 자동화 2단계 (2026-07-24 대표 승인 — "한꺼번에" 일괄 구현)** — 1단계(해지 예약/재개 셀프서브, `bdbba9e`)에 이어: ① **중도해지 자동 환불** — 신청 시 서버가 결제 후 사용 횟수 조회 → 약관 제11조 산식 자동 계산(7일 내: 결제액−사용횟수×회당정가 ₩1,000, 위약금 없음 / 7일 후: −max(사용분 정가, 경과 일할)−잔여 10%) → PortOne `cancelPayment` **부분 취소** 호출 → 구독 종료·tier 다운그레이드까지 원클릭. ② **`Transaction.Cancelled` webhook** — 콘솔/외부 환불 시 구독 자동 회수(현재 webhook은 Paid만 처리, 취소는 ack만). ③ **CS 수동 처리용 조회 스크립트/내부 문서** — 자동화 전·장애 시 대비: 사용 횟수·환불액 자동 계산 스크립트 + admin.portone.io 부분취소 절차. ④ dunning(청구 실패 7일 재시도→다운그레이드)도 같은 사이클에 검토. 배경·산식 근거: [refund-credits-policy-research.md](refund-credits-policy-research.md) | 서비스 오픈 후 첫 환불 요청 발생 전 (또는 오픈 직후 1주 내) | P1 |
 
 ### 2.3 모바일·모노레포
 

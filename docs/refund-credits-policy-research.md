@@ -60,10 +60,14 @@ Apple CONSUMPTION_REQUEST(환불 판정 전 소비량 신고로 기각 유도).
 
 - [x] 약관 제11조 개정 (KO 제11조 / EN §7) — 깨진 참조("제4항") 해소, 산식 신설 (`a975b99`)
 - [x] 결제 화면 사전 고지: 체크아웃에 청약철회 제한 고지 블록 + 약관/환불정책 링크 (`bc97751`)
-- [ ] 해지 UI: 일반해지/중도해지 두 경로 병행 표시 (구독 해지 UI 자체가 아직 없음 —
-  구현 시 두 경로 동시 노출 필수)
-- [ ] `Transaction.Cancelled` webhook: 환불 확정 → 구독 종료+다운그레이드 동기화
-  (금액 산정은 CS 수동, 위 산식 참조)
+- [x] 해지 UI 1단계: 프로필 구독 관리 섹션 — 일반해지 예약/재개 + 환불 이메일 접수
+  + 환불 정책 링크 (`bdbba9e`, 2026-07-24)
+- [ ] **환불 자동화 2단계 — follow-ups A-34로 이관 (2026-07-24 대표 승인, 일괄 구현)**:
+  ①중도해지 자동 환불(사용량 조회→제11조 산식 자동 계산→PortOne cancelPayment 부분취소
+  →구독 종료·다운그레이드) ②`Transaction.Cancelled` webhook(콘솔 환불→구독 자동 회수)
+  ③CS 수동 처리용 환불액 계산 스크립트+내부 절차 문서 ④dunning 검토.
+  그 전까지 환불 처리는 수동: 이메일 접수→CreditTransaction으로 사용 횟수 확인→
+  산식 계산→admin.portone.io에서 **부분 취소** 금액 입력→DB 수동 원복.
 
 *조사 출처: 각 서비스 공식 ToS/헬프 원문(Shutterstock license, iStock license agreement,
 Adobe subscription-terms, Depositphotos cancellation-policy, docs.midjourney.com,
