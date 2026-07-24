@@ -63,7 +63,14 @@ export default function CheckoutPage() {
     /test/i.test(storeId ?? "");
 
   // KG이니시스 V2 일반결제는 구매자 휴대폰번호가 필수.
-  const normalizedPhone = phone.replace(/[^0-9]/g, "");
+  // +82/0082 국제 형식 입력(연락처 자동완성 등)은 국내 형식(01X…)으로 정규화한다.
+  // 해외(비 +82) 번호·해외 발급 카드는 현재 KG이니시스 국내 MID 계약으로 미지원 — follow-ups A-35.
+  let normalizedPhone = phone.replace(/[^0-9]/g, "");
+  if (normalizedPhone.startsWith("0082")) {
+    normalizedPhone = "0" + normalizedPhone.slice(4);
+  } else if (normalizedPhone.startsWith("82") && normalizedPhone.length >= 11) {
+    normalizedPhone = "0" + normalizedPhone.slice(2);
+  }
   const phoneValid = /^01[0-9]{8,9}$/.test(normalizedPhone);
 
   const handlePay = async () => {

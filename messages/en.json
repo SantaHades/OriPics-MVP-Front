@@ -536,7 +536,7 @@
     "portone_keys_missing": "Payment key is not configured. Please contact the administrator.",
     "phone_label": "Mobile number",
     "phone_placeholder": "01012345678",
-    "phone_hint": "Required to process payment. Digits only.",
+    "phone_hint": "Required to process payment. Korean mobile numbers only — 01012345678 or +82 10 1234 5678 both work.",
     "phone_invalid": "Please enter a valid mobile number. (e.g. 01012345678)",
     "error_generic": "An error occurred while processing payment.",
     "pay_button": "Pay",
