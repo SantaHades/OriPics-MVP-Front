@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-05-19";
+const LAST_UPDATED = "2026-07-24";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const SUPPORT_EMAIL = "hi@ori.pics";
@@ -31,22 +31,22 @@ function RefundKo() {
       <h2>1. 청약철회 기간 (전자상거래법 §17)</h2>
       <ul>
         <li>
-          결제일로부터 <strong>7일 이내</strong>에 유료 플랜의 기능을 사용하지
-          않은 경우 전액 환불 가능합니다.
+          결제일로부터 <strong>7일 이내</strong>, 인증 횟수를 전혀 사용하지 않은
+          경우 <strong>전액 환불</strong>됩니다.
         </li>
         <li>
-          7일 이내라도 다음 경우는 청약철회가 제한됩니다:
-          <ul>
-            <li>Verified 인증, 영구 보관 등 Free 플랜에서 제공하지 않는 유료 기능을 이미 사용하여 그 효용이 회원에게 귀속된 경우</li>
-            <li>전자상거래법 §17 ②항에 따른 디지털 콘텐츠 제공 완료 사유</li>
-          </ul>
+          7일 이내에 일부 사용한 경우, 사용된 부분은 청약철회가 제한되며
+          <strong> 환불액 = 결제 금액 − (사용 횟수 × 회당 정가)</strong>로
+          잔여분을 환불합니다 (위약금 없음). 회당 정가는 요금제 페이지에 고지된
+          1회 이용 기준 금액(별도 고지가 없으면 1회 1,000원, VAT 포함)입니다.
         </li>
       </ul>
 
-      <h2>2. 월간 구독 환불</h2>
+      <h2>2. 월간 구독 해지 (두 방식 중 선택)</h2>
       <ul>
-        <li>청약철회 기간(7일) 경과 후 해지 요청은 <strong>다음 결제 시점부터 효력</strong>이 발생합니다.</li>
-        <li>이미 결제된 당월분은 환불되지 않으며, 회원은 해당 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다.</li>
+        <li><strong>일반해지:</strong> 다음 결제 시점부터 효력이 발생하며, 당월분은 환불되지 않는 대신 해당 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다.</li>
+        <li><strong>중도해지:</strong> 신청 즉시 이용이 종료되고, <strong>환불액 = 결제 금액 − [사용분 정가 환산액 또는 경과 일할액 중 큰 금액] − 잔여 금액의 10%</strong>로 환불합니다.</li>
+        <li>무상 제공분(가입 혜택·이벤트·Free 플랜)은 환불 대상이 아니며, 환불 확정 시 유료 플랜 권한은 즉시 종료됩니다.</li>
       </ul>
 
       <h2>3. 회사 귀책사유로 인한 환불</h2>
@@ -105,14 +105,15 @@ function RefundEn() {
 
       <h2>1. Withdrawal Period (Korean E-Commerce Act §17)</h2>
       <ul>
-        <li>You may request a full refund within <strong>7 days</strong> of payment, provided you have not used paid features.</li>
-        <li>Withdrawal may be restricted within the 7-day window if you have already used paid-tier features (Verified proofs, permanent storage, etc.) that are not offered on the Free tier.</li>
+        <li>Within <strong>7 days</strong> of payment with no usage, you receive a <strong>full refund</strong>.</li>
+        <li>Within 7 days with partial usage, withdrawal is restricted as to the used portion only: <strong>refund = amount paid − (uses × list price per use)</strong>, with no penalty. The list price per use is the per-use amount posted on the pricing page (KRW 1,000 incl. VAT per proof if not separately posted).</li>
       </ul>
 
-      <h2>2. Monthly Subscription Refunds</h2>
+      <h2>2. Monthly Subscription Cancellation (choose one)</h2>
       <ul>
-        <li>After the 7-day withdrawal window, a monthly cancellation takes effect at the <strong>next billing date</strong>.</li>
-        <li>The current month is non-refundable, but you retain access until the end of the paid period.</li>
+        <li><strong>Standard cancellation:</strong> takes effect at the <strong>next billing date</strong>; the current month is non-refundable, but you retain access until the end of the paid period.</li>
+        <li><strong>Mid-term cancellation:</strong> access ends immediately; <strong>refund = amount paid − [the greater of used-portion list value or elapsed-days pro-rata] − 10% of the remainder</strong>.</li>
+        <li>Complimentary usage (signup bonuses, events, Free plan) is not refundable; paid entitlements end immediately once a refund is confirmed.</li>
       </ul>
 
       <h2>3. Refunds Due to Our Fault</h2>

@@ -4,8 +4,8 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-05-12";
-const EFFECTIVE_DATE = "2026-05-12";
+const LAST_UPDATED = "2026-07-24";
+const EFFECTIVE_DATE = "2026-07-24";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const SUPPORT_EMAIL = "hi@ori.pics";
@@ -129,14 +129,30 @@ function TermsKo() {
       <h2 id="refund" className="scroll-mt-20">제11조 (환불 및 청약철회)</h2>
       <ol>
         <li><strong>청약철회 (7일):</strong> 회원은 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제1항에 따라 결제일로부터 7일 이내에 별도의 수수료 없이 청약철회를 요청할 수 있습니다.</li>
-        <li><strong>청약철회의 제한:</strong> 다음 어느 하나에 해당하는 경우에는 같은 법 제17조 제2항에 따라 청약철회가 제한될 수 있습니다.
+        <li><strong>청약철회의 제한:</strong> 다음 어느 하나에 해당하는 경우에는 같은 법 제17조 제2항에 따라 해당 부분에 대한 청약철회가 제한될 수 있습니다. 회사는 결제 화면에서 이러한 제한을 사전에 표시하며, Free 플랜의 무상 이용 횟수를 시험 사용 수단으로 제공합니다.
           <ul>
-            <li>회원이 해당 결제 주기 내에 유료 플랜의 기능(Verified 인증, 영구 보관 등 Free 플랜에서 제공하지 않는 기능)을 이미 사용하여 그 효용이 회원에게 귀속된 경우. 이 경우에도 사용량에 비례한 부분 환불은 본 조 제4항에 따라 처리합니다.</li>
+            <li>회원이 유료 플랜에 포함된 인증 횟수를 이미 사용(인증·공개링크 생성·검증 등 제공 개시)한 경우, 그 <strong>사용된 부분</strong>. 다만 사용하지 않은 부분(가분적 디지털콘텐츠)에 대한 청약철회는 가능하며, 환불액은 본 조 제3항의 산정 기준에 따릅니다.</li>
             <li>회원의 귀책사유로 콘텐츠가 훼손·멸실된 경우.</li>
           </ul>
         </li>
+        <li><strong>환불액 산정 기준:</strong> 회원의 사정에 의한 청약철회·중도해지 시 환불액은 다음 기준으로 산정합니다. 이때 &quot;회당 정가&quot;란 요금제 안내 페이지에 고지된 1회 이용 기준 금액을 말하며, 별도 고지가 없는 경우 1회 인증(공개링크 생성 포함)당 1,000원(VAT 포함)으로 합니다.
+          <ul>
+            <li><strong>결제일로부터 7일 이내, 인증 횟수를 전혀 사용하지 않은 경우:</strong> 전액 환불.</li>
+            <li><strong>결제일로부터 7일 이내, 일부 사용한 경우:</strong> 환불액 = 결제 금액 − (사용 횟수 × 회당 정가). 위약금은 부과하지 않습니다.</li>
+            <li><strong>결제일로부터 7일 경과 후 중도해지를 선택한 경우:</strong> 환불액 = 결제 금액 − [사용 횟수 × 회당 정가 또는 경과 기간의 일할 금액 중 큰 금액] − 잔여 금액의 10%(위약금).</li>
+            <li>무상으로 제공된 이용 횟수(가입 혜택, 이벤트, Free 플랜 제공분 등)는 환불 대상이 아니며, 환불·해지 시 소멸됩니다.</li>
+            <li>위 기준으로 산정한 환불액이 0원 이하인 경우 환불하지 않습니다.</li>
+            <li>환불이 확정되면 해당 유료 플랜의 이용 권한(잔여 인증 횟수, 영구 보관 등)은 즉시 종료되고 Free 플랜으로 전환됩니다.</li>
+          </ul>
+        </li>
         <li><strong>회사 귀책사유로 인한 환불:</strong> 회사의 시스템 장애, 서비스 결함, 약관·법령 위반 등 회사의 귀책사유로 회원이 서비스를 정상적으로 이용하지 못한 경우, 회사는 영향을 받은 기간을 일할 계산하여 즉시 환불하거나 동일 가치의 이용 횟수·이용 기간을 보상합니다.</li>
-        <li><strong>월간 구독 환불:</strong> 청약철회 기간(7일)이 경과한 후의 월간 구독 해지는 다음 결제 시점부터 효력이 발생하며, 이미 결제된 당월분은 환불되지 않습니다. 다만 회원은 해당 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다.</li>
+        <li><strong>월간 구독의 해지:</strong> 회원은 다음 두 방식 중 선택할 수 있습니다.
+          <ul>
+            <li><strong>일반해지:</strong> 다음 결제 시점부터 효력이 발생하며, 이미 결제된 당월분은 환불되지 않는 대신 해당 결제 주기 종료일까지 서비스를 계속 이용할 수 있습니다.</li>
+            <li><strong>중도해지:</strong> 신청 즉시 이용이 종료되고, 본 조 제3항의 산정 기준에 따라 잔여분을 환불합니다.</li>
+          </ul>
+        </li>
+        <li><strong>부정 이용 방지:</strong> 결제 취소·지급 거절(차지백)이 발생한 경우 회사는 해당 금액에 상당하는 이용 횟수를 회수할 수 있으며, 약관 위반으로 이용이 제한·정지된 계정에는 환불이 제공되지 않습니다.</li>
         <li><strong>환불 처리 기간:</strong> 회사는 환불 사유를 확인한 날로부터 3영업일 이내에 결제대행사에 환불(승인 취소 또는 매입 취소)을 요청합니다. 실제 환급 시점은 회원의 결제 수단(카드사·간편결제사) 정책에 따라 결제일과 동일 사이클 또는 다음 사이클에 처리됩니다.</li>
         <li><strong>환불 신청 방법:</strong> 환불 요청은 서비스 내 결제 관리 페이지 또는 <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>로 접수합니다. 회사는 접수일로부터 3영업일 이내에 처리 결과를 안내합니다.</li>
         <li><strong>미성년자 결제 취소:</strong> 미성년자가 법정대리인의 동의 없이 결제한 경우, 미성년자 본인 또는 법정대리인은 결제일로부터 6개월 이내(민법상 취소권 행사기간) 환불을 요청할 수 있으며, 회사는 관련 입증 자료 확인 후 환불합니다.</li>
@@ -181,6 +197,7 @@ function TermsKo() {
       <h2>변경 이력</h2>
       <ul>
         <li>2026-05-12: 제10조(유료 서비스) 및 제11조(환불·청약철회) 본문 갱신</li>
+        <li>2026-07-24: 제11조 개정 — 환불액 산정 기준 신설(제3항: 회당 정가 공제·잔여 10% 위약금), 일반해지·중도해지 선택권 명시, 부정 이용 방지 조항 추가</li>
         <li>2026-05-11: 최초 제정</li>
       </ul>
     </article>
@@ -265,14 +282,30 @@ function TermsEn() {
       <h2 id="refund" className="scroll-mt-20">7. Refunds and Withdrawal</h2>
       <ol>
         <li><strong>7-day withdrawal right:</strong> Under Article 17(1) of the Korean Act on Consumer Protection in E-Commerce, members may withdraw a subscription within 7 days of payment, without fee.</li>
-        <li><strong>Limits on withdrawal:</strong> Under Article 17(2), the right of withdrawal may be limited where:
+        <li><strong>Limits on withdrawal:</strong> Under Article 17(2), the right of withdrawal may be limited — as disclosed on the checkout screen, with the Free plan&apos;s complimentary usage serving as the trial means — where:
           <ul>
-            <li>the member has already used paid-tier features within the current billing cycle (such as Verified-tier proofs or permanent retention) such that the benefit has accrued — in which case the prorated refund in §7.4 applies; or</li>
+            <li>the member has already used proof counts included in a paid plan (proofs, public-link creation, verifications — i.e., provision has begun), <strong>as to the used portion only</strong>. Withdrawal remains available for the unused (divisible) portion, with the refund computed under §7.3; or</li>
             <li>content was damaged or lost due to the member&apos;s fault.</li>
           </ul>
         </li>
+        <li><strong>Refund computation:</strong> For withdrawals or mid-term cancellations at the member&apos;s initiative, refunds are computed as follows. &quot;List price per use&quot; means the per-use price posted on the pricing page; absent a separate posting, it is KRW 1,000 (VAT included) per proof (including public-link creation).
+          <ul>
+            <li><strong>Within 7 days of payment, no usage:</strong> full refund.</li>
+            <li><strong>Within 7 days of payment, partial usage:</strong> refund = amount paid − (uses × list price per use), with no penalty.</li>
+            <li><strong>After 7 days, mid-term cancellation:</strong> refund = amount paid − [the greater of (uses × list price per use) or the pro-rated amount for elapsed days] − 10% of the remaining balance (penalty).</li>
+            <li>Complimentary usage (signup bonuses, events, Free-plan allowances) is not refundable and lapses upon refund or cancellation.</li>
+            <li>No refund is due where the computed amount is zero or less.</li>
+            <li>Once a refund is confirmed, paid-plan entitlements (remaining proof counts, permanent retention, etc.) end immediately and the account reverts to the Free plan.</li>
+          </ul>
+        </li>
         <li><strong>Refunds due to our fault:</strong> If you cannot use the Service normally due to system failure, defects, or our breach of these Terms or law, we will refund the affected period pro-rated, or compensate with equivalent usage or service days.</li>
-        <li><strong>Monthly subscription refunds:</strong> After the 7-day withdrawal window, a monthly cancellation takes effect at the next billing date; the current month is non-refundable, but access continues until the end of that paid period.</li>
+        <li><strong>Monthly subscription cancellation:</strong> Members may choose either:
+          <ul>
+            <li><strong>Standard cancellation:</strong> takes effect at the next billing date; the current month is non-refundable, but access continues until the end of that paid period; or</li>
+            <li><strong>Mid-term cancellation:</strong> access ends immediately and the remainder is refunded per §7.3.</li>
+          </ul>
+        </li>
+        <li><strong>Abuse prevention:</strong> If a payment is disputed or charged back, we may claw back usage counts equivalent to the disputed amount; no refunds are provided for accounts restricted or suspended for violating these Terms.</li>
         <li><strong>Refund processing:</strong> We submit the refund request (authorization void or settlement reversal) to the payment processor within 3 business days of confirming eligibility. Actual return to your payment method follows the card issuer&apos;s or easy-pay provider&apos;s cycle.</li>
         <li><strong>How to request:</strong> Submit refund requests via the in-Service billing page or by email to <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>. We respond with a decision within 3 business days of receipt.</li>
         <li><strong>Minor cancellations:</strong> A minor or their legal guardian may request a refund within 6 months of the payment (the rescission period under the Korean Civil Code) where the minor paid without guardian consent; refunds follow verification of supporting documents.</li>
@@ -315,6 +348,7 @@ function TermsEn() {
       <h2>13. Changes</h2>
       <ul>
         <li>2026-05-12: Updated §6 (Paid Services) and §7 (Refunds and Withdrawal) with substantive terms.</li>
+        <li>2026-07-24: Amended §7 — added refund computation (§7.3: list-price deduction, 10% penalty on remainder), standard vs. mid-term cancellation options, and abuse-prevention clause.</li>
         <li>2026-05-11: Initial publication.</li>
       </ul>
       <p>
