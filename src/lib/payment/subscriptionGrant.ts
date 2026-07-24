@@ -160,19 +160,38 @@ export async function verifyAndGrantSubscription(opts: {
         },
       });
 
+      // 크레딧은 가산이 아니라 플랜 정액으로 리셋(SET) — pricing-policy.md §5.1 이월 불가
+      // (cap 모델)과 정합. 매월 빌링키 자동청구가 돌 때마다 누적되는 것을 방지한다.
+      // creditsRenewAt도 결제 주기 종료일로 정렬해, 가입일 anchor 기반의
+      // renewCreditsIfDue(cron/lazy)가 결제 주기 중간에 이중 리셋하지 않게 한다.
+      // (청구 실패 dunning 중에는 renewCreditsIfDue가 grace 리필을 제공하고,
+      //  7일 후 다운그레이드되면 free 정액으로 회귀 — 의도된 동작.)
+      const prev = await tx.user.findUnique({
+        where: { id: userId },
+        select: { credits: true },
+      });
+      const previousCredits = prev?.credits ?? 0;
+
       const updated = await tx.user.update({
         where: { id: userId },
-        data: { tier: "pro", credits: { increment: grant } },
+        data: { tier: "pro", credits: grant, creditsRenewAt: periodEnd },
         select: { credits: true },
       });
 
       await tx.creditTransaction.create({
         data: {
           userId,
-          delta: grant,
+          delta: grant - previousCredits,
           action: "subscription_grant",
           balanceAfter: updated.credits,
-          metadata: { plan, paymentId, amount: paidAmount, gateway: "portone", pgProvider },
+          metadata: {
+            plan,
+            paymentId,
+            amount: paidAmount,
+            gateway: "portone",
+            pgProvider,
+            previous_credits: previousCredits,
+          },
         },
       });
 
