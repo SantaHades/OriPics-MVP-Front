@@ -40,7 +40,38 @@ export async function GET(req: NextRequest) {
   let charged = 0;
   let alreadyDone = 0;
   let failed = 0;
+  let downgraded = 0;
   const errors: string[] = [];
+
+  // 0) 일반해지 예약(cancelAtPeriodEnd) 구독이 기간 만료된 경우: 청구 대신 종료 처리.
+  //    status=canceled + tier=free. 크레딧은 renewCreditsIfDue가 다음 갱신 시점
+  //    (creditsRenewAt=periodEnd로 정렬됨)에 free 정액(20)으로 리셋한다.
+  try {
+    const expired = await prisma.subscription.findMany({
+      where: {
+        status: "active",
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: { lte: new Date() },
+      },
+      select: { userId: true },
+      take: BATCH_SIZE,
+    });
+    for (const sub of expired) {
+      await prisma.$transaction([
+        prisma.subscription.update({
+          where: { userId: sub.userId },
+          data: { status: "canceled" },
+        }),
+        prisma.user.update({
+          where: { id: sub.userId },
+          data: { tier: "free" },
+        }),
+      ]);
+      downgraded++;
+    }
+  } catch (e: any) {
+    errors.push(`downgrade: ${e?.message || e}`);
+  }
 
   try {
     const due = await prisma.subscription.findMany({
@@ -88,10 +119,10 @@ export async function GET(req: NextRequest) {
     }
   } catch (e: any) {
     return NextResponse.json(
-      { detail: `charge_error:${e?.message || e}`, charged, alreadyDone, failed, errors },
+      { detail: `charge_error:${e?.message || e}`, charged, alreadyDone, failed, downgraded, errors },
       { status: 500 },
     );
   }
 
-  return NextResponse.json({ ok: true, charged, alreadyDone, failed, errors: errors.slice(0, 20) });
+  return NextResponse.json({ ok: true, charged, alreadyDone, failed, downgraded, errors: errors.slice(0, 20) });
 }

@@ -3,12 +3,23 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
-import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw } from "lucide-react";
+import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard } from "lucide-react";
 import { Link } from "@/navigation";
 import { supabase } from "@/lib/supabase";
 import { useTranslations } from "next-intl";
 import { useCredits } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
+
+const SUPPORT_EMAIL = "hi@ori.pics";
+
+interface SubscriptionInfo {
+  plan: string;
+  status: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  canceledAt: string | null;
+}
 
 interface ProofRecord {
   id: string;
@@ -38,6 +49,46 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  // 구독 관리 (일반해지 예약/재개 — 약관 제11조 제5항)
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [subBusy, setSubBusy] = useState(false);
+  const [subError, setSubError] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/billing/subscription")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setSubscription(d?.subscription ?? null))
+      .catch(() => {});
+  }, []);
+
+  const handleSubscriptionAction = async (action: "cancel" | "resume") => {
+    setSubBusy(true);
+    setSubError(null);
+    try {
+      const res = await fetch("/api/billing/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setSubscription((prev) =>
+        prev
+          ? {
+              ...prev,
+              cancelAtPeriodEnd: action === "cancel",
+              canceledAt: action === "cancel" ? new Date().toISOString() : null,
+            }
+          : prev,
+      );
+      setShowCancelModal(false);
+    } catch {
+      setSubError(t("subscription.error_generic"));
+    } finally {
+      setSubBusy(false);
+    }
+  };
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -469,6 +520,131 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* 구독 관리 섹션 (유료 구독자에게만 표시) */}
+        {subscription && subscription.status === "active" && (
+          <div id="subscription" className="mt-12 pt-8 border-t border-slate-100 scroll-mt-24">
+            <div className="flex items-center gap-3 mb-6">
+              <CreditCard size={20} className="text-blue-600" />
+              <h2 className="text-lg font-bold">{t("subscription.title")}</h2>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white/40 p-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">{t("subscription.plan_label")}</p>
+                  <p className="font-bold">OriPics Pro</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">{t("subscription.status_label")}</p>
+                  <p className={`font-bold ${subscription.cancelAtPeriodEnd ? "text-amber-600" : "text-emerald-600"}`}>
+                    {subscription.cancelAtPeriodEnd
+                      ? t("subscription.status_cancel_scheduled")
+                      : t("subscription.status_active")}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">
+                    {subscription.cancelAtPeriodEnd
+                      ? t("subscription.ends_at_label")
+                      : t("subscription.next_billing_label")}
+                  </p>
+                  <p className="font-bold tabular-nums">
+                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {subscription.cancelAtPeriodEnd && (
+                <p className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                  {t("subscription.canceled_notice", {
+                    date: new Date(subscription.currentPeriodEnd).toLocaleDateString(),
+                  })}
+                </p>
+              )}
+
+              {subError && (
+                <p className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+                  {subError}
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-3">
+                {subscription.cancelAtPeriodEnd ? (
+                  <button
+                    onClick={() => handleSubscriptionAction("resume")}
+                    disabled={subBusy}
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:bg-slate-300 transition-colors"
+                  >
+                    {t("subscription.resume_button")}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowCancelModal(true)}
+                    disabled={subBusy}
+                    className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                  >
+                    {t("subscription.cancel_button")}
+                  </button>
+                )}
+              </div>
+
+              {/* 환불 신청 (7일 청약철회 · 중도해지) — 1차: 이메일 접수 */}
+              <div className="mt-5 pt-4 border-t border-slate-100">
+                <p className="text-xs font-semibold text-slate-600 mb-1">
+                  {t("subscription.refund_request_label")}
+                </p>
+                <p className="text-[11px] text-slate-500 mb-2">
+                  {t("subscription.refund_request_desc")}{" "}
+                  <Link href="/refund" className="underline hover:text-slate-800" target="_blank">
+                    {t("subscription.refund_policy_link")}
+                  </Link>
+                </p>
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("subscription.refund_mail_subject"))}&body=${encodeURIComponent(t("subscription.refund_mail_body", { email: session?.user?.email ?? "" }))}`}
+                  className="inline-block px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                >
+                  {t("subscription.refund_request_button")}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 구독 해지 확인 모달 */}
+        {showCancelModal && subscription && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {t("subscription.cancel_modal_title")}
+              </h3>
+              <p className="text-sm text-slate-600 mb-2">
+                {t("subscription.cancel_modal_desc", {
+                  date: new Date(subscription.currentPeriodEnd).toLocaleDateString(),
+                })}
+              </p>
+              <p className="text-xs text-slate-500 mb-5">
+                {t("subscription.cancel_modal_refund_hint")}
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={subBusy}
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  {t("subscription.cancel_modal_keep")}
+                </button>
+                <button
+                  onClick={() => handleSubscriptionAction("cancel")}
+                  disabled={subBusy}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                >
+                  {subBusy ? "…" : t("subscription.cancel_modal_confirm")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 증명 히스토리 섹션 */}
         <div className="mt-12 pt-8 border-t border-slate-100">
