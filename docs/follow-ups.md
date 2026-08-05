@@ -118,13 +118,11 @@
 | ID | 항목 | 트리거 | P |
 |---|---|---|---|
 | A-6 | J-7 결제 webhook 처리 + 구독 lifecycle (subscription_grant 충전 포함) | A-1 완료 후 | P0 |
-| A-7 | **보관 라이프사이클 — v3 보관함 모델로 재정의 (2026-08-06, [pricing-policy §11](pricing-policy.md))**: "영구 보관" 폐기 → ①사용자 보관함 상태(Pro 5GB 포함, 활성 중 무기한 보관) ②링크별 만료일(Free 7일, 패스 30/180일) **2계층**으로 구현. cleanup cron 개편(현재 tier 무관 7일 일괄 삭제 — Pro 판매 시작 후 약속 위반 상태, **오픈 전 P0**) + 해지 30일 grace + 용량 초과 시 신규 링크 차단(기존 삭제 금지). **구현 시 포함**: 업로드 `cacheControl` 1년 immutable 설정(현재 미설정=기본 1시간 — cached egress $0.03/GB로 뷰 비용 1/3, A-36 계층 2) | **오픈 전 (P0 승격)** | P0 |
 | A-8 | ~~J-9 증명서 PDF 발급~~ → 1차 구현 완료 (2026-05-13). [lib/certificate/render.tsx](../src/lib/certificate/render.tsx) + [GET /api/links/[id]/certificate](../src/app/api/links/[id]/certificate/route.ts). 트레이드오프는 A-23·A-24·A-25 참조 | DONE | — |
 | A-20 | **매월 크레딧 자동 갱신** — `creditsRenewAt` 도래 시 Free 10 / Pro 1000 / Business 10000 충전(`monthly_renewal`). Vercel Cron(daily) 또는 NextAuth session callback에서 lazy refresh. **갭: 미구현 시 1개월 후 모든 사용자가 0크레딧으로 멈춤** | 베타 시작 전 | P1 |
 | A-21 | 어드민 크레딧 조정 UI/API — CS 대응(환불·보너스). 권한 가드 + `manual_adjust` 트랜잭션 기록 | 베타 운영 중 | P2 |
 | A-22 | **익명 메시지 전송 기능 구현 — say2you와 연계 검토** — 메타 V4의 link_id로 검증자가 원본 등록자에게 익명 메시지 송수신. 등록자 통제 하에 답신 시점에만 이메일 노출. 이메일을 메타에 직박하는 대안의 안전 우회 경로 (개보법·GDPR·스팸 risk 회피) | 베타 후 | P3 |
 | A-23 | **증명서 PDF — 한글 폰트 번들링** — 현재 Google gstatic Noto Sans KR CDN URL 하드코딩([render.tsx](../src/lib/certificate/render.tsx)). URL이 깨지면 한글이 □ 박스로 렌더됨. 대안: postinstall에서 폰트 다운로드 → `public/fonts/`(gitignored) → fs.readFileSync로 로드. 또는 jsdelivr npm CDN(Pretendard) 사용 | 베타 시작 전 또는 폰트 깨짐 감지 시 | P1 |
-| A-24 | **증명서 PDF — v3 하이브리드로 재정의 (2026-08-06)**: Pro **월 5건 무료(크레딧 미차감)** + 초과분 크레딧 −10/건(기존 차감 유지). `creditsRenewAt` 주기 기준 무료분 카운트 + 잔여 횟수 UI. 기존 "5건 캡" 안 대체 — 5건이 진짜 혜택이 되면서 남용은 크레딧 한도가 통제 | 오픈 전 (Phase A) | P1 |
 | A-25 | **증명서 PDF — 사진 썸네일 임베드** — 현재 PDF에 실제 이미지는 미포함, QR로 검증 URL 참조만. 사진을 PDF 본문에 직접 임베드하면 B2B/소송 제출 시 단독 문서로 가치 상승. 단 음란물·저작권 침해 이미지 임베드 위험 → 신고 시스템 + 모더레이션 게이트 필요 | 첫 B2B 영업 미팅 시점 | P3 |
 | A-26 | **`/api/links/publish` 마무리 단계 진행 표시** — 업로드(PUT) 진행률은 XHR onprogress로 실측 가능하나, publish 단계(C2PA 매니페스트 첨부·Storage 재업로드·DB write 등)는 단일 요청이라 진행률 측정 불가. SSL.com eSigner 본 통합 후 서명 호출이 추가되면 publish 응답이 1~3s 길어짐 → "마무리 중" stage 라벨만이라도 추가하여 사용자 체감 개선. SSE/streaming 응답까지 가면 더 정확하지만 비용 큼. (2026-05-17 라우트명 변경: `confirm` → `publish`) | A-2(C2PA 본 통합) 후 | P2 |
 | A-27 | **클라이언트 stego embed 진행률** — 200MP 이미지에서 LSB 임베드 루프가 ~500ms 동기 실행됨. setTimeout/requestIdleCallback로 chunked 처리하여 진행률 콜백 노출 가능. 1800px 이하에선 의미 없지만 기가픽셀 이미지에서 체감 개선 | 기가픽셀 사용 사례 발생 시 | P3 |
@@ -135,7 +133,6 @@
 | A-33 | **인증 후 미사용 30일 cleanup** — receipt JWT TTL이 30일이라 그 사이 사용자가 publish 안 하면 차감된 proof 비용은 사실상 소실. UX 측면에서 30일 도래 전 "사용 안 한 인증 X건 남았습니다" 알림 또는 환불 정책 검토 | 베타 운영 중 | P3 |
 | A-34 | **환불 자동화 2단계 (2026-07-24 대표 승인 — "한꺼번에" 일괄 구현)** — 1단계(해지 예약/재개 셀프서브, `bdbba9e`)에 이어: ① **중도해지 자동 환불** — 신청 시 서버가 결제 후 사용 횟수 조회 → 약관 제11조 산식 자동 계산(7일 내: 결제액−사용횟수×회당정가 ₩1,000, 위약금 없음 / 7일 후: −max(사용분 정가, 경과 일할)−잔여 10%) → PortOne `cancelPayment` **부분 취소** 호출 → 구독 종료·tier 다운그레이드까지 원클릭. ② **`Transaction.Cancelled` webhook** — 콘솔/외부 환불 시 구독 자동 회수(현재 webhook은 Paid만 처리, 취소는 ack만). ③ **CS 수동 처리용 조회 스크립트/내부 문서** — 자동화 전·장애 시 대비: 사용 횟수·환불액 자동 계산 스크립트 + admin.portone.io 부분취소 절차. ④ dunning(청구 실패 7일 재시도→다운그레이드)도 같은 사이클에 검토. ⑤ **환불 시 크레딧 원복 규칙(2026-07-24 대표 질의)**: Free→Pro 업그레이드 후 환불하면 크레딧을 Free 정액(20)이 아니라 **업그레이드 직전 잔액으로 원복** — `subscription_grant` TX 메타데이터 `previous_credits`(수정 `87c3161`부터 기록됨) 사용. Pro 기간 사용분은 환불액 공제(사용횟수×정가)로 이미 정산되므로 크레딧에서 이중 차감 금지. 사용 10건↑이면 산식상 환불액 ≤0 → 환불 불가로 어뷰즈 자연 차단. `creditsRenewAt` anchor 원복 여부도 함께 구현. 배경·산식 근거: [refund-credits-policy-research.md](refund-credits-policy-research.md) | 서비스 오픈 후 첫 환불 요청 발생 전 (또는 오픈 직후 1주 내) | P1 |
 | A-35 | **외국인·해외 결제 트랙 (2026-07-24 대표 질의)** — 휴대폰 +82 형식은 정규화로 해결됐으나(체크아웃, 국내 번호 한정), 근본 제약: ①**KG이니시스 국내 MID는 해외 발급 카드 미지원**(해외카드 별도 계약 또는 PortOne 해외결제 채널 필요) ②INICIS 빌링키 발급이 해외 휴대폰 번호를 수용하는지 미검증 ③글로벌(USD) 가격 미정(pricing-policy §7 잔여 변수, 잠정 $7.99/Pro). 선택지: PortOne 해외카드 채널 추가 vs Stripe/Paddle 별도 트랙(Merchant of Record면 부가세 처리 단순). 글로벌 마케팅 시작 전 결정 | 글로벌 진출 결정 시점 | P3 |
-| A-36 | **공개링크 뷰어 경량 표시본 분리 (egress 대비책 계층 3, 2026-08-06)** — 현재 뷰어가 원본 PNG(최대 ~30MB)를 그대로 로딩 → 뷰 트래픽이 egress 비용의 대부분. publish 시 표시용 리사이즈본(~1200px, ~500KB) 병행 저장(스토리지 +2%) → 뷰어는 경량본, **원본은 명시적 다운로드 버튼**으로 분리(뷰 비용 ~1/60). 인증 검증은 원본 기준이므로 "미리보기=경량본 / 검증·다운로드=원본" UX 구분 필수. 선행 계층: ①Spend Cap ON(U-31에 포함) ②업로드 cacheControl 1년 immutable(A-7에 포함). 후순위 계층: WAF rate limit(트래픽 후), R2 마이그레이션(egress 비용 가시화 시). **2026-08-06 P1 승격**: 폭주가 아닌 자연 사용만으로도 원본 사이즈 파워유저 1명이 월 ~150GB(~₩19,000, 요금의 192%) 적자 시나리오 확인 → 경량본이 이를 2.5GB로 차단하는 열쇠. 요금제에 전송량 한도를 노출하는 대신 이 구조 개선+약관 공정 이용 조항(제8조, 2026-08-06 추가)으로 대응 | **오픈 전 (Phase A, A-7과 동일 사이클)** | P1 |
 
 ### 2.3 모바일·모노레포
 
@@ -216,6 +213,7 @@ SSL.com 회신 (U-1)
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-06 | **A-7·A-24·A-36 완료** (커밋 `e052578`, Phase A) — 보관함 2계층 retention(expires_at, cleanup cron 개편, grace 37일, 재구독 복원, 5GB 체크, cacheControl 1년), 뷰어 경량 표시본(뷰 트래픽 ~1/60), PDF 월 5건 무료 하이브리드, '영구 보관' 문구 전면 전환. 잔여: U-31 Supabase Pro 전환(User)·Phase B 보관함 확장 애드온 결제 |
 | 2026-05-10 | 최초 작성 — 30 사용자 항목 + 19 AI 항목 통합. 의존 트리·원본 출처 매핑 |
 | 2026-05-11 | U-13 이용약관 골격 완성 (KO/EN, KCC 표준약관 16개 조항). §10·§11(유료 서비스·환불)은 J-7 시점 갱신 필요로 축소 |
 | 2026-05-11 | U-9 개인정보 보호 책임자 성명 확정 (대표이사 손용석). 행 제거 |
