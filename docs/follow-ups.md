@@ -156,8 +156,8 @@
 |---|---|---|---|
 | A-15 | PoC 라우트 `/api/c2pa-poc/*` 제거 | A-2 + production 검증 후 | P3 |
 | A-16 | todo.md 갱신 (구버전 — Free 30 크레딧 → 10, 비로그인 정책 등) | NOW | P3 |
-| A-17 | Next.js 14 → 15 major upgrade (Server Components DoS 2건 해결). 자동 Dependabot 차단 중 ([.github/dependabot.yml](../.github/dependabot.yml)), 별도 PR로 수동 진행 | 별도 트랙 | P3 |
-| A-18 | next-auth v5 마이그레이션 (nodemailer Low advisory 해소, nodemailer v8 자동 차단 해제). 자동 Dependabot 차단 중 ([.github/dependabot.yml](../.github/dependabot.yml)), 별도 PR로 수동 진행 | 별도 트랙 | P3 |
+| A-17 | **Next.js 14 → 15 major upgrade** (2026-08-06 트리아지: 잔여 next 알림 전부 이 항목으로 수렴 — 목표 15.5.21+. Server Actions 미사용·rewrites 없음·App Router라 대부분 미해당, 잔여 RSC DoS는 Vercel 플랫폼 완화로 수용. next 내장 postcss 8.4.31도 함께 해소). 자동 Dependabot 차단 중, 별도 PR로 수동 진행 | 별도 트랙 | P2 |
+| A-18 | next-auth v5 마이그레이션 — ~~nodemailer advisory 해소 목적~~ 2026-08-06 트리아지에서 nodemailer 9 직접 패치·next-auth 4.24.15(critical 해소)로 **시급성 소멸**. v5는 기능적 필요 발생 시에만 | 별도 트랙 | P3 |
 | A-19 | SOC 2 시작 | 첫 B2B 미팅 시점 | P3 |
 
 ---
