@@ -96,7 +96,7 @@
 | U-28 | Vercel env 갱신 — eSigner CSC API 자격증명 5개 | SSL.com 회신 후 | SSL.com 응답 | P0 |
 | U-29 | Preview에 `ORIPICS_C2PA_ENABLED=true` + dev cert 사전 검증 | NOW | Vercel 대시보드 | P2 |
 | U-30 | Vercel env 갱신 — `ORIPICS_ATTEST_SECRET` (선택, 없으면 JWT_SECRET 재사용) | 모바일 본 시작 | 없음 | P2 |
-| U-31 | **Supabase Free → Pro($25/월) 전환** — 백업 7일(결제 데이터) + 보관함 스토리지 전제. 대시보드 → Settings → Billing (v3 §11.4·§11.5 Phase A) | **오픈 전** | 없음 | P0 |
+| U-31 | **Supabase Free → Pro($25/월) 전환** — 백업 7일(결제 데이터) + 보관함 스토리지 전제. 대시보드 → Settings → Billing (v3 §11.4·§11.5 Phase A). **전환 시 필수 2가지**: ①**Spend Cap ON**(egress 폭주 시 과금 대신 요청 거부 — 초기엔 ON, 정상 성장으로 250GB 근접 시 OFF+모니터링 전환) ②Vercel Spend Management 예산·알림 확인 (A-36 egress 대비책 계층 1) | **오픈 전** | 없음 | P0 |
 | U-32 | **KG이니시스 일반결제(원타임) 추가 계약 확인** — 3차 회신(6/30)에서 "일반결제 없음(구독만)" 답변했으므로, 패스 상품(라이트·사고) 출시 전 PortOne/KG에 일반결제 추가 심사 필요 여부 문의 (v3 §11.5 Phase C 전제) | 패스 출시 결정 시 | KG 계약 | P2 |
 
 ---
@@ -118,7 +118,7 @@
 | ID | 항목 | 트리거 | P |
 |---|---|---|---|
 | A-6 | J-7 결제 webhook 처리 + 구독 lifecycle (subscription_grant 충전 포함) | A-1 완료 후 | P0 |
-| A-7 | **보관 라이프사이클 — v3 보관함 모델로 재정의 (2026-08-06, [pricing-policy §11](pricing-policy.md))**: "영구 보관" 폐기 → ①사용자 보관함 상태(Pro 5GB 포함, 활성 중 무기한 보관) ②링크별 만료일(Free 7일, 패스 30/180일) **2계층**으로 구현. cleanup cron 개편(현재 tier 무관 7일 일괄 삭제 — Pro 판매 시작 후 약속 위반 상태, **오픈 전 P0**) + 해지 30일 grace + 용량 초과 시 신규 링크 차단(기존 삭제 금지) | **오픈 전 (P0 승격)** | P0 |
+| A-7 | **보관 라이프사이클 — v3 보관함 모델로 재정의 (2026-08-06, [pricing-policy §11](pricing-policy.md))**: "영구 보관" 폐기 → ①사용자 보관함 상태(Pro 5GB 포함, 활성 중 무기한 보관) ②링크별 만료일(Free 7일, 패스 30/180일) **2계층**으로 구현. cleanup cron 개편(현재 tier 무관 7일 일괄 삭제 — Pro 판매 시작 후 약속 위반 상태, **오픈 전 P0**) + 해지 30일 grace + 용량 초과 시 신규 링크 차단(기존 삭제 금지). **구현 시 포함**: 업로드 `cacheControl` 1년 immutable 설정(현재 미설정=기본 1시간 — cached egress $0.03/GB로 뷰 비용 1/3, A-36 계층 2) | **오픈 전 (P0 승격)** | P0 |
 | A-8 | ~~J-9 증명서 PDF 발급~~ → 1차 구현 완료 (2026-05-13). [lib/certificate/render.tsx](../src/lib/certificate/render.tsx) + [GET /api/links/[id]/certificate](../src/app/api/links/[id]/certificate/route.ts). 트레이드오프는 A-23·A-24·A-25 참조 | DONE | — |
 | A-20 | **매월 크레딧 자동 갱신** — `creditsRenewAt` 도래 시 Free 10 / Pro 1000 / Business 10000 충전(`monthly_renewal`). Vercel Cron(daily) 또는 NextAuth session callback에서 lazy refresh. **갭: 미구현 시 1개월 후 모든 사용자가 0크레딧으로 멈춤** | 베타 시작 전 | P1 |
 | A-21 | 어드민 크레딧 조정 UI/API — CS 대응(환불·보너스). 권한 가드 + `manual_adjust` 트랜잭션 기록 | 베타 운영 중 | P2 |
@@ -135,6 +135,7 @@
 | A-33 | **인증 후 미사용 30일 cleanup** — receipt JWT TTL이 30일이라 그 사이 사용자가 publish 안 하면 차감된 proof 비용은 사실상 소실. UX 측면에서 30일 도래 전 "사용 안 한 인증 X건 남았습니다" 알림 또는 환불 정책 검토 | 베타 운영 중 | P3 |
 | A-34 | **환불 자동화 2단계 (2026-07-24 대표 승인 — "한꺼번에" 일괄 구현)** — 1단계(해지 예약/재개 셀프서브, `bdbba9e`)에 이어: ① **중도해지 자동 환불** — 신청 시 서버가 결제 후 사용 횟수 조회 → 약관 제11조 산식 자동 계산(7일 내: 결제액−사용횟수×회당정가 ₩1,000, 위약금 없음 / 7일 후: −max(사용분 정가, 경과 일할)−잔여 10%) → PortOne `cancelPayment` **부분 취소** 호출 → 구독 종료·tier 다운그레이드까지 원클릭. ② **`Transaction.Cancelled` webhook** — 콘솔/외부 환불 시 구독 자동 회수(현재 webhook은 Paid만 처리, 취소는 ack만). ③ **CS 수동 처리용 조회 스크립트/내부 문서** — 자동화 전·장애 시 대비: 사용 횟수·환불액 자동 계산 스크립트 + admin.portone.io 부분취소 절차. ④ dunning(청구 실패 7일 재시도→다운그레이드)도 같은 사이클에 검토. ⑤ **환불 시 크레딧 원복 규칙(2026-07-24 대표 질의)**: Free→Pro 업그레이드 후 환불하면 크레딧을 Free 정액(20)이 아니라 **업그레이드 직전 잔액으로 원복** — `subscription_grant` TX 메타데이터 `previous_credits`(수정 `87c3161`부터 기록됨) 사용. Pro 기간 사용분은 환불액 공제(사용횟수×정가)로 이미 정산되므로 크레딧에서 이중 차감 금지. 사용 10건↑이면 산식상 환불액 ≤0 → 환불 불가로 어뷰즈 자연 차단. `creditsRenewAt` anchor 원복 여부도 함께 구현. 배경·산식 근거: [refund-credits-policy-research.md](refund-credits-policy-research.md) | 서비스 오픈 후 첫 환불 요청 발생 전 (또는 오픈 직후 1주 내) | P1 |
 | A-35 | **외국인·해외 결제 트랙 (2026-07-24 대표 질의)** — 휴대폰 +82 형식은 정규화로 해결됐으나(체크아웃, 국내 번호 한정), 근본 제약: ①**KG이니시스 국내 MID는 해외 발급 카드 미지원**(해외카드 별도 계약 또는 PortOne 해외결제 채널 필요) ②INICIS 빌링키 발급이 해외 휴대폰 번호를 수용하는지 미검증 ③글로벌(USD) 가격 미정(pricing-policy §7 잔여 변수, 잠정 $7.99/Pro). 선택지: PortOne 해외카드 채널 추가 vs Stripe/Paddle 별도 트랙(Merchant of Record면 부가세 처리 단순). 글로벌 마케팅 시작 전 결정 | 글로벌 진출 결정 시점 | P3 |
+| A-36 | **공개링크 뷰어 경량 표시본 분리 (egress 대비책 계층 3, 2026-08-06)** — 현재 뷰어가 원본 PNG(최대 ~30MB)를 그대로 로딩 → 뷰 트래픽이 egress 비용의 대부분. publish 시 표시용 리사이즈본(~1200px, ~500KB) 병행 저장(스토리지 +2%) → 뷰어는 경량본, **원본은 명시적 다운로드 버튼**으로 분리(뷰 비용 ~1/60). 인증 검증은 원본 기준이므로 "미리보기=경량본 / 검증·다운로드=원본" UX 구분 필수. 선행 계층: ①Spend Cap ON(U-31에 포함) ②업로드 cacheControl 1년 immutable(A-7에 포함). 후순위 계층: WAF rate limit(트래픽 후), R2 마이그레이션(egress 비용 가시화 시) | 오픈 직후 | P2 |
 
 ### 2.3 모바일·모노레포
 
