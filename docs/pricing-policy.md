@@ -363,9 +363,12 @@ Pro ₩9,900/월
 
 ### 11.5 실행 순서
 
-1. **Phase A (오픈 전)**: Supabase Pro 전환(User) → A-7 구현(보관함 모델: Pro 5GB
-   포함 + 링크 만료일 2계층 + cleanup cron 개편) → UI 문구 전면 전환(11.2 목록) →
-   PDF 하이브리드(A-24 재정의) 구현
+1. **Phase A (오픈 전)**: Supabase Pro 전환+Spend Cap ON(User, U-31) → A-7 구현
+   (보관함 모델: Pro 5GB 포함 + 링크 만료일 2계층 + cleanup cron 개편 + cacheControl
+   immutable) → **A-36 뷰어 경량 표시본**(자연 egress 적자 차단 — 2026-08-06 P1 승격,
+   원본 사이즈 파워유저 월 150GB→2.5GB) → UI 문구 전면 전환(11.2 목록) →
+   PDF 하이브리드(A-24 재정의) 구현. 요금제에 전송량 한도는 노출하지 않음 —
+   구조 개선+약관 제8조 공정 이용 조항(2026-08-06)으로 대응.
 2. **Phase B (오픈 직후)**: 보관함 확장 애드온 결제(멀티 구독 스키마 확장)
 3. **Phase C (2차)**: KG 일반결제 확인(User) → 패스 2종 출시
 4. 증명 리포트: SSL.com cert/TSA 연동 후

@@ -4,8 +4,8 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-07-24";
-const EFFECTIVE_DATE = "2026-07-24";
+const LAST_UPDATED = "2026-08-06";
+const EFFECTIVE_DATE = "2026-08-06";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const SUPPORT_EMAIL = "hi@ori.pics";
@@ -97,6 +97,7 @@ function TermsKo() {
             <li>회사의 합리적인 사유로 서비스 중단이 불가피한 경우</li>
           </ul>
         </li>
+        <li><strong>공정 이용:</strong> 회사는 안정적인 서비스 제공을 위하여, 서비스의 통상적인 이용 범위를 현저히 초과하는 트래픽이 발생하는 경우(예: 공개링크에 대한 자동화된 대량 조회·다운로드, 외부 사이트에의 대량 임베드 등) 해당 회원 또는 공개링크에 대하여 전송 속도 제한, 일시적 접근 제한 등의 조치를 취할 수 있습니다. 이러한 상황이 지속되는 경우 회사는 회원과 협의하여 적합한 이용 방안(Business 플랜 등)을 안내합니다. 본 항의 조치는 남용 방지 목적에 한하며, 통상적인 이용에는 적용되지 않습니다.</li>
       </ol>
 
       <h2>제9조 (이미지·콘텐츠의 권리 및 책임)</h2>
@@ -198,6 +199,7 @@ function TermsKo() {
       <ul>
         <li>2026-05-12: 제10조(유료 서비스) 및 제11조(환불·청약철회) 본문 갱신</li>
         <li>2026-07-24: 제11조 개정 — 환불액 산정 기준 신설(제3항: 회당 정가 공제·잔여 10% 위약금), 일반해지·중도해지 선택권 명시, 부정 이용 방지 조항 추가</li>
+        <li>2026-08-06: 제8조에 공정 이용 조항 추가 (통상 범위를 현저히 초과하는 트래픽에 대한 제한 조치)</li>
         <li>2026-05-11: 최초 제정</li>
       </ul>
     </article>
@@ -258,6 +260,7 @@ function TermsEn() {
         <li>You retain ownership of content you upload. The Company is granted a limited license to process such content solely to operate, verify, support, and defend the Service.</li>
         <li>The Service does not warrant the legality or factual truth of uploaded content; it only records pixel integrity and provenance metadata.</li>
         <li>Retention periods: Free plan — 7 days; paid plans — for the subscription period (with a 30-day grace period upon downgrade).</li>
+        <li><strong>Fair use:</strong> To keep the Service stable, where traffic substantially exceeds ordinary use (e.g., automated bulk viewing or downloading of public links, or large-scale embedding of public links on external sites), the Company may throttle transfer speeds or temporarily restrict access to the affected member or links. If such patterns persist, we will contact the member to arrange a suitable plan (e.g., Business). These measures target abuse only and do not apply to ordinary use.</li>
       </ol>
 
       <h2 id="paid" className="scroll-mt-20">6. Paid Services</h2>
@@ -349,6 +352,7 @@ function TermsEn() {
       <ul>
         <li>2026-05-12: Updated §6 (Paid Services) and §7 (Refunds and Withdrawal) with substantive terms.</li>
         <li>2026-07-24: Amended §7 — added refund computation (§7.3: list-price deduction, 10% penalty on remainder), standard vs. mid-term cancellation options, and abuse-prevention clause.</li>
+        <li>2026-08-06: Added fair-use clause to §5 (measures against traffic substantially exceeding ordinary use).</li>
         <li>2026-05-11: Initial publication.</li>
       </ul>
       <p>
