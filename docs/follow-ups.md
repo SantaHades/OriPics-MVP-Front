@@ -96,6 +96,8 @@
 | U-28 | Vercel env 갱신 — eSigner CSC API 자격증명 5개 | SSL.com 회신 후 | SSL.com 응답 | P0 |
 | U-29 | Preview에 `ORIPICS_C2PA_ENABLED=true` + dev cert 사전 검증 | NOW | Vercel 대시보드 | P2 |
 | U-30 | Vercel env 갱신 — `ORIPICS_ATTEST_SECRET` (선택, 없으면 JWT_SECRET 재사용) | 모바일 본 시작 | 없음 | P2 |
+| U-31 | **Supabase Free → Pro($25/월) 전환** — 백업 7일(결제 데이터) + 보관함 스토리지 전제. 대시보드 → Settings → Billing (v3 §11.4·§11.5 Phase A) | **오픈 전** | 없음 | P0 |
+| U-32 | **KG이니시스 일반결제(원타임) 추가 계약 확인** — 3차 회신(6/30)에서 "일반결제 없음(구독만)" 답변했으므로, 패스 상품(라이트·사고) 출시 전 PortOne/KG에 일반결제 추가 심사 필요 여부 문의 (v3 §11.5 Phase C 전제) | 패스 출시 결정 시 | KG 계약 | P2 |
 
 ---
 
@@ -116,13 +118,13 @@
 | ID | 항목 | 트리거 | P |
 |---|---|---|---|
 | A-6 | J-7 결제 webhook 처리 + 구독 lifecycle (subscription_grant 충전 포함) | A-1 완료 후 | P0 |
-| A-7 | J-8 영구 보관 라이프사이클 + 다운그레이드 30일 grace | A-1 완료 후 | P1 |
+| A-7 | **보관 라이프사이클 — v3 보관함 모델로 재정의 (2026-08-06, [pricing-policy §11](pricing-policy.md))**: "영구 보관" 폐기 → ①사용자 보관함 상태(Pro 5GB 포함, 활성 중 무기한 보관) ②링크별 만료일(Free 7일, 패스 30/180일) **2계층**으로 구현. cleanup cron 개편(현재 tier 무관 7일 일괄 삭제 — Pro 판매 시작 후 약속 위반 상태, **오픈 전 P0**) + 해지 30일 grace + 용량 초과 시 신규 링크 차단(기존 삭제 금지) | **오픈 전 (P0 승격)** | P0 |
 | A-8 | ~~J-9 증명서 PDF 발급~~ → 1차 구현 완료 (2026-05-13). [lib/certificate/render.tsx](../src/lib/certificate/render.tsx) + [GET /api/links/[id]/certificate](../src/app/api/links/[id]/certificate/route.ts). 트레이드오프는 A-23·A-24·A-25 참조 | DONE | — |
 | A-20 | **매월 크레딧 자동 갱신** — `creditsRenewAt` 도래 시 Free 10 / Pro 1000 / Business 10000 충전(`monthly_renewal`). Vercel Cron(daily) 또는 NextAuth session callback에서 lazy refresh. **갭: 미구현 시 1개월 후 모든 사용자가 0크레딧으로 멈춤** | 베타 시작 전 | P1 |
 | A-21 | 어드민 크레딧 조정 UI/API — CS 대응(환불·보너스). 권한 가드 + `manual_adjust` 트랜잭션 기록 | 베타 운영 중 | P2 |
 | A-22 | **익명 메시지 전송 기능 구현 — say2you와 연계 검토** — 메타 V4의 link_id로 검증자가 원본 등록자에게 익명 메시지 송수신. 등록자 통제 하에 답신 시점에만 이메일 노출. 이메일을 메타에 직박하는 대안의 안전 우회 경로 (개보법·GDPR·스팸 risk 회피) | 베타 후 | P3 |
 | A-23 | **증명서 PDF — 한글 폰트 번들링** — 현재 Google gstatic Noto Sans KR CDN URL 하드코딩([render.tsx](../src/lib/certificate/render.tsx)). URL이 깨지면 한글이 □ 박스로 렌더됨. 대안: postinstall에서 폰트 다운로드 → `public/fonts/`(gitignored) → fs.readFileSync로 로드. 또는 jsdelivr npm CDN(Pretendard) 사용 | 베타 시작 전 또는 폰트 깨짐 감지 시 | P1 |
-| A-24 | **증명서 PDF — 월 5건 캡 enforcement** — pricing-policy.md상 Pro 월 5건, Business 무제한. 현재는 `pdf_issue` 이력만 기록하고 무제한 발급 허용. `creditsRenewAt - 1 month` 기준으로 카운트 → Pro 5건 초과 시 402 응답 + 잔여 횟수 UI 표시 | Pro 결제 시작 후 | P2 |
+| A-24 | **증명서 PDF — v3 하이브리드로 재정의 (2026-08-06)**: Pro **월 5건 무료(크레딧 미차감)** + 초과분 크레딧 −10/건(기존 차감 유지). `creditsRenewAt` 주기 기준 무료분 카운트 + 잔여 횟수 UI. 기존 "5건 캡" 안 대체 — 5건이 진짜 혜택이 되면서 남용은 크레딧 한도가 통제 | 오픈 전 (Phase A) | P1 |
 | A-25 | **증명서 PDF — 사진 썸네일 임베드** — 현재 PDF에 실제 이미지는 미포함, QR로 검증 URL 참조만. 사진을 PDF 본문에 직접 임베드하면 B2B/소송 제출 시 단독 문서로 가치 상승. 단 음란물·저작권 침해 이미지 임베드 위험 → 신고 시스템 + 모더레이션 게이트 필요 | 첫 B2B 영업 미팅 시점 | P3 |
 | A-26 | **`/api/links/publish` 마무리 단계 진행 표시** — 업로드(PUT) 진행률은 XHR onprogress로 실측 가능하나, publish 단계(C2PA 매니페스트 첨부·Storage 재업로드·DB write 등)는 단일 요청이라 진행률 측정 불가. SSL.com eSigner 본 통합 후 서명 호출이 추가되면 publish 응답이 1~3s 길어짐 → "마무리 중" stage 라벨만이라도 추가하여 사용자 체감 개선. SSE/streaming 응답까지 가면 더 정확하지만 비용 큼. (2026-05-17 라우트명 변경: `confirm` → `publish`) | A-2(C2PA 본 통합) 후 | P2 |
 | A-27 | **클라이언트 stego embed 진행률** — 200MP 이미지에서 LSB 임베드 루프가 ~500ms 동기 실행됨. setTimeout/requestIdleCallback로 chunked 처리하여 진행률 콜백 노출 가능. 1800px 이하에선 의미 없지만 기가픽셀 이미지에서 체감 개선 | 기가픽셀 사용 사례 발생 시 | P3 |
