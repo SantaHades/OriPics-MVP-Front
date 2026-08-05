@@ -195,6 +195,13 @@ export async function verifyAndGrantSubscription(opts: {
         },
       });
 
+      // 보관함 활성화: 아직 살아있는 링크의 만료를 해제(무기한 보관 전환).
+      // 재구독 시 다운그레이드 grace 만료 복원 + 기존 free 링크도 보관함에 편입.
+      await tx.$executeRaw`
+        UPDATE public.links
+        SET expires_at = NULL
+        WHERE user_id = ${userId} AND expires_at > now()`;
+
       return {
         ok: true as const,
         alreadyProcessed: false,

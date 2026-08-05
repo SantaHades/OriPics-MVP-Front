@@ -66,6 +66,12 @@ export async function GET(req: NextRequest) {
           where: { id: sub.userId },
           data: { tier: "free" },
         }),
+        // 보관함 종료 → 무기한 보관(expires_at=null) 링크에 grace 만료 설정:
+        // 30일 유예 + 7일 free 정책 = 37일 (pricing-policy §11.2, A-7③)
+        prisma.$executeRaw`
+          UPDATE public.links
+          SET expires_at = now() + interval '37 days'
+          WHERE user_id = ${sub.userId} AND expires_at IS NULL`,
       ]);
       downgraded++;
     }

@@ -14,6 +14,11 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 const JWT_SECRET = process.env.ORIPICS_JWT_SECRET!;
 const BUCKET_NAME = "oripics-proofs";
 const C2PA_ENABLED = process.env.ORIPICS_C2PA_ENABLED === "true";
+// 보관 정책 (pricing-policy §11.2)
+const FREE_RETENTION_DAYS = 7;
+const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024; // Pro 보관함 5GB
+// 인증 이미지는 불변 — CDN 캐시 1년 (egress 대비책 계층 2, A-36 선행)
+const IMMUTABLE_CACHE_SECONDS = "31536000";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -70,7 +75,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ detail: "invalid_json" }, { status: 400 });
   }
-  const { receipt, thumbnail } = body || {};
+  const { receipt, thumbnail, preview } = body || {};
   if (typeof receipt !== "string" || !receipt) {
     return NextResponse.json({ detail: "missing_receipt" }, { status: 400 });
   }
@@ -92,6 +97,39 @@ export async function POST(req: NextRequest) {
   } = claims;
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  // 보관 정책 (pricing-policy §11.2 보관함 모델):
+  //   free → 7일 만료. pro/business → 보관함 활성 중 무기한(expires_at=null,
+  //   다운그레이드 시 charge-subscriptions cron이 grace 만료를 설정).
+  const owner = await prisma.user.findUnique({
+    where: { id: user_id },
+    select: { tier: true },
+  });
+  const isPaidTier = owner?.tier === "pro" || owner?.tier === "business";
+  const expiresAt = isPaidTier
+    ? null
+    : new Date(Date.now() + FREE_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  // Pro 보관함 용량 체크(5GB): 초과 시 새 공개링크 생성 차단(기존 링크는 삭제하지 않음).
+  if (isPaidTier) {
+    try {
+      const [usage]: any[] = await prisma.$queryRaw`
+        SELECT COALESCE(sum((o.metadata->>'size')::bigint), 0)::bigint AS bytes
+        FROM storage.objects o
+        JOIN public.links l ON o.name = l.storage_path
+        WHERE l.user_id = ${user_id} AND o.bucket_id = ${BUCKET_NAME}`;
+      const usedBytes = Number(usage?.bytes ?? 0);
+      if (usedBytes >= STORAGE_QUOTA_BYTES) {
+        return NextResponse.json(
+          { detail: "storage_quota_exceeded", used_bytes: usedBytes, quota_bytes: STORAGE_QUOTA_BYTES },
+          { status: 402 },
+        );
+      }
+    } catch (e: any) {
+      // 용량 조회 실패는 publish를 막지 않음 (가용성 우선, 다음 publish에서 재시도)
+      console.error("[publish] storage quota check failed:", e?.message || e);
+    }
+  }
 
   // 0. 이미 publish된 동일 link_id가 있으면 idempotent
   {
@@ -222,6 +260,7 @@ export async function POST(req: NextRequest) {
         .upload(storage_path, signResult.buffer, {
           contentType: "image/png",
           upsert: true,
+          cacheControl: IMMUTABLE_CACHE_SECONDS,
         });
       if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
 
@@ -231,6 +270,26 @@ export async function POST(req: NextRequest) {
     } catch (e: any) {
       console.error(`[publish] c2pa attach failed link_id=${link_id}:`, e?.message || e);
       // C2PA 실패해도 LSB stamped 원본은 Storage에 있음 — publish 계속 진행 (LSB만으로도 가치 있음).
+    }
+  }
+
+  // 3.5. 뷰어용 경량 표시본 업로드 (A-36, best-effort — 실패해도 publish 진행)
+  let previewPath: string | null = null;
+  if (typeof preview === "string" && preview.startsWith("data:image/jpeg;base64,") && preview.length < 1_000_000) {
+    try {
+      const jpegBuffer = Buffer.from(preview.slice("data:image/jpeg;base64,".length), "base64");
+      const candidatePath = storage_path.replace(/\.png$/, "_preview.jpg");
+      const { error: pvErr } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(candidatePath, jpegBuffer, {
+          contentType: "image/jpeg",
+          upsert: true,
+          cacheControl: IMMUTABLE_CACHE_SECONDS,
+        });
+      if (!pvErr) previewPath = candidatePath;
+      else console.error(`[publish] preview upload failed link_id=${link_id}:`, pvErr.message);
+    } catch (e: any) {
+      console.error(`[publish] preview processing failed link_id=${link_id}:`, e?.message || e);
     }
   }
 
@@ -244,6 +303,8 @@ export async function POST(req: NextRequest) {
     storage_path,
     signed_url: publicUrl,
     user_id,
+    expires_at: expiresAt, // free: +7일 / 유료: null(보관함 활성 중 무기한)
+    preview_path: previewPath, // 뷰어 경량 표시본 (없으면 뷰어가 원본 폴백)
   };
   if (lat_e6 != null && lng_e6 != null) {
     row.lat = lat_e6 / 1_000_000;

@@ -20,6 +20,10 @@ interface LinkData {
   storage_path: string;
   signed_url: string;
   user_id?: string | null;
+  /** 뷰어 경량 표시본 (A-36). 없으면 원본 폴백 (구 링크 하위호환) */
+  preview_path?: string | null;
+  /** 보관 만료 (null = 보관함 활성 중 무기한) */
+  expires_at?: string | null;
 }
 
 interface C2paStatus {
@@ -106,6 +110,10 @@ export default function LinkViewer() {
           .single();
 
         if (dbError || !row) throw new Error(t("not_found_desc"));
+        // 만료 링크 방어 (cleanup cron 실행 전 시간차): 만료 시 미존재와 동일 처리
+        if ((row as any).expires_at && new Date((row as any).expires_at) <= new Date()) {
+          throw new Error(t("not_found_desc"));
+        }
         setData(row as LinkData);
       } catch (err: any) {
         setError(err.message);
@@ -119,6 +127,16 @@ export default function LinkViewer() {
 
   useEffect(() => {
     if (!data?.signed_url) return;
+
+    // A-36: 경량 표시본이 있으면 뷰어는 프리뷰(≤1600px JPEG)를 직접 로딩 —
+    // 원본(최대 수십 MB)은 다운로드 버튼에서만 전송 (egress 절감).
+    // handleDownload는 blob: URL이 아니면 원본 signed_url을 새로 fetch하므로 정합.
+    if (data.preview_path) {
+      const previewUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/oripics-proofs/${data.preview_path}`;
+      setImageObjectUrl(previewUrl);
+      return;
+    }
+
     let cancelled = false;
     let createdUrl: string | null = null;
 
@@ -156,7 +174,7 @@ export default function LinkViewer() {
       cancelled = true;
       if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
-  }, [data?.signed_url]);
+  }, [data?.signed_url, data?.preview_path]);
 
   useEffect(() => {
     if (!data?.link_id) return;

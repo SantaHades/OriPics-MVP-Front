@@ -87,7 +87,7 @@ export async function GET(
   // 1. 사용자 티어 확인 — Pro/Business만 발급 가능
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, tier: true },
+    select: { id: true, email: true, name: true, tier: true, creditsRenewAt: true },
   });
   if (!user) {
     return NextResponse.json({ detail: "user_not_found" }, { status: 404 });
@@ -139,22 +139,62 @@ export async function GET(
     console.warn(`[certificate] cache miss link_id=${linkId} path=${history.pdfStoragePath}`);
   }
 
-  // 4. 크레딧 차감 (-10). 실패 시 즉시 종료.
-  const consume = await consumeCredits({
-    userId,
-    amount: CREDIT_COSTS.CERTIFICATE_PDF,
-    action: "pdf_issue",
-    metadata: { link_id: linkId, locale, reissue } as any,
-  });
-  if (!consume.ok) {
-    return NextResponse.json(
-      {
-        detail: "insufficient_credits",
-        balance: consume.balance,
-        required: CREDIT_COSTS.CERTIFICATE_PDF,
+  // 4. 발급 비용 — v3 하이브리드 (pricing-policy §11.3, A-24):
+  //    Pro는 현재 크레딧 주기 내 5건까지 무료(크레딧 미차감), 초과분 -10.
+  //    Business는 무제한 무료. 무료 발급도 pdf_issue(delta 0)로 기록해 주기별 카운트.
+  const FREE_PDF_PER_CYCLE = 5;
+  let usedFreeGrant = false;
+  if (user.tier === "business") {
+    usedFreeGrant = true;
+  } else {
+    // 주기 시작 = 다음 갱신일(creditsRenewAt) - 1개월. 없으면 최근 30일 폴백.
+    let cycleStart: Date;
+    if (user.creditsRenewAt) {
+      cycleStart = new Date(user.creditsRenewAt);
+      cycleStart.setMonth(cycleStart.getMonth() - 1);
+    } else {
+      cycleStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    }
+    const freeIssued = await prisma.creditTransaction.count({
+      where: {
+        userId,
+        action: "pdf_issue",
+        delta: 0,
+        createdAt: { gte: cycleStart },
       },
-      { status: 402 },
-    );
+    });
+    usedFreeGrant = freeIssued < FREE_PDF_PER_CYCLE;
+  }
+
+  if (usedFreeGrant) {
+    // 무료 발급 기록 (delta 0 — 주기 카운트용)
+    const balance = await prisma.user.findUnique({ where: { id: userId }, select: { credits: true } });
+    await prisma.creditTransaction.create({
+      data: {
+        userId,
+        delta: 0,
+        action: "pdf_issue",
+        balanceAfter: balance?.credits ?? 0,
+        metadata: { link_id: linkId, locale, reissue, free_monthly: true } as any,
+      },
+    });
+  } else {
+    const consume = await consumeCredits({
+      userId,
+      amount: CREDIT_COSTS.CERTIFICATE_PDF,
+      action: "pdf_issue",
+      metadata: { link_id: linkId, locale, reissue } as any,
+    });
+    if (!consume.ok) {
+      return NextResponse.json(
+        {
+          detail: "insufficient_credits",
+          balance: consume.balance,
+          required: CREDIT_COSTS.CERTIFICATE_PDF,
+        },
+        { status: 402 },
+      );
+    }
   }
 
   // 5. C2PA 매니페스트 best-effort 조회
@@ -221,12 +261,24 @@ export async function GET(
     pdfBuffer = await renderToBuffer(element as any);
   } catch (e: any) {
     console.error("[certificate] render failed", e);
-    await refundCredits({
-      userId,
-      amount: CREDIT_COSTS.CERTIFICATE_PDF,
-      action: "pdf_issue",
-      metadata: { link_id: linkId, reason: `render_failed:${e?.message ?? "unknown"}` } as any,
-    }).catch((rfErr) => console.warn("[certificate] refund failed:", rfErr));
+    if (usedFreeGrant) {
+      // 무료 발급분 원복: 실패한 delta-0 기록 제거 (주기 카운트에서 제외)
+      await prisma.creditTransaction.deleteMany({
+        where: {
+          userId,
+          action: "pdf_issue",
+          delta: 0,
+          metadata: { path: ["link_id"], equals: linkId },
+        },
+      }).catch((rfErr) => console.warn("[certificate] free-grant rollback failed:", rfErr));
+    } else {
+      await refundCredits({
+        userId,
+        amount: CREDIT_COSTS.CERTIFICATE_PDF,
+        action: "pdf_issue",
+        metadata: { link_id: linkId, reason: `render_failed:${e?.message ?? "unknown"}` } as any,
+      }).catch((rfErr) => console.warn("[certificate] refund failed:", rfErr));
+    }
     return NextResponse.json(
       { detail: `render_failed:${e?.message ?? "unknown"}` },
       { status: 500 },

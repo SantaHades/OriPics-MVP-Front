@@ -46,7 +46,7 @@ export async function DELETE(
   // 1. 소유권 확인
   const { data: row, error: fetchErr } = await supabase
     .from("links")
-    .select("link_id, storage_path, user_id")
+    .select("link_id, storage_path, user_id, preview_path")
     .eq("link_id", linkId)
     .single();
   if (fetchErr || !row) {
@@ -62,8 +62,11 @@ export async function DELETE(
     select: { pdfStoragePath: true },
   });
 
-  // 3. Storage 파일 삭제 (원본 + PDF 캐시)
+  // 3. Storage 파일 삭제 (원본 + 프리뷰 + PDF 캐시)
   const pathsToRemove = [row.storage_path];
+  if ((row as any).preview_path) {
+    pathsToRemove.push((row as any).preview_path);
+  }
   if (history?.pdfStoragePath) {
     pathsToRemove.push(history.pdfStoragePath);
   }

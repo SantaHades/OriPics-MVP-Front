@@ -247,6 +247,43 @@ export function uploadToStorage(
 }
 
 /**
+ * 뷰어용 경량 표시본 생성 (A-36, egress 대비):
+ * stamped PNG(최대 ~30MB)를 뷰어가 그대로 로딩하면 조회 트래픽 비용이 과도하므로,
+ * 긴 변 1600px JPEG(~200-400KB)를 함께 게시한다. 원본은 다운로드 버튼으로만 전송.
+ * 실패하거나 원본이 이미 작으면 null 반환 → 뷰어는 원본 폴백 (하위호환).
+ */
+const PREVIEW_MAX_EDGE = 1600;
+const PREVIEW_QUALITY = 0.78;
+const PREVIEW_SKIP_BYTES = 700_000; // 원본이 이미 ~0.7MB 이하면 프리뷰 불필요
+const PREVIEW_MAX_DATAURL = 900_000; // 서버 수용 상한과 정합
+
+export async function makePreviewDataUrl(blob: Blob): Promise<string | null> {
+  try {
+    if (blob.size <= PREVIEW_SKIP_BYTES) return null;
+    const bitmap = await createImageBitmap(blob);
+    try {
+      const { width, height } = bitmap;
+      const scale = Math.min(1, PREVIEW_MAX_EDGE / Math.max(width, height));
+      const w = Math.max(1, Math.round(width * scale));
+      const h = Math.max(1, Math.round(height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', PREVIEW_QUALITY);
+      if (!dataUrl.startsWith('data:image/jpeg') || dataUrl.length > PREVIEW_MAX_DATAURL) return null;
+      return dataUrl;
+    } finally {
+      bitmap.close();
+    }
+  } catch {
+    return null; // 프리뷰는 최선노력 — 실패해도 publish는 진행
+  }
+}
+
+/**
  * publishStamped — B-2'' (2026-05-17):
  *   1. signedUploadUrl로 Supabase Storage에 stamped PNG PUT (클라가 직접)
  *   2. /api/links/publish에 receipt JWT POST (서버가 C2PA 적용 + DB row 생성)
@@ -291,10 +328,13 @@ export async function publishStamped(
     uploadUrl = signed_upload_url;
   }
 
-  // 2. Storage 업로드 (대용량 PNG)
-  await uploadToStorage(args.blob, uploadUrl!, args.onUploadProgress);
+  // 2. Storage 업로드 (대용량 PNG) — 병렬로 뷰어용 경량 표시본 생성 (A-36)
+  const [previewDataUrl] = await Promise.all([
+    makePreviewDataUrl(args.blob),
+    uploadToStorage(args.blob, uploadUrl!, args.onUploadProgress),
+  ]);
 
-  // 3. 서버 publish 요청 (작은 JSON)
+  // 3. 서버 publish 요청 (작은 JSON + 프리뷰 dataURL)
   let res: Response;
   try {
     res = await fetch(`${apiBase}/api/links/publish`, {
@@ -303,6 +343,7 @@ export async function publishStamped(
       body: JSON.stringify({
         receipt: args.receipt,
         ...(args.thumbnailDataUrl ? { thumbnail: args.thumbnailDataUrl } : {}),
+        ...(previewDataUrl ? { preview: previewDataUrl } : {}),
       }),
     });
   } catch (e: any) {
