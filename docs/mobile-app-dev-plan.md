@@ -256,7 +256,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 
 | ID | 결정 | 선택지 | 영향 |
 |---|---|---|---|
-| **§8-A** | **모바일 결제 방식** | (가) Apple/Google **IAP** 도입 (수수료 15–30%, 스토어 정책 준수) / (나) 웹 결제 유도(정책 위반·리젝 위험 큼) / (다) 출시 초기 Verified를 웹에서만 구매·모바일은 소비만 | **모바일 수익모델·심사 통과 좌우.** 디지털 구독은 통상 IAP 강제. 가장 큰 미결 |
+| **§8-A** | **모바일 결제 방식** | **조사 완료(2026-08-07) → (라) 하이브리드 권고: Android=소비 전용(공식 허용, 수수료 0) / iOS=IAP 병행+할증가 ₩12,900(SBP 15%, 실수취 웹 초과)** — 근거·시뮬레이션·watch list는 [mobile-iap-policy-research.md](mobile-iap-policy-research.md). 제3자결제(26%+PG)는 배제. iOS 소비 전용은 3.1.3(b) IAP 병행 조건+거절 사례로 고위험 | **대표 확정만 남음.** M6 착수 시 최신 정책 재확인(12/31 Google 한국 신체계·Epic-Apple 대법원 계류) |
 | **§8-B** | iOS·Android **동시 vs 순차** 출시 | 동시(리스크 분산 X, 일정 김) / iOS 먼저(App Attest 성숙) | M4~M8 일정·QA 부하 |
 | **§8-C** | **베타/출시 타임라인** | 웹 먼저 출시 후 모바일 9~10월 / 모바일까지 동시 9~10월 | §7 참조 |
 | **§8-D** | 워크스페이스 도구 | pnpm+turbo(roadmap 안) / npm workspace 유지(legacy-peer-deps 안정) | M0 리스크·CI |
@@ -315,5 +315,6 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **§8-A IAP 정책 조사 완료** — 3갈래 병렬 조사(Apple·Google·한국 관행). 결론: 하이브리드 권고(Android 소비 전용 / iOS IAP 병행 ₩12,900 할증). Apple 3.1.3(b) IAP 병행 조건+2025-12·2026-01 거절 사례로 iOS 소비 전용 배제, Google은 소비 전용 명문 허용. 상세 [mobile-iap-policy-research.md](mobile-iap-policy-research.md) |
 | 2026-08-07 | **스택 재검증 — RN+Expo 유지 확정**(TS 해시 로직 단일 소스가 결정 요인, Flutter/네이티브는 재작성으로 해시 불일치 리스크). 부품 3가지 보정: ①카메라 expo-camera→**react-native-vision-camera**(lens_position·수동 제어) ②픽셀 파이프라인 **react-native-skia** 확정(expo-image-manipulator는 raw pixel 미노출, unpremul 필수) ③기기 무결성 **expo-app-integrity** 공식 모듈 채택(M4 난도 하락). M0에 3-플랫폼 해시 일치+PNG 무손실 라운드트립 스파이크 추가. Expo Go 불가 — dev build 전제 |
 | 2026-06-18 | 최초 작성 — 현재 코드/모노레포 상태 실측 기반. 트랙 B/D·C2PA 아키텍처·pricing·스토어 메타 통합. M0–M8 단계화 + 결정필요 6건 + 리스크 레지스터 |
