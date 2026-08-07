@@ -1,0 +1,13 @@
+{
+  "name": "@oripics/stamp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OriPics 스테가노 임베드·해시 코어 — 웹/모바일 단일 소스 (픽셀 IO·해시는 codec/sha256 주입)",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  }
+}

@@ -9,6 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      "@oripics/stamp": path.resolve(__dirname, "./packages/stamp/src"),
       "@": path.resolve(__dirname, "./src"),
     },
   },

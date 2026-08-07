@@ -139,7 +139,15 @@
 
 > 각 단계: **목표 · 작업 · 산출물 · 수용기준 · 의존성 · 예상기간**. 기간은 1인 풀타임 환산 추정.
 
-### Phase M0 — 모노레포 기반 마련 (트랙 B Phase 2–8) · 선행 필수
+### Phase M0 — 모노레포 기반 마련 (트랙 B Phase 2–8) · ✅ 완료 (2026-08-07)
+
+> **구현 결과** (계획과의 차이 포함):
+> - **M0-1**: 루트 npm workspace 도입 — 단 **`apps/web` 제외**(§8-D 확정 참조). `vercel.json`/rootDirectory **무변경** — 배포 파이프라인 그대로.
+> - **M0-2**: `@oripics/stamp` 추출 완료. 위치는 **`apps/web/packages/stamp`** (repo 루트 아님 — 아래 M0-3). 순수 코어(common·v2·v3·v4)와 codec 인터페이스(`codec.ts`: PixelData·Sha256Fn·ImageCodec, RGBA/sRGB/unpremul 규약 명문화). sha256은 주입식. 웹은 기존 경로(`src/lib/oripics-stamp/*`)가 얇은 어댑터로 남아 **임포트 사이트 8곳 무변경**. c2pa-trust-list는 서버 전용+갱신 스크립트 의존이라 웹에 잔류.
+> - **회귀 증명**: `golden.test.ts` — 추출 전 구현으로 기록한 해시·스탬프 픽셀 골든값(innerHash·borderV2/V3/V4·stamped)과 비트 단위 일치. 전체 68 테스트 통과 + `next build` 통과.
+> - **M0-3**: subtree 영향 해소 — 패키지를 apps/web 내부에 두어 front repo(=apps/web subtree)에 포함, Vercel 빌드 자립성 유지. tsconfig paths(`@oripics/stamp`)로 소스 컴파일(웹은 node_modules 심링크 불필요).
+> - **M0-4**: `apps/mobile` Expo SDK 57 스캐폴드(Expo Router·TS, name/slug/scheme=oripics), metro.config 모노레포 설정(watchFolders·nodeModulesPaths), stamp 어댑터 스켈레톤(`src/lib/stamp`). 검증: `tsc --noEmit` 클린 + `expo export --platform ios` 번들 성공(스모크 임포트 포함).
+> - **잔여(M0 밖으로 이월)**: EAS 프로젝트 초기화(`eas init` — Expo 계정 로그인 필요, User), 3-플랫폼 해시 일치 스파이크 실측(M2에서 skia codec 구현 후 — 골든값은 이미 고정됨).
 
 - **목표**: `apps/web` 단일 → 모노레포로 전환하고 `@oripics/stamp` 추출, `apps/mobile` 부트스트랩.
 - **작업**:
@@ -263,7 +271,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 | **§8-A** | **모바일 결제 방식** | ✅ **확정 (2026-08-07 대표 승인): (라) 하이브리드** — **Android=소비 전용**(웹 구독+앱 로그인, 결제 플로우 없음, 수수료 0. 앱 내 가격·결제 링크 금지, "웹사이트 확인" 수준 문구까지만) / **iOS=IAP 병행+할증가 ₩12,900/월**(연간 ₩129,000, 웹 ₩9,900 유지 — 3.1.3(b) 병행 조건 충족, SBP 15% 기준 실수취 ~₩9,968로 웹 초과. 앱 내 웹 가격 언급 절대 금지, Pro 계정엔 IAP 버튼 비노출). 제3자결제 배제. 근거·시뮬레이션·watch list: [mobile-iap-policy-research.md](mobile-iap-policy-research.md) | **M6 전 필수**: ①Apple SBP 가입(미가입 시 30%) ②App Store Server API 영수증 검증+Notifications 웹훅+KG 구독과 이중 구독 가드 ③패스는 non-renewing subscription 타입. **M6 착수 시 최신 정책 재확인**(12/31 Google 한국 신체계 → Android 아웃링크 검토·Epic-Apple 대법원 ~2027-06) |
 | **§8-B** | iOS·Android **동시 vs 순차** 출시 | 동시(리스크 분산 X, 일정 김) / iOS 먼저(App Attest 성숙) | M4~M8 일정·QA 부하 |
 | **§8-C** | **베타/출시 타임라인** | 웹 먼저 출시 후 모바일 9~10월 / 모바일까지 동시 9~10월 | §7 참조 |
-| **§8-D** | 워크스페이스 도구 | pnpm+turbo(roadmap 안) / npm workspace 유지(legacy-peer-deps 안정) | M0 리스크·CI |
+| **§8-D** | 워크스페이스 도구 | ✅ **확정(2026-08-07, M0 구현)**: **npm workspaces, 단 `apps/web`은 워크스페이스에서 의도적 제외**(독립 npm 프로젝트 유지 — 오픈 직전 웹의 의존성 트리·legacy-peer-deps·Vercel 빌드 불변 보장). 루트 workspace = `apps/mobile` + `apps/web/packages/*`. turborepo는 보류(2앱 규모에서 불필요, 필요 시 도입) | 해소 |
 | **§8-E** | C2PA Intake Form | iOS·Android 각각 별도 제출(arch 문서 기준) 시점·담당 | approver 트랙과 병행 |
 | **§8-F** | 연령등급(U-14) | 4+ vs 12+(GPS 사유) | 심사·노출 |
 
@@ -319,6 +327,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M0 완료** — ①루트 npm workspace(web 제외, §8-D 확정) ②`@oripics/stamp` 추출(`apps/web/packages/stamp`, codec/sha256 주입식, 웹 어댑터로 경로 호환) ③골든 회귀 테스트(비트 단위 동일 증명)+68 테스트+next build 통과 ④Expo SDK 57 스캐폴드+metro 모노레포+iOS export 검증. 잔여: eas init(User)·해시 일치 스파이크 실측(M2) |
 | 2026-08-07 | **§8-A 확정 (대표 승인)** — 하이브리드: Android 소비 전용 / iOS IAP 병행 ₩12,900·연 ₩129,000 할증(웹 ₩9,900 유지). M6 작업 내용을 확정안 기준으로 개편(SBP 가입·Server Notifications·이중 구독 가드·non-renewing subscription). 리스크 레지스터의 "IAP 강제(§8-A 미해결)" 항목 해소 |
 | 2026-08-07 | **§8-A IAP 정책 조사 완료** — 3갈래 병렬 조사(Apple·Google·한국 관행). 결론: 하이브리드 권고(Android 소비 전용 / iOS IAP 병행 ₩12,900 할증). Apple 3.1.3(b) IAP 병행 조건+2025-12·2026-01 거절 사례로 iOS 소비 전용 배제, Google은 소비 전용 명문 허용. 상세 [mobile-iap-policy-research.md](mobile-iap-policy-research.md) |
 | 2026-08-07 | **스택 재검증 — RN+Expo 유지 확정**(TS 해시 로직 단일 소스가 결정 요인, Flutter/네이티브는 재작성으로 해시 불일치 리스크). 부품 3가지 보정: ①카메라 expo-camera→**react-native-vision-camera**(lens_position·수동 제어) ②픽셀 파이프라인 **react-native-skia** 확정(expo-image-manipulator는 raw pixel 미노출, unpremul 필수) ③기기 무결성 **expo-app-integrity** 공식 모듈 채택(M4 난도 하락). M0에 3-플랫폼 해시 일치+PNG 무손실 라운드트립 스파이크 추가. Expo Go 불가 — dev build 전제 |

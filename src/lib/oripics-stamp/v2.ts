@@ -1,18 +1,26 @@
+// M0-2 모노레포 추출(2026-08-07): 비트·해시 코어는 @oripics/stamp로 이동(단일 소스).
+// 이 파일은 웹 플랫폼 어댑터 — Canvas 픽셀 IO + crypto.subtle SHA-256 바인딩.
+// 기존 임포트 경로·시그니처는 그대로 유지된다.
+import { selectEmbedMode } from '@oripics/stamp/common';
+import type { EmbedMode, Sha256Fn } from '@oripics/stamp';
 import {
-  MAGIC_BYTES,
-  OFFSET_FINAL_HASH,
-  META_LENGTH,
-  HASH_LENGTH,
-  PAYLOAD_LENGTH,
-  PAYLOAD_BITS,
-  EmbedMode,
-  selectEmbedMode,
-  getBorderCoordinates,
-  uint32BE,
-  bytesEqual,
-} from './common';
+  computeInnerHash as coreComputeInnerHash,
+  computeBorderHash as coreComputeBorderHash,
+} from '@oripics/stamp/v2';
 
-const RGB_CHANNELS = [0, 1, 2] as const;
+export {
+  embedPayload,
+  extractPayload,
+  payloadHasMagic,
+  splitPayload,
+  buildPayload,
+} from '@oripics/stamp/v2';
+export { selectEmbedMode };
+
+export const webSha256: Sha256Fn = async (buf: Uint8Array): Promise<Uint8Array> => {
+  const hash = await crypto.subtle.digest('SHA-256', buf as unknown as BufferSource);
+  return new Uint8Array(hash);
+};
 
 export async function decodeImageToCanvas(file: Blob): Promise<{ data: Uint8ClampedArray; width: number; height: number }> {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image', premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
@@ -27,33 +35,8 @@ export async function decodeImageToCanvas(file: Blob): Promise<{ data: Uint8Clam
   return { data: imageData.data, width: canvas.width, height: canvas.height };
 }
 
-async function sha256(buf: Uint8Array): Promise<Uint8Array> {
-  const hash = await crypto.subtle.digest('SHA-256', buf as unknown as BufferSource);
-  return new Uint8Array(hash);
-}
-
 export async function computeInnerHash(pixels: Uint8ClampedArray, width: number, height: number): Promise<Uint8Array> {
-  const innerW = width - 2;
-  const innerH = height - 2;
-  if (innerW <= 0 || innerH <= 0) throw new Error('image_too_small');
-
-  const innerLen = innerW * innerH * 4;
-  const buf = new Uint8Array(8 + innerLen);
-  buf.set(uint32BE(width), 0);
-  buf.set(uint32BE(height), 4);
-
-  let off = 8;
-  for (let y = 1; y < height - 1; y++) {
-    const rowStart = (y * width + 1) * 4;
-    const rowLen = innerW * 4;
-    buf.set(pixels.subarray(rowStart, rowStart + rowLen), off);
-    off += rowLen;
-  }
-  return sha256(buf);
-}
-
-function pixelOffset(width: number, y: number, x: number): number {
-  return (y * width + x) * 4;
+  return coreComputeInnerHash(pixels, width, height, webSha256);
 }
 
 export async function computeBorderHash(
@@ -62,122 +45,7 @@ export async function computeBorderHash(
   height: number,
   mode: EmbedMode,
 ): Promise<Uint8Array> {
-  const coords = getBorderCoordinates(width, height);
-  const borderPixelCount = coords.length;
-  const borderLen = borderPixelCount * 4;
-  const buf = new Uint8Array(8 + borderLen);
-  buf.set(uint32BE(width), 0);
-  buf.set(uint32BE(height), 4);
-
-  for (let i = 0; i < borderPixelCount; i++) {
-    const [y, x] = coords[i];
-    const src = pixelOffset(width, y, x);
-    const dst = 8 + i * 4;
-    buf[dst]     = pixels[src];
-    buf[dst + 1] = pixels[src + 1];
-    buf[dst + 2] = pixels[src + 2];
-    buf[dst + 3] = pixels[src + 3];
-  }
-
-  if (mode === 'b_only') {
-    for (let i = 0; i < PAYLOAD_BITS; i++) {
-      buf[8 + i * 4 + 2] &= 0xfe;
-    }
-  } else {
-    const usedPixels = Math.ceil(PAYLOAD_BITS / 3);
-    for (let i = 0; i < usedPixels; i++) {
-      const base = 8 + i * 4;
-      buf[base]     &= 0xfe;
-      buf[base + 1] &= 0xfe;
-      buf[base + 2] &= 0xfe;
-    }
-  }
-
-  return sha256(buf);
-}
-
-export function embedPayload(
-  pixels: Uint8ClampedArray,
-  width: number,
-  height: number,
-  payload: Uint8Array,
-  mode: EmbedMode,
-): void {
-  if (payload.length !== PAYLOAD_LENGTH) {
-    throw new Error(`payload must be ${PAYLOAD_LENGTH} bytes, got ${payload.length}`);
-  }
-  const coords = getBorderCoordinates(width, height);
-  const totalBits = PAYLOAD_BITS;
-
-  for (let bitIdx = 0; bitIdx < totalBits; bitIdx++) {
-    const byte = payload[bitIdx >> 3];
-    const bit = (byte >> (7 - (bitIdx & 7))) & 1;
-
-    let coordIdx: number;
-    let channel: number;
-    if (mode === 'b_only') {
-      coordIdx = bitIdx;
-      channel = 2;
-    } else {
-      coordIdx = Math.floor(bitIdx / 3);
-      channel = RGB_CHANNELS[bitIdx % 3];
-    }
-    const [y, x] = coords[coordIdx];
-    const off = pixelOffset(width, y, x) + channel;
-    pixels[off] = (pixels[off] & 0xfe) | bit;
-  }
-}
-
-export function extractPayload(
-  pixels: Uint8ClampedArray,
-  width: number,
-  height: number,
-  mode: EmbedMode,
-): Uint8Array {
-  const coords = getBorderCoordinates(width, height);
-  const totalBits = PAYLOAD_BITS;
-  const out = new Uint8Array(PAYLOAD_LENGTH);
-
-  for (let bitIdx = 0; bitIdx < totalBits; bitIdx++) {
-    let coordIdx: number;
-    let channel: number;
-    if (mode === 'b_only') {
-      coordIdx = bitIdx;
-      channel = 2;
-    } else {
-      coordIdx = Math.floor(bitIdx / 3);
-      channel = RGB_CHANNELS[bitIdx % 3];
-    }
-    const [y, x] = coords[coordIdx];
-    const off = pixelOffset(width, y, x) + channel;
-    const bit = pixels[off] & 1;
-    out[bitIdx >> 3] |= bit << (7 - (bitIdx & 7));
-  }
-  return out;
-}
-
-export function payloadHasMagic(payload: Uint8Array): boolean {
-  if (payload.length < MAGIC_BYTES.length) return false;
-  return bytesEqual(payload.subarray(0, MAGIC_BYTES.length), MAGIC_BYTES);
-}
-
-export function splitPayload(payload: Uint8Array): { meta: Uint8Array; finalHash: Uint8Array } {
-  if (payload.length !== PAYLOAD_LENGTH) {
-    throw new Error(`payload length: ${payload.length}`);
-  }
-  return {
-    meta: payload.subarray(0, META_LENGTH),
-    finalHash: payload.subarray(OFFSET_FINAL_HASH, OFFSET_FINAL_HASH + HASH_LENGTH),
-  };
-}
-
-export function buildPayload(meta: Uint8Array, finalHash: Uint8Array): Uint8Array {
-  if (meta.length !== META_LENGTH) throw new Error('meta length');
-  if (finalHash.length !== HASH_LENGTH) throw new Error('final_hash length');
-  const out = new Uint8Array(PAYLOAD_LENGTH);
-  out.set(meta, 0);
-  out.set(finalHash, OFFSET_FINAL_HASH);
-  return out;
+  return coreComputeBorderHash(pixels, width, height, mode, webSha256);
 }
 
 export async function encodeCanvasToPng(pixels: Uint8ClampedArray, width: number, height: number): Promise<Blob> {
@@ -195,5 +63,3 @@ export async function encodeCanvasToPng(pixels: Uint8ClampedArray, width: number
     }, 'image/png');
   });
 }
-
-export { selectEmbedMode };
