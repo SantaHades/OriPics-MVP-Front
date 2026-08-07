@@ -1,23 +1,23 @@
-// Attestation token 검증 — 골격 (D-pre-5에서 본 구현).
+// Attestation token 검증 — A-4(iOS)/A-5(Android) 본 구현 (2026-08-07, M4).
 //
-// iOS App Attest: DCAppAttestService.shared.attestKey() / generateAssertion() 토큰
-//   - 검증: Apple 공개 인증서 체인 + clientDataHash + counter
-//   - 라이브러리: @peculiar/asn1-schema 기반 자체 구현 또는 `appattest` npm 패키지
+// 설정 게이트: 플랫폼별 필수 env가 없으면 AttestVerifierNotImplementedError를 던져
+// /api/sign의 기존 개발 폴백(token 해시만 기록)이 유지된다. env가 설정되는 순간 실검증으로 전환.
 //
-// Android Play Integrity: IntegrityManager.requestIntegrityToken() 토큰
-//   - 검증: Google API로 decodeIntegrityToken (서버 to 서버) 또는 JWT 자체 디코드 + 공개키 검증
-//   - 라이브러리: googleapis (공식 SDK)
-//
-// 본 구현 시 환경변수:
-//   - APPLE_APP_ATTEST_TEAM_ID, APPLE_APP_ATTEST_BUNDLE_ID
-//   - GOOGLE_PLAY_INTEGRITY_PROJECT_NUMBER, GOOGLE_SERVICE_ACCOUNT_JSON
+// 환경변수:
+//  iOS  — APPLE_APP_ATTEST_TEAM_ID, APPLE_APP_ATTEST_BUNDLE_ID,
+//         APPLE_APP_ATTEST_ALLOW_DEV=true(개발 빌드 attestation 허용, 운영에서는 미설정)
+//  And  — GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON, ANDROID_PACKAGE_NAME,
+//         GOOGLE_PLAY_INTEGRITY_ALLOW_UNRECOGNIZED=true(사이드로드 허용, 운영 미설정)
+import { createHash } from "crypto";
+import { verifyAppleAppAttest } from "./appleAppAttest";
+import { verifyPlayIntegrity } from "./playIntegrity";
 
 export type VerifiedPlatform = "ios" | "android";
 
 export interface VerifyTokenInput {
   platform: VerifiedPlatform;
   token: string;
-  /** 서버 발급 nonce — token이 이 nonce를 clientDataHash로 사용했는지 검증 */
+  /** 서버 발급 nonce — token이 이 nonce에 바인딩되었는지 검증 */
   nonce: string;
 }
 
@@ -29,7 +29,6 @@ export interface VerifyTokenSuccess {
    * Token 자체는 PII 가능성 있어 저장 X.
    */
   attestTokenHash: string;
-  /** 검증 시점의 검증자 (예: "apple_app_attest" / "google_play_integrity") */
   verifier: "apple_app_attest" | "google_play_integrity";
   /** 디바이스 무결성 등급 (Android Play Integrity 응답) */
   deviceIntegrity?: "MEETS_DEVICE_INTEGRITY" | "MEETS_BASIC_INTEGRITY" | "MEETS_STRONG_INTEGRITY";
@@ -44,17 +43,48 @@ export type VerifyTokenResult = VerifyTokenSuccess | VerifyTokenFailure;
 
 export class AttestVerifierNotImplementedError extends Error {
   constructor(platform: string) {
-    super(`Attest verifier for ${platform} not implemented yet — D-pre-5 본 구현 대기`);
+    super(`Attest verifier for ${platform} not configured — 필수 env 미설정 (verifyToken.ts 주석 참조)`);
     this.name = "AttestVerifierNotImplementedError";
   }
 }
 
-/**
- * 모바일 attest token 검증.
- *
- * 현재: stub. 본 구현은 D-pre-5에서.
- * 호출 측은 ok=false 시 401/403 반환 권장.
- */
-export async function verifyAttestToken(_input: VerifyTokenInput): Promise<VerifyTokenResult> {
-  throw new AttestVerifierNotImplementedError(_input.platform);
+function tokenHash(token: string): string {
+  return createHash("sha256").update(token).digest("hex").slice(0, 32);
+}
+
+export async function verifyAttestToken(input: VerifyTokenInput): Promise<VerifyTokenResult> {
+  if (input.platform === "ios") {
+    const teamId = process.env.APPLE_APP_ATTEST_TEAM_ID;
+    const bundleId = process.env.APPLE_APP_ATTEST_BUNDLE_ID;
+    if (!teamId || !bundleId) throw new AttestVerifierNotImplementedError("ios");
+
+    const result = await verifyAppleAppAttest(input.token, input.nonce, {
+      teamId,
+      bundleId,
+      allowDevelopmentEnvironment: process.env.APPLE_APP_ATTEST_ALLOW_DEV === "true",
+    });
+    if (!result.ok) return { ok: false, reason: result.reason };
+    return { ok: true, verifier: "apple_app_attest", attestTokenHash: tokenHash(input.token) };
+  }
+
+  if (input.platform === "android") {
+    const serviceAccountJson = process.env.GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON;
+    const packageName = process.env.ANDROID_PACKAGE_NAME;
+    if (!serviceAccountJson || !packageName) throw new AttestVerifierNotImplementedError("android");
+
+    const result = await verifyPlayIntegrity(input.token, input.nonce, {
+      serviceAccountJson,
+      packageName,
+      allowUnrecognizedApp: process.env.GOOGLE_PLAY_INTEGRITY_ALLOW_UNRECOGNIZED === "true",
+    });
+    if (!result.ok) return { ok: false, reason: result.reason };
+    return {
+      ok: true,
+      verifier: "google_play_integrity",
+      attestTokenHash: result.attestTokenHash ?? tokenHash(input.token),
+      deviceIntegrity: result.deviceIntegrity,
+    };
+  }
+
+  return { ok: false, reason: "unsupported_platform" };
 }

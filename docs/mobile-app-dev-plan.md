@@ -194,15 +194,16 @@
 > - **검증**: tsc 클린 + iOS/웹 export 번들 성공. **잔여(실기기)**: 줌/렌즈 전환 실측(특히 lens_position 휴리스틱 vs 실제 활성 렌즈), GPS on/off 반영, 고해상(48MP) 촬영→발급 시간·메모리.
 - **원 계획**: vision-camera 커스텀 UI, zoom/lens 캡처, GPS 토글, 촬영 즉시 해시 → (임시) standard 라운드트립. 수용기준: 줌/렌즈 메타 수집, GPS 정확 반영, 대용량 처리 허용범위.
 
-### Phase M4 — 기기 무결성 (App Attest / Play Integrity) · 양면 작업
+### Phase M4 — 기기 무결성 (App Attest / Play Integrity) · ✅ 코드 완료 (2026-08-07), 잔여 = U-34 설정 + 실기기
 
-- **목표**: Verified 티어의 신뢰 근거 확립(클라이언트 토큰 + **백엔드 검증 본 구현**).
-- **작업(클라이언트)**: **expo-app-integrity 공식 모듈 사용**(2026-08-07 확정 — 커스텀 네이티브 래퍼 불필요) — iOS App Attest(`DCAppAttestService`) 키 생성·attestation·assertion + Android Play Integrity 토큰 요청(nonce 바인딩)을 통합 JS API로. ⚠️ App Attest는 시뮬레이터 불가(실기기 테스트), Xcode에서 App Attest capability 활성화 필요.
-- **작업(백엔드, A-4/A-5)**: `lib/attest/verifyToken.ts` 본 구현 — Apple App Attest 인증서 체인 검증 + nonce 일치; Google Play Integrity 토큰 디코드·검증. stub 제거.
-- **산출물**: `tier:'verified'` 서명이 실제 무결성 검증을 통과해야만 발급.
-- **수용기준**: 위조/재생(replay) 토큰 거부, nonce 만료(5분) 거부, 정상 기기 통과; `com.oripics.verified`에 `attest_token_hash`·`device_integrity:'passed'` 기록.
-- **의존성**: M3 + Apple Developer(완료) + **Google Play Console 신원확인(U-2)**.
-- **기간**: ~2.5주(클라이언트 양 플랫폼 + 백엔드 검증)
+> **구현 결과**:
+> - **백엔드 A-4 (iOS App Attest)**: `lib/attest/appleAppAttest.ts` — 자체 CBOR 최소 디코더(`cbor.ts`) + Apple App Attestation Root CA 임베드(공식 PEM, SHA1 지문 검증 후 고정) + 검증 6단계(체인·유효기간 / nonce=SHA256(authData‖SHA256(challenge)) ↔ leaf 확장 OID 1.2.840.113635.100.8.2 / 공개키 SHA256=keyId / credentialId=keyId / rpIdHash=SHA256(TeamID.BundleID) / counter=0·aaguid 운영·개발 분기). 토큰 계약: `base64(JSON{key_id, attestation})`, 매 인증마다 새 키+attestation(서버 무상태).
+> - **백엔드 A-5 (Play Integrity)**: `lib/attest/playIntegrity.ts` — 서비스 계정 JWT-bearer OAuth(직접 서명, SDK 무의존) → `decodeIntegrityToken` → **verdict 판정 순수함수**(challenge 바인딩: standard `requestHash`/classic `nonce` 겸용+base64 재인코딩 수용, 패키지 일치, 10분 신선도, PLAY_RECOGNIZED, MEETS_DEVICE/STRONG_INTEGRITY).
+> - **게이트**: `verifyToken.ts` 디스패처 — 플랫폼별 필수 env 미설정 시 기존 개발 폴백(토큰 해시만) 유지, env 설정 즉시 실검증 전환(**U-34**). 유닛테스트 19종(CBOR·authData·nonce 추출·verdict 전 경로) — 전체 93 테스트 통과.
+> - **클라이언트**: `@expo/app-integrity`(SDK 57 공식, ⚠️ npm 무스코프 `expo-app-integrity`는 구식 커뮤니티 패키지 — 혼동 금지) — iOS `generateKeyAsync→attestKeyAsync(keyId, nonce)`, Android `prepareIntegrityTokenProviderAsync(GCP프로젝트번호)→requestIntegrityCheckAsync(nonce)`. 촬영 화면: **Pro 이상이면 Verified 자동 시도, attest 실패 시 Standard 폴백**(경고 로그), 결과 카드에 티어 표시.
+> - **앱 식별자 확정**: iOS bundleIdentifier=Android package=**`com.santahades.oripics`** (attest 앱 바인딩·U-34 env와 일치 필수).
+> - **잔여**: ①U-34 운영 설정(Apple env 2개 / Play Console↔GCP 연결+서비스 계정+env 3개) ②실기기 수용기준 검증(위조/재생 거부·nonce 만료 거부·정상 기기 통과 — App Attest는 시뮬레이터 불가) ③Xcode App Attest capability(dev build 시 자동 entitlement 확인).
+- **원 계획 수용기준**: 위조/재생 토큰 거부, nonce 만료(5분) 거부, 정상 기기 통과; `com.oripics.verified`에 `attest_token_hash`·`device_integrity` 기록.
 
 ### Phase M5 — 발급·검증·크레딧 완성 + 운영 C2PA 연동
 
@@ -332,6 +333,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M4 코드 완료** — A-4(App Attest 서버 검증: CBOR·Root CA 체인·nonce/키/앱 바인딩)+A-5(Play Integrity: 서비스계정 OAuth·verdict 순수함수) 본 구현, env 게이트(U-34 전 개발 폴백 유지), @expo/app-integrity 클라이언트+Verified 자동 시도/Standard 폴백, 앱 식별자 com.santahades.oripics 확정. 유닛테스트 19종 |
 | 2026-08-07 | **Phase M3 코드 완료** — vision-camera v5(훅 API·config plugin 없음→권한 직접 선언), 촬영 탭(배율 프리셋+핀치줌+GPS 토글+촬영→발급), zoom/lens 메타 수집, publishFlow P 경로 확장(서버는 M4 전까지 standard 처리). 웹 폴백 분리. 잔여: 실기기 검증 |
 | 2026-08-07 | **Phase M2 코드 완료** — skia codec(unpremul 강제)+expo-crypto sha256, V4 발급 흐름 미러(sign→임베드→PUT→confirm→publish, receipt 보관), 인증 화면(갤러리→공개 URL·공유), skia 프리뷰(A-36), 해시 호환 셀프테스트([DEV] 버튼). 잔여: dev build 실기기 검증(Expo Go는 skia 불가) |
 | 2026-08-07 | **Phase M1 코어 완료** — 백엔드 Bearer 토큰 경로(mobileTokens+getSessionUserId, 6개 라우트 전환), 모바일 auth 엔드포인트 3종(login/refresh/oauth), 모바일 인증 인프라(secure-store·apiFetch 401 자동갱신·AuthContext)+홈 로그인/계정 화면. 잔여 M1.5=OAuth 콘솔 등록(User)+버튼 활성화, A-38(레이트리밋·refresh 폐기) 신규 |

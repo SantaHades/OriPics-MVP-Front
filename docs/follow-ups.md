@@ -88,6 +88,7 @@
 | U-25 | 토스페이먼츠(또는 KG이니시스) PG 직계약 | 포트원 계약 후 | 포트원 가입 | P1 |
 | U-26 | 카카오페이·토스페이 간편결제 추가 (포트원 통합) | 포트원 계약 후 | PG 계약 | P1 |
 | U-27 | CAI(Content Authenticity Initiative) 무료 멤버십 가입 | NOW | 없음 | P3 |
+| U-34 | **모바일 attest 운영 설정 (M4 후속)** — ①**Apple**: Vercel env `APPLE_APP_ATTEST_TEAM_ID`(개발자 계정 Team ID)+`APPLE_APP_ATTEST_BUNDLE_ID`(=`com.santahades.oripics`), dev 테스트 기간엔 `APPLE_APP_ATTEST_ALLOW_DEV=true` ②**Google**: Play Console↔GCP 프로젝트 연결 → 서비스 계정 생성(Play Integrity API 권한) → Vercel env `GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON`+`ANDROID_PACKAGE_NAME=com.santahades.oripics`, 모바일 `.env`에 `EXPO_PUBLIC_GCP_PROJECT_NUMBER` ③선행: U-2 신원확인. **env 설정 전까지 verified 요청은 개발 폴백(토큰 해시만 기록)으로 동작** | 모바일 베타(M7) 전 | U-2 | P1 |
 | U-33 | **네이버페이 결제형 — PortOne 채널 등록** — 네이버페이센터 가입 심사 **승인 완료**(7/4 신청 → 2026-08-07 확인). 다음 절차: 네이버페이센터에서 연동 정보 확인 → admin.portone.io에 네이버페이 채널 추가 → 채널키 발급 (A-37 전제) | 결제수단 확장 결정 시 | 없음 | P2 |
 
 ### 1.6 인프라 (Vercel)
@@ -111,8 +112,8 @@
 | A-1 | 포트원 어댑터 본 구현 (J-7) | [lib/payment/portone.ts](../src/lib/payment/portone.ts) | U-24~26 완료 | P0 |
 | A-2 | C2PA 본 통합 — eSigner CSC API 호출로 LocalSigner 교체 | [lib/oripics-stamp/c2pa.ts](../src/lib/oripics-stamp/c2pa.ts) | U-28 완료 | P0 |
 | A-3 | Stripe 어댑터 본 구현 (Phase 2) | [lib/payment/stripe.ts](../src/lib/payment/stripe.ts) | 글로벌 사용자 5%+ | P3 |
-| A-4 | iOS App Attest 토큰 검증 본 구현 (D-pre-5) | [lib/attest/verifyToken.ts](../src/lib/attest/verifyToken.ts) | Apple Developer 설정 | P1 |
-| A-5 | Android Play Integrity 토큰 검증 본 구현 (D-pre-5) | 동일 | U-2 완료 | P1 |
+| A-4 | ~~iOS App Attest 토큰 검증~~ → **본 구현 완료 (2026-08-07, M4)** — CBOR 파싱+Apple Root CA 체인+nonce/키/앱 바인딩+counter/aaguid 검증([lib/attest/appleAppAttest.ts](../src/lib/attest/appleAppAttest.ts)). **U-34 env 설정 전까지 개발 폴백(해시만) 유지.** 잔여: 실기기 attestation 왕복 검증 | [lib/attest/verifyToken.ts](../src/lib/attest/verifyToken.ts) | U-34 | P1 |
+| A-5 | ~~Android Play Integrity 토큰 검증~~ → **본 구현 완료 (2026-08-07, M4)** — 서비스 계정 OAuth→decodeIntegrityToken, verdict 판정 순수함수(nonce/requestHash·패키지·10분 신선도·PLAY_RECOGNIZED·MEETS_DEVICE_INTEGRITY, 유닛테스트 19종)([lib/attest/playIntegrity.ts](../src/lib/attest/playIntegrity.ts)). 잔여: U-34 + 실기기 | 동일 | U-2·U-34 | P1 |
 
 ### 2.2 기능 추가 (J 트랙)
 
@@ -216,6 +217,7 @@ SSL.com 회신 (U-1)
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **A-4·A-5 본 구현 완료** (M4) — App Attest 서버 검증(CBOR·체인·바인딩)+Play Integrity(decodeIntegrityToken·verdict 판정). env 게이트로 안전 전환(미설정 시 기존 개발 폴백). U-34(attest 운영 설정) 신규. 모바일 식별자 확정: `com.santahades.oripics` |
 | 2026-08-07 | **네이버페이 가입 심사 승인 확인**(7/4 신청 → 승인) — U-33(PortOne 채널 등록)·A-37(체크아웃 수단 추가, 정기결제 지원 선결 확인 포함) 신규 등록. 오픈 차단 아님(카드결제만으로 오픈 가능) |
 | 2026-08-06 | **A-7·A-24·A-36 완료** (커밋 `e052578`, Phase A) — 보관함 2계층 retention(expires_at, cleanup cron 개편, grace 37일, 재구독 복원, 5GB 체크, cacheControl 1년), 뷰어 경량 표시본(뷰 트래픽 ~1/60), PDF 월 5건 무료 하이브리드, '영구 보관' 문구 전면 전환. 잔여: U-31 Supabase Pro 전환(User)·Phase B 보관함 확장 애드온 결제 |
 | 2026-05-10 | 최초 작성 — 30 사용자 항목 + 19 AI 항목 통합. 의존 트리·원본 출처 매핑 |
