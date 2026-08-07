@@ -184,14 +184,15 @@
 > - 범위 노트: `C`(붙여넣기) 경로는 모바일 UX상 수요 낮아 보류(공유 시트 수신 확장으로 대체 검토), GPS 옵션은 M3(P 경로)에서.
 - **원 계획**: 이미지 선택 → 디코드 → 해시 → sign(standard) → 업로드 → confirm→publish → 공개 URL/공유; 영수증 보관+재드롭. 수용기준: 웹과 동일 이미지 해시 일치, 공개링크가 웹 검증기에서 valid.
 
-### Phase M3 — `P` 경로 카메라 UX (Verified 골격, attest 전)
+### Phase M3 — `P` 경로 카메라 UX (Verified 골격, attest 전) · ✅ 코드 완료 (2026-08-07), 잔여 = 실기기 검증
 
-- **목표**: 커스텀 카메라(핀치줌·렌즈 선택), GPS 토글, 촬영 후 처리 파이프라인.
-- **작업**: **react-native-vision-camera** 커스텀 UI(렌즈 선택·수동 제어 — 2026-08-07 expo-camera에서 변경), `zoom_factor`/`lens_position` 캡처, GPS 권한·토글(`lat_e6`/`lng_e6`), 촬영본 즉시 해시.
-- **산출물**: 촬영→해시→(임시) standard 서명으로 라운드트립.
-- **수용기준**: 줌/렌즈 메타 수집, GPS on/off 정확 반영, 대용량(고해상) 이미지 처리 시간 허용범위.
-- **의존성**: M0, M1.
-- **기간**: ~2–3주
+> **구현 결과**:
+> - **vision-camera v5** (설치 시점 5.2.2 — ⚠️ v4와 전혀 다른 훅 기반 API): `useCameraDevice('back', {physicalDevices})` + `usePhotoOutput().capturePhotoToFile()` + `<Camera device isActive outputs zoom>`. **v5는 config plugin이 없음** → 권한은 app.json `ios.infoPlist.NSCameraUsageDescription` + `android.permissions=[CAMERA]` 직접 선언.
+> - **촬영 화면**(`src/app/capture.tsx`, '촬영' 탭 신설 — Home/촬영/인증 3탭): 배율 프리셋(기기 `minZoom`<1 → 0.5×, `zoomLensSwitchFactors` 기반 2×/3×) + 핀치줌(Gesture.Pinch, min/max 클램프) + GPS 토글(expo-location, 촬영 시점 좌표) + 셔터→발급 파이프라인(진행 단계 오버레이)→결과 카드(URL 복사·공유·다시 촬영). 웹은 `capture.web.tsx` 폴백(vision-camera 웹 번들 제외).
+> - **메타 수집**: `zoom_factor`(표시 배율), `lens_position`(zoom 구간 휴리스틱: <0.95→ultra-wide / ≥렌즈 전환점→telephoto / wide) — sign body로 전달. 서버는 verified 요청에서만 기록(M4부터 유효), GPS는 지금도 V4 메타에 인코딩.
+> - **publishFlow 확장**: `uploadType('F'|'P')`·`gps`·`zoomFactor`·`lensPosition` 옵션 — P는 M4 전까지 서버에서 standard 처리(계획대로 임시 라운드트립).
+> - **검증**: tsc 클린 + iOS/웹 export 번들 성공. **잔여(실기기)**: 줌/렌즈 전환 실측(특히 lens_position 휴리스틱 vs 실제 활성 렌즈), GPS on/off 반영, 고해상(48MP) 촬영→발급 시간·메모리.
+- **원 계획**: vision-camera 커스텀 UI, zoom/lens 캡처, GPS 토글, 촬영 즉시 해시 → (임시) standard 라운드트립. 수용기준: 줌/렌즈 메타 수집, GPS 정확 반영, 대용량 처리 허용범위.
 
 ### Phase M4 — 기기 무결성 (App Attest / Play Integrity) · 양면 작업
 
@@ -331,6 +332,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M3 코드 완료** — vision-camera v5(훅 API·config plugin 없음→권한 직접 선언), 촬영 탭(배율 프리셋+핀치줌+GPS 토글+촬영→발급), zoom/lens 메타 수집, publishFlow P 경로 확장(서버는 M4 전까지 standard 처리). 웹 폴백 분리. 잔여: 실기기 검증 |
 | 2026-08-07 | **Phase M2 코드 완료** — skia codec(unpremul 강제)+expo-crypto sha256, V4 발급 흐름 미러(sign→임베드→PUT→confirm→publish, receipt 보관), 인증 화면(갤러리→공개 URL·공유), skia 프리뷰(A-36), 해시 호환 셀프테스트([DEV] 버튼). 잔여: dev build 실기기 검증(Expo Go는 skia 불가) |
 | 2026-08-07 | **Phase M1 코어 완료** — 백엔드 Bearer 토큰 경로(mobileTokens+getSessionUserId, 6개 라우트 전환), 모바일 auth 엔드포인트 3종(login/refresh/oauth), 모바일 인증 인프라(secure-store·apiFetch 401 자동갱신·AuthContext)+홈 로그인/계정 화면. 잔여 M1.5=OAuth 콘솔 등록(User)+버튼 활성화, A-38(레이트리밋·refresh 폐기) 신규 |
 | 2026-08-07 | **Phase M0 완료** — ①루트 npm workspace(web 제외, §8-D 확정) ②`@oripics/stamp` 추출(`apps/web/packages/stamp`, codec/sha256 주입식, 웹 어댑터로 경로 호환) ③골든 회귀 테스트(비트 단위 동일 증명)+68 테스트+next build 통과 ④Expo SDK 57 스캐폴드+metro 모노레포+iOS export 검증. 잔여: eas init(User)·해시 일치 스파이크 실측(M2) |
