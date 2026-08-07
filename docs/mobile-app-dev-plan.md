@@ -1,7 +1,7 @@
 # OriPics 모바일 앱 개발 계획서 (iOS / Android)
 
-> **작성**: 2026-06-18
-> **상태**: 착수 전 계획 — 외부 블로커 대기 중 작성
+> **작성**: 2026-06-18 · **최종 갱신**: 2026-08-07 (스택 재검증 — 부록 B)
+> **상태**: 착수 전 계획. 작성 후 변화: C2PA **CONFORMANT 승인 완료**(6/23, §1.3의 "approver 대기" 해소), 웹 결제 실운영 가동(7/24), 요금제 v3 확정(§8-A IAP 계산은 v3 가격 기준으로 재산정 필요), SSL.com cert Validation 진행 중(단 **Free Tier는 cert 1개=웹 1개 — 모바일은 추가 cert/Premium 협상 필요**, c2pa_esigner 메모 참조)
 > **범위**: 웹과 동일 가치(원본 증명)를 모바일 네이티브 카메라(Verified 경로) 중심으로 확장하는 iOS/Android 앱 개발의 전체 실행 계획
 > **관련 문서**: [roadmap.md](roadmap.md)(트랙 B/D 전략), [c2pa-security-architecture-document.md](c2pa-security-architecture-document.md)(DISTRIBUTED 아키텍처), [pricing-policy.md](pricing-policy.md)(Verified 게이팅), [app-store-metadata.md](app-store-metadata.md)(스토어 메타), [follow-ups.md](follow-ups.md)(미결 항목)
 
@@ -9,7 +9,7 @@
 
 ## 0. 한눈 요약 (TL;DR)
 
-- **스택 확정**: React Native + **Expo SDK** (TypeScript / Expo Router / expo-camera / expo-secure-store / NativeWind / Zustand+TanStack Query / EAS Build·Submit·Update). roadmap.md D.2에서 확정됨.
+- **스택 확정**: React Native + **Expo SDK** (TypeScript / Expo Router / expo-secure-store / NativeWind / Zustand+TanStack Query / EAS Build·Submit·Update). roadmap.md D.2에서 확정, **2026-08-07 재검증으로 유지 확정**(결정 근거: `@oripics/stamp` 해시·LSB 로직의 TS 단일 소스 유지 — Flutter/네이티브는 재작성으로 해시 불일치 리스크). 단 부품 3가지 보정: 카메라=**react-native-vision-camera**(expo-camera 대체, `lens_position`·정밀 줌), 픽셀 파이프라인=**react-native-skia**(readPixels/PNG 무손실 인코딩), 기기 무결성=**expo-app-integrity**(공식 모듈, App Attest+Play Integrity 통합). Expo Go 불가 — 처음부터 **dev build 전제**.
 - **모바일의 존재 이유**: 웹은 `F`(파일)·`C`(클립보드) 경로만 가능 → **`P`(네이티브 카메라 촬영) 경로는 모바일 전용**이며, 이게 **Verified 티어(Pro 한정)의 유일한 진입점**. 즉 모바일 = 매출(Pro 전환)의 핵심 차별재.
 - **백엔드는 그대로 재사용**: 서명·발급·검증 API(`/api/sign` → `confirm` → `publish`, `/api/verify`, `/api/attest/challenge`)가 이미 모바일을 전제로 설계됨(verified 분기·`com.oripics.verified` assertion·platform 필드 존재). 모바일은 **새 백엔드가 아니라 새 Edge 클라이언트**.
 - **현재 실측 상태(2026-06-18)**: 모노레포는 **미착수** — `apps/web` 단일, `packages/`·`apps/mobile` 없음, pnpm/turbo 미설정, npm+`legacy-peer-deps` 사용. attest 검증(`verifyToken.ts`)은 **stub**. C2PA 운영 인증서는 **approver 승인 대기**.
@@ -55,8 +55,10 @@
 
 | 결정 | 내용 | 근거 |
 |---|---|---|
-| 프레임워크 | **React Native + Expo SDK** (TypeScript) | roadmap.md D.2 L506 |
-| 내비/카메라/저장/해시 | Expo Router · expo-camera · expo-secure-store(Keychain/Keystore) · expo-crypto | roadmap.md D.2 |
+| 프레임워크 | **React Native + Expo SDK** (TypeScript) | roadmap.md D.2 L506 · **2026-08-07 재검증 유지**(TS 해시 로직 단일 소스가 결정 요인) |
+| 내비/카메라/저장/해시 | Expo Router · **react-native-vision-camera**(2026-08-07 expo-camera에서 변경 — 렌즈 선택·수동 제어) · expo-secure-store(Keychain/Keystore) · expo-crypto | roadmap.md D.2 + 재검증 |
+| 픽셀 파이프라인 | **react-native-skia**: decode → readPixels(RGBA, unpremul 지정) → LSB 임베드 → MakeImage → encodeToBytes(**PNG 무손실**). expo-image-manipulator는 raw pixel 미노출로 부적합 | 2026-08-07 재검증 |
+| 기기 무결성 모듈 | **expo-app-integrity**(공식) — App Attest+Play Integrity 통합 JS API. 서버 검증(A-4/A-5)은 별도 | 2026-08-07 재검증 |
 | 경로 모델 | 웹=`F`+`C` / 모바일=`P`+`F`+`C`. `P`=네이티브 카메라(Verified), `F`=갤러리/파일(Standard), `C`=붙여넣기(Standard) | roadmap.md L19,96 |
 | Verified 게이팅 | **Pro 구독 한정**. Free는 Standard만 | pricing-policy §1 |
 | C2PA 아키텍처 | **DISTRIBUTED** — iOS/Android Edge(IN TOE) + 공통 백엔드 서명(IN TOE), 웹은 TOE 외 | c2pa-arch C.1.3–C.1.5 |
@@ -124,8 +126,8 @@
 
 | 웹 구현 | 모바일 대체 |
 |---|---|
-| Canvas 디코드/인코드(`v2.ts`) | iOS ImageIO / Android Bitmap (Expo: `expo-image-manipulator`/네이티브 모듈) |
-| 워터마크 합성(`watermark.ts`) | Core Graphics / Skia(`@shopify/react-native-skia` 검토) |
+| Canvas 디코드/인코드(`v2.ts`) | **react-native-skia** — readPixels(RGBA)로 디코드, encodeToBytes로 PNG 무손실 인코딩 (2026-08-07 확정. ⚠️ alphaType **unpremul** 지정 필수 — 프리멀티플라이 시 픽셀값 변형 → 웹과 해시 불일치) |
+| 워터마크 합성(`watermark.ts`) | Skia(`@shopify/react-native-skia`) — 픽셀 파이프라인과 동일 라이브러리로 통일 |
 | 영수증 localStorage(`receipts.ts`) | `expo-secure-store`(Keychain/Keystore) |
 | XHR 업로드(`index.ts`) | `fetch`/`expo-file-system` 업로드 |
 
@@ -147,6 +149,7 @@
   - M0-4 `apps/mobile` Expo 앱 스캐폴드(Expo Router/NativeWind/EAS 초기화)
 - **산출물**: 빌드되는 모노레포, `@oripics/stamp` 패키지, 빈 Expo 앱(빌드/실행 OK)
 - **수용기준**: 웹 회귀 테스트 전부 통과(서명·발급·검증 라운드트립 무변화), Vercel 배포 정상, `eas build` dev client 성공
+- **필수 스파이크(2026-08-07 추가)**: **동일 이미지 → 웹/iOS/Android 3곳 inner/border 해시 완전 일치 + Skia PNG 재인코딩 라운드트립 무손실** 검증. 실패 시(코덱 차이·프리멀티플라이 등) 해법은 스택 교체가 아니라 **stamp 코어의 C++/JSI 모듈화**(RN 유지)
 - **의존성**: 없음(지금 착수 가능)
 - **기간**: ~1.5주
 - ⚠️ **리스크**: 현재 `legacy-peer-deps`(nodemailer8↔next-auth) — pnpm 전환 시 peer 해석 재발 가능. workspace 도구 결정과 함께 검증.
@@ -172,7 +175,7 @@
 ### Phase M3 — `P` 경로 카메라 UX (Verified 골격, attest 전)
 
 - **목표**: 커스텀 카메라(핀치줌·렌즈 선택), GPS 토글, 촬영 후 처리 파이프라인.
-- **작업**: expo-camera 커스텀 UI, `zoom_factor`/`lens_position` 캡처, GPS 권한·토글(`lat_e6`/`lng_e6`), 촬영본 즉시 해시.
+- **작업**: **react-native-vision-camera** 커스텀 UI(렌즈 선택·수동 제어 — 2026-08-07 expo-camera에서 변경), `zoom_factor`/`lens_position` 캡처, GPS 권한·토글(`lat_e6`/`lng_e6`), 촬영본 즉시 해시.
 - **산출물**: 촬영→해시→(임시) standard 서명으로 라운드트립.
 - **수용기준**: 줌/렌즈 메타 수집, GPS on/off 정확 반영, 대용량(고해상) 이미지 처리 시간 허용범위.
 - **의존성**: M0, M1.
@@ -181,7 +184,7 @@
 ### Phase M4 — 기기 무결성 (App Attest / Play Integrity) · 양면 작업
 
 - **목표**: Verified 티어의 신뢰 근거 확립(클라이언트 토큰 + **백엔드 검증 본 구현**).
-- **작업(클라이언트)**: iOS App Attest(`DCAppAttestService`) 키 생성·attestation·assertion; Android Play Integrity 토큰 요청(nonce 바인딩).
+- **작업(클라이언트)**: **expo-app-integrity 공식 모듈 사용**(2026-08-07 확정 — 커스텀 네이티브 래퍼 불필요) — iOS App Attest(`DCAppAttestService`) 키 생성·attestation·assertion + Android Play Integrity 토큰 요청(nonce 바인딩)을 통합 JS API로. ⚠️ App Attest는 시뮬레이터 불가(실기기 테스트), Xcode에서 App Attest capability 활성화 필요.
 - **작업(백엔드, A-4/A-5)**: `lib/attest/verifyToken.ts` 본 구현 — Apple App Attest 인증서 체인 검증 + nonce 일치; Google Play Integrity 토큰 디코드·검증. stub 제거.
 - **산출물**: `tier:'verified'` 서명이 실제 무결성 검증을 통과해야만 발급.
 - **수용기준**: 위조/재생(replay) 토큰 거부, nonce 만료(5분) 거부, 정상 기기 통과; `com.oripics.verified`에 `attest_token_hash`·`device_integrity:'passed'` 기록.
@@ -268,7 +271,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 |---|---|---|
 | IAP 강제(§8-A 미해결) | 출시 리젝 또는 수익 30% 잠식 | 착수 전 Apple/Google 가이드라인 확인 + 가격모델 재계산. M6 전 결정 |
 | 백엔드 세션이 쿠키 전제 | 모바일 인증 마찰 | M1에서 Bearer 토큰 경로 보강(백엔드 작업) |
-| 공유 lib codec 추상화 누수 | 웹·모바일 해시 불일치 → 검증 깨짐 | M0에서 codec 인터페이스 + 양 플랫폼 동일 입력 해시 일치 테스트 고정 |
+| 공유 lib codec 추상화 누수 | 웹·모바일 해시 불일치 → 검증 깨짐 | M0에서 codec 인터페이스 + 양 플랫폼 동일 입력 해시 일치 테스트 고정. **특히 iOS 알파 프리멀티플라이·색공간 변환**(Skia alphaType unpremul 지정으로 대응, M0 스파이크에서 실측). 해결 불가 시 C++/JSI로 stamp 코어 이식 — 스택 교체 아님 |
 | App Attest/Play Integrity 검증 난도 | Verified 신뢰 근거 약화 | A-4/A-5에 충분한 기간 + replay/nonce 테스트 |
 | 운영 C2PA cert 지연(approver) | trusted 표시 불가 | dev cert로 개발 진행, 출시 게이트에만 운영 cert 요구 |
 | Play Console 신원확인 미완(U-2) | Android 빌드/출시 중단 | M4 Android 착수 전 선완료 |
@@ -312,4 +315,5 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **스택 재검증 — RN+Expo 유지 확정**(TS 해시 로직 단일 소스가 결정 요인, Flutter/네이티브는 재작성으로 해시 불일치 리스크). 부품 3가지 보정: ①카메라 expo-camera→**react-native-vision-camera**(lens_position·수동 제어) ②픽셀 파이프라인 **react-native-skia** 확정(expo-image-manipulator는 raw pixel 미노출, unpremul 필수) ③기기 무결성 **expo-app-integrity** 공식 모듈 채택(M4 난도 하락). M0에 3-플랫폼 해시 일치+PNG 무손실 라운드트립 스파이크 추가. Expo Go 불가 — dev build 전제 |
 | 2026-06-18 | 최초 작성 — 현재 코드/모노레포 상태 실측 기반. 트랙 B/D·C2PA 아키텍처·pricing·스토어 메타 통합. M0–M8 단계화 + 결정필요 6건 + 리스크 레지스터 |
