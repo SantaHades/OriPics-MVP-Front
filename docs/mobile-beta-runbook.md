@@ -1,0 +1,67 @@
+# 모바일 베타 배포 런북 (M7)
+
+> **작성**: 2026-08-07 · 대상: 대표 (계정·콘솔 작업) + AI (이슈 대응)
+> 코드는 M0~M7 완료 상태. 이 문서는 **계정이 필요한 실행 단계**를 순서대로 정리한 체크리스트.
+
+## 0. 선행 체크리스트 (스토어 업로드 전)
+
+| # | 항목 | 트래커 | 소요 |
+|---|---|---|---|
+| 1 | 실기기 검증 라운드 — `cd apps/mobile && npx expo run:ios` → [DEV] 셀프테스트 ✅ → 로그인 → 갤러리 인증 → 웹 검증기 valid → 촬영 | — | ~1h |
+| 2 | Google Play Console 신원확인 | U-2 | 1~3일 (자연 대기) |
+| 3 | 앱 아이콘 (현재 Expo 기본 아이콘 — 심사 반려 사유) | U-16 | 외주 리드타임 |
+| 4 | attest 운영 설정 (Apple env 2 + Play↔GCP 서비스 계정) | U-34 | ~1h |
+| 5 | App Store Connect: SBP 가입 + 앱 생성 + 구독 상품 2개 + Notifications URL + env | U-35 | ~1h + 상품 심사 |
+| 6 | Sentry 프로젝트 생성 → DSN 발급 | U-36 | ~10분 |
+
+## 1. EAS 초기 설정 (1회)
+
+```bash
+cd apps/mobile
+npx eas login                 # Expo 계정 (없으면 expo.dev에서 가입)
+npx eas init                  # projectId가 app.json에 자동 주입됨 → 커밋
+npx eas credentials           # iOS: Apple 계정 연결 (인증서·프로파일 EAS가 자동 관리)
+```
+
+- `eas.json`은 커밋되어 있음: `development`(dev client) / `preview`(내부 배포, 버전 자동 증가) / `production`(스토어 제출용).
+- 모든 프로파일에 `EXPO_PUBLIC_API_URL=https://www.ori.pics` 주입됨.
+- **Sentry DSN**: `npx eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value <DSN>` (U-36 후). 미설정이어도 앱은 정상 동작(진단만 꺼짐).
+
+## 2. 빌드 → 베타 트랙
+
+```bash
+# iOS — TestFlight
+npx eas build --profile production --platform ios
+npx eas submit --platform ios --latest       # ascAppId는 eas.json에서 실제 값으로 교체 후
+# App Store Connect → TestFlight → 내부 테스팅 그룹에 빌드 배정
+
+# Android — Play 내부 테스트
+npx eas build --profile production --platform android
+# Play Console → 설정 → API 액세스에서 서비스 계정 키 다운로드 → apps/mobile/play-service-account.json (gitignore 됨)
+npx eas submit --platform android --latest   # track: internal (eas.json)
+```
+
+- 첫 iOS 제출 전 App Store Connect에 앱 레코드 생성 필요(U-35와 함께). `ascAppId`(App Store Connect 앱의 Apple ID 숫자)를 eas.json에 기입.
+- 첫 Android 제출은 Play Console에 수동 1회 업로드가 필요할 수 있음(신규 앱) — 이후 eas submit 자동화.
+
+## 3. 베타 검증 시나리오 (수용기준: 핵심 플로우 무크래시)
+
+1. 신규 설치 → 이메일 로그인 → 홈 크레딧 칩 표시
+2. 갤러리 인증(F) → 공개 URL → **웹 검증기에서 valid**
+3. 촬영(P): 줌 프리셋·핀치, GPS ON/OFF 각 1회 → 발급 → 뷰어에서 GPS 표시 확인
+4. (U-34 후) Pro 계정으로 촬영 → **Verified 표기** + c2patool에서 `c2pa.created`+digitalCapture 확인
+5. (U-35 후) Sandbox 계정으로 IAP 구매 → tier 전환 → 복원 → 환불 테스트(웹훅 다운그레이드)
+6. 인앱 검증: 인증된 사진 → 판독 → 서버 검증 → 신뢰도 표시 / 원본 아닌 사진 → 불일치
+7. 앱 재기동 → 세션 유지 확인 / 7일 후 토큰 자동 갱신 확인
+8. Sentry 대시보드에 크래시 0 확인
+
+## 4. 이슈 대응
+
+- 빌드 실패·크래시 로그·검증 불일치 등은 **세션에 그대로 붙여넣으면 AI가 대응** (셀프테스트 불일치 = 코덱/해시 규약 문제 → 최우선).
+- 재현 가능한 해시 불일치는 절대 골든값을 바꾸지 말 것 — 코드를 고친다 (`golden.test.ts` 원칙).
+
+## 변경 이력
+
+| 일자 | 변경 |
+|---|---|
+| 2026-08-07 | 최초 작성 — M7 코드(eas.json·Sentry 게이트·베타 표기) 완료 시점 |

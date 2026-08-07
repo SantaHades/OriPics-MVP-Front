@@ -226,13 +226,14 @@
   > - **잔여**: U-35(SBP 가입·제품 등록·Notifications URL·env) → Sandbox 실기기 구매/복원/환불 왕복 → 수용기준 검증. 패스 상품(non-renewing)은 2차 출시 시.
 - **원 수용기준**: 구독 성공 시 Verified 즉시 해금, 갱신/취소/복원·환불 웹훅 처리, 서버 권위 검증, 웹 구독자 로그인 시 전 기능 동작(IAP 미구매 상태).
 
-### Phase M7 — 베타 (TestFlight / Play 내부 테스트)
+### Phase M7 — 베타 (TestFlight / Play 내부 테스트) · ✅ 코드 완료 (2026-08-07), 실행 = [베타 런북](mobile-beta-runbook.md)
 
-- **목표**: 실기기 베타 배포·피드백.
-- **작업**: EAS Build(프로덕션 프로파일), TestFlight·Play Internal 업로드, 크래시/분석(diagnostic) 연동, 베타 안내·임시 인증서 표기.
-- **수용기준**: 양 스토어 베타 트랙에 빌드 게시, 핵심 플로우 무크래시.
-- **의존성**: M5(+가능하면 M6).
-- **기간**: ~2주
+> **구현 결과** (계정 불요 부분 완료):
+> - **EAS 설정** (`eas.json` 커밋): development(dev client)/preview(internal, autoIncrement)/production 3개 프로파일, `appVersionSource: remote`, 전 프로파일 `EXPO_PUBLIC_API_URL` 주입, submit 스켈레톤(iOS ascAppId placeholder·Android internal track, `play-service-account.json`은 gitignore).
+> - **크래시/진단**: `@sentry/react-native`(v7, expo config plugin) — **DSN 게이트**: `EXPO_PUBLIC_SENTRY_DSN` 미설정 시 완전 no-op(로컬 dev 무영향), 설정 시 init+Sentry.wrap. PII 전송 off, traces 20%. DSN 발급=U-36.
+> - **베타 안내·임시 인증서 표기**: 홈 화면 `BetaNotice` — "베타 기간에는 인증 서명이 임시 인증서로 표기될 수 있습니다"(SSL.com 운영 cert 전 untrusted 고지). 정식 출시 시 `EXPO_PUBLIC_BETA=false`.
+> - **실행 단계는 전부 대표 계정 작업** → [mobile-beta-runbook.md](mobile-beta-runbook.md): 선행 체크리스트(실기기 검증·U-2·U-16·U-34·U-35·U-36) → eas login/init/credentials → build/submit 명령 → 베타 검증 시나리오 8종 → 이슈 대응 원칙.
+- **원 수용기준**: 양 스토어 베타 트랙에 빌드 게시, 핵심 플로우 무크래시 — 런북 §2·§3에서 달성.
 
 ### Phase M8 — 스토어 심사·출시
 
@@ -334,6 +335,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M7 코드 완료** — eas.json 3 프로파일(+submit 스켈레톤), Sentry DSN 게이트 연동(U-36), 베타 안내·임시 인증서 표기(BetaNotice). 실행 단계는 [mobile-beta-runbook.md](mobile-beta-runbook.md)로 문서화(선행 체크리스트·명령·검증 시나리오 8종) |
 | 2026-08-07 | **Phase M6 코드 완료** — Apple IAP 서버(JWS 검증·멱등 부여·이중 구독 가드·Server Notifications V2 웹훅·환불 다운그레이드+grace 37일)+expo-iap 구독 패널(iOS·Free만 노출, 복원 포함). U-35(App Store Connect 설정) 신규. 유닛테스트 12종 |
 | 2026-08-07 | **Phase M5 코드 완료** — Verified E2E 서버 체인 실측 확인(추가 작업 불필요), 인앱 검증 신규(무료 판독→서버 검증 2단계, trust_report·owner_exempt 표시, verifyFlow=웹 V4/V3/V2 미러), 차감 UI 정비. 잔여: 운영 cert(SSL.com 외부 대기)·실기기 c2patool 검증 |
 | 2026-08-07 | **Phase M4 코드 완료** — A-4(App Attest 서버 검증: CBOR·Root CA 체인·nonce/키/앱 바인딩)+A-5(Play Integrity: 서비스계정 OAuth·verdict 순수함수) 본 구현, env 게이트(U-34 전 개발 폴백 유지), @expo/app-integrity 클라이언트+Verified 자동 시도/Standard 폴백, 앱 식별자 com.santahades.oripics 확정. 유닛테스트 19종 |
