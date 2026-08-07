@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits } from "@/lib/credits/consumeCredits";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
@@ -163,8 +162,7 @@ async function tryReadC2paForLink(
 
 export async function POST(req: NextRequest) {
   // 인증 필수 (로그인한 사용자만 verify 가능, 차감 대상)
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id;
+  const userId = await getSessionUserId();
   if (!userId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }

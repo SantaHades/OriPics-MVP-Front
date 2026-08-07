@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
 
 // GET: 로그인된 사용자의 증명 히스토리 목록 조회
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const userId = await getSessionUserId();
+    if (!userId) {
       return NextResponse.json({ code: "unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -53,13 +52,13 @@ export async function GET() {
 // POST: 새로운 증명 기록 저장
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const userId = await getSessionUserId();
+    if (!userId) {
       return NextResponse.json({ code: "unauthorized" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     });
 
     if (!user) {

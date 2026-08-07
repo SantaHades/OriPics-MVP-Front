@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
 import { renewCreditsIfDue } from "@/lib/credits/renewCredits";
 
@@ -9,8 +8,7 @@ export const runtime = "nodejs";
 const RECENT_LIMIT = 20;
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id;
+  const userId = await getSessionUserId();
   if (!userId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }

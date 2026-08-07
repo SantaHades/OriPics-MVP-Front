@@ -162,14 +162,15 @@
 - **기간**: ~1.5주
 - ⚠️ **리스크**: 현재 `legacy-peer-deps`(nodemailer8↔next-auth) — pnpm 전환 시 peer 해석 재발 가능. workspace 도구 결정과 함께 검증.
 
-### Phase M1 — 앱 셸 & 인증
+### Phase M1 — 앱 셸 & 인증 · ✅ 코어 완료 (2026-08-07), 잔여 = OAuth 콘솔 등록(M1.5)
 
-- **목표**: 로그인/세션, 기본 내비, 크레딧·티어 표시.
-- **작업**: Google/Kakao/Naver OAuth(네이티브 SDK 또는 AuthSession) + 이메일 로그인 → 토큰 `expo-secure-store` 보관; 인증 인터셉터(세션 만료 처리); `/api/credits/me` 연동 잔액 칩.
-- **산출물**: 로그인→홈→프로필(크레딧) 흐름.
-- **수용기준**: 4개 provider 로그인 성공, 토큰 안전 보관, 재기동 시 세션 유지, 401 자동 갱신/재로그인.
-- **의존성**: M0. ⚠️ 백엔드 인증이 **NextAuth 쿠키 세션** 중심 → 모바일용 **Bearer 토큰 수용 경로** 점검·보강 필요(백엔드 작업 항목).
-- **기간**: ~1주
+> **구현 결과**:
+> - **백엔드 Bearer 경로 (보강 완료)**: 자체 HS256 JWT(`src/lib/auth/mobileTokens.ts` — NEXTAUTH_SECRET 서명, access 7일/refresh 90일 무상태 회전, aud=oripics-mobile, 6개 유닛테스트). `getSessionUserId()` 헬퍼가 Bearer→쿠키 순 수용(Bearer 무효 시 쿠키 폴백 안 함 — 명확한 401로 refresh 트리거). **6개 라우트 전환**: credits/me·sign·verify·links/publish·publish/upload-url·proof/history(email→id 조회 전환).
+> - **엔드포인트**: `POST /api/mobile/auth/login`(이메일+비밀번호, 실패 사유 비구분) / `refresh`(회전+탈퇴 차단) / `oauth`(google=id_token aud 검증·kakao/naver=access_token 프로필 조회 — 웹 signIn 콜백과 동일한 계정 연결 규칙: 기존 Account 매칭→이메일 충돌 409 OAuthAccountNotLinked→신규 생성+가입 보너스).
+> - **모바일**: expo-secure-store 토큰 보관(`tokenStore.ts`), `apiFetch` 래퍼(Bearer 자동 첨부, 401→refresh 1회→재시도→로그아웃 통지), `AuthContext`(부팅 복원→credits/me로 세션 검증, signInWithPassword/signInWithProviderToken/signOut), 홈 화면 = 로그인 폼 ↔ 계정 카드(티어·잔여 건수 칩+갱신일+새로고침+로그아웃). 로컬 dev는 `EXPO_PUBLIC_API_URL=http://<맥IP>:3939`.
+> - **검증**: 웹 74 테스트+next build 통과, 모바일 tsc 클린+iOS export 번들 성공. 실기기 로그인 왕복은 배포 후 확인.
+> - **잔여(M1.5)**: ①OAuth 콘솔 등록(User) — Google iOS/Android 클라이언트 ID(`GOOGLE_MOBILE_CLIENT_IDS` env)·Kakao/Naver 앱에 모바일 플랫폼 추가 ②모바일 OAuth 버튼 활성화(expo-auth-session, 백엔드·컨텍스트는 준비됨) ③레이트리밋·refresh 폐기 = **A-38**(P2, 베타 전).
+- **원 계획**: Google/Kakao/Naver OAuth + 이메일 로그인 → 토큰 `expo-secure-store` 보관; 인증 인터셉터; `/api/credits/me` 연동 잔액 칩. 수용기준: 4개 provider 로그인, 토큰 안전 보관, 재기동 세션 유지, 401 자동 갱신.
 
 ### Phase M2 — `F`/`C` 경로 (Standard) 먼저
 
@@ -327,6 +328,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M1 코어 완료** — 백엔드 Bearer 토큰 경로(mobileTokens+getSessionUserId, 6개 라우트 전환), 모바일 auth 엔드포인트 3종(login/refresh/oauth), 모바일 인증 인프라(secure-store·apiFetch 401 자동갱신·AuthContext)+홈 로그인/계정 화면. 잔여 M1.5=OAuth 콘솔 등록(User)+버튼 활성화, A-38(레이트리밋·refresh 폐기) 신규 |
 | 2026-08-07 | **Phase M0 완료** — ①루트 npm workspace(web 제외, §8-D 확정) ②`@oripics/stamp` 추출(`apps/web/packages/stamp`, codec/sha256 주입식, 웹 어댑터로 경로 호환) ③골든 회귀 테스트(비트 단위 동일 증명)+68 테스트+next build 통과 ④Expo SDK 57 스캐폴드+metro 모노레포+iOS export 검증. 잔여: eas init(User)·해시 일치 스파이크 실측(M2) |
 | 2026-08-07 | **§8-A 확정 (대표 승인)** — 하이브리드: Android 소비 전용 / iOS IAP 병행 ₩12,900·연 ₩129,000 할증(웹 ₩9,900 유지). M6 작업 내용을 확정안 기준으로 개편(SBP 가입·Server Notifications·이중 구독 가드·non-renewing subscription). 리스크 레지스터의 "IAP 강제(§8-A 미해결)" 항목 해소 |
 | 2026-08-07 | **§8-A IAP 정책 조사 완료** — 3갈래 병렬 조사(Apple·Google·한국 관행). 결론: 하이브리드 권고(Android 소비 전용 / iOS IAP 병행 ₩12,900 할증). Apple 3.1.3(b) IAP 병행 조건+2025-12·2026-01 거절 사례로 iOS 소비 전용 배제, Google은 소비 전용 명문 허용. 상세 [mobile-iap-policy-research.md](mobile-iap-policy-research.md) |

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, createHash } from "crypto";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
@@ -51,8 +50,7 @@ export async function POST(req: NextRequest) {
   }
 
   // J-3: 인증 + 잔액 사전확인 (tier에 따라 비용 결정)
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id;
+  const userId = await getSessionUserId();
   if (!userId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }

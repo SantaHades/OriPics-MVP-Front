@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "crypto";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 import { prisma } from "@/lib/prisma";
@@ -63,8 +62,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   }
 
-  const session = await getServerSession(authOptions);
-  const sessionUserId = (session?.user as any)?.id;
+  const sessionUserId = await getSessionUserId();
   if (!sessionUserId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }
