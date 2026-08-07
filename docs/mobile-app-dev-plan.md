@@ -205,13 +205,15 @@
 > - **잔여**: ①U-34 운영 설정(Apple env 2개 / Play Console↔GCP 연결+서비스 계정+env 3개) ②실기기 수용기준 검증(위조/재생 거부·nonce 만료 거부·정상 기기 통과 — App Attest는 시뮬레이터 불가) ③Xcode App Attest capability(dev build 시 자동 entitlement 확인).
 - **원 계획 수용기준**: 위조/재생 토큰 거부, nonce 만료(5분) 거부, 정상 기기 통과; `com.oripics.verified`에 `attest_token_hash`·`device_integrity` 기록.
 
-### Phase M5 — 발급·검증·크레딧 완성 + 운영 C2PA 연동
+### Phase M5 — 발급·검증·크레딧 완성 + 운영 C2PA 연동 · ✅ 코드 완료 (2026-08-07), 잔여 = 운영 cert(외부)·실기기
 
-- **목표**: Verified end-to-end + 인앱 검증 + 운영 서명 인증서.
-- **작업**: Verified `publish`(C2PA `c2pa.created`+`digitalCapture`+`com.oripics.verified`); 인앱 `/api/verify` 결과·trust_report 표시; 크레딧 차감(Verified proof −4 등) UI; 운영 cert 도착 시(A-2) 백엔드 env swap 후 모바일 영향 회귀.
-- **수용기준**: Verified 공개링크가 외부 C2PA 도구에서 `c2pa.created`+digitalCapture로 valid, 운영 cert 적용 시 trusted.
-- **의존성**: M4 + (출시 trusted 표시엔) **C2PA Letter→SSL.com cert**.
-- **기간**: ~1.5주
+> **구현 결과**:
+> - **Verified E2E 체인 실측 확인**: 서버는 이미 완결 상태였음 — sign JWT `verified_info` → confirm receipt → publish → C2PA `c2pa.created`+digitalCapture DST+`com.oripics.verified`(platform·attest_token_hash·zoom_factor·lens_position). M4의 클라이언트 verified 요청과 결합되어 코드상 end-to-end 연결 완료. **추가 서버 작업 불필요 판정.**
+> - **인앱 검증 (M5 신규)**: `verifyFlow.ts` — 웹 detectStamp/verifyImage의 V4/V3/V2 분기 완전 미러. 2단계 UX: ①로컬 무료 판독(LSB 추출+magic, 서버 호출 없음 → 버전·타임스탬프·크기·GPS 미리보기) ②서버 검증(1건 차감 사전 고지, Bearer) → **match·owner_exempt(내 이미지 면제)·metadata·trust_report(overall_trust 한글화·verify_url) 표시**. 판독 픽셀을 검증에 재사용(중복 디코드 없음). `verify-panel.tsx`로 인증 탭에 통합(+ScrollView 전환).
+> - **크레딧 차감 UI**: 발급 결과에 차감 건수·티어(M4), 검증 버튼에 "1건 차감" 사전 고지, owner_exempt 시 면제 표시, 각 동작 후 잔액 칩 갱신.
+> - **운영 cert 연동**: 코드 없음 — cert 도착 시 Vercel env swap 런북(현황 트래커·메모리에 보존)만 실행하면 모바일 포함 trusted 전환. 현재 SSL.com Validation 단계 대기.
+> - **잔여**: ①실기기에서 Verified 공개링크 생성 → c2patool로 `c2pa.created`+digitalCapture valid 확인(수용기준) ②운영 cert 적용 후 trusted 회귀 ③U-34 설정 전 Verified는 개발 폴백 attest로 동작.
+- **원 계획 수용기준**: Verified 공개링크가 외부 C2PA 도구에서 `c2pa.created`+digitalCapture로 valid, 운영 cert 적용 시 trusted.
 
 ### Phase M6 — 결제/구독 (모바일) · **정책 의존**
 
@@ -333,6 +335,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M5 코드 완료** — Verified E2E 서버 체인 실측 확인(추가 작업 불필요), 인앱 검증 신규(무료 판독→서버 검증 2단계, trust_report·owner_exempt 표시, verifyFlow=웹 V4/V3/V2 미러), 차감 UI 정비. 잔여: 운영 cert(SSL.com 외부 대기)·실기기 c2patool 검증 |
 | 2026-08-07 | **Phase M4 코드 완료** — A-4(App Attest 서버 검증: CBOR·Root CA 체인·nonce/키/앱 바인딩)+A-5(Play Integrity: 서비스계정 OAuth·verdict 순수함수) 본 구현, env 게이트(U-34 전 개발 폴백 유지), @expo/app-integrity 클라이언트+Verified 자동 시도/Standard 폴백, 앱 식별자 com.santahades.oripics 확정. 유닛테스트 19종 |
 | 2026-08-07 | **Phase M3 코드 완료** — vision-camera v5(훅 API·config plugin 없음→권한 직접 선언), 촬영 탭(배율 프리셋+핀치줌+GPS 토글+촬영→발급), zoom/lens 메타 수집, publishFlow P 경로 확장(서버는 M4 전까지 standard 처리). 웹 폴백 분리. 잔여: 실기기 검증 |
 | 2026-08-07 | **Phase M2 코드 완료** — skia codec(unpremul 강제)+expo-crypto sha256, V4 발급 흐름 미러(sign→임베드→PUT→confirm→publish, receipt 보관), 인증 화면(갤러리→공개 URL·공유), skia 프리뷰(A-36), 해시 호환 셀프테스트([DEV] 버튼). 잔여: dev build 실기기 검증(Expo Go는 skia 불가) |
