@@ -13,7 +13,7 @@
 - **모바일의 존재 이유**: 웹은 `F`(파일)·`C`(클립보드) 경로만 가능 → **`P`(네이티브 카메라 촬영) 경로는 모바일 전용**이며, 이게 **Verified 티어(Pro 한정)의 유일한 진입점**. 즉 모바일 = 매출(Pro 전환)의 핵심 차별재.
 - **백엔드는 그대로 재사용**: 서명·발급·검증 API(`/api/sign` → `confirm` → `publish`, `/api/verify`, `/api/attest/challenge`)가 이미 모바일을 전제로 설계됨(verified 분기·`com.oripics.verified` assertion·platform 필드 존재). 모바일은 **새 백엔드가 아니라 새 Edge 클라이언트**.
 - **현재 실측 상태(2026-06-18)**: 모노레포는 **미착수** — `apps/web` 단일, `packages/`·`apps/mobile` 없음, pnpm/turbo 미설정, npm+`legacy-peer-deps` 사용. attest 검증(`verifyToken.ts`)은 **stub**. C2PA 운영 인증서는 **approver 승인 대기**.
-- **3대 선행 블로커**: ① 모노레포 추출(트랙 B Phase 2–8) ② C2PA Conformance Letter + SSL.com 운영 인증서 ③ **앱스토어 인앱결제(IAP) 정책 결정** (아래 §8 — 모바일 수익모델을 좌우하는 미결 정책).
+- **3대 선행 블로커**: ① 모노레포 추출(트랙 B Phase 2–8) ② C2PA Conformance Letter + SSL.com 운영 인증서(→ CONFORMANT 완료, cert Validation 진행 중) ③ ~~앱스토어 IAP 정책 결정~~ → **§8-A 확정 완료(2026-08-07, 하이브리드)** — 잔여 선행은 사실상 ①뿐.
 
 ---
 
@@ -202,10 +202,14 @@
 ### Phase M6 — 결제/구독 (모바일) · **정책 의존**
 
 - **목표**: 모바일에서 Pro 구독(=Verified 잠금 해제).
-- **작업**: §8-A 결정에 따라 분기 — (가) Apple/Google **IAP**(StoreKit2 / Play Billing, expo-in-app-purchases 계열) + 서버 영수증 검증 + 구독 상태↔티어 동기화, 또는 (나) 웹 결제 유도(앱 외 결제 — 스토어 정책 위반 위험 큼).
-- **수용기준**: 구독 성공 시 Verified 즉시 해금, 갱신/취소/복원(restore) 처리, 서버 권위 검증.
-- **의존성**: §8-A 결정, M5.
-- **기간**: ~2주(IAP 경로 기준)
+- **작업 (§8-A 확정안 기준, 2026-08-07)**:
+  - **Android**: 결제 구현 없음(소비 전용) — 웹 구독 상태가 로그인만으로 반영되는지 확인 + Verified 잠금 화면 문구 검수(가격·링크 금지). 12/31 신체계 후 아웃링크 추가는 별도 검토.
+  - **iOS**: StoreKit 2 자동갱신 구독 **₩12,900/월·₩129,000/년** 등록 + 서버 영수증 검증(App Store Server API) + App Store Server Notifications 웹훅(갱신/취소/환불 → tier 동기화) + restore 처리 + **KG 웹 구독과 이중 구독 가드**(Pro 계정엔 IAP 버튼 비노출).
+  - **사전 절차**: Apple **Small Business Program 가입**(미가입 시 30%).
+  - 패스 상품(2차)은 non-renewing subscription 타입.
+- **수용기준**: 구독 성공 시 Verified 즉시 해금, 갱신/취소/복원(restore)·환불 웹훅 처리, 서버 권위 검증, 웹 구독자 로그인 시 전 기능 동작(IAP 미구매 상태).
+- **의존성**: M5. (§8-A는 확정됨)
+- **기간**: ~2주(iOS IAP 중심, Android는 검수만)
 
 ### Phase M7 — 베타 (TestFlight / Play 내부 테스트)
 
@@ -256,7 +260,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 
 | ID | 결정 | 선택지 | 영향 |
 |---|---|---|---|
-| **§8-A** | **모바일 결제 방식** | **조사 완료(2026-08-07) → (라) 하이브리드 권고: Android=소비 전용(공식 허용, 수수료 0) / iOS=IAP 병행+할증가 ₩12,900(SBP 15%, 실수취 웹 초과)** — 근거·시뮬레이션·watch list는 [mobile-iap-policy-research.md](mobile-iap-policy-research.md). 제3자결제(26%+PG)는 배제. iOS 소비 전용은 3.1.3(b) IAP 병행 조건+거절 사례로 고위험 | **대표 확정만 남음.** M6 착수 시 최신 정책 재확인(12/31 Google 한국 신체계·Epic-Apple 대법원 계류) |
+| **§8-A** | **모바일 결제 방식** | ✅ **확정 (2026-08-07 대표 승인): (라) 하이브리드** — **Android=소비 전용**(웹 구독+앱 로그인, 결제 플로우 없음, 수수료 0. 앱 내 가격·결제 링크 금지, "웹사이트 확인" 수준 문구까지만) / **iOS=IAP 병행+할증가 ₩12,900/월**(연간 ₩129,000, 웹 ₩9,900 유지 — 3.1.3(b) 병행 조건 충족, SBP 15% 기준 실수취 ~₩9,968로 웹 초과. 앱 내 웹 가격 언급 절대 금지, Pro 계정엔 IAP 버튼 비노출). 제3자결제 배제. 근거·시뮬레이션·watch list: [mobile-iap-policy-research.md](mobile-iap-policy-research.md) | **M6 전 필수**: ①Apple SBP 가입(미가입 시 30%) ②App Store Server API 영수증 검증+Notifications 웹훅+KG 구독과 이중 구독 가드 ③패스는 non-renewing subscription 타입. **M6 착수 시 최신 정책 재확인**(12/31 Google 한국 신체계 → Android 아웃링크 검토·Epic-Apple 대법원 ~2027-06) |
 | **§8-B** | iOS·Android **동시 vs 순차** 출시 | 동시(리스크 분산 X, 일정 김) / iOS 먼저(App Attest 성숙) | M4~M8 일정·QA 부하 |
 | **§8-C** | **베타/출시 타임라인** | 웹 먼저 출시 후 모바일 9~10월 / 모바일까지 동시 9~10월 | §7 참조 |
 | **§8-D** | 워크스페이스 도구 | pnpm+turbo(roadmap 안) / npm workspace 유지(legacy-peer-deps 안정) | M0 리스크·CI |
@@ -269,7 +273,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 
 | 리스크 | 영향 | 완화 |
 |---|---|---|
-| IAP 강제(§8-A 미해결) | 출시 리젝 또는 수익 30% 잠식 | 착수 전 Apple/Google 가이드라인 확인 + 가격모델 재계산. M6 전 결정 |
+| ~~IAP 강제(§8-A 미해결)~~ → **해소(2026-08-07 확정)** | — | 하이브리드 확정(Android 소비 전용/iOS IAP ₩12,900). 잔여 리스크는 Apple 심사 재량뿐이며 IAP 병행으로 구조적 봉쇄. M6 착수 시 정책 재확인만 |
 | 백엔드 세션이 쿠키 전제 | 모바일 인증 마찰 | M1에서 Bearer 토큰 경로 보강(백엔드 작업) |
 | 공유 lib codec 추상화 누수 | 웹·모바일 해시 불일치 → 검증 깨짐 | M0에서 codec 인터페이스 + 양 플랫폼 동일 입력 해시 일치 테스트 고정. **특히 iOS 알파 프리멀티플라이·색공간 변환**(Skia alphaType unpremul 지정으로 대응, M0 스파이크에서 실측). 해결 불가 시 C++/JSI로 stamp 코어 이식 — 스택 교체 아님 |
 | App Attest/Play Integrity 검증 난도 | Verified 신뢰 근거 약화 | A-4/A-5에 충분한 기간 + replay/nonce 테스트 |
@@ -282,7 +286,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 
 ## 10. 다음 즉시 액션 (블로커 무관, 지금 가능)
 
-1. **§8-A 결제 정책 사전 조사** — Apple App Store §3.1.1 / Google Play 결제 정책상 디지털 구독 IAP 강제 여부 확정. (가장 큰 미결, 코드 착수 전 권장)
+1. ~~§8-A 결제 정책 사전 조사~~ → **완료·확정(2026-08-07)** — [mobile-iap-policy-research.md](mobile-iap-policy-research.md).
 2. **§8-D 워크스페이스 도구 결정** → **Phase M0 착수** (모노레포 추출은 외부 블로커와 무관하게 지금 진행 가능, 트랙 D의 실질 출발점).
 3. **U-2 Google Play Console 신원확인** 완료(Android 전제, 1~3일 자연 진행).
 4. **U-16 앱 아이콘** 디자인 발주(P0, 리드타임 김).
@@ -315,6 +319,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **§8-A 확정 (대표 승인)** — 하이브리드: Android 소비 전용 / iOS IAP 병행 ₩12,900·연 ₩129,000 할증(웹 ₩9,900 유지). M6 작업 내용을 확정안 기준으로 개편(SBP 가입·Server Notifications·이중 구독 가드·non-renewing subscription). 리스크 레지스터의 "IAP 강제(§8-A 미해결)" 항목 해소 |
 | 2026-08-07 | **§8-A IAP 정책 조사 완료** — 3갈래 병렬 조사(Apple·Google·한국 관행). 결론: 하이브리드 권고(Android 소비 전용 / iOS IAP 병행 ₩12,900 할증). Apple 3.1.3(b) IAP 병행 조건+2025-12·2026-01 거절 사례로 iOS 소비 전용 배제, Google은 소비 전용 명문 허용. 상세 [mobile-iap-policy-research.md](mobile-iap-policy-research.md) |
 | 2026-08-07 | **스택 재검증 — RN+Expo 유지 확정**(TS 해시 로직 단일 소스가 결정 요인, Flutter/네이티브는 재작성으로 해시 불일치 리스크). 부품 3가지 보정: ①카메라 expo-camera→**react-native-vision-camera**(lens_position·수동 제어) ②픽셀 파이프라인 **react-native-skia** 확정(expo-image-manipulator는 raw pixel 미노출, unpremul 필수) ③기기 무결성 **expo-app-integrity** 공식 모듈 채택(M4 난도 하락). M0에 3-플랫폼 해시 일치+PNG 무손실 라운드트립 스파이크 추가. Expo Go 불가 — dev build 전제 |
 | 2026-06-18 | 최초 작성 — 현재 코드/모노레포 상태 실측 기반. 트랙 B/D·C2PA 아키텍처·pricing·스토어 메타 통합. M0–M8 단계화 + 결정필요 6건 + 리스크 레지스터 |
