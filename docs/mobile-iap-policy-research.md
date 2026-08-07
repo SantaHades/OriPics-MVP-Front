@@ -13,7 +13,7 @@
 | | Apple App Store | Google Play |
 |---|---|---|
 | 소비 전용(웹 구독+앱 로그인만) | **고위험** — 3.1.3(b)가 "동일 상품이 앱 내 IAP로도 제공될 것(provided those items are also available as in-app purchases)"을 요구. 2025-12·2026-01 개발자 포럼에 로그인 전용 B2C 앱 3.1.1 반복 거절 사례 문서화 | **명시적 허용** — 정책 원문 "a user could log in … and access content paid for somewhere else". Netflix 모델. 수수료 0% |
-| 앱 내 외부결제 링크(아웃링크) | **한국 불가** (미국 스토어프런트만 0%, 대법원 계류로 유동) | 한국 현재 불가 → **2026-12-31부터 공식 허용** (Epic 글로벌 합의, 구독 수수료 10% 체계) |
+| 앱 내 외부결제 링크(아웃링크) | **한국 불가**. 미국 스토어프런트만 허용 — 수수료 0%는 판결문 원문으로 확정("Apple should not be able to charge any commission … until the district court has approved an appropriate fee", 9th Cir. No. 25-2935). 승인 요율 부재로 0% 유지 중, Spotify·Patreon·Kindle 실사용. 향후 "실비 기반 명목 수수료"만 허용 전망, SCOTUS 판결 2027-06 내 예상 | 한국 현재 불가 → **2026-12-31부터 공식 허용** (Epic 글로벌 합의, 구독 수수료 10% 체계) |
 | 한국 법정 제3자결제 | 허용되나 **수수료 26%(SBP 할인 없음) + PG ~3% ≈ 29%+** — IAP 15%보다 명백히 손해, 국내 채택 사례 사실상 0 | 수수료 −4%p(구독 11%) + PG ~3% ≈ 14% — IAP 15%와 사실상 동일, 실익 없음 |
 | IAP 수수료 (구독) | 30%, **Small Business Program(연매출 $1M 미만) 15%** — 구독·일회성 모두 적용. 구독 2년차부터는 전원 15% | **첫날부터 15%** (매출 무관) → 12/31 이후 10%+GPB 사용 시 billing fee 5% (실질 15%) |
 | 웹 결제 언급/유도 | 앱 내 언급 즉시 3.1.1 리젝 (RevenueCat 사례 다수). 앱 밖(이메일)은 자유 | 링크 없는 "웹사이트에서 구매 가능" 안내까지 허용. 아웃링크는 12/31까지 금지 (2022 카카오톡 업데이트 차단 사례) |
@@ -68,7 +68,7 @@
 | 시점/이벤트 | 영향 | 액션 |
 |---|---|---|
 | **2026-12-31 Google 한국 신체계** | 아웃링크 합법 + 구독 10% | Android 앱 내 웹 결제 버튼 추가 검토 |
-| Epic v. Apple **대법원 판결** (2026-06-30 상고 허가, 계류) | 미국 외부링크 수수료 0% 유지 여부 → 파급 시 한국 정책 완화 가능성 | iOS 아웃링크 재평가 |
+| Epic v. Apple **대법원 판결** (2026-06-30 상고 허가 → 변론 2026-10 회기, 판결 ~2027-06. 2026-05-06 mandate 정지 신청은 기각됨) | 미국 외부링크 수수료 0% 유지 여부(현재 판결문상 확정 유지) → 파급 시 한국 정책 완화 가능성 | iOS 아웃링크 재평가 |
 | **방미통위 과징금 의결** (구글 420억·애플 210억, 2026-08 의결 예정 보도) | Apple 한국 정책 완화 압력 | 한국 External Link Entitlement 등장 여부 주시 |
 | 연매출 USD $1M 접근 | SBP 15% → 30% | 가격·믹스 재계산 |
 | M6(모바일 결제 구현) 착수 | — | 본 문서 기준 최신 정책 재확인 후 구현 |
@@ -79,7 +79,7 @@
 
 **Google 1차**: [결제 정책](https://support.google.com/googleplay/android-developer/answer/10281818)(소비 전용 명문 허용) · [서비스 수수료](https://support.google.com/googleplay/android-developer/answer/112622) · [한국 대체결제 −4%p](https://support.google.com/googleplay/android-developer/answer/11222040) · [Epic 합의 발표 2026-03](https://android-developers.googleblog.com/2026/03/a-new-era-for-choice-and-openness.html) · [신체계 상세 2026-06](https://android-developers.googleblog.com/2026/06/play-expanded-billing.html)
 
-**미국 소송**: 제9순회 2025-12-11 판결(법정모독 인용, 수수료 전면금지는 파기환송) · [대법원 상고 허가 2026-06-30](https://ipwatchdog.com/2026/06/30/high-court-grants-cert-in-apples-challenge-to-ninth-circuit-contempt-ruling-in-app-store-dispute/) · Epic-Google 금지명령 발효(준수 2027-11-01까지)
+**미국 소송**: [제9순회 판결문 원문 No. 25-2935, 2025-12-11](https://cdn.ca9.uscourts.gov/datastore/opinions/2025/12/11/25-2935.pdf)(법정모독 인용, 수수료 전면금지는 파기환송 — 단 요율 승인 전까지 0% 명시) · [SCOTUS mandate 정지 기각 2026-05-06](https://www.cnbc.com/2026/05/06/supreme-court-declines-to-pause-order-holding-apple-in-contempt-in-epic-games-lawsuit.html) · [대법원 상고 허가 2026-06-30](https://ipwatchdog.com/2026/06/30/high-court-grants-cert-in-apples-challenge-to-ninth-circuit-contempt-ruling-in-app-store-dispute/) · [Patreon 웹 결제 수용](https://techcrunch.com/2025/05/06/patreons-app-can-now-accept-web-payments-after-u-s-app-store-changes/) · Epic-Google 금지명령 발효(준수 2027-11-01까지)
 
 **한국**: [토스페이먼츠 수수료 비교](https://www.tosspayments.com/blog/articles/mobile-pay-1) · [카카오톡 아웃링크 차단 사례](https://www.khan.co.kr/article/202207062056005) · [아시아경제 앱·웹 가격 실측](https://www.asiae.co.kr/article/2024073115474992047) · [경향 — 한국 12월 시행](https://www.khan.co.kr/article/202603052151005) · [서울경제 — 방미통위 8월 의결 예정](https://www.sedaily.com/article/20071188)
 
