@@ -172,14 +172,17 @@
 > - **잔여(M1.5)**: ①OAuth 콘솔 등록(User) — Google iOS/Android 클라이언트 ID(`GOOGLE_MOBILE_CLIENT_IDS` env)·Kakao/Naver 앱에 모바일 플랫폼 추가 ②모바일 OAuth 버튼 활성화(expo-auth-session, 백엔드·컨텍스트는 준비됨) ③레이트리밋·refresh 폐기 = **A-38**(P2, 베타 전).
 - **원 계획**: Google/Kakao/Naver OAuth + 이메일 로그인 → 토큰 `expo-secure-store` 보관; 인증 인터셉터; `/api/credits/me` 연동 잔액 칩. 수용기준: 4개 provider 로그인, 토큰 안전 보관, 재기동 세션 유지, 401 자동 갱신.
 
-### Phase M2 — `F`/`C` 경로 (Standard) 먼저
+### Phase M2 — `F` 경로 (Standard) · ✅ 코드 완료 (2026-08-07), 잔여 = 실기기 검증
 
-- **목표**: 갤러리/파일·붙여넣기로 Standard 인증 end-to-end.
-- **작업**: 이미지 선택 → 디코드(네이티브 codec 어댑터) → 해시 → `/api/sign`(standard) → 업로드 → `confirm`→`publish` → 공개 URL/공유 시트; 영수증 secure-store 보관 + 재드롭 대응(A-32 모바일판).
-- **산출물**: Standard 인증·공개링크 생성 동작.
-- **수용기준**: 웹과 **동일 이미지의 해시/메타 일치**(공유 lib 검증), 공개링크가 웹 검증기에서 valid.
-- **의존성**: M0(stamp), M1(세션).
-- **기간**: ~1.5주
+> **구현 결과**:
+> - **skia codec 본 구현** (`src/lib/stamp/index.ts`): decode=MakeImageFromEncoded→readPixels(**RGBA_8888·AlphaType.Unpremul 강제**), encodePng=MakeImage→encodeToBytes(PNG). sha256=expo-crypto digest. **뷰어 경량본**(A-36)도 skia로 — Surface 리스케일 1600px→JPEG78 base64 dataURL(>700KB일 때만, 실패 시 null 폴백).
+> - **발급 흐름** (`publishFlow.ts`): 웹 index.ts V4 흐름 미러 — decode→inner/borderV4 해시→`/api/sign`(F)→meta+final_hash 페이로드 임베드→PNG→signed URL 직접 PUT(expo/fetch, ArrayBuffer body)→`confirm`(receipt 보관)→`publish`(+preview). 인증은 Bearer(apiFetch, 401 자동 갱신).
+> - **receipt 보관** (`receiptStore.ts`): 문서 디렉터리 JSON(50개 롤링) — SecureStore 2KB 제한 회피. 재드롭 대응(A-32 모바일판)의 저장 기반.
+> - **인증 화면** (explore 탭→"인증"): 갤러리 선택→7단계 진행 라벨→결과 카드(공개 URL·복사·공유·차감 표시)→크레딧 칩 갱신. iOS 사진 권한 문구 등록.
+> - **해시 호환 스파이크 준비**: `selfTest.ts` — 웹 golden.test.ts와 동일 결정적 픽셀·골든값으로 기기에서 해시 5종 대조 + **skia PNG 라운드트립 무손실**+페이로드 생존 검사. 인증 화면 [DEV] 버튼으로 실행.
+> - **검증**: tsc 클린 + iOS export 번들 성공. **잔여(실기기, User와 함께)**: ①dev build에서 셀프테스트 실행(skia는 Expo Go 불가 → `npx expo run:ios|android` 또는 EAS dev client) ②실사진 발급 e2e→공개링크를 웹 검증기에 드롭해 valid 확인 ③고해상(48MP) 메모리 실측.
+> - 범위 노트: `C`(붙여넣기) 경로는 모바일 UX상 수요 낮아 보류(공유 시트 수신 확장으로 대체 검토), GPS 옵션은 M3(P 경로)에서.
+- **원 계획**: 이미지 선택 → 디코드 → 해시 → sign(standard) → 업로드 → confirm→publish → 공개 URL/공유; 영수증 보관+재드롭. 수용기준: 웹과 동일 이미지 해시 일치, 공개링크가 웹 검증기에서 valid.
 
 ### Phase M3 — `P` 경로 카메라 UX (Verified 골격, attest 전)
 
@@ -328,6 +331,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M2 코드 완료** — skia codec(unpremul 강제)+expo-crypto sha256, V4 발급 흐름 미러(sign→임베드→PUT→confirm→publish, receipt 보관), 인증 화면(갤러리→공개 URL·공유), skia 프리뷰(A-36), 해시 호환 셀프테스트([DEV] 버튼). 잔여: dev build 실기기 검증(Expo Go는 skia 불가) |
 | 2026-08-07 | **Phase M1 코어 완료** — 백엔드 Bearer 토큰 경로(mobileTokens+getSessionUserId, 6개 라우트 전환), 모바일 auth 엔드포인트 3종(login/refresh/oauth), 모바일 인증 인프라(secure-store·apiFetch 401 자동갱신·AuthContext)+홈 로그인/계정 화면. 잔여 M1.5=OAuth 콘솔 등록(User)+버튼 활성화, A-38(레이트리밋·refresh 폐기) 신규 |
 | 2026-08-07 | **Phase M0 완료** — ①루트 npm workspace(web 제외, §8-D 확정) ②`@oripics/stamp` 추출(`apps/web/packages/stamp`, codec/sha256 주입식, 웹 어댑터로 경로 호환) ③골든 회귀 테스트(비트 단위 동일 증명)+68 테스트+next build 통과 ④Expo SDK 57 스캐폴드+metro 모노레포+iOS export 검증. 잔여: eas init(User)·해시 일치 스파이크 실측(M2) |
 | 2026-08-07 | **§8-A 확정 (대표 승인)** — 하이브리드: Android 소비 전용 / iOS IAP 병행 ₩12,900·연 ₩129,000 할증(웹 ₩9,900 유지). M6 작업 내용을 확정안 기준으로 개편(SBP 가입·Server Notifications·이중 구독 가드·non-renewing subscription). 리스크 레지스터의 "IAP 강제(§8-A 미해결)" 항목 해소 |
