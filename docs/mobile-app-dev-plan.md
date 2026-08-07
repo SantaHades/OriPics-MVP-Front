@@ -218,14 +218,13 @@
 ### Phase M6 — 결제/구독 (모바일) · **정책 의존**
 
 - **목표**: 모바일에서 Pro 구독(=Verified 잠금 해제).
-- **작업 (§8-A 확정안 기준, 2026-08-07)**:
-  - **Android**: 결제 구현 없음(소비 전용) — 웹 구독 상태가 로그인만으로 반영되는지 확인 + Verified 잠금 화면 문구 검수(가격·링크 금지). 12/31 신체계 후 아웃링크 추가는 별도 검토.
-  - **iOS**: StoreKit 2 자동갱신 구독 **₩12,900/월·₩129,000/년** 등록 + 서버 영수증 검증(App Store Server API) + App Store Server Notifications 웹훅(갱신/취소/환불 → tier 동기화) + restore 처리 + **KG 웹 구독과 이중 구독 가드**(Pro 계정엔 IAP 버튼 비노출).
-  - **사전 절차**: Apple **Small Business Program 가입**(미가입 시 30%).
-  - 패스 상품(2차)은 non-renewing subscription 타입.
-- **수용기준**: 구독 성공 시 Verified 즉시 해금, 갱신/취소/복원(restore)·환불 웹훅 처리, 서버 권위 검증, 웹 구독자 로그인 시 전 기능 동작(IAP 미구매 상태).
-- **의존성**: M5. (§8-A는 확정됨)
-- **기간**: ~2주(iOS IAP 중심, Android는 검수만)
+- ✅ **코드 완료 (2026-08-07)**, 잔여 = U-35 App Store Connect 설정 + Sandbox 실기기:
+  > - **서버**: `lib/payment/appleIap.ts` — StoreKit 2 JWS 검증(x5c 체인→**Apple Root CA G3 임베드**(지문 검증 후 고정)·ES256 raw→DER 변환·유효기간), 트랜잭션 필드 검증 순수함수(번들ID·제품 매핑·만료·환불·Sandbox 게이트), **부여=PortOne subscriptionGrant 패턴 미러**(advisory lock 멱등 by transactionId, 크레딧 정액 SET 1000, previous_credits, Subscription upsert gateway='apple_iap', 연결제도 renewAt 30일 앵커), **이중 구독 가드**(타 게이트웨이 active 구독 → 409). 유닛테스트 12종(전체 105 통과).
+  > - **엔드포인트**: `POST /api/mobile/iap/apple/verify`(구매/복원 공용, Bearer) + `POST /api/mobile/iap/apple/notifications`(**Server Notifications V2**: DID_RENEW/SUBSCRIBED/DID_RECOVER→재부여, EXPIRED/REFUND/GRACE_PERIOD_EXPIRED/REVOKE→다운그레이드+링크 grace 37일, DID_CHANGE_RENEWAL_STATUS→cancelAtPeriodEnd 기록. signedPayload JWS 자체가 인증). env `APPLE_IAP_BUNDLE_ID` 미설정 시 503(안전 게이트).
+  > - **모바일**: `expo-iap`(v5, StoreKit 2) `subscribe-panel.tsx` — **iOS+Free 티어만 노출**(가드 1차), 상품 2종 displayPrice 표시, 구매→서버 verify→finishTransaction→잔액 갱신, **구매 복원**, 웹 가격 언급 0(3.1.1 철칙 주석 명문화). Home 화면 통합.
+  > - **Android**: 계획대로 결제 구현 없음(소비 전용) — 패널이 iOS 외 플랫폼에서 null 반환.
+  > - **잔여**: U-35(SBP 가입·제품 등록·Notifications URL·env) → Sandbox 실기기 구매/복원/환불 왕복 → 수용기준 검증. 패스 상품(non-renewing)은 2차 출시 시.
+- **원 수용기준**: 구독 성공 시 Verified 즉시 해금, 갱신/취소/복원·환불 웹훅 처리, 서버 권위 검증, 웹 구독자 로그인 시 전 기능 동작(IAP 미구매 상태).
 
 ### Phase M7 — 베타 (TestFlight / Play 내부 테스트)
 
@@ -335,6 +334,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-07 | **Phase M6 코드 완료** — Apple IAP 서버(JWS 검증·멱등 부여·이중 구독 가드·Server Notifications V2 웹훅·환불 다운그레이드+grace 37일)+expo-iap 구독 패널(iOS·Free만 노출, 복원 포함). U-35(App Store Connect 설정) 신규. 유닛테스트 12종 |
 | 2026-08-07 | **Phase M5 코드 완료** — Verified E2E 서버 체인 실측 확인(추가 작업 불필요), 인앱 검증 신규(무료 판독→서버 검증 2단계, trust_report·owner_exempt 표시, verifyFlow=웹 V4/V3/V2 미러), 차감 UI 정비. 잔여: 운영 cert(SSL.com 외부 대기)·실기기 c2patool 검증 |
 | 2026-08-07 | **Phase M4 코드 완료** — A-4(App Attest 서버 검증: CBOR·Root CA 체인·nonce/키/앱 바인딩)+A-5(Play Integrity: 서비스계정 OAuth·verdict 순수함수) 본 구현, env 게이트(U-34 전 개발 폴백 유지), @expo/app-integrity 클라이언트+Verified 자동 시도/Standard 폴백, 앱 식별자 com.santahades.oripics 확정. 유닛테스트 19종 |
 | 2026-08-07 | **Phase M3 코드 완료** — vision-camera v5(훅 API·config plugin 없음→권한 직접 선언), 촬영 탭(배율 프리셋+핀치줌+GPS 토글+촬영→발급), zoom/lens 메타 수집, publishFlow P 경로 확장(서버는 M4 전까지 standard 처리). 웹 폴백 분리. 잔여: 실기기 검증 |

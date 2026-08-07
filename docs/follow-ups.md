@@ -88,6 +88,7 @@
 | U-25 | 토스페이먼츠(또는 KG이니시스) PG 직계약 | 포트원 계약 후 | 포트원 가입 | P1 |
 | U-26 | 카카오페이·토스페이 간편결제 추가 (포트원 통합) | 포트원 계약 후 | PG 계약 | P1 |
 | U-27 | CAI(Content Authenticity Initiative) 무료 멤버십 가입 | NOW | 없음 | P3 |
+| U-35 | **iOS IAP 운영 설정 (M6 후속)** — ①**Apple Small Business Program 가입**(App Store Connect, 미가입 시 수수료 30%) ②구독 그룹 생성 + 제품 2개 등록: `oripics.pro.monthly` **₩12,900/월** · `oripics.pro.yearly` **₩129,000/년** (§8-A 확정가) ③App Store Server Notifications V2 URL 등록: `https://www.ori.pics/api/mobile/iap/apple/notifications` ④Vercel env `APPLE_IAP_BUNDLE_ID=com.santahades.oripics` (+테스트 기간 `APPLE_IAP_ALLOW_SANDBOX=true`) ⑤Sandbox 테스터 계정 생성. **env 설정 전 IAP verify는 503 반환(안전)** | M7 베타 전 | 없음 | P1 |
 | U-34 | **모바일 attest 운영 설정 (M4 후속)** — ①**Apple**: Vercel env `APPLE_APP_ATTEST_TEAM_ID`(개발자 계정 Team ID)+`APPLE_APP_ATTEST_BUNDLE_ID`(=`com.santahades.oripics`), dev 테스트 기간엔 `APPLE_APP_ATTEST_ALLOW_DEV=true` ②**Google**: Play Console↔GCP 프로젝트 연결 → 서비스 계정 생성(Play Integrity API 권한) → Vercel env `GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON`+`ANDROID_PACKAGE_NAME=com.santahades.oripics`, 모바일 `.env`에 `EXPO_PUBLIC_GCP_PROJECT_NUMBER` ③선행: U-2 신원확인. **env 설정 전까지 verified 요청은 개발 폴백(토큰 해시만 기록)으로 동작** | 모바일 베타(M7) 전 | U-2 | P1 |
 | U-33 | **네이버페이 결제형 — PortOne 채널 등록** — 네이버페이센터 가입 심사 **승인 완료**(7/4 신청 → 2026-08-07 확인). 다음 절차: 네이버페이센터에서 연동 정보 확인 → admin.portone.io에 네이버페이 채널 추가 → 채널키 발급 (A-37 전제) | 결제수단 확장 결정 시 | 없음 | P2 |
 
