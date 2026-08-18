@@ -69,7 +69,7 @@
 |---|---|---|---|
 | U-14 | 연령 등급 결정 (Apple 4+ vs 12+ — GPS 사용 검토) | 앱 심사 직전 | P1 |
 | U-15 | English keywords 길이 조정 (107 → 100자) | 앱 심사 직전 | P1 |
-| U-16 | 앱 아이콘 디자인 (1024×1024 + 512×512) | 모바일 본 시작 | P0 |
+| U-16 | ~~앱 아이콘 디자인~~ → **완료 (2026-08-18, 발주 불필요)** — 기존 브랜드 마크(`image/투명로고-1024x1024.png`, 육각+체크)에서 전 슬롯 생성: iOS 1024(무알파)·adaptive 3종(safe zone 58%)·splash·favicon·Play 512(`image/oripics-playstore-icon-512.png`). 홈 히어로 AnimatedIcon도 Expo 로고→OriPics 마크 교체. 잔여(선택): 정식 출시 전 마크 벡터화(현 PNG 1024 기반으로 충분히 선명) | 완료 | P0 |
 | U-17 | Feature graphic 디자인 (1024×500, Google) | 베타 직전 | P0 |
 | U-18 | 스크린샷 캡처 (베타 빌드 완성 후) | 베타 직전 | P0 |
 | U-19 | Promo video 제작 (선택) | 베타 직전 | P3 |
