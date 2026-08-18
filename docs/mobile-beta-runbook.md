@@ -69,7 +69,7 @@ Xcode 26 설치 후 **한 줄로 캡처**:
 cd apps/mobile && ./scripts/capture-screenshots.sh    # 재캡처만 할 땐 --no-build
 ```
 - iPhone 16 Pro Max 시뮬레이터(1320×2868 = App Store 6.9" 규격, Play 9:16 겸용)에서
-  maestro 플로우(`e2e/screenshots.yaml`)가 로그인→홈→인증→검증→촬영폴백 5장을 자동 캡처 →
+  maestro 플로우(`e2e/screenshots.yaml`)가 로그인→홈→인증(검증 포함)→촬영폴백을 자동 캡처 →
   `image/screenshots/`에 수집. 상태바는 9:41·풀배터리로 자동 정리.
 - **데모 계정**: demo-screenshots@ori.pics (비밀번호 `.secrets/demo-screenshots-account.txt`,
   프로덕션 DB에 Pro·244건으로 생성) — **App Review 심사용 데모 계정으로도 재사용**(심사 노트에 기입).
@@ -77,6 +77,14 @@ cd apps/mobile && ./scripts/capture-screenshots.sh    # 재캡처만 할 땐 --n
   (`xcrun devicectl` 또는 기기에서 직접 캡처 후 교체).
 
 ## 4. 이슈 대응
+
+### 알려진 빌드 이슈 (2026-08-18 실측)
+- **expo-modules-jsi@57.0.4 + Xcode 26.2 컴파일 오류**: `JavaScriptCodable+Date.swift:53`
+  "type of expression is ambiguous" → `abs(milliseconds)`를 `milliseconds.magnitude`로 로컬 패치함.
+  **`npm install`을 다시 실행하면 패치가 사라짐** — 같은 오류가 재발하면 동일 수정 재적용
+  (또는 expo-modules-jsi 57.0.5+ 릴리스 확인). 근본 해결은 상류 수정 대기.
+- **Sentry 소스맵 업로드 실패(org 미설정)**: U-36 전까지 로컬 Release 빌드는 `SENTRY_DISABLE_AUTO_UPLOAD=true` 필요(캡처 스크립트에 반영됨). EAS 빌드는 U-36 후 Sentry env 설정과 함께 해제.
+- **CoreSimulator 버전 충돌**(Xcode 교체 직후): `launchctl remove com.apple.CoreSimulator.CoreSimulatorService` 후 재시도.
 
 - 빌드 실패·크래시 로그·검증 불일치 등은 **세션에 그대로 붙여넣으면 AI가 대응** (셀프테스트 불일치 = 코덱/해시 규약 문제 → 최우선).
 - 재현 가능한 해시 불일치는 절대 골든값을 바꾸지 말 것 — 코드를 고친다 (`golden.test.ts` 원칙).
