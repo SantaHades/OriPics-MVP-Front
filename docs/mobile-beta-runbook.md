@@ -3,6 +3,13 @@
 > **작성**: 2026-08-07 · 대상: 대표 (계정·콘솔 작업) + AI (이슈 대응)
 > 코드는 M0~M7 완료 상태. 이 문서는 **계정이 필요한 실행 단계**를 순서대로 정리한 체크리스트.
 
+## ⚠️ 로컬 빌드 전제: Xcode 26+ (2026-08-18 실측)
+
+Expo SDK 57의 SwiftPM 패키지가 **Swift tools 6.2**를 요구 — Xcode 16.4(Swift 6.1)에서는
+`npx expo run:ios`가 "package 'apple' is using Swift tools version 6.2.0" 오류로 실패한다.
+**App Store에서 Xcode 26 업데이트 후 진행** (실기기 검증·시뮬레이터 캡처 공통 전제.
+EAS 클라우드 빌드는 이 제약 무관).
+
 ## 0. 선행 체크리스트 (스토어 업로드 전)
 
 | # | 항목 | 트래커 | 소요 |
@@ -54,6 +61,20 @@ npx eas submit --platform android --latest   # track: internal (eas.json)
 6. 인앱 검증: 인증된 사진 → 판독 → 서버 검증 → 신뢰도 표시 / 원본 아닌 사진 → 불일치
 7. 앱 재기동 → 세션 유지 확인 / 7일 후 토큰 자동 갱신 확인
 8. Sentry 대시보드에 크래시 0 확인
+
+## 3.5 스토어 스크린샷 (U-18 — 자동화 준비 완료)
+
+Xcode 26 설치 후 **한 줄로 캡처**:
+```bash
+cd apps/mobile && ./scripts/capture-screenshots.sh    # 재캡처만 할 땐 --no-build
+```
+- iPhone 16 Pro Max 시뮬레이터(1320×2868 = App Store 6.9" 규격, Play 9:16 겸용)에서
+  maestro 플로우(`e2e/screenshots.yaml`)가 로그인→홈→인증→검증→촬영폴백 5장을 자동 캡처 →
+  `image/screenshots/`에 수집. 상태바는 9:41·풀배터리로 자동 정리.
+- **데모 계정**: demo-screenshots@ori.pics (비밀번호 `.secrets/demo-screenshots-account.txt`,
+  프로덕션 DB에 Pro·244건으로 생성) — **App Review 심사용 데모 계정으로도 재사용**(심사 노트에 기입).
+- 촬영(P) 화면은 시뮬레이터에 카메라가 없어 폴백이 찍힘 → **실기기에서 1장 재캡처** 필요
+  (`xcrun devicectl` 또는 기기에서 직접 캡처 후 교체).
 
 ## 4. 이슈 대응
 

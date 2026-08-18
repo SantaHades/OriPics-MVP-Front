@@ -71,7 +71,7 @@
 | U-15 | English keywords 길이 조정 (107 → 100자) | 앱 심사 직전 | P1 |
 | U-16 | ~~앱 아이콘 디자인~~ → **완료 (2026-08-18, 발주 불필요)** — 기존 브랜드 마크(`image/투명로고-1024x1024.png`, 육각+체크)에서 전 슬롯 생성: iOS 1024(무알파)·adaptive 3종(safe zone 58%)·splash·favicon·Play 512(`image/oripics-playstore-icon-512.png`). 홈 히어로 AnimatedIcon도 Expo 로고→OriPics 마크 교체. 잔여(선택): 정식 출시 전 마크 벡터화(현 PNG 1024 기반으로 충분히 선명) | 완료 | P0 |
 | U-17 | ~~Feature graphic 디자인~~ → **완료 (2026-08-18)** — `image/oripics-feature-graphic-1024x500.png`: 브랜드 마크(좌) + OriPics 워드마크(Avenir Next Condensed) + "사진 원본 증명 · The Original Proof" 태그라인, 연한 블루 그라데이션 배경, 중앙 정렬(양쪽 여백 110px). Play 콘솔 스토어 등록정보에 업로드 | 완료 | P0 |
-| U-18 | 스크린샷 캡처 (베타 빌드 완성 후) | 베타 직전 | P0 |
+| U-18 | 스크린샷 캡처 → **자동화 준비 완료 (2026-08-18)** — maestro 플로우(`apps/mobile/e2e/screenshots.yaml`)+원커맨드 스크립트(`scripts/capture-screenshots.sh`, 5장: 로그인·홈·인증·검증·촬영폴백, Pro Max 1320×2868)+데모 계정(demo-screenshots@ori.pics, Pro·244건, `.secrets/` — **App Review 심사 계정 겸용**). **실행 조건: Xcode 26+ 설치**(SDK 57=Swift tools 6.2, Xcode 16.4 불가 실측). 촬영 화면 1장은 실기기 재캡처 | Xcode 26 설치 후 | P0 |
 | U-19 | Promo video 제작 (선택) | 베타 직전 | P3 |
 | U-20 | Apple Privacy Label 입력 (App Store Connect) | 앱 심사 직전 | P0 |
 | U-21 | Google Data Safety Form 입력 (Play Console) | 앱 심사 직전 | P0 |
