@@ -335,6 +335,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-19 | **실기기 검증 라운드 통과 (iPhone 12 Pro Max, iOS 26.6)** — 촬영(P) 발급 e2e: 후면·전면(셀카)·GPS ON/OFF 모두 서버 verify match=true, GPS 좌표 V4 메타 인코딩 확인, 12MP 대용량 처리 실증(M3 수용기준). 피드백 반영 9건: 홈/로그인 스크롤 레이아웃, 탭 아이콘(카메라/마크), **HEIC→JPEG(decode_failed 해소)**, 셔터 위치, 배율 pill 순환, 전/후면 전환 버튼, **배율 애플 표기 정규화(0.5×/1×/2×)**, ori.pics 링크 표시, 402 친화 메시지. U-18 스크린샷 4장 완성. 발견 절차: 기기 개발자 모드+Apple PLA 동의 필요(런북 반영 대상) |
 | 2026-08-07 | **Phase M7 코드 완료** — eas.json 3 프로파일(+submit 스켈레톤), Sentry DSN 게이트 연동(U-36), 베타 안내·임시 인증서 표기(BetaNotice). 실행 단계는 [mobile-beta-runbook.md](mobile-beta-runbook.md)로 문서화(선행 체크리스트·명령·검증 시나리오 8종) |
 | 2026-08-07 | **Phase M6 코드 완료** — Apple IAP 서버(JWS 검증·멱등 부여·이중 구독 가드·Server Notifications V2 웹훅·환불 다운그레이드+grace 37일)+expo-iap 구독 패널(iOS·Free만 노출, 복원 포함). U-35(App Store Connect 설정) 신규. 유닛테스트 12종 |
 | 2026-08-07 | **Phase M5 코드 완료** — Verified E2E 서버 체인 실측 확인(추가 작업 불필요), 인앱 검증 신규(무료 판독→서버 검증 2단계, trust_report·owner_exempt 표시, verifyFlow=웹 V4/V3/V2 미러), 차감 UI 정비. 잔여: 운영 cert(SSL.com 외부 대기)·실기기 c2patool 검증 |

@@ -10,6 +10,13 @@ Expo SDK 57의 SwiftPM 패키지가 **Swift tools 6.2**를 요구 — Xcode 16.4
 **App Store에서 Xcode 26 업데이트 후 진행** (실기기 검증·시뮬레이터 캡처 공통 전제.
 EAS 클라우드 빌드는 이 제약 무관).
 
+## 0.5 실기기 설치 절차 (2026-08-19 실측 확립)
+
+1. iPhone 개발자 모드 ON(설정→개인정보 보호 및 보안) → 재부팅
+2. Apple Developer 계정 PLA 동의(developer.apple.com/account 배너) — 미동의 시 기기 등록 API 차단
+3. 최초 1회: `xcodebuild -workspace ios/OriPics.xcworkspace -scheme OriPics -configuration Release -destination "id=<UDID>" -allowProvisioningUpdates -allowProvisioningDeviceRegistration build`
+4. 이후: `SENTRY_DISABLE_AUTO_UPLOAD=true npx expo run:ios --configuration Release --device <UDID>` (expo 기기 목록에 안 떠도 UDID 직접 지정하면 됨)
+
 ## 0. 선행 체크리스트 (스토어 업로드 전)
 
 | # | 항목 | 트래커 | 소요 |
