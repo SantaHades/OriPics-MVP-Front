@@ -1164,7 +1164,7 @@ export default function Home() {
       <nav className="sticky top-0 w-full glass z-50 px-2 sm:px-6 py-3 sm:py-4 flex justify-between items-center text-[10px] sm:text-sm">
         <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => window.scrollTo(0, 0)}>
           <img src="/logo.png" alt="OriPics Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
-          <span className="font-bold text-lg sm:text-xl hidden xs:block">OriPics</span>
+          <span className="font-bold text-base xs:text-lg sm:text-xl">OriPics</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-6">
           <LanguageSwitcher />
