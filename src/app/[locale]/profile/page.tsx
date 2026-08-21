@@ -7,7 +7,7 @@ import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Tras
 import { Link } from "@/navigation";
 import { supabase } from "@/lib/supabase";
 import { useTranslations } from "next-intl";
-import { useCredits } from "@/lib/credits/useCredits";
+import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
 
 const SUPPORT_EMAIL = "hi@ori.pics";
@@ -94,6 +94,13 @@ export default function ProfilePage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [proofs, setProofs] = useState<ProofRecord[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(true);
+  // "더 보기" 페이지네이션 (2026-08-21): 증명 히스토리 50개/최근 내역 20건 초과분 열람
+  const [proofCursor, setProofCursor] = useState<string | null>(null);
+  const [loadingMoreProofs, setLoadingMoreProofs] = useState(false);
+  const [extraTxs, setExtraTxs] = useState<CreditTransactionView[]>([]);
+  const [txCursor, setTxCursor] = useState<string | null>(null);
+  const [txMayHaveMore, setTxMayHaveMore] = useState(true);
+  const [loadingMoreTxs, setLoadingMoreTxs] = useState(false);
   const [previewProof, setPreviewProof] = useState<ProofRecord | null>(null);
   // B-2 (2026-05-17): PDF 발급/재발급/다운로드, 인증 삭제 상태
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -111,6 +118,7 @@ export default function ProfilePage() {
         if (res.ok) {
           const data = await res.json();
           setProofs(data.proofs || []);
+          setProofCursor(data.nextCursor ?? null);
         }
       } catch (err) {
         console.error("Failed to fetch proof history:", err);
@@ -151,6 +159,50 @@ export default function ProfilePage() {
     if (!supabaseUrl || !linkId || linkId.length < 7) return null;
     const yymmdd = linkId.slice(1, 7);
     return `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${yymmdd}/${linkId}_preview.jpg`;
+  };
+
+  // "더 보기" — 증명 히스토리 다음 50개
+  const loadMoreProofs = async () => {
+    if (!proofCursor || loadingMoreProofs) return;
+    setLoadingMoreProofs(true);
+    try {
+      const res = await fetch(`/api/proof/history?cursor=${encodeURIComponent(proofCursor)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProofs((prev) => [...prev, ...(data.proofs || [])]);
+        setProofCursor(data.nextCursor ?? null);
+      }
+    } catch (err) {
+      console.error("Failed to load more proofs:", err);
+    } finally {
+      setLoadingMoreProofs(false);
+    }
+  };
+
+  // "더 보기" — 최근 내역 다음 20건 (초기 20건은 /api/credits/me의 recentTransactions)
+  const visibleTxs = React.useMemo(() => {
+    const base = credits?.recentTransactions ?? [];
+    const seen = new Set(base.map((t) => t.id));
+    return [...base, ...extraTxs.filter((t) => !seen.has(t.id))];
+  }, [credits?.recentTransactions, extraTxs]);
+
+  const loadMoreTxs = async () => {
+    if (loadingMoreTxs || visibleTxs.length === 0) return;
+    setLoadingMoreTxs(true);
+    try {
+      const cursor = txCursor ?? visibleTxs[visibleTxs.length - 1].id;
+      const res = await fetch(`/api/credits/history?cursor=${encodeURIComponent(cursor)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setExtraTxs((prev) => [...prev, ...(data.transactions || [])]);
+        setTxCursor(data.nextCursor ?? null);
+        setTxMayHaveMore(!!data.nextCursor);
+      }
+    } catch (err) {
+      console.error("Failed to load more transactions:", err);
+    } finally {
+      setLoadingMoreTxs(false);
+    }
   };
 
   // 타임스탬프 포맷팅 — 소스 접두사(P/F/C) 제거 후 UTC로 파싱해 로컬 시간 표시
@@ -501,7 +553,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {credits && credits.recentTransactions.length > 0 && (
+          {credits && visibleTxs.length > 0 && (
             <div className="rounded-2xl border border-slate-200 bg-white/40">
               <div className="px-5 py-3 border-b border-slate-100">
                 <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">
@@ -509,7 +561,7 @@ export default function ProfilePage() {
                 </p>
               </div>
               <ul className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
-                {credits.recentTransactions.map((tx) => {
+                {visibleTxs.map((tx) => {
                   const positive = tx.delta > 0;
                   return (
                     <li key={tx.id} className="px-5 py-3 flex items-center justify-between gap-3 text-sm">
@@ -533,6 +585,18 @@ export default function ProfilePage() {
                   );
                 })}
               </ul>
+              {visibleTxs.length >= 20 && txMayHaveMore && (
+                <div className="px-5 py-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={loadMoreTxs}
+                    disabled={loadingMoreTxs}
+                    className="w-full text-xs font-semibold text-blue-600 hover:text-blue-700 py-1.5 disabled:opacity-50"
+                  >
+                    {loadingMoreTxs ? "…" : t("load_more")}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -683,6 +747,7 @@ export default function ProfilePage() {
               </Link>
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
               {proofs.map((proof) => {
                 const expired = isExpired(proof.createdAt);
@@ -734,6 +799,17 @@ export default function ProfilePage() {
                 );
               })}
             </div>
+            {proofCursor && (
+              <button
+                type="button"
+                onClick={loadMoreProofs}
+                disabled={loadingMoreProofs}
+                className="mt-4 w-full text-xs font-semibold text-blue-600 hover:text-blue-700 py-2.5 border border-slate-200 rounded-xl hover:border-blue-200 transition-all disabled:opacity-50"
+              >
+                {loadingMoreProofs ? "…" : t("load_more")}
+              </button>
+            )}
+            </>
           )}
         </div>
 

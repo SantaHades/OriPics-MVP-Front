@@ -3,7 +3,8 @@ import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
 
 // GET: 로그인된 사용자의 증명 히스토리 목록 조회
-export async function GET() {
+// ?cursor=<id>: 해당 항목 이후(더 오래된) 페이지 — "더 보기" 페이지네이션 (2026-08-21)
+export async function GET(req: NextRequest) {
   try {
     const userId = await getSessionUserId();
     if (!userId) {
@@ -18,10 +19,13 @@ export async function GET() {
       return NextResponse.json({ code: "user_not_found" }, { status: 404 });
     }
 
+    const cursor = req.nextUrl.searchParams.get("cursor");
+    const PAGE = 20; // 그리드 썸네일 로딩 고려 (2026-08-21: 50→20, "더 보기"로 이어서)
     const proofs = await prisma.proofHistory.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
-      take: 50, // 최대 50개
+      take: PAGE,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       select: {
         id: true,
         linkId: true,
@@ -42,7 +46,8 @@ export async function GET() {
       pdfStoragePath: undefined,
     }));
 
-    return NextResponse.json({ proofs: safeProofs }, { status: 200 });
+    const nextCursor = proofs.length === PAGE ? proofs[proofs.length - 1].id : null;
+    return NextResponse.json({ proofs: safeProofs, nextCursor }, { status: 200 });
   } catch (error: any) {
     console.error("[Proof History GET] Error:", error);
     return NextResponse.json({ code: "server_error" }, { status: 500 });
