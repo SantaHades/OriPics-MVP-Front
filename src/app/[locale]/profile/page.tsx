@@ -726,7 +726,7 @@ export default function ProfilePage() {
                       <p className="text-[10px] text-slate-600 truncate">
                         {formatProofTimestamp(proof.timestamp)}
                       </p>
-                      <p className="text-[10px] text-slate-600 truncate font-mono" title={proof.linkId}>
+                      <p className="text-[9px] tracking-tight text-slate-600 truncate font-mono" title={proof.linkId}>
                         {proof.linkId}
                       </p>
                     </div>
