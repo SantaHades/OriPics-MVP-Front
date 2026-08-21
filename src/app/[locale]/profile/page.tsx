@@ -721,11 +721,13 @@ export default function ProfilePage() {
                       )}
                     </div>
 
-                    {/* 메타 정보 — 인증 시각(UTC) + 공개링크 뒷번호 (2026-08-21 피드백) */}
+                    {/* 메타 정보 — 인증 시각 + 공개링크 ID 전체(www.ori.pics/ 뒷부분) (2026-08-21 피드백) */}
                     <div className="p-2">
-                      <p className="text-[10px] text-slate-600 truncate" title={proof.linkId}>
-                        {formatProofTimestamp(proof.timestamp)} ·{" "}
-                        <span className="font-mono">{proof.linkId.split("-").pop()}</span>
+                      <p className="text-[10px] text-slate-600 truncate">
+                        {formatProofTimestamp(proof.timestamp)}
+                      </p>
+                      <p className="text-[10px] text-slate-600 truncate font-mono" title={proof.linkId}>
+                        {proof.linkId}
                       </p>
                     </div>
                   </button>
