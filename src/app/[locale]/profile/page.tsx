@@ -144,15 +144,31 @@ export default function ProfilePage() {
     return `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${yymmdd}/${linkId}.png`;
   };
 
-  // 타임스탬프 포맷팅
+  // 그리드 썸네일 폴백: ProofHistory.thumbnail이 없는 항목(구 모바일 발급분)은
+  // 뷰어용 경량본(_preview.jpg, A-36)을 사용. 그것도 없으면 img onError로 아이콘 노출.
+  const proofPreviewUrl = (linkId: string): string | null => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl || !linkId || linkId.length < 7) return null;
+    const yymmdd = linkId.slice(1, 7);
+    return `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${yymmdd}/${linkId}_preview.jpg`;
+  };
+
+  // 타임스탬프 포맷팅 — 소스 접두사(P/F/C) 제거 후 UTC로 파싱해 로컬 시간 표시
+  // (2026-08-21: 접두사 미제거로 "20.60.82" 오표기되던 버그 수정)
   const formatProofTimestamp = (ts: string) => {
-    if (ts.length !== 15) return ts;
-    const year = parseInt("20" + ts.substring(0, 2), 10);
-    const month = parseInt(ts.substring(2, 4), 10) - 1;
-    const day = parseInt(ts.substring(4, 6), 10);
-    const hour = parseInt(ts.substring(6, 8), 10);
-    const min = parseInt(ts.substring(8, 10), 10);
-    return `${year}.${(month+1).toString().padStart(2,'0')}.${day.toString().padStart(2,'0')} ${hour.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+    const clean = /^\d/.test(ts[0] ?? "") ? ts : ts.substring(1);
+    if (clean.length !== 14 || !/^\d{14}$/.test(clean)) return ts;
+    const d = new Date(Date.UTC(
+      2000 + parseInt(clean.substring(0, 2), 10),
+      parseInt(clean.substring(2, 4), 10) - 1,
+      parseInt(clean.substring(4, 6), 10),
+      parseInt(clean.substring(6, 8), 10),
+      parseInt(clean.substring(8, 10), 10),
+      parseInt(clean.substring(10, 12), 10),
+    ));
+    if (isNaN(d.getTime())) return ts;
+    const p = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
   };
 
   // 링크 만료 여부 (7일)
@@ -679,16 +695,19 @@ export default function ProfilePage() {
                       expired ? "border-slate-100 opacity-60" : "border-slate-200"
                     }`}
                   >
-                    {/* 썸네일 */}
-                    <div className="aspect-square bg-white flex items-center justify-center overflow-hidden">
-                      {proof.thumbnail ? (
+                    {/* 썸네일 (없으면 경량본 폴백 → 그것도 없으면 아이콘) */}
+                    <div className="aspect-square bg-white flex items-center justify-center overflow-hidden relative">
+                      <ImageIcon size={24} className="text-slate-700" />
+                      {(proof.thumbnail ?? proofPreviewUrl(proof.linkId)) && (
                         <img
-                          src={proof.thumbnail}
+                          src={proof.thumbnail ?? proofPreviewUrl(proof.linkId)!}
                           alt="Proof thumbnail"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                      ) : (
-                        <ImageIcon size={24} className="text-slate-700" />
                       )}
                       {expired && (
                         <div className="absolute top-1 right-1 bg-red-500/80 text-slate-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full">
@@ -702,10 +721,11 @@ export default function ProfilePage() {
                       )}
                     </div>
 
-                    {/* 메타 정보 (시간만) */}
+                    {/* 메타 정보 — 인증 시각(UTC) + 공개링크 뒷번호 (2026-08-21 피드백) */}
                     <div className="p-2">
-                      <p className="text-[10px] text-slate-600 truncate">
-                        {formatProofTimestamp(proof.timestamp)}
+                      <p className="text-[10px] text-slate-600 truncate" title={proof.linkId}>
+                        {formatProofTimestamp(proof.timestamp)} ·{" "}
+                        <span className="font-mono">{proof.linkId.split("-").pop()}</span>
                       </p>
                     </div>
                   </button>
