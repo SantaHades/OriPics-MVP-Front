@@ -11,19 +11,26 @@ import {
   OFFSET_LAT,
   OFFSET_LNG,
   OFFSET_COUNTER_V4,
+  OFFSET_CAPTURED_AT_V5,
+  CAPTURED_AT_LENGTH,
   META_LENGTH,
   META_LENGTH_V3,
   META_LENGTH_V4,
+  META_LENGTH_V5,
   PAYLOAD_LENGTH,
   PAYLOAD_LENGTH_V3,
   PAYLOAD_LENGTH_V4,
+  PAYLOAD_LENGTH_V5,
   PAYLOAD_BITS_V4,
+  PAYLOAD_BITS_V5,
   OFFSET_FINAL_HASH_V4,
+  OFFSET_FINAL_HASH_V5,
   HASH_LENGTH,
   TIMESTAMP_LENGTH,
   obfuscateCounter,
   checksum2,
   selectEmbedModeV4,
+  selectEmbedModeV5,
   getBorderCoordinates,
 } from "./common";
 
@@ -264,6 +271,97 @@ export function buildMetaBytesV4(
   return meta;
 }
 
+/** 촬영시각 epoch ms → 15자 ASCII "yymmddHHMMSSmmm" (UTC). */
+export function formatCapturedAtUtc(ms: number): string {
+  const d = new Date(ms);
+  const yy = String(d.getUTCFullYear() % 100).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const HH = String(d.getUTCHours()).padStart(2, "0");
+  const MM = String(d.getUTCMinutes()).padStart(2, "0");
+  const SS = String(d.getUTCSeconds()).padStart(2, "0");
+  const mmm = String(d.getUTCMilliseconds()).padStart(3, "0");
+  return `${yy}${mm}${dd}${HH}${MM}${SS}${mmm}`;
+}
+
+// V5: V4 + 촬영시각(15 bytes ASCII, 없으면 0x00×15).
+// capturedAt은 클라이언트(앱)가 촬영 순간 기록한 자기주장 값 — 라우트에서 ≤now+skew 검증 후 전달.
+export function buildMetaBytesV5(
+  saltId: number,
+  timestamp: string,
+  width: number,
+  height: number,
+  latE6: number,
+  lngE6: number,
+  counter: number,
+  capturedAt: string | null,
+): Uint8Array {
+  if (timestamp.length !== TIMESTAMP_LENGTH) {
+    throw new Error(`Timestamp must be ${TIMESTAMP_LENGTH} chars, got ${timestamp.length}`);
+  }
+  if (saltId <= 0 || saltId >= 2 ** 16) throw new Error(`salt_id out of range`);
+  if (width <= 0 || width >= 2 ** 32) throw new Error(`width out of range`);
+  if (height <= 0 || height >= 2 ** 32) throw new Error(`height out of range`);
+  if (latE6 < -90_000_000 || latE6 > 90_000_000) throw new Error(`lat_e6 out of range`);
+  if (lngE6 < -180_000_000 || lngE6 > 180_000_000) throw new Error(`lng_e6 out of range`);
+  if (!Number.isInteger(counter) || counter < 0 || counter >= 2 ** 16) {
+    throw new Error(`counter out of range (uint16): ${counter}`);
+  }
+  if (capturedAt != null && !/^\d{15}$/.test(capturedAt)) {
+    throw new Error(`captured_at must be 15 digits, got ${capturedAt}`);
+  }
+
+  const meta = new Uint8Array(META_LENGTH_V5);
+  meta.set(MAGIC_BYTES, OFFSET_MAGIC);
+  writeUint16BE(meta, OFFSET_VERSION, 5);
+  writeUint16BE(meta, OFFSET_SALT_ID, saltId);
+  writeUint32BE(meta, OFFSET_LENGTH, PAYLOAD_LENGTH_V5);
+  for (let i = 0; i < TIMESTAMP_LENGTH; i++) {
+    meta[OFFSET_TIMESTAMP + i] = timestamp.charCodeAt(i);
+  }
+  writeUint32BE(meta, OFFSET_WIDTH, width);
+  writeUint32BE(meta, OFFSET_HEIGHT, height);
+  writeInt32BE(meta, OFFSET_LAT, latE6);
+  writeInt32BE(meta, OFFSET_LNG, lngE6);
+  writeUint16BE(meta, OFFSET_COUNTER_V4, counter);
+  if (capturedAt != null) {
+    for (let i = 0; i < CAPTURED_AT_LENGTH; i++) {
+      meta[OFFSET_CAPTURED_AT_V5 + i] = capturedAt.charCodeAt(i);
+    }
+  }
+  return meta;
+}
+
+export function parseMetaBytesV5(meta: Uint8Array): ParsedMeta & { counter: number; captured_at: string | null } {
+  if (meta.length !== META_LENGTH_V5) throw new Error(`meta must be ${META_LENGTH_V5} bytes`);
+  if (!magicMatches(meta)) throw new Error("magic_mismatch");
+  const version = readUint16BE(meta, OFFSET_VERSION);
+  if (version !== 5) throw new Error(`unsupported_version:${version}`);
+  const salt_id = readUint16BE(meta, OFFSET_SALT_ID);
+  const length = readUint32BE(meta, OFFSET_LENGTH);
+  if (length !== PAYLOAD_LENGTH_V5) throw new Error(`length_mismatch:${length}`);
+  let capturedAt: string | null = "";
+  let allZero = true;
+  for (let i = 0; i < CAPTURED_AT_LENGTH; i++) {
+    const b = meta[OFFSET_CAPTURED_AT_V5 + i];
+    if (b !== 0) allZero = false;
+    capturedAt += String.fromCharCode(b);
+  }
+  if (allZero) capturedAt = null;
+  return {
+    version,
+    salt_id,
+    length,
+    timestamp: readTimestampAscii(meta),
+    width: readUint32BE(meta, OFFSET_WIDTH),
+    height: readUint32BE(meta, OFFSET_HEIGHT),
+    lat_e6: readInt32BE(meta, OFFSET_LAT),
+    lng_e6: readInt32BE(meta, OFFSET_LNG),
+    counter: readUint16BE(meta, OFFSET_COUNTER_V4),
+    captured_at: capturedAt,
+  };
+}
+
 export function parseMetaBytesV4(meta: Uint8Array): ParsedMeta & { counter: number } {
   if (meta.length !== META_LENGTH_V4) throw new Error(`meta must be ${META_LENGTH_V4} bytes`);
   if (!magicMatches(meta)) throw new Error("magic_mismatch");
@@ -375,6 +473,7 @@ export async function extractFinalHashFromPngBuffer(
   pngBuffer: Buffer,
   width: number,
   height: number,
+  stampVersion: 4 | 5 = 4,
 ): Promise<Uint8Array> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PNG } = require("pngjs") as {
@@ -386,12 +485,16 @@ export async function extractFinalHashFromPngBuffer(
   }
   const pixels = new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength);
 
-  const mode = selectEmbedModeV4(width, height);
+  const isV5 = stampVersion === 5;
+  const mode = isV5 ? selectEmbedModeV5(width, height) : selectEmbedModeV4(width, height);
+  const payloadLength = isV5 ? PAYLOAD_LENGTH_V5 : PAYLOAD_LENGTH_V4;
+  const payloadBits = isV5 ? PAYLOAD_BITS_V5 : PAYLOAD_BITS_V4;
+  const finalHashOffset = isV5 ? OFFSET_FINAL_HASH_V5 : OFFSET_FINAL_HASH_V4;
   const coords = getBorderCoordinates(width, height);
 
-  // extractPayloadV4 ported to Node.js (no browser Canvas dependency)
-  const out = new Uint8Array(PAYLOAD_LENGTH_V4);
-  for (let bitIdx = 0; bitIdx < PAYLOAD_BITS_V4; bitIdx++) {
+  // extractPayloadV4/V5 ported to Node.js (no browser Canvas dependency)
+  const out = new Uint8Array(payloadLength);
+  for (let bitIdx = 0; bitIdx < payloadBits; bitIdx++) {
     let coordIdx: number;
     let channel: number;
     if (mode === "b_only") {
@@ -407,6 +510,6 @@ export async function extractFinalHashFromPngBuffer(
     out[bitIdx >> 3] |= bit << (7 - (bitIdx & 7));
   }
 
-  // splitPayloadV4 equivalent: finalHash is at OFFSET_FINAL_HASH_V4
-  return out.slice(OFFSET_FINAL_HASH_V4, OFFSET_FINAL_HASH_V4 + HASH_LENGTH);
+  // splitPayloadV4/V5 equivalent
+  return out.slice(finalHashOffset, finalHashOffset + HASH_LENGTH);
 }

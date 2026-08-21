@@ -147,6 +147,8 @@
 | A-9 | 트랙 B Phase 2~7 모노레포 추출 (`packages/stamp/`) | 모바일 본 시작 | P1 |
 | A-10 | 모바일 앱 본 개발 (트랙 D, 8~10주) | A-9 + U-2·U-16 완료 | P0 |
 | A-11 | 모바일용 stamp 클라이언트 인터페이스 (Verified mode) | 모바일 본 시작 | P1 |
+| A-38 | **maestro e2e yaml 갱신** — 2026-08-21 4탭 개편(홈-촬영-목록-판독, 갤러리 인증→목록 [+ 갤러리], 촬영=큐 저장)으로 `e2e/certify-e2e.yaml`·`e2e/screenshots.yaml`의 셀렉터·흐름이 구 UI 기준. 스크린샷 재캡처(U-18 산출물 4장도 구 3탭 UI — 심사 제출 전 재촬영) 포함 | 스토어 심사 준비(M8) 전 | P1 |
+| A-39 | **C2PA manifest에 촬영시각 반영 검토** — V5 스탬프·DB·뷰어에는 반영 완료. c2pa manifest assertion(예: `c2pa.actions`의 when 또는 exif assertion)에도 captured_at을 넣을지 검토 (수정 범위: `lib/oripics-stamp/c2pa.ts` attachC2paManifest 입력 확장) | SSL.com cert 도착·C2PA 재활성화 시 | P2 |
 
 ### 2.4 테스트 보강
 
@@ -219,6 +221,7 @@ SSL.com 회신 (U-1)
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-21 | **빠른 연속 촬영 개편 + V5 스탬프(촬영시각)** — ①스탬프 V5: meta 64B(=V4+촬영시각 15B ASCII "yymmddHHMMSSmmm" UTC, 0×15=기록 없음), payload 96B. 촬영시각은 기기 자기주장(GPS와 동일 신뢰 수준)이나 서버 서명(final_hash)에 묶여 사후 변조 불가. 골든 테스트 V5 고정(borderV5 `346c26c0…`, stampedV5 `c12d31f7…` — 절대 갱신 금지). sign은 `stamp_version:5` 옵트인(구 클라이언트 V4 유지), receipt에 stamp_version·captured_at 전파, publish 해시검증 버전 인식, links에 `captured_at text` 컬럼 추가(프로덕션 적용 완료), verify 응답·웹 뷰어·웹 판독·모바일 판독에 "촬영(기기 기록)/인증(서버 증명)" 병기. ②모바일 4탭 개편(홈-촬영-목록-판독): 셔터=전처리만(원본 JPEG+컨텍스트 즉시 저장, <0.3s) → 목록 탭 [인증하기·n건]에서 후처리, 모두 인증·재시도·삭제·[+ 갤러리](F 경로 이동), 로그인 전 촬영 허용(인증만 로그인), GPS watchPositionAsync 지속 구독(이동 중 촬영 대응, pill에 좌표 라이브), 촬영 스낵바 [지금 인증], attest는 인증 시점 실행. 신규: `lib/capture/{queueStore,certify}.ts`, `app/queue.tsx`, 탭 아이콘 queue/verify. A-38(maestro·스크린샷 재촬영)·A-39(C2PA manifest 촬영시각) 신규 |
 | 2026-08-07 | **A-4·A-5 본 구현 완료** (M4) — App Attest 서버 검증(CBOR·체인·바인딩)+Play Integrity(decodeIntegrityToken·verdict 판정). env 게이트로 안전 전환(미설정 시 기존 개발 폴백). U-34(attest 운영 설정) 신규. 모바일 식별자 확정: `com.santahades.oripics` |
 | 2026-08-07 | **네이버페이 가입 심사 승인 확인**(7/4 신청 → 승인) — U-33(PortOne 채널 등록)·A-37(체크아웃 수단 추가, 정기결제 지원 선결 확인 포함) 신규 등록. 오픈 차단 아님(카드결제만으로 오픈 가능) |
 | 2026-08-06 | **A-7·A-24·A-36 완료** (커밋 `e052578`, Phase A) — 보관함 2계층 retention(expires_at, cleanup cron 개편, grace 37일, 재구독 복원, 5GB 체크, cacheControl 1년), 뷰어 경량 표시본(뷰 트래픽 ~1/60), PDF 월 5건 무료 하이브리드, '영구 보관' 문구 전면 전환. 잔여: U-31 Supabase Pro 전환(User)·Phase B 보관함 확장 애드온 결제 |

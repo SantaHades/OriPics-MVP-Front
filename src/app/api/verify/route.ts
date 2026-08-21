@@ -9,6 +9,7 @@ import {
   parseMetaBytes,
   parseMetaBytesV3,
   parseMetaBytesV4,
+  parseMetaBytesV5,
   verifyFinalHash,
   hexToBytes,
 } from "@/lib/oripics-stamp/server";
@@ -16,6 +17,7 @@ import {
   META_LENGTH,
   META_LENGTH_V3,
   META_LENGTH_V4,
+  META_LENGTH_V5,
   OFFSET_VERSION,
   verifyLinkId,
 } from "@/lib/oripics-stamp/common";
@@ -40,6 +42,8 @@ type SealResult = {
     height: number;
     lat?: number;
     lng?: number;
+    /** 촬영시각 (V5, 기기 기록 — "yymmddHHMMSSmmm" UTC). 없으면 미기록. */
+    captured_at?: string;
   };
 };
 
@@ -178,7 +182,7 @@ export async function POST(req: NextRequest) {
   if (typeof meta_hex !== "string") {
     return NextResponse.json({ detail: "invalid_meta_hex" }, { status: 400 });
   }
-  const allowed = [META_LENGTH * 2, META_LENGTH_V3 * 2, META_LENGTH_V4 * 2];
+  const allowed = [META_LENGTH * 2, META_LENGTH_V3 * 2, META_LENGTH_V4 * 2, META_LENGTH_V5 * 2];
   if (!allowed.includes(meta_hex.length)) {
     return NextResponse.json({ detail: "meta_hex_length" }, { status: 400 });
   }
@@ -214,10 +218,21 @@ export async function POST(req: NextRequest) {
   let metaTimestamp = "";
   let metaLatE6: number | undefined;
   let metaLngE6: number | undefined;
+  let metaCapturedAt: string | null = null;
   let metaSaltId = 0;
   let parsedVersion = version;
   try {
-    if (version === 4) {
+    if (version === 5) {
+      const p = parseMetaBytesV5(metaBytes);
+      metaWidth = p.width;
+      metaHeight = p.height;
+      metaTimestamp = p.timestamp;
+      metaLatE6 = p.lat_e6;
+      metaLngE6 = p.lng_e6;
+      metaCapturedAt = p.captured_at;
+      metaSaltId = p.salt_id;
+      parsedVersion = p.version;
+    } else if (version === 4) {
       const p = parseMetaBytesV4(metaBytes);
       metaWidth = p.width;
       metaHeight = p.height;
@@ -253,7 +268,7 @@ export async function POST(req: NextRequest) {
   //   - row 있고 타인이면 → 차감 후 정상 검증.
   // V2/V3는 timestamp uniqueness 없어 미공개 판정 불가 → 기존 흐름 유지(차감).
   let ownerExempt = false;
-  if (version === 4 && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+  if (version >= 4 && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
       const { data: rows } = await supabase
@@ -318,9 +333,12 @@ export async function POST(req: NextRequest) {
       width: metaWidth,
       height: metaHeight,
     };
-    if (version === 3 || version === 4) {
+    if (version >= 3) {
       metadata.lat = (metaLatE6 ?? 0) / 1_000_000;
       metadata.lng = (metaLngE6 ?? 0) / 1_000_000;
+    }
+    if (metaCapturedAt) {
+      metadata.captured_at = metaCapturedAt;
     }
     seal = { match, version: parsedVersion, metadata };
   } catch (e: any) {

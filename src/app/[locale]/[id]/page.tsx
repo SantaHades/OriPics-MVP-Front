@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ShieldCheck, Calendar, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink, BadgeCheck, FileText } from "lucide-react";
+import { ShieldCheck, Calendar, Camera as CameraIcon, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink, BadgeCheck, FileText } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
@@ -17,6 +17,8 @@ interface LinkData {
   height: number;
   lat?: number | null;
   lng?: number | null;
+  /** 촬영시각 (V5, 기기 기록 "yymmddHHMMSSmmm" UTC) — 구 링크는 null */
+  captured_at?: string | null;
   storage_path: string;
   signed_url: string;
   user_id?: string | null;
@@ -236,6 +238,29 @@ export default function LinkViewer() {
     });
   };
 
+  // V5 촬영시각: "yymmddHHMMSSmmm" (UTC, prefix 없음, ms 3자리)
+  const formatCapturedAt = (ca: string) => {
+    if (!/^\d{15}$/.test(ca)) return ca;
+    const utcDate = new Date(Date.UTC(
+      parseInt("20" + ca.substring(0, 2), 10),
+      parseInt(ca.substring(2, 4), 10) - 1,
+      parseInt(ca.substring(4, 6), 10),
+      parseInt(ca.substring(6, 8), 10),
+      parseInt(ca.substring(8, 10), 10),
+      parseInt(ca.substring(10, 12), 10),
+      parseInt(ca.substring(12, 15), 10),
+    ));
+    return utcDate.toLocaleString(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    });
+  };
+
   const handleDownload = async () => {
     if (!data) return;
     let url = imageObjectUrl;
@@ -332,6 +357,17 @@ export default function LinkViewer() {
             </h2>
 
             <div className="space-y-6">
+              {data!.captured_at && (
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 bg-white/80 rounded-xl flex items-center justify-center text-slate-600">
+                    <CameraIcon size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("captured_label")}</p>
+                    <p className="text-sm font-medium">{formatCapturedAt(data!.captured_at)}</p>
+                  </div>
+                </div>
+              )}
               <div className="flex gap-4">
                 <div className="w-10 h-10 bg-white/80 rounded-xl flex items-center justify-center text-slate-600">
                   <Calendar size={20} />

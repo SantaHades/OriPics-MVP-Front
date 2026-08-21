@@ -45,6 +45,8 @@ interface MetaData {
   height: number;
   lat?: number;
   lng?: number;
+  /** 촬영시각 (V5, 기기 기록 "yymmddHHMMSSmmm" UTC) */
+  captured_at?: string;
   hash?: string;
 }
 
@@ -1159,6 +1161,25 @@ export default function Home() {
     });
   };
 
+  // V5 촬영시각: "yymmddHHMMSSmmm" (UTC, prefix 없음, ms 3자리)
+  const formatCapturedAt = (ca: string) => {
+    if (!/^\d{15}$/.test(ca)) return ca;
+    const utcDate = new Date(Date.UTC(
+      parseInt("20" + ca.substring(0, 2), 10),
+      parseInt(ca.substring(2, 4), 10) - 1,
+      parseInt(ca.substring(4, 6), 10),
+      parseInt(ca.substring(6, 8), 10),
+      parseInt(ca.substring(8, 10), 10),
+      parseInt(ca.substring(10, 12), 10),
+      parseInt(ca.substring(12, 15), 10),
+    ));
+    return utcDate.toLocaleString(undefined, {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+      timeZoneName: "short"
+    });
+  };
+
   return (
     <>
       <nav className="sticky top-0 w-full glass z-50 px-2 sm:px-6 py-3 sm:py-4 flex justify-between items-center text-[10px] sm:text-sm">
@@ -1837,6 +1858,12 @@ export default function Home() {
             <div className="flex flex-col items-center mb-8">
               <img src={originalImagePreview!} className="max-w-[200px] max-h-[200px] object-contain rounded border border-slate-200 mb-6" alt="Verify" />
               <div className="w-full bg-slate-50 rounded-xl p-6 text-sm text-slate-700">
+                {resultData.metadata.captured_at && (
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500">{t("verify.captured_at")}</span>
+                    <span>{formatCapturedAt(resultData.metadata.captured_at)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-2 border-b border-slate-100">
                   <span className="text-slate-500">{t("verify.processed_at")}</span>
                   <span>{formatTimestamp(resultData.metadata.timestamp)}</span>

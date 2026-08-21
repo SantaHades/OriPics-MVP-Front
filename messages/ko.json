@@ -129,6 +129,7 @@
     "verify": {
       "success_title": "원본 검증 성공",
       "fail_title": "원본 검증 실패 — 변조 감지",
+      "captured_at": "촬영 일시 (기기 기록)",
       "processed_at": "최초 처리 일시",
       "integrity": "원본검증 무결성",
       "match": "일치 ✅",
@@ -493,6 +494,7 @@
     "back_home": "OriPics 홈으로 가기",
     "verified": "원본 무결성 검증됨",
     "info_title": "이미지 정보",
+    "captured_label": "촬영 일시 (기기 기록)",
     "timestamp_label": "최초 증명 일시",
     "resolution_label": "원본 해상도",
     "source_label": "인증 소스",

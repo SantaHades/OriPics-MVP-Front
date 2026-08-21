@@ -189,6 +189,58 @@ describe("server/buildMetaBytesV4 (V3 + counter)", () => {
   });
 });
 
+describe("server/buildMetaBytesV5 (V4 + 촬영시각)", () => {
+  const CAPTURED = "250821140215123"; // yymmddHHMMSSmmm
+
+  it("round-trips captured_at + GPS + counter", async () => {
+    const { buildMetaBytesV5, parseMetaBytesV5 } = await importServer();
+    const meta = buildMetaBytesV5(1, TS_15, 4032, 3024, 37_267_240, 127_098_320, 42, CAPTURED);
+    const parsed = parseMetaBytesV5(meta);
+    expect(parsed.version).toBe(5);
+    expect(parsed.counter).toBe(42);
+    expect(parsed.captured_at).toBe(CAPTURED);
+    expect(parsed.lat_e6).toBe(37_267_240);
+    expect(parsed.lng_e6).toBe(127_098_320);
+    expect(parsed.width).toBe(4032);
+    expect(parsed.height).toBe(3024);
+    expect(parsed.timestamp).toBe(TS_15);
+  });
+
+  it("captured_at null → 15×0x00 sentinel → parses back to null", async () => {
+    const { buildMetaBytesV5, parseMetaBytesV5 } = await importServer();
+    const meta = buildMetaBytesV5(1, TS_15, 800, 600, 0, 0, 1, null);
+    const parsed = parseMetaBytesV5(meta);
+    expect(parsed.captured_at).toBeNull();
+  });
+
+  it("rejects malformed captured_at (not 15 digits)", async () => {
+    const { buildMetaBytesV5 } = await importServer();
+    expect(() => buildMetaBytesV5(1, TS_15, 800, 600, 0, 0, 1, "2508211402")).toThrow();
+    expect(() => buildMetaBytesV5(1, TS_15, 800, 600, 0, 0, 1, "25082114021512X")).toThrow();
+  });
+
+  it("V5 final hash verification — captured_at tampering detected", async () => {
+    const { buildMetaBytesV5, computeFinalHash, verifyFinalHash, getSalt } =
+      await importServer();
+    const meta = buildMetaBytesV5(1, TS_15, 1280, 720, 0, 0, 100, CAPTURED);
+    const inner = new Uint8Array(32).fill(0xa1);
+    const border = new Uint8Array(32).fill(0xb2);
+    const salt = getSalt(1);
+    const finalHash = computeFinalHash(salt, meta, inner, border);
+    expect(verifyFinalHash(salt, meta, inner, border, finalHash)).toBe(true);
+    // 촬영시각 필드 변조 (offset 49)
+    const tampered = new Uint8Array(meta);
+    tampered[49] = (tampered[49] + 1) & 0xff;
+    expect(verifyFinalHash(salt, tampered, inner, border, finalHash)).toBe(false);
+  });
+
+  it("formatCapturedAtUtc → 15-digit UTC string", async () => {
+    const { formatCapturedAtUtc } = await importServer();
+    expect(formatCapturedAtUtc(Date.UTC(2026, 7, 21, 14, 2, 15, 123))).toBe("260821140215123");
+    expect(formatCapturedAtUtc(Date.UTC(2026, 0, 1, 0, 0, 0, 0))).toBe("260101000000000");
+  });
+});
+
 describe("server/getSalt", () => {
   it("decodes hex env var into bytes", async () => {
     const { getSalt } = await importServer();

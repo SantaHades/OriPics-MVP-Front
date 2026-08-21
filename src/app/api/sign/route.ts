@@ -16,6 +16,8 @@ import {
   makeLinkId,
   storagePathFor,
   buildMetaBytesV4,
+  buildMetaBytesV5,
+  formatCapturedAtUtc,
   computeFinalHash,
   bytesToHex,
   hexToBytes,
@@ -71,6 +73,10 @@ export async function POST(req: NextRequest) {
 
   const {
     inner_hash, border_hash, width, height, upload_type, lat_e6, lng_e6,
+    // V5 (2026-08-21): 클라이언트가 stamp_version=5를 명시할 때만 V5 발급 —
+    // 배포된 구 클라이언트(V4 border hash로 커밋)는 V4 유지 (하위호환).
+    stamp_version,
+    captured_at_ms,
     // D-pre-3: verified 티어 (모바일 P 경로) 입력
     tier: requestedTier,
     nonce,
@@ -90,6 +96,27 @@ export async function POST(req: NextRequest) {
   }
   if (!Number.isInteger(height) || height <= 0 || height >= 2 ** 32) {
     return NextResponse.json({ detail: "invalid_height" }, { status: 400 });
+  }
+
+  // V5 옵트인 + 촬영시각 검증. 촬영시각은 기기 자기주장 값(GPS와 동일 신뢰 수준)이지만
+  // 상식 범위는 서버가 강제: 2020-01-01 이후, 현재+2분(clock skew) 이전.
+  const useV5 = stamp_version === 5;
+  if (stamp_version !== undefined && stamp_version !== 4 && stamp_version !== 5) {
+    return NextResponse.json({ detail: "invalid_stamp_version" }, { status: 400 });
+  }
+  let capturedAtStr: string | null = null;
+  if (captured_at_ms !== undefined) {
+    if (!useV5) {
+      return NextResponse.json({ detail: "captured_at_requires_v5" }, { status: 400 });
+    }
+    if (
+      !Number.isInteger(captured_at_ms) ||
+      captured_at_ms < Date.UTC(2020, 0, 1) ||
+      captured_at_ms > Date.now() + 120_000
+    ) {
+      return NextResponse.json({ detail: "invalid_captured_at" }, { status: 400 });
+    }
+    capturedAtStr = formatCapturedAtUtc(captured_at_ms);
   }
 
   // D-pre-3: tier 결정 + verified attestation 검증
@@ -199,16 +226,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "counter_overflow_uint16" }, { status: 500 });
   }
 
-  const metaBytes = buildMetaBytesV4(
-    CURRENT_SALT_ID,
-    timestamp,
-    width,
-    height,
-    hasGps ? lat_e6 : 0,
-    hasGps ? lng_e6 : 0,
-    counter,
-  );
-  const versionNum = 4;
+  const metaBytes = useV5
+    ? buildMetaBytesV5(
+        CURRENT_SALT_ID,
+        timestamp,
+        width,
+        height,
+        hasGps ? lat_e6 : 0,
+        hasGps ? lng_e6 : 0,
+        counter,
+        capturedAtStr,
+      )
+    : buildMetaBytesV4(
+        CURRENT_SALT_ID,
+        timestamp,
+        width,
+        height,
+        hasGps ? lat_e6 : 0,
+        hasGps ? lng_e6 : 0,
+        counter,
+      );
+  const versionNum = useV5 ? 5 : 4;
 
   const finalHash = computeFinalHash(
     salt,
@@ -248,7 +286,11 @@ export async function POST(req: NextRequest) {
     height,
     inner_hash_hex: inner_hash,   // 클라이언트가 계산한 inner 픽셀 SHA-256 (hex)
     final_hash_hex: bytesToHex(finalHash),
+    stamp_version: versionNum,
   };
+  if (capturedAtStr) {
+    jwtPayload.captured_at = capturedAtStr;
+  }
   if (hasGps) {
     jwtPayload.lat_e6 = lat_e6;
     jwtPayload.lng_e6 = lng_e6;
@@ -261,6 +303,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     version: versionNum,
     salt_id: CURRENT_SALT_ID,
+    ...(capturedAtStr ? { captured_at: capturedAtStr } : {}),
     timestamp,
     meta_hex: bytesToHex(metaBytes),
     final_hash: bytesToHex(finalHash),

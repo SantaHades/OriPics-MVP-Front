@@ -91,8 +91,10 @@ export async function POST(req: NextRequest) {
 
   const {
     user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6,
-    tier, verified_info,
+    tier, verified_info, captured_at,
   } = claims;
+  // stamp_version 없는 구 receipt(V5 배포 전 발급)는 V4 (하위호환)
+  const stampVersion: 4 | 5 = claims.stamp_version === 5 ? 5 : 4;
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -201,7 +203,7 @@ export async function POST(req: NextRequest) {
     try {
       // (A) border LSB → final_hash 검증
       if (claims.final_hash_hex) {
-        const extractedFinalHash = await extractFinalHashFromPngBuffer(pngBuffer, width, height);
+        const extractedFinalHash = await extractFinalHashFromPngBuffer(pngBuffer, width, height, stampVersion);
         const expectedFinalHash = hexToBytes(claims.final_hash_hex as string);
         if (
           extractedFinalHash.length !== expectedFinalHash.length ||
@@ -235,7 +237,6 @@ export async function POST(req: NextRequest) {
   if (C2PA_ENABLED) {
     try {
       const c2paStart = Date.now();
-      const stampVersion = lat_e6 != null && lng_e6 != null ? 3 : 2;
       const c2paTier: Tier = tier === "verified" ? "verified" : "standard";
 
       const signResult = await attachC2paManifest({
@@ -307,6 +308,10 @@ export async function POST(req: NextRequest) {
   if (lat_e6 != null && lng_e6 != null) {
     row.lat = lat_e6 / 1_000_000;
     row.lng = lng_e6 / 1_000_000;
+  }
+  if (typeof captured_at === "string" && captured_at.length === 15) {
+    // 촬영시각(기기 기록, V5) — 뷰어 표시용. 스탬프 meta에도 서명 포함되어 있음.
+    row.captured_at = captured_at;
   }
 
   const { error: dbErr } = await supabase.from("links").upsert(row, { onConflict: "link_id" });

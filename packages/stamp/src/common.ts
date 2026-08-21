@@ -30,6 +30,17 @@ export const META_LENGTH_V4 = 49;
 export const PAYLOAD_LENGTH_V4 = 81;  // 49 + 32
 export const PAYLOAD_BITS_V4 = PAYLOAD_LENGTH_V4 * 8;  // 648
 
+// v5 (V4 + 촬영시각 15 bytes — 빠른 연속 촬영의 지연 인증 보완)
+// captured_at은 ASCII "yymmddHHMMSSmmm"(UTC, ms 3자리). 15바이트 전부 0x00 = 기록 없음(F 경로 등).
+// 기기(앱)가 촬영 순간 기록한 자기주장 값 — GPS와 동일 신뢰 수준. 서버가 서명 시 meta에 포함해
+// final_hash에 묶이므로 인증 후 변조는 검증 실패로 드러난다. timestamp(인증시각)는 서버 증명 값.
+export const OFFSET_CAPTURED_AT_V5 = 49;
+export const CAPTURED_AT_LENGTH = 15;
+export const OFFSET_FINAL_HASH_V5 = 64;
+export const META_LENGTH_V5 = 64;
+export const PAYLOAD_LENGTH_V5 = 96;  // 64 + 32
+export const PAYLOAD_BITS_V5 = PAYLOAD_LENGTH_V5 * 8;  // 768
+
 export const HASH_LENGTH = 32;
 
 export const TIMESTAMP_LENGTH = 15;
@@ -47,6 +58,13 @@ export function selectEmbedModeV4(width: number, height: number): EmbedMode {
   const borderCapacity = 2 * (width + height) - 4;
   if (borderCapacity >= PAYLOAD_BITS_V4) return 'b_only';
   if (borderCapacity * 3 >= PAYLOAD_BITS_V4) return 'rgb_lsb';
+  throw new Error('image_too_small');
+}
+
+export function selectEmbedModeV5(width: number, height: number): EmbedMode {
+  const borderCapacity = 2 * (width + height) - 4;
+  if (borderCapacity >= PAYLOAD_BITS_V5) return 'b_only';
+  if (borderCapacity * 3 >= PAYLOAD_BITS_V5) return 'rgb_lsb';
   throw new Error('image_too_small');
 }
 

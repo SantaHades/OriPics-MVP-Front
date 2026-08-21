@@ -79,6 +79,8 @@ export async function POST(req: NextRequest) {
     verified_info,
     final_hash_hex,
     inner_hash_hex,
+    stamp_version,
+    captured_at,
   } = claims;
 
   if (!user_id) {
@@ -137,6 +139,12 @@ export async function POST(req: NextRequest) {
   }
   if (inner_hash_hex) {
     receiptPayload.inner_hash_hex = inner_hash_hex;
+  }
+  if (stamp_version) {
+    receiptPayload.stamp_version = stamp_version;
+  }
+  if (captured_at) {
+    receiptPayload.captured_at = captured_at;
   }
   const receipt = issueReceiptJwt(receiptPayload);
 

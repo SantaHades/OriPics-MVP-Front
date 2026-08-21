@@ -128,6 +128,7 @@
     },
     "verify": {
       "success_title": "Verification Successful",
+      "captured_at": "Captured At (device record)",
       "fail_title": "Verification Failed — Tampering Detected",
       "processed_at": "Initially Processed At",
       "integrity": "Integrity Status",
@@ -493,6 +494,7 @@
     "back_home": "Back to OriPics Home",
     "verified": "Original Integrity Verified",
     "info_title": "Image Information",
+    "captured_label": "Captured At (device record)",
     "timestamp_label": "Initially Certified At",
     "resolution_label": "Original Resolution",
     "source_label": "Auth Source",

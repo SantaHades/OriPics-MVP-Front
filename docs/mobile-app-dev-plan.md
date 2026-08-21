@@ -335,6 +335,7 @@ packages/
 
 | 일자 | 변경 |
 |---|---|
+| 2026-08-21 | **빠른 연속 촬영 개편 + V5 스탬프(촬영시각)** — 촬영 UX 병목(장당 5~15초) 해소: 셔터=전처리만(원본 JPEG+촬영 컨텍스트[시각·GPS·줌·렌즈] 앱 문서 디렉터리 큐 저장, <0.3s) → 목록 탭에서 후처리(해시→서명→임베드→업로드→링크). 4탭 재배치(홈-촬영-**목록**-판독), 갤러리 인증(F)은 목록 [+ 갤러리]로 통합, 로그인 전 촬영 허용(인증 버튼만 로그인 게이트), GPS는 watchPositionAsync 지속 구독(이동 중 촬영 정확도 — 셔터는 최신 fix 0ms 사용, 첫 fix 전 1장만 단발 대기), attest는 인증 시점 실행(nonce TTL). **트레이드오프 보완 = V5**: 지연 인증으로 서버 timestamp(인증시각)가 촬영보다 늦어지는 문제를 촬영시각 필드(meta 64B, +15B ASCII, 기기 기록·서명에 묶임)로 해소 — 판독·검증·뷰어에 "촬영(기기 기록)/인증(서버 증명)" 병기. 신규 파일: `lib/capture/{queueStore,certify}.ts`·`app/queue.tsx`·`lib/stamp/formatTs.ts`·탭 아이콘 2종(pngjs SDF 생성). 서버: sign `stamp_version:5` 옵트인(하위호환), links.captured_at 컬럼. 잔여: A-38(maestro yaml·스토어 스크린샷 재촬영), A-39(C2PA manifest 촬영시각) |
 | 2026-08-19 | **실기기 검증 라운드 통과 (iPhone 12 Pro Max, iOS 26.6)** — 촬영(P) 발급 e2e: 후면·전면(셀카)·GPS ON/OFF 모두 서버 verify match=true, GPS 좌표 V4 메타 인코딩 확인, 12MP 대용량 처리 실증(M3 수용기준). 피드백 반영 9건: 홈/로그인 스크롤 레이아웃, 탭 아이콘(카메라/마크), **HEIC→JPEG(decode_failed 해소)**, 셔터 위치, 배율 pill 순환, 전/후면 전환 버튼, **배율 애플 표기 정규화(0.5×/1×/2×)**, ori.pics 링크 표시, 402 친화 메시지. U-18 스크린샷 4장 완성. 발견 절차: 기기 개발자 모드+Apple PLA 동의 필요(런북 반영 대상) |
 | 2026-08-07 | **Phase M7 코드 완료** — eas.json 3 프로파일(+submit 스켈레톤), Sentry DSN 게이트 연동(U-36), 베타 안내·임시 인증서 표기(BetaNotice). 실행 단계는 [mobile-beta-runbook.md](mobile-beta-runbook.md)로 문서화(선행 체크리스트·명령·검증 시나리오 8종) |
 | 2026-08-07 | **Phase M6 코드 완료** — Apple IAP 서버(JWS 검증·멱등 부여·이중 구독 가드·Server Notifications V2 웹훅·환불 다운그레이드+grace 37일)+expo-iap 구독 패널(iOS·Free만 노출, 복원 포함). U-35(App Store Connect 설정) 신규. 유닛테스트 12종 |
