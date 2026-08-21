@@ -93,6 +93,10 @@ cd apps/mobile && ./scripts/capture-screenshots.sh    # 재캡처만 할 땐 --n
 - **Sentry 소스맵 업로드 실패(org 미설정)**: U-36 전까지 로컬 Release 빌드는 `SENTRY_DISABLE_AUTO_UPLOAD=true` 필요(캡처 스크립트에 반영됨). EAS 빌드는 U-36 후 Sentry env 설정과 함께 해제.
 - **새 expo 네이티브 패키지 설치 후 앱이 기기에서 크래시**: `expo install`은 JS 의존성만 추가 — 기존 `ios/` 프로젝트를 유지한 채 xcodebuild로 빌드하면 네이티브 모듈이 링크되지 않아 시작 즉시 크래시. **`cd ios && pod install` 후 재빌드** (expo-localization 추가 시 실측, 2026-08-21).
 - **CoreSimulator 버전 충돌**(Xcode 교체 직후): `launchctl remove com.apple.CoreSimulator.CoreSimulatorService` 후 재시도.
+- **실기기에서만 긴 Text 줄바꿈 잘림** (2026-08-21, iPhone 12 Pro Max iOS 26.6): 카드 안의 긴 한 줄
+  문자열(sub.benefits)이 줄바꿈 없이 화면 밖으로 잘림. 같은 번들이 시뮬레이터(iOS 26.3.1)에선 정상 —
+  근본 원인 미확정(스크롤 컨테이너 stretch 적용 후에도 기기에서 지속). **회피책: 긴 안내 문구는
+  i18n 키를 줄 단위로 분리**(sub.benefits1/2 참조). 새 화면에 문장형 안내를 넣을 때 실기기 확인 필수.
 
 - 빌드 실패·크래시 로그·검증 불일치 등은 **세션에 그대로 붙여넣으면 AI가 대응** (셀프테스트 불일치 = 코덱/해시 규약 문제 → 최우선).
 - 재현 가능한 해시 불일치는 절대 골든값을 바꾸지 말 것 — 코드를 고친다 (`golden.test.ts` 원칙).
