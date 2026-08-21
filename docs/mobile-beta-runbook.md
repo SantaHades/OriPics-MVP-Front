@@ -91,6 +91,7 @@ cd apps/mobile && ./scripts/capture-screenshots.sh    # 재캡처만 할 땐 --n
   **`npm install`을 다시 실행하면 패치가 사라짐** — 같은 오류가 재발하면 동일 수정 재적용
   (또는 expo-modules-jsi 57.0.5+ 릴리스 확인). 근본 해결은 상류 수정 대기.
 - **Sentry 소스맵 업로드 실패(org 미설정)**: U-36 전까지 로컬 Release 빌드는 `SENTRY_DISABLE_AUTO_UPLOAD=true` 필요(캡처 스크립트에 반영됨). EAS 빌드는 U-36 후 Sentry env 설정과 함께 해제.
+- **새 expo 네이티브 패키지 설치 후 앱이 기기에서 크래시**: `expo install`은 JS 의존성만 추가 — 기존 `ios/` 프로젝트를 유지한 채 xcodebuild로 빌드하면 네이티브 모듈이 링크되지 않아 시작 즉시 크래시. **`cd ios && pod install` 후 재빌드** (expo-localization 추가 시 실측, 2026-08-21).
 - **CoreSimulator 버전 충돌**(Xcode 교체 직후): `launchctl remove com.apple.CoreSimulator.CoreSimulatorService` 후 재시도.
 
 - 빌드 실패·크래시 로그·검증 불일치 등은 **세션에 그대로 붙여넣으면 AI가 대응** (셀프테스트 불일치 = 코덱/해시 규약 문제 → 최우선).
