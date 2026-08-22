@@ -149,6 +149,7 @@
 | A-11 | 모바일용 stamp 클라이언트 인터페이스 (Verified mode) | 모바일 본 시작 | P1 |
 | A-38 | **maestro e2e yaml 갱신** — 2026-08-21 4탭 개편(홈-촬영-목록-판독, 갤러리 인증→목록 [+ 갤러리], 촬영=큐 저장)으로 `e2e/certify-e2e.yaml`·`e2e/screenshots.yaml`의 셀렉터·흐름이 구 UI 기준. 스크린샷 재캡처(U-18 산출물 4장도 구 3탭 UI — 심사 제출 전 재촬영) 포함 | 스토어 심사 준비(M8) 전 | P1 |
 | A-39 | **C2PA manifest에 촬영시각 반영 검토** — V5 스탬프·DB·뷰어에는 반영 완료. c2pa manifest assertion(예: `c2pa.actions`의 when 또는 exif assertion)에도 captured_at을 넣을지 검토 (수정 범위: `lib/oripics-stamp/c2pa.ts` attachC2paManifest 입력 확장) | SSL.com cert 도착·C2PA 재활성화 시 | P2 |
+| A-41 | **모바일 증명서 PDF 발급** — 목록탭 완료 항목(공개링크 발행분)에 '증명서 PDF' 버튼 → `GET /api/links/{id}/certificate`(Bearer) 다운로드 → 문서 폴더 캐시 → 공유 시트(내보내기 패턴 재사용). Pro·Business 전용 — 월 5건 무료/이후 −10 표시는 서버 응답 기반. 사고·분쟁(현장 촬영→증빙) 시나리오의 모바일 완결 흐름. 서버·발급 로직은 완성(A-8·A-24) — 클라 반나절 수준 | **iOS IAP 출시(U-35) 직후** (모바일 Pro 경로 생긴 뒤) | P2 |
 | A-40 | **썸네일·뷰어 경량본 서버 생성 통합** — publish가 이미 PNG를 다운로드·디코드하므로 sharp로 리사이즈해 `{linkId}_thumb.jpg`·`_preview.jpg`를 Storage에 생성(클라 업로드 ~400KB/건 제거, 웹·모바일 중복 구현 제거, 누락 불가). ProofHistory.thumbnail dataURL(DB 저장)은 경로 참조로 이전 + 기존 행 backfill. sharp 네이티브 의존성 추가라 **오픈 후** 진행. 두 파생본을 하나로 합치는 안은 기각(뷰어 1장 고화질 vs 그리드 다수 저화질 — 요구 스펙 상충, 그리드 egress 역증가) — 파일은 2종 유지, 생성 파이프라인만 단일화 (2026-08-21 검토) | 오픈 후 | P2 |
 
 ### 2.4 테스트 보강
