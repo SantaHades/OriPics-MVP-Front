@@ -43,7 +43,7 @@
 | O-1 | **`CRON_SECRET` 프로덕션 환경변수 확인** — 크론 3종이 fail-closed로 전환됨(미설정 시 503). Vercel은 `CRON_SECRET`이 있으면 자동으로 Bearer 헤더 주입. `vercel env ls`로 존재 확인(기존에도 검사하던 값이라 대개 이미 설정됨) | NOW | 2026-08-22 보안조치 | P0 |
 | ~~O-2~~ | **✅ 2026-08-23 완료** — verified 티어 attest 운영 설정(U-34 서버 측). 프로덕션 Vercel env 4종 설정+재배포(front `9508ef3`): `APPLE_APP_ATTEST_TEAM_ID=4V67H4KGQS`, `APPLE_APP_ATTEST_BUNDLE_ID=com.santahades.oripics`, `ANDROID_PACKAGE_NAME=com.santahades.oripics`, `GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON`(sensitive). Play Integrity: Play Console 앱(OriPics) 생성→GCP 프로젝트 `oripics-sns-login`(154917484728) 연결→서비스계정 `play-integrity-verifier` JSON 키. 모바일 `eas.json` 3개 프로필에 `EXPO_PUBLIC_GCP_PROJECT_NUMBER=154917484728` 추가(다음 EAS 빌드부터). iOS App Attest 엔타이틀먼트=`app.json ios.entitlements`에 `com.apple.developer.devicecheck.appattest-environment: production` 추가완료(Apple 포털 토글 아님 — Expo 관리형은 엔타이틀먼트 방식). **잔여: EAS 재빌드 후 실기기 verified e2e(iOS/Android) — U-34 잔여.** `ALLOW_UNVERIFIED_ATTEST` 미설정 유지 | 완료 | 2026-08-22 보안조치 | ✅ |
 | U-1 | SSL.com C2PA Certificates 영업팀 회신 8개 질문 답변 | NOW | 회신 도착 | P0 |
-| U-2 | Google Play Console 신원확인 완료 | NOW | 1~3일 자연 진행 | P1 |
+| ~~U-2~~ | **✅ 완료** — Google Play Console 개인 계정 신원확인. 2026-08-23 실측: 계정 세부정보에 법적이름·주소 등록, 연락처 이메일·전화 인증됨(✓), 경고 배너 없음. Android 개발자 인증도 패키지 `com.santahades.oripics` 등록됨(✓) | 완료 | — | ✅ |
 | U-3 | Porkbun Tucker (Change of Registrant) 최종 회신 | NOW | 형식 확인용 | P3 |
 | U-4 | D-U-N-S Number 발급 (선택) | 언젠가 | 검증 가속용 | P3 |
 
@@ -92,7 +92,7 @@
 | U-27 | CAI(Content Authenticity Initiative) 무료 멤버십 가입 | NOW | 없음 | P3 |
 | U-36 | **Sentry 프로젝트 생성 (M7 후속)** — sentry.io에서 React Native 프로젝트 생성 → DSN 발급 → `npx eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value <DSN>`. 미설정이어도 앱 정상(진단만 꺼짐). 절차 전체: [mobile-beta-runbook.md](mobile-beta-runbook.md) | M7 베타 전 | 없음 | P2 |
 | U-35 | **iOS IAP 운영 설정 (M6 후속)** — ①**Apple Small Business Program 가입**(App Store Connect, 미가입 시 수수료 30%) ②구독 그룹 생성 + 제품 2개 등록: `oripics.pro.monthly` **₩12,900/월** · `oripics.pro.yearly` **₩129,000/년** (§8-A 확정가) ③App Store Server Notifications V2 URL 등록: `https://www.ori.pics/api/mobile/iap/apple/notifications` ④Vercel env `APPLE_IAP_BUNDLE_ID=com.santahades.oripics` (+테스트 기간 `APPLE_IAP_ALLOW_SANDBOX=true`) ⑤Sandbox 테스터 계정 생성. **env 설정 전 IAP verify는 503 반환(안전)** | M7 베타 전 | 없음 | P1 |
-| U-34 | **모바일 attest 운영 설정 (M4 후속)** — ①**Apple**: Vercel env `APPLE_APP_ATTEST_TEAM_ID`(개발자 계정 Team ID)+`APPLE_APP_ATTEST_BUNDLE_ID`(=`com.santahades.oripics`), dev 테스트 기간엔 `APPLE_APP_ATTEST_ALLOW_DEV=true` ②**Google**: Play Console↔GCP 프로젝트 연결 → 서비스 계정 생성(Play Integrity API 권한) → Vercel env `GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON`+`ANDROID_PACKAGE_NAME=com.santahades.oripics`, 모바일 `.env`에 `EXPO_PUBLIC_GCP_PROJECT_NUMBER` ③선행: U-2 신원확인. **env 설정 전까지 verified 요청은 개발 폴백(토큰 해시만 기록)으로 동작** | 모바일 베타(M7) 전 | U-2 | P1 |
+| U-34 | **모바일 attest 운영 설정 (M4 후속)** — 서버측 env·인프라·엔타이틀먼트 **완료(2026-08-23, O-2 행 참조)**: Apple TEAM_ID/BUNDLE_ID·Google 서비스계정 JSON·ANDROID_PACKAGE_NAME(Vercel prod), eas.json `EXPO_PUBLIC_GCP_PROJECT_NUMBER`, app.json App Attest 엔타이틀먼트(production). 2026-08(M-1) 이후 미설정 시 verified=503 fail-closed(개발폴백 아님). **잔여: EAS 재빌드 후 실기기 verified e2e(iOS/Android).** | 모바일 베타(M7) 전 | — | P2 |
 | U-33 | **네이버페이 결제형 — PortOne 채널 등록** — 네이버페이센터 가입 심사 **승인 완료**(7/4 신청 → 2026-08-07 확인). 다음 절차: 네이버페이센터에서 연동 정보 확인 → admin.portone.io에 네이버페이 채널 추가 → 채널키 발급 (A-37 전제) | 결제수단 확장 결정 시 | 없음 | P2 |
 
 ### 1.6 인프라 (Vercel)
