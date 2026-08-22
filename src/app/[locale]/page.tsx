@@ -2112,6 +2112,16 @@ export default function Home() {
               <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−4</span> <span>{t("pricing.guide.verified_proof")}</span></li>
               <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−10</span> <span>{t("pricing.guide.certificate_pdf")}</span></li>
             </ul>
+            <p className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700 mt-5 mb-3">
+              {t("pricing.guide.mult_title")}
+            </p>
+            <ul className="text-sm text-slate-700 space-y-1.5">
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">1×</span> <span>{t("pricing.guide.mult1")}</span></li>
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">2×</span> <span>{t("pricing.guide.mult2")}</span></li>
+              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">3×</span> <span>{t("pricing.guide.mult3")}</span></li>
+            </ul>
+            <p className="text-xs text-slate-500 mt-2">{t("pricing.guide.mult_note")}</p>
+            <p className="text-xs text-slate-500 mt-1">{t("pricing.guide.free_note")}</p>
           </div>
 
           <p className="text-center text-xs text-slate-500 mt-6">{t("pricing.footnote")}</p>

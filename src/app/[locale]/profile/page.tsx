@@ -553,6 +553,41 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* 차감 규칙·요금제 (2026-08-22) — 접힌 상태 기본, 모바일 앱 시트와 동일 내용 + 웹 가격 */}
+          <details className="rounded-2xl border border-slate-200 bg-white/40 mb-6 group">
+            <summary className="px-5 py-3 text-sm font-semibold text-slate-700 cursor-pointer select-none list-none flex items-center justify-between">
+              {tCredits("rules_toggle")}
+              <span className="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
+            </summary>
+            <div className="px-5 pb-4 text-sm text-slate-700">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{tCredits("rules_costs_title")}</p>
+              {([
+                ["rules_verify_label", "rules_verify_cost"],
+                ["rules_standard_label", "rules_standard_cost"],
+                ["rules_verified_label", "rules_verified_cost"],
+                ["rules_link_label", "rules_link_cost"],
+                ["rules_pdf_label", "rules_pdf_cost"],
+              ] as const).map(([labelKey, costKey]) => (
+                <div key={labelKey} className="flex justify-between py-1.5 border-b border-slate-100">
+                  <span className="text-slate-500">{tCredits(labelKey)}</span>
+                  <span className="font-semibold">{tCredits(costKey)}</span>
+                </div>
+              ))}
+              <p className="text-xs text-slate-500 mt-2">{tCredits("rules_multiplier")}</p>
+              <p className="text-xs text-slate-500 mt-1">{tCredits("rules_owner")}</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mt-4 mb-1">{tCredits("rules_plans_title")}</p>
+              <div className="flex justify-between py-1.5 border-b border-slate-100">
+                <span className="text-slate-500">Free</span>
+                <span className="font-semibold">{tCredits("rules_plan_free")}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-slate-100">
+                <span className="text-slate-500">Pro</span>
+                <span className="font-semibold">{tCredits("rules_plan_pro")}</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">{tCredits("rules_plan_note")}</p>
+            </div>
+          </details>
+
           {credits && visibleTxs.length > 0 && (
             <div className="rounded-2xl border border-slate-200 bg-white/40">
               <div className="px-5 py-3 border-b border-slate-100">
