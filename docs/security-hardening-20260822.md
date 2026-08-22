@@ -18,9 +18,11 @@ Supabase는 이 조합에서 PostgREST(`/rest/v1/*`)로 테이블을 그대로 �
 | `GET /rest/v1/CreditTransaction` — 전 결제·크레딧 내역 | 200 유출 | 401 |
 | `PATCH /rest/v1/User` — **크레딧 임의 조작** | 204 성공 | 401 |
 | avatars 버킷 익명 업로드 / 타인 파일 삭제 | 200 성공 | 400 |
+| `GET /rest/v1/links?select=*` — **전 사용자 인증 목록·GPS·user_id 열거** | 200 유출(21건) | 401 |
 
-안전했던 것: `links` 테이블·`oripics-proofs` 버킷은 처음부터 RLS + 정책이 올바랐다
-(익명 쓰기 시도가 RLS 위반으로 차단됨).
+안전했던 것: `oripics-proofs` 버킷은 처음부터 RLS + 정책이 올바랐다(익명 쓰기 RLS 위반으로 차단).
+`links`는 RLS는 켜져 있었으나 `public_read` 정책이 행 전체를 허용해 **열거가 가능**했다 —
+"링크를 아는 사람만 본다"는 전제가 깨지는 프라이버시 이슈(별도 조치, 아래 3.)
 
 ## 2. 적용한 DB 조치 (SQL)
 
@@ -35,8 +37,10 @@ ALTER TABLE public."<T>" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public."<T>" FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON public."<T>" FROM anon, authenticated;
 
--- (2) links: 공개 뷰어용 SELECT 정책만 유지하고 쓰기 권한 회수
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.links FROM anon, authenticated;
+-- (2) links: 1차로 쓰기만 회수했으나, 남은 anon SELECT가 **전체 열거**를 허용해
+--     (?select=* → 전 사용자 인증 목록 + GPS + user_id) 뷰어를 서버 API로 옮긴 뒤 전면 회수.
+REVOKE ALL ON public.links FROM anon, authenticated;
+DROP POLICY IF EXISTS public_read ON public.links;
 REVOKE ALL ON public.link_counter FROM anon, authenticated;
 
 -- (3) 향후 생성 테이블 기본 차단 (같은 실수 재발 방지)
@@ -55,6 +59,9 @@ CREATE POLICY "avatars public read" ON storage.objects FOR SELECT USING (bucket_
 - `f098ec4` 아바타 업로드 서버 경유 전환 — `/api/profile/avatar`(세션 인증 + 서비스 키,
   경로를 `userId.<ext>`로 고정해 타인 덮어쓰기 차단, MIME 화이트리스트 + 2MB). 브라우저의
   anon 직접 업로드 제거.
+- `494ebba` 공개 뷰어 서버 API 전환 — `GET /api/links/[id]/public`(단건 조회, 만료 판정 서버,
+  `user_id` 대신 `is_owner`만 반환). 뷰어의 anon 직접 조회 제거 → `lib/supabase.ts`(anon 클라이언트) 삭제.
+  이로써 **앱 내 anon 키 사용처 0**.
 - `423215b` 레이트리밋 + 보안 헤더:
   - `lib/security/rateLimit.ts` — Postgres fixed-window(원자 UPSERT). 서버리스 in-memory 무효,
     Redis/KV 의존성 없음. **fail-open**(DB 장애가 로그인 차단으로 번지지 않게).
@@ -66,6 +73,10 @@ CREATE POLICY "avatars public read" ON storage.objects FOR SELECT USING (bucket_
   - `cleanup` cron이 `rate_limits` 24h 경과분 정리.
 
 프로덕션 실측: 비밀번호 재설정 6회째 429, 모바일 로그인 11회째 429, 헤더 전부 반영 확인.
+links 열거 401 차단 + 뷰어/홈/이미지 정상(회귀 없음) 확인.
+
+**RLS만으로는 열거를 막을 수 없다**: 정책은 행 조건만 표현하고 필터는 클라이언트가 정하므로,
+"특정 ID 조회만 허용"은 서버 경유로만 구현된다. 공개 데이터라도 목록화가 문제면 API를 둘 것.
 
 ## 4. 잔여 권고
 
