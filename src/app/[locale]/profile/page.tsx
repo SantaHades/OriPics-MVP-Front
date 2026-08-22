@@ -5,7 +5,6 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
 import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard } from "lucide-react";
 import { Link } from "@/navigation";
-import { supabase } from "@/lib/supabase";
 import { useTranslations } from "next-intl";
 import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
@@ -306,26 +305,15 @@ export default function ProfilePage() {
     setMessage({ type: "", text: "" });
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${(session?.user as any)?.id}-${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
-      const bucketName = "avatars";
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(bucketName)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) {
-        console.error("Supabase Upload Error:", uploadError);
-        throw new Error(`${uploadError.message} (Bucket: ${bucketName})`);
+      // 브라우저에서 공개 anon 키로 직접 업로드하던 경로를 서버 API로 전환 (2026-08-22 보안 수정)
+      const body = new FormData();
+      body.append("file", file);
+      const res = await fetch("/api/profile/avatar", { method: "POST", body });
+      if (!res.ok) {
+        const d = await res.json().catch(() => null);
+        throw new Error(d?.detail ?? String(res.status));
       }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucketName)
-        .getPublicUrl(filePath);
+      const { url: publicUrl } = await res.json();
 
       setImage(publicUrl);
       setMessage({ type: "success", text: t("messages.upload_success") });
