@@ -25,6 +25,12 @@ export const RATE_LIMITS = {
   passwordReset: { name: "pwreset", windowSec: 3600, max: 5 },
   /** 인증 코드 발송 — IP */
   sendVerification: { name: "sendverify", windowSec: 3600, max: 10 },
+  /**
+   * 이미지 서명(/api/sign) — 사용자별. 정상 사용량을 크게 상회하되(시간당 120건),
+   * 단일 계정이 전역 일일 카운터(uint16)를 소진해 전 사용자 서명을 막거나(H-3),
+   * 고아 signed-upload-url을 무한 생성하는 것을 차단.
+   */
+  sign: { name: "sign", windowSec: 3600, max: 120 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export interface RateLimitResult {
@@ -34,12 +40,22 @@ export interface RateLimitResult {
   retryAfterSec: number;
 }
 
-/** 프록시 뒤(Vercel) 클라이언트 IP — 스푸핑 가능하므로 식별자에만 사용 */
+/**
+ * 프록시 뒤(Vercel) 클라이언트 IP — 레이트리밋 식별자 전용.
+ *
+ * `x-forwarded-for`의 맨 앞 값은 클라이언트가 임의로 붙일 수 있어(스푸핑) 레이트리밋
+ * 키를 회전시켜 우회할 수 있다. Vercel이 직접 채우는 `x-vercel-forwarded-for` /
+ * `x-real-ip`를 우선 사용하고, 없을 때만 XFF 맨 앞으로 폴백한다.
+ */
 export function clientIp(req: Request): string {
   const h = req.headers;
+  const vercel = h.get("x-vercel-forwarded-for");
+  if (vercel) return vercel.split(",")[0].trim();
+  const real = h.get("x-real-ip");
+  if (real) return real.trim();
   const xff = h.get("x-forwarded-for");
   if (xff) return xff.split(",")[0].trim();
-  return h.get("x-real-ip") ?? "unknown";
+  return "unknown";
 }
 
 /**

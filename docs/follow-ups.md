@@ -40,6 +40,8 @@
 
 | ID | 항목 | 시점 | 의존성 | P |
 |---|---|---|---|---|
+| O-1 | **`CRON_SECRET` 프로덕션 환경변수 확인** — 크론 3종이 fail-closed로 전환됨(미설정 시 503). Vercel은 `CRON_SECRET`이 있으면 자동으로 Bearer 헤더 주입. `vercel env ls`로 존재 확인(기존에도 검사하던 값이라 대개 이미 설정됨) | NOW | 2026-08-22 보안조치 | P0 |
+| O-2 | **verified 티어 attest 운영 설정** — attest 검증기 env 미설정 시 verified 요청이 503. 운영은 APPLE_APP_ATTEST_*/GOOGLE_PLAY_INTEGRITY_* 설정(정식) 또는 과도기엔 `ALLOW_UNVERIFIED_ATTEST=true`(개발용, 운영 비권장). U-34와 연계 | NOW | 2026-08-22 보안조치 | P1 |
 | U-1 | SSL.com C2PA Certificates 영업팀 회신 8개 질문 답변 | NOW | 회신 도착 | P0 |
 | U-2 | Google Play Console 신원확인 완료 | NOW | 1~3일 자연 진행 | P1 |
 | U-3 | Porkbun Tucker (Change of Registrant) 최종 회신 | NOW | 형식 확인용 | P3 |
@@ -238,3 +240,4 @@ SSL.com 회신 (U-1)
 | 2026-05-13 | A-23·A-24·A-25 추가 (J-9 PDF 발급 트레이드오프). A-26·A-27·A-28 추가 (업로드 진행률 후속 — confirm stage 라벨, stego chunking, 취소 버튼) |
 | 2026-05-17 | **B-2'' 흐름 분리·운영 강화** — pricing-policy §10 동일 항목 참조. A-26 라우트명 갱신(confirm→publish). A-30·A-31·A-32·A-33 신규 추가(multi-result 미공개 재검출 미지원, multi confirm 진행률 단순화, 인증 결과 안내 강화, 30일 미사용 cleanup). 용어 통일 간편링크→공개링크 |
 | 2026-06-18 | A-32 완료 — result_stamped UI에 `save_for_later_hint` 안내 한 줄 추가(다운로드 버튼 아래, `!generatedLink` 조건). 저장한 파일을 ~30일 내 같은 브라우저에서 재드롭하면 공개링크 생성 가능 안내. ko/en i18n 추가. [page.tsx](../src/app/[locale]/page.tsx) |
+| 2026-08-22 | **애플리케이션 계층 보안 조치(2차)** — [security-hardening-20260822.md §5](security-hardening-20260822.md) 참조. H-1 결제 위조 차단(complete·billing-key 소유권 검증), H-2 크론 fail-closed(`lib/security/cron.ts`), H-3 sign 레이트리밋(사용자 120/h), M-1 attest fail-closed(`ALLOW_UNVERIFIED_ATTEST` 옵트인), M-2 c2pa-poc 라우트 삭제, M-3 proof/history POST 소유권+썸네일 상한, M-4 비번변경 재인증(프로필 UI에 현재비번), M-5 계정열거 차단, M-6 인증코드 CSPRNG, L-1 confirm 세션검증, L-2 clientIp 스푸핑 방지, L-7 CSP report-only. **운영 확인 필요: O-1 CRON_SECRET(프로덕션), O-2 attest env 또는 ALLOW_UNVERIFIED_ATTEST** (아래 1.1) |

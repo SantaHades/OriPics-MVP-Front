@@ -420,6 +420,8 @@
     "name_placeholder": "Enter your name",
     "password_label": "New Password",
     "password_placeholder": "Enter only if you want to change",
+    "current_password_label": "Current Password",
+    "current_password_placeholder": "Enter your current password to change it",
     "submit": "Save Profile",
     "messages": {
       "upload_success": "Image uploaded. Click save to confirm.",

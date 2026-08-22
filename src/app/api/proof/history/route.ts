@@ -72,8 +72,23 @@ export async function POST(req: NextRequest) {
 
     const { linkId, thumbnail, width, height, timestamp } = await req.json();
 
-    if (!linkId || !width || !height || !timestamp) {
+    if (!linkId || typeof linkId !== "string" || !width || !height || !timestamp) {
       return NextResponse.json({ code: "missing_fields" }, { status: 400 });
+    }
+
+    // M-3: 소유권 검증 — 이 링크가 실제로 존재하고 호출자 소유일 때만 기록 허용.
+    // 없으면 타인의 linkId를 선점해 피해자 갤러리를 오염(publish 시 unique 충돌로
+    // 조용히 누락)시키거나, 존재하지 않는 링크로 임의 행을 만들 수 있다(IDOR).
+    const owns = await prisma.$queryRaw<{ n: number }[]>`
+      SELECT count(*)::int AS n FROM public.links
+      WHERE link_id = ${linkId} AND user_id = ${userId}`;
+    if (!owns[0] || Number(owns[0].n) === 0) {
+      return NextResponse.json({ code: "forbidden" }, { status: 403 });
+    }
+
+    // 썸네일 크기 제한 (publish 경로와 동일한 200,000자 상한 — 무제한 DB 쓰기 방지)
+    if (thumbnail != null && (typeof thumbnail !== "string" || thumbnail.length > 200_000)) {
+      return NextResponse.json({ code: "thumbnail_too_large" }, { status: 400 });
     }
 
     // 중복 방지

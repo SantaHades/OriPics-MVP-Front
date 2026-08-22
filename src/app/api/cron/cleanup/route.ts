@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
+import { assertCron } from "@/lib/security/cron";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
-const CRON_SECRET = process.env.CRON_SECRET || "";
 const BUCKET_NAME = "oripics-proofs";
 /** links row가 없는 고아 파일(업로드 후 publish 실패 등)의 보존 기간 */
 const ORPHAN_RETENTION_DAYS = 7;
@@ -25,12 +25,8 @@ export const maxDuration = 300;
  *     row가 존재하므로 여기서 절대 삭제되지 않는다.
  */
 export async function GET(req: NextRequest) {
-  if (CRON_SECRET) {
-    const auth = req.headers.get("authorization") || "";
-    if (auth !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ detail: "unauthorized" }, { status: 401 });
-    }
-  }
+  const denied = assertCron(req);
+  if (denied) return denied;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   }

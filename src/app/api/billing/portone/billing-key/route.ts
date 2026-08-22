@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     userId,
     plan,
     secret: PORTONE_API_SECRET,
+    verifyOwnership: true,
     customer: {
       fullName: session?.user?.name ?? undefined,
       email: session?.user?.email ?? undefined,

@@ -27,10 +27,14 @@ export async function POST(req: NextRequest) {
       where: { email },
     });
 
+    // M-5: 계정 열거 방지 — 가입 여부와 무관하게 동일한 성공 응답을 반환한다.
+    // (미가입 이메일이면 메일을 보내지 않고 성공처럼 응답 → 존재 오라클 제거)
     if (!user) {
-      console.log(`[Forgot Password] User not found for email: ${email}`);
-      // 디버깅을 위해 가입되지 않은 이메일인 경우 명시적으로 에러 반환
-      return NextResponse.json({ code: "user_not_found", message: "가입되지 않은 이메일입니다." }, { status: 404 });
+      console.log(`[Forgot Password] No account for email (masked response): ${email}`);
+      return NextResponse.json(
+        { code: "email_sent", message: "비밀번호 재설정 이메일이 발송되었습니다." },
+        { status: 200 },
+      );
     }
 
     console.log(`[Forgot Password] User found. Generating token...`);

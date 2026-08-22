@@ -54,6 +54,8 @@ export type GrantResult =
         | "portone_lookup_failed"
         | "payment_not_paid"
         | "amount_mismatch"
+        | "ownership_mismatch"
+        | "billing_key_not_owned"
         | "db_update_failed"
         | "billing_key_charge_failed";
       httpStatus: number;
@@ -96,6 +98,34 @@ export async function verifyAndGrantSubscription(opts: {
       httpStatus: 400,
       detail: { expected: expectedAmount, paid: paidAmount },
     };
+  }
+
+  // 결제 소유권 검증 (H-1): 이 결제의 customData.userId가 있으면 반드시 호출자와
+  // 일치해야 한다. checkout(requestPayment/requestIssueBillingKey)과 빌링키 청구가
+  // 항상 {userId, plan}을 주입하므로, 남의 paymentId를 complete 경로에 제출해
+  // 자기 계정에 구독을 부여받는 위조를 차단한다. (일치 검증만 — 미주입 결제는
+  // 위조 대상이 아니므로 경고 로깅 후 통과)
+  let paymentUserId: string | undefined;
+  try {
+    if (payment.customData) {
+      const parsed = JSON.parse(payment.customData);
+      if (typeof parsed?.userId === "string") paymentUserId = parsed.userId;
+    }
+  } catch {
+    /* customData 파싱 실패는 아래 미검증 경고로 흡수 */
+  }
+  if (paymentUserId && paymentUserId !== userId) {
+    console.warn("[subscriptionGrant] payment ownership mismatch — refusing", {
+      paymentId,
+      caller: userId,
+    });
+    return { ok: false, code: "ownership_mismatch", httpStatus: 403 };
+  }
+  if (!paymentUserId) {
+    console.warn("[subscriptionGrant] payment has no customData.userId — ownership unverified", {
+      paymentId,
+      caller: userId,
+    });
   }
 
   const pgProvider = payment.channel?.pgProvider ?? "unknown";
@@ -237,8 +267,15 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   customer?: { fullName?: string | null; email?: string | null; phoneNumber?: string | null };
   /** 멱등 청구를 위한 paymentId (cron에서 주기 식별자로 고정 가능). 미지정 시 자동 생성. */
   paymentId?: string;
+  /**
+   * 클라이언트가 billingKey를 직접 제출하는 최초 구독 경로(billing-key 라우트)에서 true.
+   * 빌링키의 customData.userId(=발급 시점 사용자) 또는 기존 DB 바인딩과 대조해,
+   * 타인 카드로 결제해 자기 계정을 Pro로 만드는 위조(H-1b)를 차단한다.
+   * cron 갱신은 서버가 DB에서 고른 신뢰된 billingKey이므로 false(생략).
+   */
+  verifyOwnership?: boolean;
 }): Promise<GrantResult> {
-  const { billingKey, userId, plan, secret, customer } = opts;
+  const { billingKey, userId, plan, secret, customer, verifyOwnership } = opts;
   const amount = PLAN_PRICES[plan];
   const paymentId =
     opts.paymentId ??
@@ -250,11 +287,44 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   // 빌링키에 저장된 고객정보를 자동 사용하지 않는다. 빌링키 발급(requestIssueBillingKey)
   // 시 저장된 고객정보(특히 휴대폰)를 조회해 명시적으로 전달한다.
   let bkCustomer: { name?: string; email?: string; phoneNumber?: string } = {};
+  let bkInfo: any = null;
   try {
-    const info: any = await PortOne.BillingKeyClient({ secret }).getBillingKeyInfo({ billingKey });
-    bkCustomer = info?.customer ?? {};
+    bkInfo = await PortOne.BillingKeyClient({ secret }).getBillingKeyInfo({ billingKey });
+    bkCustomer = bkInfo?.customer ?? {};
   } catch {
     // 조회 실패 시 전달된 customer로 폴백
+  }
+
+  // H-1b 소유권 검증 (최초 구독 경로만). 빌링키 발급 시 checkout이 주입한
+  // customData.userId가 호출자와 다르면(=타인 빌링키) 청구 거부.
+  if (verifyOwnership) {
+    let bkUserId: string | undefined;
+    try {
+      if (bkInfo?.customData) {
+        const parsed = JSON.parse(bkInfo.customData);
+        if (typeof parsed?.userId === "string") bkUserId = parsed.userId;
+      }
+    } catch {
+      /* 파싱 실패 → 아래 DB 대조로 폴백 */
+    }
+    if (bkUserId && bkUserId !== userId) {
+      console.warn("[billing-key] ownership mismatch — refusing charge", { userId });
+      return { ok: false, code: "billing_key_not_owned", httpStatus: 403 };
+    }
+    // 방어적 2차 검증: 이 빌링키가 이미 다른 사용자의 구독에 바인딩돼 있으면 거부.
+    // (customData가 비어 오는 PG를 대비 — customData 검증이 통과/불가한 경우에도 재사용 차단)
+    try {
+      const bound = await prisma.subscription.findFirst({
+        where: { billingKey, NOT: { userId } },
+        select: { userId: true },
+      });
+      if (bound) {
+        console.warn("[billing-key] billingKey already bound to another user — refusing", { userId });
+        return { ok: false, code: "billing_key_not_owned", httpStatus: 403 };
+      }
+    } catch {
+      /* DB 조회 실패는 청구 진행을 막지 않음 (customData 검증이 1차 방어) */
+    }
   }
   const custName = bkCustomer.name || customer?.fullName || customer?.email || "OriPics 구독자";
   const custEmail = bkCustomer.email || customer?.email || undefined;

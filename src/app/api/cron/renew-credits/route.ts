@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { renewCreditsIfDue } from "@/lib/credits/renewCredits";
+import { assertCron } from "@/lib/security/cron";
 
-const CRON_SECRET = process.env.CRON_SECRET || "";
 const BATCH_SIZE = 500;
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
-  if (CRON_SECRET) {
-    const auth = req.headers.get("authorization") || "";
-    if (auth !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ detail: "unauthorized" }, { status: 401 });
-    }
-  }
+  const denied = assertCron(req);
+  if (denied) return denied;
 
   let renewed = 0;
   let skipped = 0;

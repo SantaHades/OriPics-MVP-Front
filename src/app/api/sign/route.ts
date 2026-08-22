@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createHmac, createHash } from "crypto";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, tooManyRequests, RATE_LIMITS } from "@/lib/security/rateLimit";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 import { verifyChallenge } from "@/lib/attest/challenge";
@@ -56,6 +57,15 @@ export async function POST(req: NextRequest) {
   if (!userId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }
+
+  // H-3: 사용자별 레이트리밋. sign은 크레딧을 소비하지 않고(차감은 confirm) 전역
+  // 일일 카운터를 증가 + signed-upload-url을 발급하므로, 무제한 호출 시 카운터
+  // 소진(전 사용자 서명 차단)·고아 스토리지 비용을 유발한다.
+  const rl = await checkRateLimit(RATE_LIMITS.sign, userId);
+  if (!rl.allowed) {
+    return tooManyRequests(rl, "인증 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { credits: true, tier: true },
@@ -158,15 +168,22 @@ export async function POST(req: NextRequest) {
       };
     } catch (e) {
       if (e instanceof AttestVerifierNotImplementedError) {
-        // D-pre-5 본 구현 전: token 자체는 SHA-256 해시만 기록하고 진행 (개발용)
-        console.warn("[sign] attest verifier stub — token hash only");
-        const hash = createHash("sha256").update(attest_token).digest("hex").slice(0, 32);
-        verifiedInfo = {
-          platform,
-          attest_token_hash: hash,
-          ...(typeof zoom_factor === "number" ? { zoom_factor } : {}),
-          ...(typeof lens_position === "string" ? { lens_position } : {}),
-        };
+        // M-1: 검증기 미설정 시 예외를 성공으로 처리하면 임의 토큰으로 "verified"
+        // 등급이 부여돼 제품 신뢰의 핵심이 무력화된다. 개발용 폴백은 명시적 옵트인
+        // (ALLOW_UNVERIFIED_ATTEST=true)일 때만 허용하고, 운영에서는 503으로 거부.
+        if (process.env.ALLOW_UNVERIFIED_ATTEST === "true") {
+          console.warn("[sign] attest verifier stub — token hash only (ALLOW_UNVERIFIED_ATTEST)");
+          const hash = createHash("sha256").update(attest_token).digest("hex").slice(0, 32);
+          verifiedInfo = {
+            platform,
+            attest_token_hash: hash,
+            ...(typeof zoom_factor === "number" ? { zoom_factor } : {}),
+            ...(typeof lens_position === "string" ? { lens_position } : {}),
+          };
+        } else {
+          console.error("[sign] verified requested but attest verifier not configured — refusing");
+          return NextResponse.json({ detail: "verified_not_available" }, { status: 503 });
+        }
       } else {
         throw e;
       }

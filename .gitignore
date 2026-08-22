@@ -1,6 +1,15 @@
 .next/
 node_modules/
 .env
+.env.*
+!.env.example
+
+# 자격증명/개인키 파일 (실수 커밋 방지)
+*.pem
+*.key
+*.p12
+*.p8
+*service-account*.json
 
 /src/generated/prisma
 .vercel

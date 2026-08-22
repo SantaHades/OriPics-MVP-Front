@@ -5,8 +5,8 @@ import {
   isPlanId,
   type PlanId,
 } from "@/lib/payment/subscriptionGrant";
+import { assertCron } from "@/lib/security/cron";
 
-const CRON_SECRET = process.env.CRON_SECRET || "";
 const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET ?? "";
 const BATCH_SIZE = 200;
 
@@ -27,12 +27,8 @@ export const maxDuration = 300;
  * 다음 cron이 다시 집계). 7일 재시도/다운그레이드 dunning은 후속 작업.
  */
 export async function GET(req: NextRequest) {
-  if (CRON_SECRET) {
-    const auth = req.headers.get("authorization") || "";
-    if (auth !== `Bearer ${CRON_SECRET}`) {
-      return NextResponse.json({ detail: "unauthorized" }, { status: 401 });
-    }
-  }
+  const denied = assertCron(req);
+  if (denied) return denied;
   if (!PORTONE_API_SECRET) {
     return NextResponse.json({ detail: "portone_not_configured" }, { status: 500 });
   }

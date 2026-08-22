@@ -420,6 +420,8 @@
     "name_placeholder": "이름을 입력하세요",
     "password_label": "새 비밀번호",
     "password_placeholder": "변경을 원할 때만 입력하세요",
+    "current_password_label": "현재 비밀번호",
+    "current_password_placeholder": "비밀번호 변경 시 현재 비밀번호를 입력하세요",
     "submit": "정보 수정 완료",
     "messages": {
       "upload_success": "이미지가 등록되었습니다. 저장 버튼을 눌러 확정하세요.",

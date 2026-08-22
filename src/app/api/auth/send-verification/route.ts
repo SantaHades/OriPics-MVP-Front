@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
+import { randomInt } from "crypto";
 import { checkRateLimit, clientIp, tooManyRequests, RATE_LIMITS } from "@/lib/security/rateLimit";
 
 export async function POST(req: NextRequest) {
@@ -26,8 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: "email_exists", message: "이미 가입된 이메일입니다." }, { status: 400 });
     }
 
-    // 6자리 인증 코드 생성
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // 6자리 인증 코드 생성 (M-6: CSPRNG — Math.random은 출력 몇 개로 상태 복원 가능)
+    const code = randomInt(100000, 1000000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000); // 10분 유효
 
     // 기존 인증 코드 삭제 후 새로 생성

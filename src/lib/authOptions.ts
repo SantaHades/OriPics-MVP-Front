@@ -68,14 +68,16 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
+        // M-5: 계정 열거 방지 — "미가입"과 "비밀번호 불일치"를 구분하지 않고
+        // 동일한 CredentialsSignin 오류로 통일한다(로그인 페이지 번역 재사용).
         if (!user || !user.password) {
-          throw new Error("UserNotFound");
+          throw new Error("CredentialsSignin");
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
 
         if (!isValid) {
-          throw new Error("InvalidPassword");
+          throw new Error("CredentialsSignin");
         }
 
         return {

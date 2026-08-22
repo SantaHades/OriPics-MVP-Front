@@ -12,6 +12,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ code: "missing_fields", message: "필수 정보가 누락되었습니다." }, { status: 400 });
     }
 
+    // 최소 길이 정책 (가입·정보수정과 동일 6자)
+    if (typeof password !== "string" || password.length < 6) {
+      return NextResponse.json({ code: "short_password", message: "비밀번호는 최소 6자 이상이어야 합니다." }, { status: 400 });
+    }
+
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { token },
     });

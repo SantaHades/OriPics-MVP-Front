@@ -44,6 +44,7 @@ export default function ProfilePage() {
 
   const [name, setName] = useState(session?.user?.name || "");
   const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [image, setImage] = useState(session?.user?.image || "");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -335,7 +336,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/user/update", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, password, image }),
+        body: JSON.stringify({ name, password, currentPassword, image }),
       });
 
       const data = await res.json();
@@ -346,6 +347,7 @@ export default function ProfilePage() {
       
       setMessage({ type: "success", text: t("messages.save_success") });
       setPassword(""); // 비밀번호 필드 초기화
+      setCurrentPassword("");
     } catch (error: any) {
       setMessage({ type: "error", text: t("messages.save_error", { error: error.message }) });
     } finally {
@@ -546,6 +548,23 @@ export default function ProfilePage() {
                   />
                 </div>
               </div>
+
+              {/* 비밀번호 변경 시 현재 비밀번호 재확인 (M-4: 세션 탈취만으로 계정 탈취 방지) */}
+              {password && (
+                <div>
+                  <label className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-3 block ml-1 opacity-70">{t("current_password_label")}</label>
+                  <div className="relative group">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors" size={18} />
+                    <input
+                      type="password"
+                      placeholder={t("current_password_placeholder")}
+                      className="w-full bg-slate-100 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-700"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 결과 메시지 */}

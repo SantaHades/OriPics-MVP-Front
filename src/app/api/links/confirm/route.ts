@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits } from "@/lib/credits/consumeCredits";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
@@ -85,6 +86,17 @@ export async function POST(req: NextRequest) {
 
   if (!user_id) {
     return NextResponse.json({ detail: "jwt_missing_user_id" }, { status: 400 });
+  }
+
+  // L-1: 세션 검증 — sign JWT만으로 통과시키지 않고, 로그인 세션(웹 쿠키 또는
+  // 모바일 Bearer)의 사용자가 JWT의 user_id와 일치해야 크레딧을 차감한다.
+  // (탈취된 JWT를 다른 계정 세션에서 사용하는 것을 차단)
+  const sessionUserId = await getSessionUserId();
+  if (!sessionUserId) {
+    return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
+  }
+  if (sessionUserId !== user_id) {
+    return NextResponse.json({ detail: "user_mismatch" }, { status: 403 });
   }
 
   const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";
