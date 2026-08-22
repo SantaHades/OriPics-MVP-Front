@@ -86,8 +86,8 @@
 
 | ID | 항목 | 시점 | 의존성 | P |
 |---|---|---|---|---|
-| U-24 | 포트원(PortOne) 가입 + 사업자 KYC | 베타 직전 | 사업자등록증 (보유) | P1 |
-| U-25 | 토스페이먼츠(또는 KG이니시스) PG 직계약 | 포트원 계약 후 | 포트원 가입 | P1 |
+| ~~U-24~~ | **✅ 완료(실운영)** — PortOne 가입 + 사업자 KYC. 카드사 10개사 "등록"(7/24), 실 MID `MOI3425377`, 프로덕션 env(PORTONE_API_SECRET·WEBHOOK_SECRET·STORE_ID) 설정 확인(2026-08-23 실측). [[payment_gateway_strategy]] | 완료 | — | ✅ |
+| ~~U-25~~ | **✅ 완료(실운영)** — PG 직계약=**KG이니시스**(토스 직결 폐기). 정기결제(빌링키) 채널키 `NEXT_PUBLIC_PORTONE_CHANNEL_KEY_INICIS`(Production) 설정, 실결제 e2e 검증(7/24). | 완료 | — | ✅ |
 | U-26 | 카카오페이·토스페이 간편결제 추가 (포트원 통합) | 포트원 계약 후 | PG 계약 | P1 |
 | U-27 | CAI(Content Authenticity Initiative) 무료 멤버십 가입 | NOW | 없음 | P3 |
 | U-36 | **Sentry 프로젝트 생성 (M7 후속)** — sentry.io에서 React Native 프로젝트 생성 → DSN 발급 → `npx eas env:create --name EXPO_PUBLIC_SENTRY_DSN --value <DSN>`. 미설정이어도 앱 정상(진단만 꺼짐). 절차 전체: [mobile-beta-runbook.md](mobile-beta-runbook.md) | M7 베타 전 | 없음 | P2 |
