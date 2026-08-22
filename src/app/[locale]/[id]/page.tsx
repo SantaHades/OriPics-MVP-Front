@@ -6,7 +6,6 @@ import { ShieldCheck, Calendar, Camera as CameraIcon, Maximize2, Download, Alert
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
-import { supabase } from "@/lib/supabase";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
 import { useCredits } from "@/lib/credits/useCredits";
 
@@ -21,7 +20,8 @@ interface LinkData {
   captured_at?: string | null;
   storage_path: string;
   signed_url: string;
-  user_id?: string | null;
+  /** 소유자 여부 — 서버가 세션과 대조해 판정 (user_id 자체는 노출하지 않음, 2026-08-22) */
+  is_owner?: boolean;
   /** 뷰어 경량 표시본 (A-36). 없으면 원본 폴백 (구 링크 하위호환) */
   preview_path?: string | null;
   /** 보관 만료 (null = 보관함 활성 중 무기한) */
@@ -57,8 +57,7 @@ export default function LinkViewer() {
   const [certLoading, setCertLoading] = useState(false);
   const [certError, setCertError] = useState<string | null>(null);
 
-  const sessionUserId = (session?.user as any)?.id as string | undefined;
-  const isOwner = !!data?.user_id && !!sessionUserId && data.user_id === sessionUserId;
+  const isOwner = !!data?.is_owner;
   const isPaidTier = credits?.tier === "pro" || credits?.tier === "business";
   const canDownloadCertificate = isOwner && isPaidTier;
 
@@ -105,18 +104,13 @@ export default function LinkViewer() {
         if (!verifyLinkId(linkId)) {
           throw new Error(t("not_found_desc"));
         }
-        const { data: row, error: dbError } = await supabase
-          .from("links")
-          .select("*")
-          .eq("link_id", linkId)
-          .single();
-
-        if (dbError || !row) throw new Error(t("not_found_desc"));
-        // 만료 링크 방어 (cleanup cron 실행 전 시간차): 만료 시 미존재와 동일 처리
-        if ((row as any).expires_at && new Date((row as any).expires_at) <= new Date()) {
-          throw new Error(t("not_found_desc"));
-        }
-        setData(row as LinkData);
+        // 브라우저의 anon PostgREST 직접 조회를 서버 API로 대체 (2026-08-22 보안 조치 —
+        // anon SELECT는 전체 링크·GPS 열거를 허용했다). 만료 판정도 서버가 수행.
+        const res = await fetch(`/api/links/${encodeURIComponent(linkId)}/public`);
+        if (!res.ok) throw new Error(t("not_found_desc"));
+        const { link } = await res.json();
+        if (!link) throw new Error(t("not_found_desc"));
+        setData(link as LinkData);
       } catch (err: any) {
         setError(err.message);
       } finally {
