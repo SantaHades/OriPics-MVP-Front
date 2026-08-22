@@ -102,6 +102,12 @@ export interface VerifyResponse {
   };
   /** V4+ 메타에서 owner가 호출자와 일치하면 true — 차감 면제됨 */
   owner_exempt?: boolean;
+  /** 서버 trust report — link_id 자체 유도 시 subject.verify_url에 공개링크가 담김 */
+  trust_report?: {
+    overall_trust?: string;
+    evidence?: Array<{ type?: string; result?: string; [k: string]: unknown }>;
+    subject?: { link_id?: string; verify_url?: string };
+  };
 }
 
 export interface StampedDraft {

@@ -268,6 +268,9 @@ export async function POST(req: NextRequest) {
   //   - row 있고 타인이면 → 차감 후 정상 검증.
   // V2/V3는 timestamp uniqueness 없어 미공개 판정 불가 → 기존 흐름 유지(차감).
   let ownerExempt = false;
+  // 클라이언트가 link_id를 안 보내도 timestamp 조회로 자체 유도 — C2PA 확인 + 공개링크 표시에 사용.
+  // 단일 매칭일 때만 (2건 = timestamp 충돌 → 유도 포기).
+  let derivedLinkId: string | null = null;
   if (version >= 4 && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -291,8 +294,11 @@ export async function POST(req: NextRequest) {
           { status: 404 },
         );
       }
-      if (rows.length === 1 && rows[0].user_id === userId) {
-        ownerExempt = true;
+      if (rows.length === 1) {
+        derivedLinkId = rows[0].link_id ?? null;
+        if (rows[0].user_id === userId) {
+          ownerExempt = true;
+        }
       }
     } catch (e) {
       // 조회 실패 시 안전을 위해 차감 흐름으로 (정상 검증은 진행). owner 면책만 못 받음.
@@ -345,10 +351,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ match: false, reason: e.message });
   }
 
-  const c2paLookup =
-    typeof link_id === "string" && link_id.length > 0
-      ? await tryReadC2paForLink(link_id)
-      : { checked: false as const, reason: "no_link_id" };
+  const effectiveLinkId =
+    typeof link_id === "string" && link_id.length > 0 ? link_id : derivedLinkId;
+  const c2paLookup = effectiveLinkId
+    ? await tryReadC2paForLink(effectiveLinkId)
+    : { checked: false as const, reason: "no_link_id" };
 
   const evidence: TrustReport["evidence"] = [buildSealEvidence(seal)];
   if (c2paLookup.checked) {
@@ -359,8 +366,8 @@ export async function POST(req: NextRequest) {
     spec: TRUST_REPORT_SPEC,
     spec_version: TRUST_REPORT_VERSION,
     generated_at: new Date().toISOString(),
-    subject: typeof link_id === "string" && link_id.length > 0
-      ? { link_id, verify_url: `https://www.ori.pics/${link_id}` }
+    subject: effectiveLinkId
+      ? { link_id: effectiveLinkId, verify_url: `https://www.ori.pics/${effectiveLinkId}` }
       : {},
     evidence,
     overall_trust: deriveOverallTrust(

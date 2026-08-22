@@ -58,6 +58,8 @@ interface ApiResponse {
   session_id?: string;
   metadata?: MetaData;
   owner_exempt?: boolean;
+  /** 서버가 유도한 공개링크 (V4+, 발행된 인증만) */
+  verify_url?: string;
 }
 
 const KNOWN_ERROR_CODES = ["empty_file", "invalid_image", "image_too_small", "dimension_mismatch"];
@@ -478,6 +480,7 @@ export default function Home() {
           match: verifyRes.match,
           metadata: verifyRes.metadata,
           owner_exempt: verifyRes.owner_exempt,
+          verify_url: verifyRes.trust_report?.subject?.verify_url,
         });
         setStatus("result_verified");
         void refreshCredits();
@@ -1891,6 +1894,20 @@ export default function Home() {
                       className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
                     >
                       {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
+                      <ExternalLink size={16} />
+                    </a>
+                  </div>
+                )}
+                {resultData.verify_url && (
+                  <div className="flex justify-between py-2 border-b border-slate-100 items-center">
+                    <span className="text-slate-500">{t("verify.public_link")}</span>
+                    <a
+                      href={resultData.verify_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
+                    >
+                      {resultData.verify_url.replace(/^https?:\/\//, "")}
                       <ExternalLink size={16} />
                     </a>
                   </div>
