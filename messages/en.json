@@ -102,7 +102,7 @@
       "multi_desc": "Both selected options were processed. Each link is retained for 7 days (or for as long as you subscribe, on Pro+).",
       "publishing": "Creating link…",
       "confirming": "Processing proof…",
-      "uploading": "Sending to server…",
+      "uploading": "Processing certification…",
       "publish_error": "Link creation failed",
       "short_link": "Public link",
       "copy_link": "Copy link",
