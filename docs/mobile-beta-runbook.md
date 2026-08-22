@@ -23,7 +23,7 @@ EAS 클라우드 빌드는 이 제약 무관).
 |---|---|---|---|
 | 1 | 실기기 검증 라운드 — `cd apps/mobile && npx expo run:ios` → [DEV] 셀프테스트 ✅ → 로그인 → 갤러리 인증 → 웹 검증기 valid → 촬영 | — | ~1h |
 | 2 | Google Play Console 신원확인 | U-2 | 1~3일 (자연 대기) |
-| 3 | 앱 아이콘 (현재 Expo 기본 아이콘 — 심사 반려 사유) | U-16 | 외주 리드타임 |
+| 3 | ~~앱 아이콘~~ → **완료(2026-08-18)** — OriPics 브랜드 마크(iOS 1024 무알파·Android adaptive 3종·splash·favicon), app.json 반영 확인(2026-08-23) | ~~U-16~~ 완료 | — |
 | 4 | attest 운영 설정 (Apple env 2 + Play↔GCP 서비스 계정) | U-34 | ~1h |
 | 5 | ~~App Store Connect IAP 설정(SBP·구독상품·Notifications·APPLE_IAP env)~~ → **취소(§8-A 결정 B, 2026-08-23: 인앱결제 없음·웹 구독만)**. 단 App Store Connect **앱 생성/제출**은 IAP와 무관하게 심사용으로 여전히 필요 | ~~U-35~~ 취소 | — |
 | 6 | Sentry 프로젝트 생성 → DSN 발급 | U-36 | ~10분 |
