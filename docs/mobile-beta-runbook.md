@@ -83,6 +83,23 @@ cd apps/mobile && ./scripts/capture-screenshots.sh    # 재캡처만 할 땐 --n
 - 촬영(P) 화면은 시뮬레이터에 카메라가 없어 폴백이 찍힘 → **실기기에서 1장 재캡처** 필요
   (`xcrun devicectl` 또는 기기에서 직접 캡처 후 교체).
 
+## 3.6 안드로이드 실기기 로컬 설치 (2026-08-21 확립 — Galaxy A16 SM-A165N 실측)
+
+```bash
+cd apps/mobile
+npx expo prebuild -p android --no-install   # android/ 없을 때만 (재생성 시 수동 수정 유실 주의)
+cd android
+SENTRY_DISABLE_AUTO_UPLOAD=true JAVA_HOME=$(/usr/libexec/java_home -v 17) ./gradlew assembleRelease
+adb install -r app/build/outputs/apk/release/app-release.apk
+adb shell monkey -p com.santahades.oripics -c android.intent.category.LAUNCHER 1
+```
+
+- 폰: 개발자 옵션 → USB 디버깅 ON + 케이블 연결 (`adb devices`로 확인)
+- Sentry env 없이는 iOS와 동일하게 `SENTRY_DISABLE_AUTO_UPLOAD=true` 필수 (없으면 sentry-cli에서 빌드 실패)
+- JDK 17 필요 (`/usr/libexec/java_home -v 17`), 첫 빌드 ~30분(Intel)·이후 2~5분
+- 크래시 로그: `adb logcat -d -s AndroidRuntime:E ReactNativeJS:E`
+- Play 배포 전이므로 attest는 Standard 폴백 — Verified는 U-34+스토어 배포 후
+
 ## 4. 이슈 대응
 
 ### 알려진 빌드 이슈 (2026-08-18 실측)
