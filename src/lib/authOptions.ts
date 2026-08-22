@@ -7,6 +7,7 @@ import KakaoProvider from "next-auth/providers/kakao";
 import NaverProvider from "next-auth/providers/naver";
 import * as bcrypt from "bcryptjs";
 import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rateLimit";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -46,9 +47,21 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("MissingCredentials");
+        }
+
+        // 레이트리밋 (2026-08-22 보안 점검) — IP+이메일 조합. 초과 시 UI는
+        // 일반 로그인 실패로 표시되지만 시도 자체가 차단된다.
+        const xff = (req?.headers?.["x-forwarded-for"] as string | undefined) ?? "";
+        const ip = xff.split(",")[0].trim() || "unknown";
+        const rl = await checkRateLimit(
+          RATE_LIMITS.login,
+          `${ip}|${credentials.email.toLowerCase()}`,
+        );
+        if (!rl.allowed) {
+          throw new Error("RateLimited");
         }
 
         const user = await prisma.user.findUnique({

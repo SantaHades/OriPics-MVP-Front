@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { issueMobileTokens } from "@/lib/auth/mobileTokens";
+import { checkRateLimit, clientIp, RATE_LIMITS } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,16 @@ export async function POST(req: NextRequest) {
   const password = typeof body.password === "string" ? body.password : "";
   if (!email || !password) {
     return NextResponse.json({ detail: "missing_credentials" }, { status: 400 });
+  }
+
+  // 레이트리밋 (2026-08-22 보안 점검) — IP+이메일 조합: 한 계정 무차별 대입과
+  // 한 IP의 계정 스프레이를 모두 억제.
+  const rl = await checkRateLimit(RATE_LIMITS.login, `${clientIp(req)}|${email.toLowerCase()}`);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { detail: "rate_limited", retryAfter: rl.retryAfterSec },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
   }
 
   const user = await prisma.user.findUnique({ where: { email } });

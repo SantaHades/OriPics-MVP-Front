@@ -136,3 +136,15 @@ model Subscription {
   @@index([gatewayCustomerId])
   @@index([gatewaySubscriptionId])
 }
+
+/// 레이트리밋 fixed-window 카운터 (2026-08-22 보안 점검).
+/// 서버리스 in-memory가 무효라 DB 원자 UPSERT로 집계. cleanup cron이 오래된 행 정리.
+model RateLimit {
+  key         String
+  windowStart DateTime @map("window_start")
+  count       Int      @default(0)
+
+  @@id([key, windowStart])
+  @@index([windowStart])
+  @@map("rate_limits")
+}

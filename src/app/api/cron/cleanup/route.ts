@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { prisma } from "@/lib/prisma";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -133,5 +134,15 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, errors });
+  // 레이트리밋 카운터 정리 (2026-08-22) — 윈도가 지난 행은 불필요. 최장 윈도(1h)+여유 24h 기준.
+  let rateLimitsPurged = 0;
+  try {
+    rateLimitsPurged = await prisma.$executeRawUnsafe(
+      `DELETE FROM public.rate_limits WHERE window_start < now() - interval '24 hours'`,
+    );
+  } catch (e: any) {
+    errors.push(`rate_limits purge: ${e?.message || e}`);
+  }
+
+  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, rateLimitsPurged, errors });
 }

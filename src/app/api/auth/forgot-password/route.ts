@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import { checkRateLimit, clientIp, tooManyRequests, RATE_LIMITS } from "@/lib/security/rateLimit";
 
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
+    // 레이트리밋 (2026-08-22 보안 점검)
+    const rl = await checkRateLimit(RATE_LIMITS.passwordReset, clientIp(req));
+    if (!rl.allowed) return tooManyRequests(rl, "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
     const body = await req.json();
     const rawEmail = body.email;
     const email = rawEmail ? rawEmail.trim().toLowerCase() : "";
