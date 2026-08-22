@@ -35,13 +35,13 @@
       "watermark_help_title": "What is the badge?",
       "watermark_help_body": "When enabled, the OriPics logo is overlaid on the top-left of your image as an authentication badge — anyone can recognize at a glance that it's an OriPics-proofed image.",
       "upload_menu": {
-        "title": "Upload Image",
+        "title": "Select Image",
         "library": "Photo Library",
         "camera": "Take Photo",
         "file": "Select File",
         "paste": "Paste from Clipboard",
         "clipboard": "Clipboard",
-        "paste_subtext": "Upload copied image instantly",
+        "paste_subtext": "Load copied image instantly",
         "no_image": "No image found in clipboard.",
         "paste_error": "Clipboard access denied or browser not supported.",
         "cancel": "Cancel"
@@ -91,18 +91,18 @@
       "share_unsupported": "Sharing is not supported by this browser. Link copied instead.",
       "link_hint": "Currently stored for 7 days. With Pro's Storage Box (5GB included), links are kept for as long as you subscribe.",
       "warning": "⚠️ Sharing Warning — Please read to protect proof data",
-      "warning_desc": "Directly uploading images to SNS (KakaoTalk, Instagram, X, etc.) may damage proof data due to forced compression.",
+      "warning_desc": "Posting images directly to SNS (KakaoTalk, Instagram, X, etc.) may damage proof data due to forced compression.",
       "guide_1_title": "1st (Recommended)",
       "guide_1_desc": "Create link and share URL",
       "guide_2_title": "2nd (Safe)",
       "guide_2_desc": "Compress to ZIP and attach file",
       "guide_3_title": "3rd (Safe)",
-      "guide_3_desc": "Upload to Drive and share download link",
+      "guide_3_desc": "Save to Drive and share download link",
       "multi_title": "Both sizes proven",
       "multi_desc": "Both selected options were processed. Each link is retained for 7 days (or for as long as you subscribe, on Pro+).",
       "publishing": "Creating link…",
       "confirming": "Processing proof…",
-      "uploading": "Uploading image…",
+      "uploading": "Sending to server…",
       "publish_error": "Link creation failed",
       "short_link": "Public link",
       "copy_link": "Copy link",
@@ -123,7 +123,7 @@
       "credits": "proofs",
       "total_label": "Total",
       "link_extra_note": "Creating a public link after a proof uses an additional charge from your monthly allowance.",
-      "preview_alt": "Uploaded image preview",
+      "preview_alt": "Selected image preview",
       "confirm": "Start proof",
       "cancel": "Cancel"
     },
@@ -143,12 +143,12 @@
     },
     "how_it_works": {
       "title": "How It Works",
-      "step1_title": "Upload Image",
-      "step1_desc": "Upload an original image via drag & drop or file selection. Camera capture is supported in the OriPics app.",
+      "step1_title": "Select Image",
+      "step1_desc": "Load an original image via drag & drop or file selection. Camera capture is supported in the OriPics app.",
       "step2_title": "Original Proof Processing",
       "step2_desc": "Original proof processing is performed. Nothing is stored on the server.",
       "step3_title": "Return & Verify",
-      "step3_desc": "Download the certified image. Uploading this image again instantly verifies its authenticity. Even a single pixel change is detected."
+      "step3_desc": "Download the certified image. Selecting this image again instantly verifies its authenticity. Even a single pixel change is detected."
     },
     "why": {
       "eyebrow": "Open standard",
@@ -288,8 +288,8 @@
       "link_creation_failed": "Failed to create link.",
       "verify_not_published": "This image was proofed with OriPics but verification is unavailable until the owner creates a public link.",
       "clipboard_success": "Link copied to clipboard!",
-      "empty_file": "The file is empty. Please upload a valid image file.",
-      "invalid_image": "Cannot read the image file. Please upload an uncorrupted PNG, JPG, or WebP file.",
+      "empty_file": "The file is empty. Please select a valid image file.",
+      "invalid_image": "Cannot read the image file. Please select an uncorrupted PNG, JPG, or WebP file.",
       "image_too_small": "The image is too small. Please use an image of at least 300×300 pixels."
     },
     "faq": {
@@ -297,11 +297,11 @@
       "items": [
         {
           "q": "What image formats are supported?",
-          "a": "We support most common image formats including PNG, JPG (JPEG), WebP, BMP, TIFF, and GIF. Uploaded images are automatically converted to PNG for certification processing. Maximum file size is 50MB."
+          "a": "We support most common image formats including PNG, JPG (JPEG), WebP, BMP, TIFF, and GIF. Selected images are automatically converted to PNG for certification processing. Maximum file size is 50MB."
         },
         {
           "q": "How does the original certification work?",
-          "a": "OriPics uses steganography technology to invisibly embed certification data into the pixel data of your image. When a certified image is uploaded again, the embedded data is extracted to instantly verify its authenticity. Even a single pixel modification is detected."
+          "a": "OriPics uses steganography technology to invisibly embed certification data into the pixel data of your image. When a certified image is selected again, the embedded data is extracted to instantly verify its authenticity. Even a single pixel modification is detected."
         },
         {
           "q": "Can I share a certified image with others?",
@@ -316,12 +316,12 @@
           "a": "No. OriPics converts to lossless PNG format for certification, so there is absolutely no quality degradation. Only imperceptible data is embedded — indistinguishable from the original to the human eye."
         },
         {
-          "q": "What happens when I upload an animated image (GIF, WebP, APNG, etc.)?",
+          "q": "What happens when I select an animated image (GIF, WebP, APNG, etc.)?",
           "a": "Animated images such as GIF, animated WebP, and APNG contain multiple frames, but OriPics certifies only the first frame. The certified result is saved as a static PNG image. Animation is not preserved."
         },
         {
           "q": "Is GPS location included when I take a photo?",
-          "a": "Yes. When you tap 'Take Photo' on mobile and allow location access, your GPS coordinates at the moment of capture are included as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File upload and clipboard methods do not include GPS to prevent tampering."
+          "a": "Yes. When you shoot in the OriPics mobile app with location access allowed, the GPS coordinates at the moment of capture are included as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File selection and clipboard methods do not include GPS to prevent tampering."
         },
         {
           "q": "GPS coordinates aren't saved after taking a photo on iPhone Safari — which settings should I check?",
@@ -412,7 +412,7 @@
     "title": "Profile Management",
     "subtitle": "Keep your profile picture and account info up to date.",
     "profile_image": "Profile Picture",
-    "profile_image_desc": "Google profile or uploaded image will be displayed.\nJPG, PNG files under 2MB recommended.",
+    "profile_image_desc": "Google profile or registered image will be displayed.\nJPG, PNG files under 2MB recommended.",
     "change_photo": "Change Photo",
     "email_label": "Email Address",
     "email_hint": "* Email cannot be changed.",
