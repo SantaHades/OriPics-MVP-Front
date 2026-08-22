@@ -60,10 +60,8 @@ function certificateStoragePath(linkId: string): string {
  *   - Pro/Business 티어 한정
  *   - 본인 소유 link만
  */
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const session = await getServerSession(authOptions);
   const userId = (session?.user as any)?.id;
   if (!userId) {

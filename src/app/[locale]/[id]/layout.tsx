@@ -1,11 +1,18 @@
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
 
-export async function generateMetadata({
-  params: { locale, id },
-}: {
-  params: { locale: string; id: string };
-}): Promise<Metadata> {
+export async function generateMetadata(
+  props: {
+    params: Promise<{ locale: string; id: string }>;
+  }
+): Promise<Metadata> {
+  const params = await props.params;
+
+  const {
+    locale,
+    id
+  } = params;
+
   const t = await getTranslations({ locale, namespace: 'LinkViewer' });
   const url = `https://www.ori.pics/${id}`;
   const title = t('og_title');

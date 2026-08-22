@@ -8,7 +8,7 @@ import { authOptions } from "@/lib/authOptions";
 import { verifyMobileToken } from "./mobileTokens";
 
 export async function getSessionUserId(): Promise<string | null> {
-  const auth = headers().get("authorization");
+  const auth = (await headers()).get("authorization");
   if (auth && auth.toLowerCase().startsWith("bearer ")) {
     const payload = verifyMobileToken(auth.slice(7).trim(), "access");
     return payload?.sub ?? null;

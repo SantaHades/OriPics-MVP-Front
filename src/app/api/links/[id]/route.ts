@@ -22,10 +22,8 @@ export const runtime = "nodejs";
  *
  * 환불: 없음. 사용자 자의로 공개 취소한 것이므로.
  */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return NextResponse.json({ detail: "supabase_not_configured" }, { status: 500 });
   }

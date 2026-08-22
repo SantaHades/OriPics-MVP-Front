@@ -3,9 +3,15 @@ import { getMessages, getTranslations } from 'next-intl/server';
 import '@/app/globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
 
-export async function generateMetadata({params: {locale}}: {params: {locale: string}}) {
+export async function generateMetadata(props: {params: Promise<{locale: string}>}) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
   const t = await getTranslations({locale, namespace: 'Common'});
- 
+
   return {
     metadataBase: new URL('https://www.ori.pics'),
     title: t('meta_title'),
@@ -34,13 +40,22 @@ export async function generateMetadata({params: {locale}}: {params: {locale: str
   };
 }
 
-export default async function RootLayout({
-  children,
-  params: { locale }
-}: {
-  children: React.ReactNode;
-  params: { locale: string };
-}) {
+export default async function RootLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ locale: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    locale
+  } = params;
+
+  const {
+    children
+  } = props;
+
   const messages = await getMessages();
 
   return (

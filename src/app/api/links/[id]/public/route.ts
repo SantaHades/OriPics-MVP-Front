@@ -18,7 +18,8 @@ export const dynamic = "force-dynamic";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const linkId = params.id;
   if (!verifyLinkId(linkId)) {
     return NextResponse.json({ detail: "not_found" }, { status: 404 });

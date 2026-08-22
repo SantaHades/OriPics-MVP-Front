@@ -9,10 +9,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const BUCKET_NAME = "oripics-proofs";
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { id: string } },
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const linkId = params.id;
   if (!linkId || !verifyLinkId(linkId)) {
     return NextResponse.json({ detail: "invalid_link_id" }, { status: 400 });
