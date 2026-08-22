@@ -62,7 +62,8 @@ Apple CONSUMPTION_REQUEST(환불 판정 전 소비량 신고로 기각 유도).
 - [x] 결제 화면 사전 고지: 체크아웃에 청약철회 제한 고지 블록 + 약관/환불정책 링크 (`bc97751`)
 - [x] 해지 UI 1단계: 프로필 구독 관리 섹션 — 일반해지 예약/재개 + 환불 이메일 접수
   + 환불 정책 링크 (`bdbba9e`, 2026-07-24)
-- [ ] **환불 자동화 2단계 — follow-ups A-34로 이관 (2026-07-24 대표 승인, 일괄 구현)**:
+- [x] **환불 자동화 2단계 — A-34 완료 (2026-08-22)**. 사용횟수 단위 = **사진인증당**(proof TX 1건=1회, 대표 확정 2026-08-22). 구현: `lib/payment/refund.ts` 산식+테스트, `refund_preview`/`refund_cancel` API(PortOne 부분취소·previous_credits 원복), `Transaction.Cancelled` webhook 회수, `scripts/admin-refund-quote.ts`, 프로필 원클릭 UI. dunning은 A-42로 분리. (이하 원래 계획 기록 보존)
+- [ ] ~~환불 자동화 2단계 — follow-ups A-34로 이관 (2026-07-24 대표 승인, 일괄 구현)~~:
   ①중도해지 자동 환불(사용량 조회→제11조 산식 자동 계산→PortOne cancelPayment 부분취소
   →구독 종료·다운그레이드) ②`Transaction.Cancelled` webhook(콘솔 환불→구독 자동 회수)
   ③CS 수동 처리용 환불액 계산 스크립트+내부 절차 문서 ④dunning 검토.

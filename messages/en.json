@@ -451,7 +451,18 @@
       "refund_request_button": "Request a refund by email",
       "refund_mail_subject": "[OriPics] Refund request",
       "refund_mail_body": "I would like to request a refund.\n\n- Account email: {email}\n- Type: (7-day withdrawal / mid-term cancellation)\n- Reason (optional): \n\nRefunds are computed per Terms §7 and processed within 3 business days.",
-      "error_generic": "Something went wrong. Please try again shortly."
+      "error_generic": "Something went wrong. Please try again shortly.",
+      "refund_auto_button": "Request mid-term refund (instant quote)",
+      "refund_modal_title": "Mid-term cancellation refund",
+      "refund_used_label": "Photo proofs used",
+      "refund_used_value": "{count} (−₩{deduction})",
+      "refund_prorated_label": "Elapsed-period deduction",
+      "refund_penalty_label": "10% remainder deduction",
+      "refund_amount_label": "Estimated refund",
+      "refund_modal_desc": "Confirming ends your subscription immediately and partially cancels the payment for the amount above. Your plan reverts to Free and credits are restored to the pre-subscription balance.",
+      "refund_confirm_button": "Refund & cancel now",
+      "refund_not_available": "The calculated refund is ₩0, so a mid-term refund is not available. Please use the regular cancellation (keep access until period end).",
+      "refund_done": "Refund processed — ₩{amount} was cancelled to your payment method (reflected within 3 business days). Your subscription has ended immediately."
     },
     "delete_account": {
       "title": "Delete Account",

@@ -89,6 +89,68 @@ export default function ProfilePage() {
       setSubBusy(false);
     }
   };
+
+  // 중도해지 자동 환불 (A-34) — 견적 조회 → 확인 모달 → 부분취소 실행
+  const [refundQuote, setRefundQuote] = useState<{
+    refundAmount: number;
+    basis: string;
+    usedProofs: number;
+    usageDeduction: number;
+    proratedElapsed: number;
+    penalty: number;
+    refundable: boolean;
+  } | null>(null);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundDone, setRefundDone] = useState<number | null>(null);
+
+  const handleRefundPreview = async () => {
+    setSubBusy(true);
+    setSubError(null);
+    try {
+      const res = await fetch("/api/billing/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "refund_preview" }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const d = await res.json();
+      setRefundQuote(d.quote);
+      setShowRefundModal(true);
+    } catch {
+      setSubError(t("subscription.error_generic"));
+    } finally {
+      setSubBusy(false);
+    }
+  };
+
+  const handleRefundConfirm = async () => {
+    setSubBusy(true);
+    setSubError(null);
+    try {
+      const res = await fetch("/api/billing/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "refund_cancel" }),
+      });
+      const d = await res.json().catch(() => null);
+      if (!res.ok) {
+        setShowRefundModal(false);
+        setSubError(
+          res.status === 409 && d?.detail === "refund_not_available"
+            ? t("subscription.refund_not_available")
+            : t("subscription.error_generic"),
+        );
+        return;
+      }
+      setRefundDone(d?.refunded ?? 0);
+      setShowRefundModal(false);
+      setSubscription(null); // 즉시 종료 — 섹션 갱신
+    } catch {
+      setSubError(t("subscription.error_generic"));
+    } finally {
+      setSubBusy(false);
+    }
+  };
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -704,7 +766,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {/* 환불 신청 (7일 청약철회 · 중도해지) — 1차: 이메일 접수 */}
+              {/* 환불 신청 (7일 청약철회 · 중도해지) — 자동 산정·즉시 처리 (A-34) + 이메일 폴백 */}
               <div className="mt-5 pt-4 border-t border-slate-100">
                 <p className="text-xs font-semibold text-slate-600 mb-1">
                   {t("subscription.refund_request_label")}
@@ -715,12 +777,82 @@ export default function ProfilePage() {
                     {t("subscription.refund_policy_link")}
                   </Link>
                 </p>
+                <button
+                  onClick={handleRefundPreview}
+                  disabled={subBusy}
+                  className="inline-block mr-3 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                >
+                  {subBusy ? "…" : t("subscription.refund_auto_button")}
+                </button>
                 <a
                   href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("subscription.refund_mail_subject"))}&body=${encodeURIComponent(t("subscription.refund_mail_body", { email: session?.user?.email ?? "" }))}`}
                   className="inline-block px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors"
                 >
                   {t("subscription.refund_request_button")}
                 </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 중도해지 환불 완료 안내 */}
+        {refundDone !== null && (
+          <p className="mt-6 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+            {t("subscription.refund_done", { amount: refundDone.toLocaleString() })}
+          </p>
+        )}
+
+        {/* 중도해지 환불 확인 모달 (A-34) — 제11조 산식 분해 표시 */}
+        {showRefundModal && refundQuote && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {t("subscription.refund_modal_title")}
+              </h3>
+              <div className="text-sm text-slate-700 mb-3">
+                <div className="flex justify-between py-1.5 border-b border-slate-100">
+                  <span className="text-slate-500">{t("subscription.refund_used_label")}</span>
+                  <span>{t("subscription.refund_used_value", { count: refundQuote.usedProofs, deduction: refundQuote.usageDeduction.toLocaleString() })}</span>
+                </div>
+                {refundQuote.basis === "after7d" && (
+                  <>
+                    <div className="flex justify-between py-1.5 border-b border-slate-100">
+                      <span className="text-slate-500">{t("subscription.refund_prorated_label")}</span>
+                      <span>₩{refundQuote.proratedElapsed.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between py-1.5 border-b border-slate-100">
+                      <span className="text-slate-500">{t("subscription.refund_penalty_label")}</span>
+                      <span>₩{refundQuote.penalty.toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between py-2 font-bold">
+                  <span>{t("subscription.refund_amount_label")}</span>
+                  <span className="text-blue-700">₩{refundQuote.refundAmount.toLocaleString()}</span>
+                </div>
+              </div>
+              {refundQuote.refundable ? (
+                <p className="text-xs text-slate-500 mb-5">{t("subscription.refund_modal_desc")}</p>
+              ) : (
+                <p className="text-xs text-red-600 mb-5">{t("subscription.refund_not_available")}</p>
+              )}
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowRefundModal(false)}
+                  disabled={subBusy}
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  {t("subscription.cancel_modal_keep")}
+                </button>
+                {refundQuote.refundable && (
+                  <button
+                    onClick={handleRefundConfirm}
+                    disabled={subBusy}
+                    className="px-4 py-2 rounded-xl border border-red-300 text-red-600 text-sm font-semibold hover:bg-red-50 disabled:opacity-50 transition-colors"
+                  >
+                    {subBusy ? "…" : t("subscription.refund_confirm_button")}
+                  </button>
+                )}
               </div>
             </div>
           </div>

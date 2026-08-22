@@ -7,6 +7,7 @@ import {
   type PlanId,
 } from "@/lib/payment/subscriptionGrant";
 import * as PortOne from "@portone/server-sdk";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,67 @@ export async function POST(req: NextRequest) {
   // 시그니처 검증은 raw body가 필요
   const rawBody = await req.text();
 
+  /** 콘솔/외부 취소 → 해당 결제로 활성화된 구독 회수 (멱등) */
+  async function handleCancelled(paymentId: string, eventType: string) {
+    // 해당 결제의 grant TX로 사용자 식별
+    const grant = await prisma.creditTransaction.findFirst({
+      where: { action: "subscription_grant", metadata: { path: ["paymentId"], equals: paymentId } },
+      select: { userId: true, metadata: true },
+    });
+    if (!grant) {
+      // 우리가 부여한 적 없는 결제(테스트 등) — ack
+      return NextResponse.json({ ok: true, ignored: "grant_not_found" });
+    }
+    const userId = grant.userId;
+
+    // 자체 refund_cancel 경로가 이미 처리한 취소(우리가 호출한 부분취소의 webhook 반향) — 스킵
+    const selfProcessed = await prisma.creditTransaction.findFirst({
+      where: { userId, action: "refund_cancel", metadata: { path: ["paymentId"], equals: paymentId } },
+      select: { id: true },
+    });
+    if (selfProcessed) {
+      return NextResponse.json({ ok: true, alreadyProcessed: true });
+    }
+
+    // 외부(콘솔/차지백) 취소 — 구독 회수 + 다운그레이드 + 크레딧 previous_credits 원복 (멱등)
+    const sub = await prisma.subscription.findUnique({ where: { userId } });
+    if (!sub || sub.status !== "active" || sub.gatewaySubscriptionId !== paymentId) {
+      // 이미 종료됐거나 다른 기간의 결제 취소 — 상태 변경 없이 감사 로그만
+      console.warn("[portone/webhook] cancelled for non-current subscription", { paymentId, eventType });
+      return NextResponse.json({ ok: true, ignored: "not_current_period" });
+    }
+    const meta = (grant.metadata ?? {}) as Record<string, unknown>;
+    const previousCredits = typeof meta.previous_credits === "number" ? meta.previous_credits : 0;
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      await tx.subscription.update({
+        where: { userId },
+        data: { status: "canceled", cancelAtPeriodEnd: true, canceledAt: now, currentPeriodEnd: now },
+      });
+      const cur = await tx.user.findUnique({ where: { id: userId }, select: { credits: true } });
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: { tier: "free", credits: previousCredits },
+        select: { credits: true },
+      });
+      await tx.creditTransaction.create({
+        data: {
+          userId,
+          delta: updated.credits - (cur?.credits ?? 0),
+          action: "refund_cancel",
+          balanceAfter: updated.credits,
+          metadata: { paymentId, source: "webhook", event_type: eventType, restored_credits: previousCredits },
+        },
+      });
+      await tx.$executeRaw`
+        UPDATE public.links
+        SET expires_at = now() + interval '37 days'
+        WHERE user_id = ${userId} AND expires_at IS NULL`;
+    });
+    console.warn("[portone/webhook] external cancellation processed — subscription revoked", { paymentId, userId, eventType });
+    return NextResponse.json({ ok: true, revoked: true });
+  }
+
   let event: Awaited<ReturnType<typeof Webhook.verify>>;
   try {
     event = await Webhook.verify(PORTONE_WEBHOOK_SECRET, rawBody, {
@@ -55,7 +117,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "invalid_signature" }, { status: 401 });
   }
 
-  // 결제 승인 이벤트만 처리. 나머지(취소·실패·예약 등)는 ack만.
+  // 취소 이벤트 (A-34 ②): 콘솔/외부 환불 시 구독 자동 회수.
+  // 자체 refund_cancel 경로로 이미 처리된 결제는 멱등 스킵.
+  if ("type" in event && (event.type === "Transaction.Cancelled" || event.type === "Transaction.PartialCancelled")) {
+    const cancelledPaymentId = (event as any).data?.paymentId;
+    if (!cancelledPaymentId) return NextResponse.json({ ok: true, ignored: true });
+    return handleCancelled(cancelledPaymentId, event.type);
+  }
+
+  // 결제 승인 이벤트만 처리. 나머지(실패·예약 등)는 ack만.
   if (!("type" in event) || event.type !== "Transaction.Paid") {
     return NextResponse.json({ ok: true, ignored: true });
   }

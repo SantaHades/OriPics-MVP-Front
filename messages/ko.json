@@ -451,7 +451,18 @@
       "refund_request_button": "이메일로 환불 신청",
       "refund_mail_subject": "[OriPics] 환불 신청",
       "refund_mail_body": "아래 내용으로 환불을 신청합니다.\n\n- 가입 이메일: {email}\n- 신청 유형: (7일 내 청약철회 / 중도해지 중 선택)\n- 사유(선택): \n\n환불액은 이용약관 제11조 산정 기준에 따라 3영업일 이내 처리됩니다.",
-      "error_generic": "처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+      "error_generic": "처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      "refund_auto_button": "중도해지 환불 신청 (즉시 산정)",
+      "refund_modal_title": "중도해지 환불 안내",
+      "refund_used_label": "사용한 사진 인증",
+      "refund_used_value": "{count}건 (−₩{deduction})",
+      "refund_prorated_label": "경과 기간 일할 공제",
+      "refund_penalty_label": "잔여분 10% 공제",
+      "refund_amount_label": "예상 환불액",
+      "refund_modal_desc": "확인을 누르면 구독이 즉시 종료되고 위 금액이 결제 수단으로 부분 취소됩니다. Free 플랜으로 전환되며 크레딧은 구독 전 잔액으로 되돌아갑니다.",
+      "refund_confirm_button": "환불받고 즉시 해지",
+      "refund_not_available": "산정 환불액이 0원이라 중도해지 환불이 불가합니다. 기간말까지 이용하는 일반해지를 이용해 주세요.",
+      "refund_done": "환불이 처리되었습니다 — ₩{amount}가 결제 수단으로 취소되었습니다 (영업일 기준 3일 내 반영). 구독은 즉시 종료되었습니다."
     },
     "delete_account": {
       "title": "회원 탈퇴",
