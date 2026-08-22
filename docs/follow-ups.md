@@ -123,7 +123,7 @@
 |---|---|---|---|
 | A-6 | J-7 결제 webhook 처리 + 구독 lifecycle (subscription_grant 충전 포함) | A-1 완료 후 | P0 |
 | A-8 | ~~J-9 증명서 PDF 발급~~ → 1차 구현 완료 (2026-05-13). [lib/certificate/render.tsx](../src/lib/certificate/render.tsx) + [GET /api/links/[id]/certificate](../src/app/api/links/[id]/certificate/route.ts). 트레이드오프는 A-23·A-24·A-25 참조 | DONE | — |
-| A-20 | **매월 크레딧 자동 갱신** — `creditsRenewAt` 도래 시 Free 10 / Pro 1000 / Business 10000 충전(`monthly_renewal`). Vercel Cron(daily) 또는 NextAuth session callback에서 lazy refresh. **갭: 미구현 시 1개월 후 모든 사용자가 0크레딧으로 멈춤** | 베타 시작 전 | P1 |
+| A-20 | ~~매월 크레딧 자동 갱신~~ → **완료 (구현 `8722e11`, 2026-08-22 검증)** — `renewCredits.ts`(멱등·이월 불가 SET·기존 갱신일 기준 +1month 드리프트 방지) + Vercel Cron daily 00:30(`/api/cron/renew-credits`, CRON_SECRET 인증 — 프로덕션 401 확인) + `/api/credits/me` lazy refresh 이중 안전망. 정액 = **Free 20**/Pro 1000/Business 10000 (`PLAN_GRANTS` — 구 기재 "Free 10"은 오기). 테스트 8건 통과 | 완료 | P1 |
 | A-21 | 어드민 크레딧 조정 UI/API — CS 대응(환불·보너스). 권한 가드 + `manual_adjust` 트랜잭션 기록 | 베타 운영 중 | P2 |
 | A-22 | **익명 메시지 전송 기능 구현 — say2you와 연계 검토** — 메타 V4의 link_id로 검증자가 원본 등록자에게 익명 메시지 송수신. 등록자 통제 하에 답신 시점에만 이메일 노출. 이메일을 메타에 직박하는 대안의 안전 우회 경로 (개보법·GDPR·스팸 risk 회피) | 베타 후 | P3 |
 | A-23 | **증명서 PDF — 한글 폰트 번들링** — 현재 Google gstatic Noto Sans KR CDN URL 하드코딩([render.tsx](../src/lib/certificate/render.tsx)). URL이 깨지면 한글이 □ 박스로 렌더됨. 대안: postinstall에서 폰트 다운로드 → `public/fonts/`(gitignored) → fs.readFileSync로 로드. 또는 jsdelivr npm CDN(Pretendard) 사용 | 베타 시작 전 또는 폰트 깨짐 감지 시 | P1 |
