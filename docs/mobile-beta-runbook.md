@@ -25,7 +25,7 @@ EAS 클라우드 빌드는 이 제약 무관).
 | 2 | Google Play Console 신원확인 | U-2 | 1~3일 (자연 대기) |
 | 3 | 앱 아이콘 (현재 Expo 기본 아이콘 — 심사 반려 사유) | U-16 | 외주 리드타임 |
 | 4 | attest 운영 설정 (Apple env 2 + Play↔GCP 서비스 계정) | U-34 | ~1h |
-| 5 | App Store Connect: SBP 가입 + 앱 생성 + 구독 상품 2개 + Notifications URL + env | U-35 | ~1h + 상품 심사 |
+| 5 | ~~App Store Connect IAP 설정(SBP·구독상품·Notifications·APPLE_IAP env)~~ → **취소(§8-A 결정 B, 2026-08-23: 인앱결제 없음·웹 구독만)**. 단 App Store Connect **앱 생성/제출**은 IAP와 무관하게 심사용으로 여전히 필요 | ~~U-35~~ 취소 | — |
 | 6 | Sentry 프로젝트 생성 → DSN 발급 | U-36 | ~10분 |
 
 ## 1. EAS 초기 설정 (1회)
@@ -64,7 +64,7 @@ npx eas submit --platform android --latest   # track: internal (eas.json)
 2. 갤러리 인증(F) → 공개 URL → **웹 검증기에서 valid**
 3. 촬영(P): 줌 프리셋·핀치, GPS ON/OFF 각 1회 → 발급 → 뷰어에서 GPS 표시 확인
 4. (U-34 후) Pro 계정으로 촬영 → **Verified 표기** + c2patool에서 `c2pa.created`+digitalCapture 확인
-5. (U-35 후) Sandbox 계정으로 IAP 구매 → tier 전환 → 복원 → 환불 테스트(웹훅 다운그레이드)
+5. ~~(U-35 후) Sandbox 계정 IAP 구매·복원·환불 테스트~~ → **불필요(§8-A 결정 B: 인앱결제 없음).** 대신 **웹에서 Pro 구독 후 iOS 앱 로그인 → Pro 상태·Verified 기능 동작 확인**(멀티플랫폼 클라이언트 검증)
 6. 인앱 검증: 인증된 사진 → 판독 → 서버 검증 → 신뢰도 표시 / 원본 아닌 사진 → 불일치
 7. 앱 재기동 → 세션 유지 확인 / 7일 후 토큰 자동 갱신 확인
 8. Sentry 대시보드에 크래시 0 확인
