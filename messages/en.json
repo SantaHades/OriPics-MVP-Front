@@ -245,17 +245,25 @@
       },
       "guide": {
         "title": "Credit deduction rules",
-        "verify_query": "Verification query — checking authenticity of someone else's OriPics image (your own images are exempt)",
-        "link_create": "Public link creation (flat, size-independent)",
-        "image_proof": "Image proof — File (F) or Clipboard (C) path (Standard)",
-        "verified_proof": "Photo proof — Mobile camera (P) path (Verified)",
-        "certificate_pdf": "Certificate PDF — 5 free per month on Pro/Business, deducted afterwards (re-downloads free; only re-issuance is charged)",
+        "row_local": "Local detection",
+        "row_verify": "Server verification",
+        "row_standard": "Gallery proof (Standard)",
+        "row_verified": "Camera proof (Verified · Pro)",
+        "row_link": "Public link",
+        "row_pdf": "Certificate PDF",
+        "cost_free": "Free",
+        "cost_verify": "1 × size",
+        "cost_standard": "3 × size",
+        "cost_verified": "4 × size",
+        "cost_link": "2",
+        "cost_pdf": "10",
+        "owner_note": "Verifying your own certified photos is free of charge.",
+        "pdf_note": "Certificate PDF is Pro/Business only — 5 free per month, then 10 credits (re-downloads free).",
         "mult_title": "Size multiplier",
         "mult1": "Longest side up to 1,800px",
         "mult2": "Longest side over 1,800px",
         "mult3": "Over 100M pixels",
-        "mult_note": "(Public links & PDFs are not multiplied)",
-        "free_note": "Stamp detection on uploaded images is always free."
+        "mult_note": "(Public links & PDFs are not multiplied)"
       }
     },
     "verify_confirm": {

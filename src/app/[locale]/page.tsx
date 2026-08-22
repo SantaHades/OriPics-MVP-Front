@@ -2105,23 +2105,36 @@ export default function Home() {
             <p className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700 mb-3">
               {t("pricing.guide.title")}
             </p>
-            <ul className="text-sm text-slate-700 space-y-1.5">
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−1</span> <span>{t("pricing.guide.verify_query")}</span></li>
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−2</span> <span>{t("pricing.guide.link_create")}</span></li>
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−3</span> <span>{t("pricing.guide.image_proof")}</span></li>
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−4</span> <span>{t("pricing.guide.verified_proof")}</span></li>
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">−10</span> <span>{t("pricing.guide.certificate_pdf")}</span></li>
-            </ul>
-            <p className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700 mt-5 mb-3">
+            {/* 모바일 앱 차감규칙 시트와 동일 구성 (2026-08-22) — 항목/값 행 + 면제·PDF 노트 + 배율 표 */}
+            <div className="text-sm text-slate-700">
+              {([
+                ["row_local", "cost_free"],
+                ["row_verify", "cost_verify"],
+                ["row_standard", "cost_standard"],
+                ["row_verified", "cost_verified"],
+                ["row_link", "cost_link"],
+                ["row_pdf", "cost_pdf"],
+              ] as const).map(([labelKey, costKey]) => (
+                <div key={labelKey} className="flex justify-between py-1.5 border-b border-slate-200/60">
+                  <span>{t(`pricing.guide.${labelKey}`)}</span>
+                  <span className="font-semibold">{t(`pricing.guide.${costKey}`)}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500 mt-2">{t("pricing.guide.owner_note")}</p>
+            <p className="text-xs text-slate-500 mt-1">{t("pricing.guide.pdf_note")}</p>
+            <p className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700 mt-5 mb-1">
               {t("pricing.guide.mult_title")}
             </p>
-            <ul className="text-sm text-slate-700 space-y-1.5">
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">1×</span> <span>{t("pricing.guide.mult1")}</span></li>
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">2×</span> <span>{t("pricing.guide.mult2")}</span></li>
-              <li className="flex items-baseline gap-2"><span className="text-blue-600 font-mono font-bold tabular-nums">3×</span> <span>{t("pricing.guide.mult3")}</span></li>
-            </ul>
+            <div className="text-sm text-slate-700">
+              {([["mult1", "1×"], ["mult2", "2×"], ["mult3", "3×"]] as const).map(([key, mult]) => (
+                <div key={key} className="flex justify-between py-1.5 border-b border-slate-200/60">
+                  <span>{t(`pricing.guide.${key}`)}</span>
+                  <span className="font-semibold font-mono tabular-nums">{mult}</span>
+                </div>
+              ))}
+            </div>
             <p className="text-xs text-slate-500 mt-2">{t("pricing.guide.mult_note")}</p>
-            <p className="text-xs text-slate-500 mt-1">{t("pricing.guide.free_note")}</p>
           </div>
 
           <p className="text-center text-xs text-slate-500 mt-6">{t("pricing.footnote")}</p>

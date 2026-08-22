@@ -245,17 +245,25 @@
       },
       "guide": {
         "title": "이용횟수 차감규칙",
-        "verify_query": "검증 조회 — 다른 사람이 만든 OriPics 이미지의 진위 확인 (내가 인증한 이미지는 차감 면제)",
-        "link_create": "공개링크 생성 (사이즈 무관)",
-        "image_proof": "이미지 인증 — 파일(F), 붙여넣기(C) 경로로 인증 (Standard)",
-        "verified_proof": "사진 인증 — 사진찍기(P) 경로로 인증 (Verified)",
-        "certificate_pdf": "증명서(PDF) 발행 — Pro·Business 월 5건 무료, 이후 차감 (재다운로드는 무료, 재발급만 차감)",
+        "row_local": "로컬 판독",
+        "row_verify": "서버 검증",
+        "row_standard": "갤러리 인증 (Standard)",
+        "row_verified": "촬영 인증 (Verified · Pro)",
+        "row_link": "공개링크 발행",
+        "row_pdf": "증명서 PDF 발급",
+        "cost_free": "무료",
+        "cost_verify": "1건 × 배율",
+        "cost_standard": "3건 × 배율",
+        "cost_verified": "4건 × 배율",
+        "cost_link": "2건",
+        "cost_pdf": "10건",
+        "owner_note": "내가 인증한 사진의 서버 검증은 차감되지 않습니다.",
+        "pdf_note": "증명서 PDF는 Pro·Business 전용 — 월 5건 무료, 이후 10건 차감 (재다운로드는 무료).",
         "mult_title": "사이즈 배율",
         "mult1": "긴 변 1,800px 이하",
         "mult2": "긴 변 1,800px 초과",
         "mult3": "1억 픽셀 초과",
-        "mult_note": "(공개링크·PDF는 배율 적용하지 않음)",
-        "free_note": "업로드한 이미지의 스탬프 판독은 항상 무료입니다."
+        "mult_note": "(공개링크·PDF는 배율 적용하지 않음)"
       }
     },
     "verify_confirm": {
