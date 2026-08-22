@@ -127,7 +127,8 @@ export default function Home() {
   const [uploadSource, setUploadSource] = useState<"F" | "P" | "C">("F");
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [cameraEnabled, setCameraEnabled] = useState(false);
+  // 사진 촬영(P)·GPS는 모바일 앱 전용으로 이관 (2026-08-22) — 웹은 파일/클립보드 인증만
+  const cameraEnabled = false;
   const [debugMessage, setDebugMessage] = useState<string | null>(null);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [verifyConfirm, setVerifyConfirm] = useState<{ file: File; detect: DetectResult } | null>(null);
@@ -187,26 +188,7 @@ export default function Home() {
 
   // 카메라 버튼 노출 여부 결정.
   // 1) 사용자가 명시적으로 토글한 적 있으면 localStorage 값을 우선
-  // 2) 없으면 자동 감지 (mobile UA 또는 iPadOS 13+ Macintosh+touch)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const saved = localStorage.getItem('oripics_camera_enabled');
-    if (saved === 'true' || saved === 'false') {
-      setCameraEnabled(saved === 'true');
-      return;
-    }
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
-    const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
-    const isIpadOS13Plus = /Macintosh/i.test(userAgent) && navigator.maxTouchPoints > 1;
-    setCameraEnabled(mobileRegex.test(userAgent) || isIpadOS13Plus);
-  }, []);
-
-  const handleCameraToggle = (enabled: boolean) => {
-    setCameraEnabled(enabled);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('oripics_camera_enabled', enabled ? 'true' : 'false');
-    }
-  };
+  // (2026-08-22) 카메라 자동 감지·토글 제거 — 촬영 인증은 모바일 앱 안내로 대체
 
   // GPS 좌표 fetch (저정확도/고정확도 옵션). state(gpsCoords) 업데이트 + 토스트 메시지 표시.
   const fetchGps = (highAccuracy: boolean): Promise<{ lat: number; lng: number } | null> => {
@@ -1276,72 +1258,15 @@ export default function Home() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
-                {cameraEnabled && (status === "idle" || status === "dragover") && (
-                  <div className="absolute top-3 right-3 flex items-center gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleGpsIndicatorClick(); }}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-full font-medium transition-colors ${gpsState === 'granted'
-                        ? 'bg-green-50 text-green-700 hover:bg-green-100'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      title={gpsCoords ? `${gpsCoords.lat.toFixed(6)}, ${gpsCoords.lng.toFixed(6)}` : ''}
-                    >
-                      <span aria-hidden>{gpsState === 'granted' ? '🟢' : '⚪'}</span>
-                      <span>
-                        {gpsState === 'granted' ? t('gps.status_active') : t('gps.status_inactive')}
-                      </span>
-                    </button>
-                    {(gpsState === 'denied' || gpsState === 'prompt' || gpsState === 'unsupported') && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); openGpsHelpModal(); }}
-                        className="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center"
-                        aria-label={t('gps.help_button')}
-                      >
-                        <HelpCircle size={14} />
-                      </button>
-                    )}
-                    <label
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={gpsIncludeEnabled}
-                        onChange={(e) => handleGpsIncludeToggle(e.target.checked)}
-                        className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
-                      />
-                      <span>{t('gps.include_label')}</span>
-                    </label>
-                  </div>
-                )}
                 {status === "idle" || status === "dragover" ? (
                   <div className="flex flex-col items-center cursor-pointer" onClick={() => { if (!requireAuthOrRedirect()) return; setShowUploadMenu(true); }}>
                     <div className="flex items-center justify-center gap-6 mb-4">
                       <UploadCloud size={64} strokeWidth={1.5} className={`${status === "dragover" ? "text-blue-600" : "text-slate-600"}`} />
-                      {cameraEnabled && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setUploadSource("P");
-                            cameraInputRef.current?.click();
-                          }}
-                          className="shrink-0 flex items-center justify-center p-5 rounded-2xl bg-white hover:bg-slate-50 active:bg-slate-100 text-orange-600 border border-slate-200 shadow-sm transition-all"
-                          aria-label={t("upload.upload_menu.camera")}
-                        >
-                          <Camera size={64} strokeWidth={1.5} />
-                        </button>
-                      )}
                     </div>
                     <p className="text-xl font-medium mb-2 whitespace-pre-line">
-                      {status === "dragover"
-                        ? t("upload.dragover")
-                        : cameraEnabled
-                          ? t("upload.idle_mobile")
-                          : t("upload.idle")}
+                      {status === "dragover" ? t("upload.dragover") : t("upload.idle")}
                     </p>
-                    <p className="text-sm text-slate-600 mt-1">{cameraEnabled ? t("upload.subtext_mobile") : t("upload.subtext")}</p>
+                    <p className="text-sm text-slate-600 mt-1">{t("upload.subtext")}</p>
                     <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
                     {sessionStatus === "unauthenticated" && (
                       <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
@@ -1381,15 +1306,7 @@ export default function Home() {
                 ) : null}
               </div>
               {(status === "idle" || status === "dragover") && (
-                <label className="mt-4 inline-flex items-center gap-2 text-xs text-slate-500 cursor-pointer hover:text-slate-700 select-none">
-                  <input
-                    type="checkbox"
-                    checked={cameraEnabled}
-                    onChange={(e) => handleCameraToggle(e.target.checked)}
-                    className="rounded border-slate-300 text-orange-500 focus:ring-orange-500"
-                  />
-                  {t("upload.toggle_camera")}
-                </label>
+                <p className="mt-4 text-xs text-slate-500">{t("upload.app_capture_note")}</p>
               )}
             </div>
           )}
@@ -2102,7 +2019,7 @@ export default function Home() {
 
           {/* Credits guide — 차감 기준 통합 표기 */}
           <div className="mt-8 p-5 rounded-2xl bg-slate-100/60 border border-slate-200">
-            <p className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700 mb-3">
+            <p className="text-lg font-extrabold text-slate-800 mb-3">
               {t("pricing.guide.title")}
             </p>
             {/* 모바일 앱 차감규칙 시트와 동일 구성 (2026-08-22) — 항목/값 행 + 면제·PDF 노트 + 배율 표 */}
@@ -2123,7 +2040,7 @@ export default function Home() {
             </div>
             <p className="text-xs text-slate-500 mt-2">{t("pricing.guide.owner_note")}</p>
             <p className="text-xs text-slate-500 mt-1">{t("pricing.guide.pdf_note")}</p>
-            <p className="text-xs font-mono font-bold tracking-wider uppercase text-slate-700 mt-5 mb-1">
+            <p className="text-base font-bold text-slate-800 mt-5 mb-1">
               {t("pricing.guide.mult_title")}
             </p>
             <div className="text-sm text-slate-700">
@@ -2230,38 +2147,6 @@ export default function Home() {
               </button>
             </div>
             <div className="p-2">
-              {cameraEnabled && (
-                <button
-                  onClick={() => {
-                    setShowUploadMenu(false);
-                    setUploadSource("P");
-                    cameraInputRef.current?.click();
-                  }}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-white/80 rounded-2xl transition-all text-left"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-600">
-                    <Camera size={22} />
-                  </div>
-                  <span className="font-medium">{t("upload.upload_menu.camera")}</span>
-                </button>
-              )}
-
-              {cameraEnabled && (
-                <button
-                  onClick={() => {
-                    setUploadSource("F");
-                    fileInputRef.current?.click();
-                    setShowUploadMenu(false);
-                  }}
-                  className="w-full flex items-center gap-4 p-4 hover:bg-white/80 rounded-2xl transition-all text-left"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-600">
-                    <ImageIcon size={22} />
-                  </div>
-                  <span className="font-medium">{t("upload.upload_menu.library")}</span>
-                </button>
-              )}
-
               <button
                 onClick={() => {
                   setUploadSource("F");
@@ -2328,14 +2213,6 @@ export default function Home() {
         className="hidden"
         accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff,image/gif"
         ref={fileInputRef}
-        onChange={handleFileSelect}
-      />
-      <input
-        type="file"
-        className="hidden"
-        accept="image/png,image/jpeg,image/webp,image/bmp,image/tiff,image/gif"
-        capture="environment"
-        ref={cameraInputRef}
         onChange={handleFileSelect}
       />
 
@@ -2519,58 +2396,6 @@ export default function Home() {
           </button>
         </div>
       )}
-
-      {showGpsHelpModal && (() => {
-        const detected = detectHelpPlatform();
-        const allSections: { key: HelpPlatform; titleKey: string; bodyKey: string }[] = [
-          { key: 'ios_safari', titleKey: 'gps.help_ios_safari_title', bodyKey: 'gps.help_ios_safari_body' },
-          { key: 'ios_chrome', titleKey: 'gps.help_ios_chrome_title', bodyKey: 'gps.help_ios_chrome_body' },
-          { key: 'android', titleKey: 'gps.help_android_title', bodyKey: 'gps.help_android_body' },
-          { key: 'desktop', titleKey: 'gps.help_desktop_title', bodyKey: 'gps.help_desktop_body' },
-        ];
-        // 감지된 환경을 맨 위로 정렬
-        const ordered = [...allSections].sort((a, b) => (a.key === detected ? -1 : b.key === detected ? 1 : 0));
-        return (
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60" onClick={() => setShowGpsHelpModal(false)}>
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between p-5 border-b border-slate-100 sticky top-0 bg-white">
-                <h3 className="text-lg font-bold">{t('gps.help_title')}</h3>
-                <button onClick={() => setShowGpsHelpModal(false)} className="p-1.5 hover:bg-slate-100 rounded-full text-slate-500" aria-label="close">
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="p-5 text-sm text-slate-700 space-y-2 leading-relaxed">
-                <p className="mb-3">{t('gps.help_intro')}</p>
-                {ordered.map((section) => {
-                  const isOpen = helpOpenSection === section.key;
-                  const isDetected = section.key === detected;
-                  return (
-                    <div key={section.key} className={`border rounded-xl overflow-hidden ${isOpen ? 'border-blue-200 bg-blue-500/5' : 'border-slate-200'}`}>
-                      <button
-                        type="button"
-                        onClick={() => setHelpOpenSection(isOpen ? null : section.key)}
-                        className="w-full flex items-center justify-between p-3 text-left gap-3"
-                      >
-                        <span className="flex items-center gap-2 font-semibold">
-                          {t(section.titleKey)}
-                          {isDetected && (
-                            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">{t('gps.help_detected_badge')}</span>
-                          )}
-                        </span>
-                        <ChevronDown size={16} className={`shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180 text-blue-600' : ''}`} />
-                      </button>
-                      {isOpen && (
-                        <p className="px-3 pb-3 whitespace-pre-line text-slate-700">{t(section.bodyKey)}</p>
-                      )}
-                    </div>
-                  );
-                })}
-                <p className="text-xs text-slate-500 pt-3 mt-3 border-t border-slate-100">{t('gps.help_https_note')}</p>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {showWatermarkHelpModal && (
         <div

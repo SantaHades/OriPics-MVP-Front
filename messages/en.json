@@ -25,7 +25,7 @@
       "idle": "☁️ Select or paste an image",
       "idle_mobile": "☁️ Select an image\nor take a photo",
       "dragover": "✨ Drop it here!",
-      "subtext": "Drag & drop, select file, paste, or take photo",
+      "subtext": "Drag & drop, select file, or paste",
       "subtext_mobile": "Select file, paste, or take photo",
       "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
       "login_required": "Sign in required — click to go to login",
@@ -49,7 +49,8 @@
       "processing": "🔄 Processing original proof...",
       "processing_step": "🔄 [{current}/{total}] Processing {label}…",
       "error": "Processing Failed",
-      "retry": "Try Again"
+      "retry": "Try Again",
+      "app_capture_note": "📱 Camera capture (Verified · with GPS) is available in the OriPics mobile app."
     },
     "gps": {
       "status_active": "GPS Activated",
@@ -142,8 +143,8 @@
     },
     "how_it_works": {
       "title": "How It Works",
-      "step1_title": "Upload Image or Take Photo",
-      "step1_desc": "Upload an original image via drag & drop or file selection, or take a photo directly.",
+      "step1_title": "Upload Image",
+      "step1_desc": "Upload an original image via drag & drop or file selection. Camera capture is supported in the OriPics app.",
       "step2_title": "Original Proof Processing",
       "step2_desc": "Original proof processing is performed. Nothing is stored on the server.",
       "step3_title": "Return & Verify",
