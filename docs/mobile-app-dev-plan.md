@@ -1,7 +1,7 @@
 # OriPics 모바일 앱 개발 계획서 (iOS / Android)
 
 > **작성**: 2026-06-18 · **최종 갱신**: 2026-08-07 (스택 재검증 — 부록 B)
-> **상태**: 착수 전 계획. 작성 후 변화: C2PA **CONFORMANT 승인 완료**(6/23, §1.3의 "approver 대기" 해소), 웹 결제 실운영 가동(7/24), 요금제 v3 확정(§8-A IAP 계산은 v3 가격 기준으로 재산정 필요), SSL.com cert Validation 진행 중(단 **Free Tier는 cert 1개=웹 1개 — 모바일은 추가 cert/Premium 협상 필요**, c2pa_esigner 메모 참조)
+> **상태**: 착수 전 계획. 작성 후 변화: C2PA **CONFORMANT 승인 완료**(6/23, §1.3의 "approver 대기" 해소), 웹 결제 실운영 가동(7/24), 요금제 v3 확정, **§8-A 재확정(2026-08-23 결정 B): 모바일 인앱결제 없음·웹 구독만 → M6 IAP 폐기·U-35 취소**, SSL.com cert Validation 진행 중(단 **Free Tier는 cert 1개=웹 1개 — 모바일은 추가 cert/Premium 협상 필요**, c2pa_esigner 메모 참조)
 > **범위**: 웹과 동일 가치(원본 증명)를 모바일 네이티브 카메라(Verified 경로) 중심으로 확장하는 iOS/Android 앱 개발의 전체 실행 계획
 > **관련 문서**: [roadmap.md](roadmap.md)(트랙 B/D 전략), [c2pa-security-architecture-document.md](c2pa-security-architecture-document.md)(DISTRIBUTED 아키텍처), [pricing-policy.md](pricing-policy.md)(Verified 게이팅), [app-store-metadata.md](app-store-metadata.md)(스토어 메타), [follow-ups.md](follow-ups.md)(미결 항목)
 
@@ -13,7 +13,7 @@
 - **모바일의 존재 이유**: 웹은 `F`(파일)·`C`(클립보드) 경로만 가능 → **`P`(네이티브 카메라 촬영) 경로는 모바일 전용**이며, 이게 **Verified 티어(Pro 한정)의 유일한 진입점**. 즉 모바일 = 매출(Pro 전환)의 핵심 차별재.
 - **백엔드는 그대로 재사용**: 서명·발급·검증 API(`/api/sign` → `confirm` → `publish`, `/api/verify`, `/api/attest/challenge`)가 이미 모바일을 전제로 설계됨(verified 분기·`com.oripics.verified` assertion·platform 필드 존재). 모바일은 **새 백엔드가 아니라 새 Edge 클라이언트**.
 - **현재 실측 상태(2026-06-18)**: 모노레포는 **미착수** — `apps/web` 단일, `packages/`·`apps/mobile` 없음, pnpm/turbo 미설정, npm+`legacy-peer-deps` 사용. attest 검증(`verifyToken.ts`)은 **stub**. C2PA 운영 인증서는 **approver 승인 대기**.
-- **3대 선행 블로커**: ① 모노레포 추출(트랙 B Phase 2–8) ② C2PA Conformance Letter + SSL.com 운영 인증서(→ CONFORMANT 완료, cert Validation 진행 중) ③ ~~앱스토어 IAP 정책 결정~~ → **§8-A 확정 완료(2026-08-07, 하이브리드)** — 잔여 선행은 사실상 ①뿐.
+- **3대 선행 블로커**: ① 모노레포 추출(트랙 B Phase 2–8) ② C2PA Conformance Letter + SSL.com 운영 인증서(→ CONFORMANT 완료, cert Validation 진행 중) ③ ~~앱스토어 IAP 정책 결정~~ → **§8-A 재확정(2026-08-23, 결정 B: 인앱결제 없음·웹 구독만)** — 잔여 선행은 사실상 ①뿐.
 
 ---
 
@@ -47,7 +47,7 @@
 | SSL.com 운영 인증서 | Letter 의존 | 동일 |
 | Google Play Console 신원확인(U-2) | 미확인 | Android 출시·Play Integrity 전제 |
 | Apple Developer Program | 가입 완료 | iOS 빌드·App Attest 가능 |
-| 결제(PortOne/KG이니시스) | 입점 심사중 | 웹 결제만. **모바일 IAP는 별도 정책 결정 필요(§8)** |
+| 결제(PortOne/KG이니시스) | 실운영(7/24 e2e) | **웹 결제만 — 모바일 인앱결제 없음(§8-A 결정 B, 2026-08-23). 앱은 순수 클라이언트** |
 
 ---
 
@@ -251,7 +251,7 @@
 M0 모노레포 (지금 착수 가능, 블로커 없음)
   └─ M1 인증 ──┬─ M2 Standard(F/C)
                └─ M3 카메라(P) ── M4 attest(클라+백엔드 A-4/A-5)
-                                      └─ M5 Verified+검증 ──┬─ M6 결제(IAP, §8-A 결정 필요)
+                                      └─ M5 Verified+검증 ──┬─ M6 결제 ~~(IAP)~~ 취소(§8-A B: 웹 구독만)
                                                             └─ M7 베타 ── M8 출시
 
 병렬 외부 트랙(앱 코드와 무관하게 진행):
@@ -276,7 +276,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 
 | ID | 결정 | 선택지 | 영향 |
 |---|---|---|---|
-| **§8-A** | **모바일 결제 방식** | ✅ **확정 (2026-08-07 대표 승인): (라) 하이브리드** — **Android=소비 전용**(웹 구독+앱 로그인, 결제 플로우 없음, 수수료 0. 앱 내 가격·결제 링크 금지, "웹사이트 확인" 수준 문구까지만) / **iOS=IAP 병행+할증가 ₩12,900/월**(연간 ₩129,000, 웹 ₩9,900 유지 — 3.1.3(b) 병행 조건 충족, SBP 15% 기준 실수취 ~₩9,968로 웹 초과. 앱 내 웹 가격 언급 절대 금지, Pro 계정엔 IAP 버튼 비노출). 제3자결제 배제. 근거·시뮬레이션·watch list: [mobile-iap-policy-research.md](mobile-iap-policy-research.md) | **M6 전 필수**: ①Apple SBP 가입(미가입 시 30%) ②App Store Server API 영수증 검증+Notifications 웹훅+KG 구독과 이중 구독 가드 ③패스는 non-renewing subscription 타입. **M6 착수 시 최신 정책 재확인**(12/31 Google 한국 신체계 → Android 아웃링크 검토·Epic-Apple 대법원 ~2027-06) |
+| **§8-A** | **모바일 결제 방식** | ✅ **재확정 (2026-08-23 대표 결정 B): iOS·Android 모두 인앱결제 없음 = 순수 클라이언트.** 구독은 **웹(ori.pics)에서만**(PortOne+KG 실운영), 앱은 로그인해 Pro 상태만 사용. 앱 내 결제·가격·웹결제 유도 문구 전면 없음(App Store 3.1.3 멀티플랫폼/리더 모델). Apple/Google 수수료 0. **트레이드오프**: iOS 사용자는 앱에서 Pro 전환 불가(웹으로 이동), 앱에서 그 경로 안내도 불가. → **~~(라) 하이브리드(2026-08-07): iOS=IAP 병행 ₩12,900/월~~ 폐기.** 조치: `SubscribePanel`·`expo-iap` 제거(커밋 `4e7420a`), 서버 IAP 라우트는 503 게이트로 잔존. 근거 자료: [mobile-iap-policy-research.md](mobile-iap-policy-research.md) | **완료** — U-35(App Store Connect IAP 설정) 취소. 서버 IAP 잔재(`appleIap.ts`, `/api/mobile/iap/apple/*`)는 추후 제거 가능 |
 | **§8-B** | iOS·Android **동시 vs 순차** 출시 | 동시(리스크 분산 X, 일정 김) / iOS 먼저(App Attest 성숙) | M4~M8 일정·QA 부하 |
 | **§8-C** | **베타/출시 타임라인** | 웹 먼저 출시 후 모바일 9~10월 / 모바일까지 동시 9~10월 | §7 참조 |
 | **§8-D** | 워크스페이스 도구 | ✅ **확정(2026-08-07, M0 구현)**: **npm workspaces, 단 `apps/web`은 워크스페이스에서 의도적 제외**(독립 npm 프로젝트 유지 — 오픈 직전 웹의 의존성 트리·legacy-peer-deps·Vercel 빌드 불변 보장). 루트 workspace = `apps/mobile` + `apps/web/packages/*`. turborepo는 보류(2앱 규모에서 불필요, 필요 시 도입) | 해소 |
@@ -289,7 +289,7 @@ M0 모노레포 (지금 착수 가능, 블로커 없음)
 
 | 리스크 | 영향 | 완화 |
 |---|---|---|
-| ~~IAP 강제(§8-A 미해결)~~ → **해소(2026-08-07 확정)** | — | 하이브리드 확정(Android 소비 전용/iOS IAP ₩12,900). 잔여 리스크는 Apple 심사 재량뿐이며 IAP 병행으로 구조적 봉쇄. M6 착수 시 정책 재확인만 |
+| ~~IAP 강제(§8-A)~~ → **해소(2026-08-23 결정 B)** | — | 인앱결제 자체를 안 함 = 앱에서 디지털 구독 판매 없음(웹 구독만, 3.1.3 멀티플랫폼). Apple IAP 강제 대상 아님 → 리스크 구조적 소멸. 대신 iOS 사용자 전환 마찰(웹 이동)은 감수 |
 | 백엔드 세션이 쿠키 전제 | 모바일 인증 마찰 | M1에서 Bearer 토큰 경로 보강(백엔드 작업) |
 | 공유 lib codec 추상화 누수 | 웹·모바일 해시 불일치 → 검증 깨짐 | M0에서 codec 인터페이스 + 양 플랫폼 동일 입력 해시 일치 테스트 고정. **특히 iOS 알파 프리멀티플라이·색공간 변환**(Skia alphaType unpremul 지정으로 대응, M0 스파이크에서 실측). 해결 불가 시 C++/JSI로 stamp 코어 이식 — 스택 교체 아님 |
 | App Attest/Play Integrity 검증 난도 | Verified 신뢰 근거 약화 | A-4/A-5에 충분한 기간 + replay/nonce 테스트 |
