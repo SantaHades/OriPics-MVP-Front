@@ -100,7 +100,7 @@
 | U-28 | Vercel env 갱신 — eSigner CSC API 자격증명 5개 | SSL.com 회신 후 | SSL.com 응답 | P0 |
 | U-29 | Preview에 `ORIPICS_C2PA_ENABLED=true` + dev cert 사전 검증 | NOW | Vercel 대시보드 | P2 |
 | U-30 | Vercel env 갱신 — `ORIPICS_ATTEST_SECRET` (선택, 없으면 JWT_SECRET 재사용) | 모바일 본 시작 | 없음 | P2 |
-| U-31 | ~~Supabase Free → Pro($25/월) 전환~~ → **완료 (2026-08-22, 대표 실행·화면 확인)** — Pro Plan 활성 + Spend Cap ON(Cost Control "enabled" 확인) + 일일 백업 7일 자동 활성. 잔여(선택): ①Storage Upload file size limit 50MB→500MB 상향(대형 인증본 PNG 대비) ②Vercel Spend Management 예산·알림 확인. **이로써 서비스 오픈 게이트 전부 해소** | 완료 | P0 |
+| U-31 | ~~Supabase Free → Pro($25/월) 전환~~ → **완료 (2026-08-22, 대표 실행·화면 확인)** — Pro Plan 활성 + Spend Cap ON(Cost Control "enabled" 확인) + 일일 백업 7일 자동 활성. Storage Global file size limit 500MB 상향 완료(8/22 화면 확인). 잔여(선택): Vercel Spend Management 예산·알림 확인. **이로써 서비스 오픈 게이트 전부 해소** | 완료 | P0 |
 | U-32 | **KG이니시스 일반결제(원타임) 추가 계약 확인** — 3차 회신(6/30)에서 "일반결제 없음(구독만)" 답변했으므로, 패스 상품(라이트·사고) 출시 전 PortOne/KG에 일반결제 추가 심사 필요 여부 문의 (v3 §11.5 Phase C 전제) | 패스 출시 결정 시 | KG 계약 | P2 |
 
 ---
