@@ -41,7 +41,7 @@
 | ID | 항목 | 시점 | 의존성 | P |
 |---|---|---|---|---|
 | O-1 | **`CRON_SECRET` 프로덕션 환경변수 확인** — 크론 3종이 fail-closed로 전환됨(미설정 시 503). Vercel은 `CRON_SECRET`이 있으면 자동으로 Bearer 헤더 주입. `vercel env ls`로 존재 확인(기존에도 검사하던 값이라 대개 이미 설정됨) | NOW | 2026-08-22 보안조치 | P0 |
-| O-2 | **verified 티어 attest 운영 설정** (U-34) — 2026-08-23 프로덕션 실측: attest env 전부 미설정 → verified는 현재 503 fail-closed(안전). **적용 방침: iOS+Android 값 모아 1회 재배포로 함께 설정.** iOS 값 확보완료(`APPLE_APP_ATTEST_TEAM_ID=4V67H4KGQS`, `APPLE_APP_ATTEST_BUNDLE_ID=com.santahades.oripics`). **대기: Android `GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON`(GCP 서비스계정 키 JSON 전문, Play Integrity API 권한)+`ANDROID_PACKAGE_NAME=com.santahades.oripics`.** 준비 시 `vercel env add … production` 후 재배포. `ALLOW_UNVERIFIED_ATTEST`는 넣지 말 것 | 모바일 verified 활성화 시점 | 2026-08-22 보안조치 | P1 |
+| ~~O-2~~ | **✅ 2026-08-23 완료** — verified 티어 attest 운영 설정(U-34 서버 측). 프로덕션 Vercel env 4종 설정+재배포(front `9508ef3`): `APPLE_APP_ATTEST_TEAM_ID=4V67H4KGQS`, `APPLE_APP_ATTEST_BUNDLE_ID=com.santahades.oripics`, `ANDROID_PACKAGE_NAME=com.santahades.oripics`, `GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON`(sensitive). Play Integrity: Play Console 앱(OriPics) 생성→GCP 프로젝트 `oripics-sns-login`(154917484728) 연결→서비스계정 `play-integrity-verifier` JSON 키. 모바일 `eas.json` 3개 프로필에 `EXPO_PUBLIC_GCP_PROJECT_NUMBER=154917484728` 추가(다음 EAS 빌드부터). **잔여: iOS는 App ID에 App Attest capability 활성화(앱 측), Android는 EAS 재빌드 후 실기기 verified e2e 검증(U-34 잔여).** `ALLOW_UNVERIFIED_ATTEST` 미설정 유지 | 완료 | 2026-08-22 보안조치 | ✅ |
 | U-1 | SSL.com C2PA Certificates 영업팀 회신 8개 질문 답변 | NOW | 회신 도착 | P0 |
 | U-2 | Google Play Console 신원확인 완료 | NOW | 1~3일 자연 진행 | P1 |
 | U-3 | Porkbun Tucker (Change of Registrant) 최종 회신 | NOW | 형식 확인용 | P3 |
