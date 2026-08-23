@@ -40,7 +40,7 @@
 
 | ID | 항목 | 시점 | 의존성 | P |
 |---|---|---|---|---|
-| O-1 | **`CRON_SECRET` 프로덕션 환경변수 확인** — 크론 3종이 fail-closed로 전환됨(미설정 시 503). Vercel은 `CRON_SECRET`이 있으면 자동으로 Bearer 헤더 주입. `vercel env ls`로 존재 확인(기존에도 검사하던 값이라 대개 이미 설정됨) | NOW | 2026-08-22 보안조치 | P0 |
+| ~~O-1~~ | **✅ 2026-08-23 완료** — `CRON_SECRET` 프로덕션 존재 확인(`vercel env ls`: Preview·Production, 114d 전 설정 = 기존 값). 크론 3종 fail-closed 전환에 영향 없음 | 완료 | 2026-08-22 보안조치 | ✅ |
 | ~~O-2~~ | **✅ 2026-08-23 완료** — verified 티어 attest 운영 설정(U-34 서버 측). 프로덕션 Vercel env 4종 설정+재배포(front `9508ef3`): `APPLE_APP_ATTEST_TEAM_ID=4V67H4KGQS`, `APPLE_APP_ATTEST_BUNDLE_ID=com.santahades.oripics`, `ANDROID_PACKAGE_NAME=com.santahades.oripics`, `GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON`(sensitive). Play Integrity: Play Console 앱(OriPics) 생성→GCP 프로젝트 `oripics-sns-login`(154917484728) 연결→서비스계정 `play-integrity-verifier` JSON 키. 모바일 `eas.json` 3개 프로필에 `EXPO_PUBLIC_GCP_PROJECT_NUMBER=154917484728` 추가(다음 EAS 빌드부터). iOS App Attest 엔타이틀먼트=`app.json ios.entitlements`에 `com.apple.developer.devicecheck.appattest-environment: production` 추가완료(Apple 포털 토글 아님 — Expo 관리형은 엔타이틀먼트 방식). **잔여: EAS 재빌드 후 실기기 verified e2e(iOS/Android) — U-34 잔여.** `ALLOW_UNVERIFIED_ATTEST` 미설정 유지 | 완료 | 2026-08-22 보안조치 | ✅ |
 | U-1 | SSL.com C2PA Certificates 영업팀 회신 8개 질문 답변 | NOW | 회신 도착 | P0 |
 | ~~U-2~~ | **✅ 완료** — Google Play Console 개인 계정 신원확인. 2026-08-23 실측: 계정 세부정보에 법적이름·주소 등록, 연락처 이메일·전화 인증됨(✓), 경고 배너 없음. Android 개발자 인증도 패키지 `com.santahades.oripics` 등록됨(✓) | 완료 | — | ✅ |
