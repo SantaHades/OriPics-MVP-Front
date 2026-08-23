@@ -357,6 +357,23 @@ export async function POST(req: NextRequest) {
     ? await tryReadC2paForLink(effectiveLinkId)
     : { checked: false as const, reason: "no_link_id" };
 
+  // 검증 등급 (links.tier, 2026-08-23) — verified(attest 통과 촬영 인증)면 판독 결과에 표기.
+  // 표시용 조회라 실패해도 검증 결과에는 영향 없음. 구 링크는 null(=standard).
+  let linkTier: string | null = null;
+  if (effectiveLinkId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    try {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+      const { data } = await supabase
+        .from("links")
+        .select("tier")
+        .eq("link_id", effectiveLinkId)
+        .single();
+      linkTier = data?.tier ?? null;
+    } catch {
+      /* noop */
+    }
+  }
+
   const evidence: TrustReport["evidence"] = [buildSealEvidence(seal)];
   if (c2paLookup.checked) {
     evidence.push(buildC2paEvidence(c2paLookup.result));
@@ -382,6 +399,7 @@ export async function POST(req: NextRequest) {
     match: seal.match,
     version: seal.version,
     metadata: seal.metadata,
+    ...(linkTier ? { tier: linkTier } : {}),
     ...(seal.reason ? { reason: seal.reason } : {}),
     ...(ownerExempt ? { owner_exempt: true } : {}),
     trust_report,

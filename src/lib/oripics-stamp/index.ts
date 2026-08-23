@@ -90,6 +90,8 @@ export interface PublishResponse {
 export interface VerifyResponse {
   match: boolean;
   version?: number;
+  /** 검증 등급 — "verified"(attest 통과 촬영 인증) | undefined(standard·구 링크) */
+  tier?: string;
   reason?: string;
   metadata?: {
     timestamp: string;

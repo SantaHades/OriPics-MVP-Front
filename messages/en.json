@@ -130,6 +130,8 @@
     "verify": {
       "success_title": "Verification Successful",
       "captured_at": "Captured At (device record)",
+      "tier_label": "Certification Level",
+      "tier_verified": "Verified (capture-attested)",
       "fail_title": "Verification Failed — Tampering Detected",
       "processed_at": "Initially Processed At",
       "integrity": "Integrity Status",

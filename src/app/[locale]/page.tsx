@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
-import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink, ImageUp, Lock, Share2 } from "lucide-react";
+import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink, ImageUp, Lock, Share2, BadgeCheck } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Link, useRouter } from "@/navigation";
 import { useTranslations } from "next-intl";
@@ -58,6 +58,8 @@ interface ApiResponse {
   session_id?: string;
   metadata?: MetaData;
   owner_exempt?: boolean;
+  /** 검증 등급 — "verified"(attest 통과 촬영 인증) | undefined(standard·구 링크) */
+  tier?: string;
   /** 서버가 유도한 공개링크 (V4+, 발행된 인증만) */
   verify_url?: string;
 }
@@ -462,6 +464,7 @@ export default function Home() {
           match: verifyRes.match,
           metadata: verifyRes.metadata,
           owner_exempt: verifyRes.owner_exempt,
+          tier: verifyRes.tier,
           verify_url: verifyRes.trust_report?.subject?.verify_url,
         });
         setStatus("result_verified");
@@ -1778,6 +1781,15 @@ export default function Home() {
             <div className="flex flex-col items-center mb-8">
               <img src={originalImagePreview!} className="max-w-[200px] max-h-[200px] object-contain rounded border border-slate-200 mb-6" alt="Verify" />
               <div className="w-full bg-slate-50 rounded-xl p-6 text-sm text-slate-700">
+                {/* verified 티어 (links.tier) — 촬영 시점 기기 검증 통과 표시 (2026-08-23) */}
+                {resultData.match && resultData.tier === "verified" && (
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500">{t("verify.tier_label")}</span>
+                    <span className="font-bold text-blue-600 inline-flex items-center gap-1">
+                      <BadgeCheck size={16} /> {t("verify.tier_verified")}
+                    </span>
+                  </div>
+                )}
                 {resultData.metadata.captured_at && (
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500">{t("verify.captured_at")}</span>
