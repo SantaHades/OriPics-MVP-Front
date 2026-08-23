@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const { data: row, error } = await supabase
     .from("links")
     .select(
-      "link_id, timestamp, width, height, lat, lng, captured_at, storage_path, signed_url, preview_path, expires_at, user_id",
+      "link_id, timestamp, width, height, lat, lng, captured_at, tier, storage_path, signed_url, preview_path, expires_at, user_id",
     )
     .eq("link_id", linkId)
     .single();

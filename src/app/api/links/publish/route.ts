@@ -314,6 +314,10 @@ export async function POST(req: NextRequest) {
     // 촬영시각(기기 기록, V5) — 뷰어 표시용. 스탬프 meta에도 서명 포함되어 있음.
     row.captured_at = captured_at;
   }
+  if (tier === "verified") {
+    // 검증 등급(attest 통과) — 뷰어 배지 표시용. null=standard (구 행 하위호환)
+    row.tier = "verified";
+  }
 
   const { error: dbErr } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
   if (dbErr) {

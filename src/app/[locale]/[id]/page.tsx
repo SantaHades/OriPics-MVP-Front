@@ -18,6 +18,8 @@ interface LinkData {
   lng?: number | null;
   /** 촬영시각 (V5, 기기 기록 "yymmddHHMMSSmmm" UTC) — 구 링크는 null */
   captured_at?: string | null;
+  /** 검증 등급 — "verified"(attest 통과 촬영 인증) | null(standard, 구 행 포함) */
+  tier?: string | null;
   storage_path: string;
   signed_url: string;
   /** 소유자 여부 — 서버가 세션과 대조해 판정 (user_id 자체는 노출하지 않음, 2026-08-22) */
@@ -351,6 +353,19 @@ export default function LinkViewer() {
             </h2>
 
             <div className="space-y-6">
+              {/* 검증 등급 — verified(촬영 시점 기기 검증)만 배지 표시, standard/구 링크는 미표시 (2026-08-23) */}
+              {data!.tier === "verified" && (
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-600">
+                    <BadgeCheck size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 mb-1">{t("tier_label")}</p>
+                    <p className="text-sm font-bold text-blue-600">{t("tier_verified")}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t("tier_verified_desc")}</p>
+                  </div>
+                </div>
+              )}
               {data!.captured_at && (
                 <div className="flex gap-4">
                   <div className="w-10 h-10 bg-white/80 rounded-xl flex items-center justify-center text-slate-600">
