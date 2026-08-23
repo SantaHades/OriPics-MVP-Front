@@ -16,8 +16,10 @@ import { APPLE_APP_ATTEST_ROOT_CA_PEM } from "./appleRootCa";
 const NONCE_EXTENSION_OID_DER = Buffer.from("06092a864886f76364080205", "hex").subarray(0, 11);
 // 1.2.840.113635.100.8.2 = DER 06 09 2A 86 48 86 F7 63 64 08 02
 
-const AAGUID_PROD = Buffer.from("617070617474657374000000", "hex"); // "appattest" + padding
-const AAGUID_DEV = Buffer.from("617070617474657374646576656c6f70", "hex"); // "appattestdevelop"
+// aaguid는 16바이트 고정 필드 — "appattest"(9B) + 0x00×7. 12바이트 상수였던 버그로
+// production attestation이 전부 aaguid_invalid로 거부됐음 (2026-08-23 실기기 e2e에서 발견)
+export const AAGUID_PROD = Buffer.from("appattest".padEnd(16, "\0")); // 61…74 + 00×7
+export const AAGUID_DEV = Buffer.from("appattestdevelop"); // 정확히 16바이트
 
 export interface AppleVerifyConfig {
   teamId: string;

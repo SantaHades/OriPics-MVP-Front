@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { createHash } from "crypto";
 import { cborDecode } from "./cbor";
-import { parseAuthData, extractNonceFromLeafDer, verifyAppleAppAttest } from "./appleAppAttest";
+import {
+  parseAuthData,
+  extractNonceFromLeafDer,
+  verifyAppleAppAttest,
+  AAGUID_PROD,
+  AAGUID_DEV,
+} from "./appleAppAttest";
 import { evaluatePlayIntegrityVerdict } from "./playIntegrity";
 
 // ── CBOR ──────────────────────────────────────────────────────────
@@ -63,6 +69,17 @@ describe("apple app attest — 구조 파싱", () => {
 
   it("짧은 authData 거부", () => {
     expect(parseAuthData(Buffer.alloc(10))).toBeNull();
+  });
+
+  // 회귀 고정: aaguid는 16바이트 필드 — 12바이트 상수 버그로 production
+  // attestation이 전부 거부됐던 사고 재발 방지 (2026-08-23 실기기 e2e)
+  it("AAGUID 상수는 정확히 16바이트, authData의 aaguid와 일치", () => {
+    expect(AAGUID_PROD.length).toBe(16);
+    expect(AAGUID_DEV.length).toBe(16);
+    const prodAuth = parseAuthData(makeAuthData({ aaguid: "appattest" }))!;
+    expect(prodAuth.aaguid.equals(AAGUID_PROD)).toBe(true);
+    const devAuth = parseAuthData(makeAuthData({ aaguid: "appattestdevelop" }))!;
+    expect(devAuth.aaguid.equals(AAGUID_DEV)).toBe(true);
   });
 
   it("leaf DER에서 nonce 확장 추출", () => {
