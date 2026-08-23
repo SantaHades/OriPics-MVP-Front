@@ -116,8 +116,8 @@
 | A-1 | 포트원 어댑터 본 구현 (J-7) | [lib/payment/portone.ts](../src/lib/payment/portone.ts) | U-24~26 완료 | P0 |
 | A-2 | C2PA 본 통합 — eSigner CSC API 호출로 LocalSigner 교체 | [lib/oripics-stamp/c2pa.ts](../src/lib/oripics-stamp/c2pa.ts) | U-28 완료 | P0 |
 | A-3 | Stripe 어댑터 본 구현 (Phase 2) | [lib/payment/stripe.ts](../src/lib/payment/stripe.ts) | 글로벌 사용자 5%+ | P3 |
-| A-4 | ~~iOS App Attest 토큰 검증~~ → **본 구현 완료 (2026-08-07, M4)** — CBOR 파싱+Apple Root CA 체인+nonce/키/앱 바인딩+counter/aaguid 검증([lib/attest/appleAppAttest.ts](../src/lib/attest/appleAppAttest.ts)). **U-34 env 설정 전까지 개발 폴백(해시만) 유지.** 잔여: 실기기 attestation 왕복 검증 | [lib/attest/verifyToken.ts](../src/lib/attest/verifyToken.ts) | U-34 | P1 |
-| A-5 | ~~Android Play Integrity 토큰 검증~~ → **본 구현 완료 (2026-08-07, M4)** — 서비스 계정 OAuth→decodeIntegrityToken, verdict 판정 순수함수(nonce/requestHash·패키지·10분 신선도·PLAY_RECOGNIZED·MEETS_DEVICE_INTEGRITY, 유닛테스트 19종)([lib/attest/playIntegrity.ts](../src/lib/attest/playIntegrity.ts)). 잔여: U-34 + 실기기 | 동일 | U-2·U-34 | P1 |
+| A-4 | ~~iOS App Attest 토큰 검증~~ → **본 구현 완료 (2026-08-07, M4)** — CBOR 파싱+Apple Root CA 체인+nonce/키/앱 바인딩+counter/aaguid 검증([lib/attest/appleAppAttest.ts](../src/lib/attest/appleAppAttest.ts)). **실기기 attestation 왕복 검증 완료(2026-08-23, U-34 — TestFlight 정식 경로 포함).** AAGUID 16바이트 수정 반영 | [lib/attest/verifyToken.ts](../src/lib/attest/verifyToken.ts) | U-34 | P1 |
+| A-5 | ~~Android Play Integrity 토큰 검증~~ → **본 구현 완료 (2026-08-07, M4)** — 서비스 계정 OAuth→decodeIntegrityToken, verdict 판정 순수함수(nonce/requestHash·패키지·10분 신선도·PLAY_RECOGNIZED·MEETS_DEVICE_INTEGRITY, 유닛테스트 19종)([lib/attest/playIntegrity.ts](../src/lib/attest/playIntegrity.ts)). **실기기 왕복 검증 완료(2026-08-23, U-34 — Play 스토어 PLAY_RECOGNIZED 정식 경로 포함)** | 동일 | U-2·U-34 | P1 |
 
 ### 2.2 기능 추가 (J 트랙)
 
