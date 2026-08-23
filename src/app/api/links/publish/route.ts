@@ -82,7 +82,8 @@ export async function POST(req: NextRequest) {
   try {
     claims = verifyReceiptJwt(receipt);
   } catch (e: any) {
-    return NextResponse.json({ detail: `receipt_${e.message}` }, { status: 401 });
+    // 403 (401 아님): 세션은 유효하나 receipt 거부 — 모바일 클라이언트는 401을 세션 만료로 간주해 로그아웃한다
+    return NextResponse.json({ detail: `receipt_${e.message}` }, { status: 403 });
   }
 
   if (claims.user_id !== sessionUserId) {

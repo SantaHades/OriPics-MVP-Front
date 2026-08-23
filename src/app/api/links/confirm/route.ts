@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
   try {
     claims = verifySignJwt(jwt_token);
   } catch (e: any) {
-    return NextResponse.json({ detail: e.message }, { status: 401 });
+    // 403 (401 아님): 세션은 유효하나 sign JWT 거부 — 모바일 클라이언트는 401을 세션 만료로 간주해 로그아웃한다
+    return NextResponse.json({ detail: e.message }, { status: 403 });
   }
 
   const {
