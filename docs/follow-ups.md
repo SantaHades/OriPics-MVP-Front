@@ -75,8 +75,8 @@
 | U-17 | ~~Feature graphic 디자인~~ → **완료 (2026-08-18)** — `image/oripics-feature-graphic-1024x500.png`: 브랜드 마크(좌) + OriPics 워드마크(Avenir Next Condensed) + "사진 원본 증명 · The Original Proof" 태그라인, 연한 블루 그라데이션 배경, 중앙 정렬(양쪽 여백 110px). Play 콘솔 스토어 등록정보에 업로드 | 완료 | P0 |
 | U-18 | ~~스크린샷 캡처~~ → **완료 (2026-08-19)** — `image/screenshots/` 4장(로그인·홈 Pro·인증/검증·**촬영 실기기컷**, 전부 1320×2868 = App Store 6.9"·Play 겸용). 재캡처: 시뮬 3장=`scripts/capture-screenshots.sh`, 촬영컷=실기기. 데모 계정 demo-screenshots@ori.pics = App Review 심사 계정 겸용 | 완료 | P0 |
 | U-19 | Promo video 제작 (선택) | 베타 직전 | P3 |
-| U-20 | Apple Privacy Label 입력 (App Store Connect) | 앱 심사 직전 | P0 |
-| U-21 | Google Data Safety Form 입력 (Play Console) | 앱 심사 직전 | P0 |
+| U-20 | Apple Privacy Label 입력 (App Store Connect) — **입력값 확정: [store-privacy-forms.md §2](store-privacy-forms.md)** (2026-08-23 코드 실사) | 앱 심사 직전 | P0 |
+| U-21 | Google Data Safety Form 입력 (Play Console) — **입력값 확정: [store-privacy-forms.md §3](store-privacy-forms.md)** | 앱 심사 직전 | P0 |
 | U-22 | 카테고리 검토 (Photo & Video vs Utilities — 검색 노출) | 앱 심사 직전 | P2 |
 | U-23 | What's New 카피 매 버전 갱신 (출시 후 지속) | 매 버전 | P3 |
 
@@ -155,6 +155,7 @@
 | A-38 | ~~maestro e2e yaml 갱신~~ → **완료 (2026-08-22)** — 4탭+8/22 개편(옵션 칩·+파일·내보내기) 반영. `screenshots.yaml`: clearKeychain으로 세션 초기화(로그아웃 UI 경유 제거 — 확인 알럿 탭 불안정 실측), 캡처=로그인·홈·판독·목록·촬영폴백. `certify-e2e.yaml`: 목록 +파일→사진 보관함→PHPicker 멀티(셀 탭 후 추가 확정)→인증하기→링크 복사 — **시뮬 전 단계 통과 실측**(차감 -5 정확, 내보내기 표시=인증본 저장 검증). `capture-screenshots.sh`: expo run 로그테일 미종료 대응(마커 감시 후 종료)+simctl privacy 사전 부여(GPS 기본 ON 팝업 차단). 스크린샷(gitignored image/screenshots/) 8/22 재캡처 4장 + 실기기 촬영컷(8/19) 유지, 구 3탭 인증컷 삭제. 스토어 목록컷은 e2e-02-result 구도 권장 | 완료 | P1 |
 | A-39 | **C2PA manifest에 촬영시각 반영 검토** — V5 스탬프·DB·뷰어에는 반영 완료. c2pa manifest assertion(예: `c2pa.actions`의 when 또는 exif assertion)에도 captured_at을 넣을지 검토 (수정 범위: `lib/oripics-stamp/c2pa.ts` attachC2paManifest 입력 확장) | SSL.com cert 도착·C2PA 재활성화 시 | P2 |
 | A-41 | **모바일 증명서 PDF 발급** — 목록탭 완료 항목(공개링크 발행분)에 '증명서 PDF' 버튼 → `GET /api/links/{id}/certificate`(Bearer) 다운로드 → 문서 폴더 캐시 → 공유 시트(내보내기 패턴 재사용). Pro·Business 전용 — 월 5건 무료/이후 −10 표시는 서버 응답 기반. 사고·분쟁(현장 촬영→증빙) 시나리오의 모바일 완결 흐름. 서버·발급 로직은 완성(A-8·A-24) — 클라 반나절 수준 | **iOS IAP 출시(U-35) 직후** (모바일 Pro 경로 생긴 뒤) | P2 |
+| A-45 | **모바일 앱 내 계정 삭제 진입점** — Apple 5.1.1(v): 계정 생성 가능한 앱은 앱 내에서 계정 삭제를 시작할 수 있어야 함(심사 리젝 1순위). 현재 삭제는 웹 프로필에만 존재 → 홈탭 내 계정 카드에 "계정 삭제" 링크(웹 프로필로 Linking.openURL) 추가. Play 정책도 동일 방향. 발견: [store-privacy-forms.md](store-privacy-forms.md) 작성 중 | **앱 심사 제출 전** | P1 |
 | A-40 | **썸네일·뷰어 경량본 서버 생성 통합** — publish가 이미 PNG를 다운로드·디코드하므로 sharp로 리사이즈해 `{linkId}_thumb.jpg`·`_preview.jpg`를 Storage에 생성(클라 업로드 ~400KB/건 제거, 웹·모바일 중복 구현 제거, 누락 불가). ProofHistory.thumbnail dataURL(DB 저장)은 경로 참조로 이전 + 기존 행 backfill. sharp 네이티브 의존성 추가라 **오픈 후** 진행. 두 파생본을 하나로 합치는 안은 기각(뷰어 1장 고화질 vs 그리드 다수 저화질 — 요구 스펙 상충, 그리드 egress 역증가) — 파일은 2종 유지, 생성 파이프라인만 단일화 (2026-08-21 검토) | 오픈 후 | P2 |
 
 ### 2.4 테스트 보강
