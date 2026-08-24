@@ -204,7 +204,12 @@ export default function Home() {
         if (settled) return;
         settled = true;
         clearTimeout(safetyTimer);
-        if (msg) setDebugMessage(msg);
+        // 좌표·에러코드가 담긴 개발용 메시지 — 프로덕션에선 토스트 대신 콘솔로만
+        // (언어 전환 리마운트 때 "GPS OK: 좌표…"가 사용자에게 깜빡이던 문제, 2026-08-24 실측)
+        if (msg) {
+          if (process.env.NODE_ENV !== "production") setDebugMessage(msg);
+          else console.log("[gps]", msg);
+        }
         resolve(value);
       };
       const safetyTimer = setTimeout(() => {
