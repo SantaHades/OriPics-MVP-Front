@@ -35,8 +35,13 @@ interface ProofRecord {
 }
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession();
+  const { data: session, status: sessionStatus, update } = useSession();
   const router = useRouter();
+
+  // 비로그인 접근 시 로그인으로 — 기존엔 !session 스피너만 무한 표시 (2026-08-24 모바일 A-45 링크 실측)
+  useEffect(() => {
+    if (sessionStatus === "unauthenticated") router.replace("/login");
+  }, [sessionStatus, router]);
   const t = useTranslations("Profile");
   const tc = useTranslations("Common");
   const tCredits = useTranslations("Home.credits");
