@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
-import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard } from "lucide-react";
+import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
@@ -169,6 +169,9 @@ export default function ProfilePage() {
   const [txMayHaveMore, setTxMayHaveMore] = useState(true);
   const [loadingMoreTxs, setLoadingMoreTxs] = useState(false);
   const [previewProof, setPreviewProof] = useState<ProofRecord | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  // 모달 항목이 바뀌면 복사 피드백 초기화
+  useEffect(() => setLinkCopied(false), [previewProof?.linkId]);
   // B-2 (2026-05-17): PDF 발급/재발급/다운로드, 인증 삭제 상태
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -1087,13 +1090,27 @@ export default function ProfilePage() {
             onClick={(e) => e.stopPropagation()}
           >
             {!isExpired(previewProof.createdAt) && (
-              <Link
-                href={`/${previewProof.linkId}`}
-                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg"
-              >
-                <ExternalLink size={14} />
-                {t("proof_history.view_link")}
-              </Link>
+              <>
+                {/* 링크 복사 — 뷰어 이동 없이 바로 공유 (2026-08-24 피드백) */}
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(`${window.location.origin}/${previewProof.linkId}`);
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white/90 hover:bg-white text-slate-800 font-medium rounded-full transition-colors text-sm shadow-lg"
+                >
+                  {linkCopied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                  {linkCopied ? t("proof_history.copied") : t("proof_history.copy_link")}
+                </button>
+                <Link
+                  href={`/${previewProof.linkId}`}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg"
+                >
+                  <ExternalLink size={14} />
+                  {t("proof_history.view_link")}
+                </Link>
+              </>
             )}
 
             {previewProof.pdfIssued ? (
