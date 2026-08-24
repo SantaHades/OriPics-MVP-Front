@@ -103,10 +103,12 @@ adb shell monkey -p com.santahades.oripics -c android.intent.category.LAUNCHER 1
 ## 4. 이슈 대응
 
 ### 알려진 빌드 이슈 (2026-08-18 실측)
-- **expo-modules-jsi@57.0.4 + Xcode 26.2 컴파일 오류**: `JavaScriptCodable+Date.swift:53`
-  "type of expression is ambiguous" → `abs(milliseconds)`를 `milliseconds.magnitude`로 로컬 패치함.
-  **`npm install`을 다시 실행하면 패치가 사라짐** — 같은 오류가 재발하면 동일 수정 재적용
-  (또는 expo-modules-jsi 57.0.5+ 릴리스 확인). 근본 해결은 상류 수정 대기.
+- **expo-modules-jsi + 로컬 Xcode 26.2 컴파일 오류** (2026-08-24 갱신): 57.0.4의 Date 오류는
+  57.0.5 업그레이드로 해소됐으나, 57.0.5는 `RuntimeScheduler.h`에서 새 오류
+  ("cannot be annotated with SWIFT_RETURNS_RETAINED") 발생 → 해당 파일의
+  `SWIFT_RETURNS_RETAINED RuntimeScheduler` 주석 2곳(생성자, 53·61행 부근)을 제거하는 로컬 패치 적용.
+  **`npm install` 시 패치 소실 — 재발하면 동일 수정 재적용.** EAS 클라우드 빌드는 Xcode 버전이
+  달라 패치 없이 통과(1.0.0(2)/(3) 실측). 근본 해결은 상류 수정 대기.
 - **Sentry 소스맵 업로드 실패(org 미설정)**: U-36 전까지 로컬 Release 빌드는 `SENTRY_DISABLE_AUTO_UPLOAD=true` 필요(캡처 스크립트에 반영됨). EAS 빌드는 U-36 후 Sentry env 설정과 함께 해제.
 - **새 expo 네이티브 패키지 설치 후 앱이 기기에서 크래시**: `expo install`은 JS 의존성만 추가 — 기존 `ios/` 프로젝트를 유지한 채 xcodebuild로 빌드하면 네이티브 모듈이 링크되지 않아 시작 즉시 크래시. **`cd ios && pod install` 후 재빌드** (expo-localization 추가 시 실측, 2026-08-21).
 - **CoreSimulator 버전 충돌**(Xcode 교체 직후): `launchctl remove com.apple.CoreSimulator.CoreSimulatorService` 후 재시도.
