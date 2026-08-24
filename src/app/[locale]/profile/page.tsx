@@ -801,19 +801,22 @@ export default function ProfilePage() {
                     {t("subscription.refund_policy_link")}
                   </Link>
                 </p>
-                <button
-                  onClick={handleRefundPreview}
-                  disabled={subBusy}
-                  className="inline-block mr-3 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors"
-                >
-                  {subBusy ? "…" : t("subscription.refund_auto_button")}
-                </button>
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("subscription.refund_mail_subject"))}&body=${encodeURIComponent(t("subscription.refund_mail_body", { email: session?.user?.email ?? "" }))}`}
-                  className="inline-block px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors"
-                >
-                  {t("subscription.refund_request_button")}
-                </a>
+                {/* 모바일에서 세로로 겹칠 때 간격 확보 — flex gap (2026-08-24 실기기 피드백) */}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleRefundPreview}
+                    disabled={subBusy}
+                    className="inline-block px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                  >
+                    {subBusy ? "…" : t("subscription.refund_auto_button")}
+                  </button>
+                  <a
+                    href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("subscription.refund_mail_subject"))}&body=${encodeURIComponent(t("subscription.refund_mail_body", { email: session?.user?.email ?? "" }))}`}
+                    className="inline-block px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                  >
+                    {t("subscription.refund_request_button")}
+                  </a>
+                </div>
               </div>
             </div>
           </div>
