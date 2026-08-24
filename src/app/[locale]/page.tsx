@@ -131,7 +131,6 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   // 사진 촬영(P)·GPS는 모바일 앱 전용으로 이관 (2026-08-22) — 웹은 파일/클립보드 인증만
   const cameraEnabled = false;
-  const [debugMessage, setDebugMessage] = useState<string | null>(null);
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
   const [verifyConfirm, setVerifyConfirm] = useState<{ file: File; detect: DetectResult } | null>(null);
   // B-1 (2026-05-17): 본인 미공개 인증 이미지 재드롭 — receipt JWT 매칭 시 publish 버튼 표시
@@ -158,33 +157,11 @@ export default function Home() {
   // 단일 결과 publish(업로드+confirm) 진행률
   const [singleUploadProgress, setSingleUploadProgress] = useState<{ loaded: number; total: number } | null>(null);
 
-  type GpsState = 'unknown' | 'unsupported' | 'prompt' | 'granted' | 'denied';
-  type HelpPlatform = 'ios_safari' | 'ios_chrome' | 'android' | 'desktop';
-  const [gpsState, setGpsState] = useState<GpsState>('unknown');
-  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [gpsIncludeEnabled, setGpsIncludeEnabled] = useState(true);
+  // GPS 취득 로직 전면 제거 (2026-08-24) — 웹은 F/C 경로만이라 좌표를 쓰는 곳이 없는데
+  // 페이지 로드마다 위치를 조회하던 잔재(8/22 P 경로 이관 시 미정리)였음. 판독/뷰어의
+  // GPS "표시"는 서버 응답 기반이라 무관.
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
-  const [showGpsHelpModal, setShowGpsHelpModal] = useState(false);
   const [showWatermarkHelpModal, setShowWatermarkHelpModal] = useState(false);
-  const [helpOpenSection, setHelpOpenSection] = useState<HelpPlatform | null>(null);
-
-  const detectHelpPlatform = (): HelpPlatform => {
-    if (typeof window === 'undefined') return 'desktop';
-    const ua = navigator.userAgent || '';
-    const isIos = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
-    if (isIos) {
-      // iOS Chrome은 UA에 "CriOS" 포함 (Firefox는 FxiOS, Edge는 EdgiOS)
-      if (/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua)) return 'ios_chrome';
-      return 'ios_safari';
-    }
-    if (/android/i.test(ua)) return 'android';
-    return 'desktop';
-  };
-
-  const openGpsHelpModal = () => {
-    setHelpOpenSection(detectHelpPlatform());
-    setShowGpsHelpModal(true);
-  };
 
   const router = useRouter();
 
@@ -192,115 +169,16 @@ export default function Home() {
   // 1) 사용자가 명시적으로 토글한 적 있으면 localStorage 값을 우선
   // (2026-08-22) 카메라 자동 감지·토글 제거 — 촬영 인증은 모바일 앱 안내로 대체
 
-  // GPS 좌표 fetch (저정확도/고정확도 옵션). state(gpsCoords) 업데이트 + 토스트 메시지 표시.
-  const fetchGps = (highAccuracy: boolean): Promise<{ lat: number; lng: number } | null> => {
-    return new Promise((resolve) => {
-      if (!navigator.geolocation) {
-        resolve(null);
-        return;
-      }
-      let settled = false;
-      const finish = (msg: string | null, value: { lat: number; lng: number } | null) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(safetyTimer);
-        // 좌표·에러코드가 담긴 개발용 메시지 — 프로덕션에선 토스트 대신 콘솔로만
-        // (언어 전환 리마운트 때 "GPS OK: 좌표…"가 사용자에게 깜빡이던 문제, 2026-08-24 실측)
-        if (msg) {
-          if (process.env.NODE_ENV !== "production") setDebugMessage(msg);
-          else console.log("[gps]", msg);
-        }
-        resolve(value);
-      };
-      const safetyTimer = setTimeout(() => {
-        finish("GPS 타임아웃 (폴백)", null);
-      }, highAccuracy ? 12000 : 6000);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setGpsCoords(c);
-          setGpsState('granted');
-          finish(
-            `GPS OK: ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)} (정확도 ${Math.round(pos.coords.accuracy)}m)`,
-            c,
-          );
-        },
-        (err) => {
-          if (err.code === 1) setGpsState('denied');
-          const codeMap: Record<number, string> = { 1: "PERMISSION_DENIED", 2: "POSITION_UNAVAILABLE", 3: "TIMEOUT" };
-          finish(
-            `GPS 실패: code=${err.code} (${codeMap[err.code] || "?"}) ${err.message || ""}`,
-            null,
-          );
-        },
-        { timeout: highAccuracy ? 10000 : 5000, maximumAge: 60000, enableHighAccuracy: highAccuracy },
-      );
-    });
-  };
-
-  // 페이지 로드 시 GPS 권한 query + (granted면) 저정확도 워밍업
+  // 페이지 로드 시 저장된 옵션 로드 (GPS 관련 로드·권한 query는 2026-08-24 제거)
   useEffect(() => {
     if (typeof window === 'undefined') return;
-
-    // 'GPS 포함' 체크박스 상태 로드
-    const savedInclude = localStorage.getItem('oripics_gps_include');
-    if (savedInclude === 'true' || savedInclude === 'false') {
-      setGpsIncludeEnabled(savedInclude === 'true');
-    }
 
     // '인증마크 포함' 체크박스 상태 로드
     const savedWatermark = localStorage.getItem('oripics_watermark_include');
     if (savedWatermark === 'true' || savedWatermark === 'false') {
       setWatermarkEnabled(savedWatermark === 'true');
     }
-
-    if (!navigator.geolocation) {
-      setGpsState('unsupported');
-      return;
-    }
-
-    if (!navigator.permissions) {
-      // 권한 API 미지원 (Safari 일부 옛 버전): 직접 호출 시도
-      fetchGps(false);
-      return;
-    }
-
-    let perm: PermissionStatus | null = null;
-    const onChange = () => {
-      if (perm) setGpsState(perm.state as GpsState);
-    };
-    navigator.permissions.query({ name: 'geolocation' as PermissionName }).then((p) => {
-      perm = p;
-      setGpsState(p.state as GpsState);
-      p.addEventListener('change', onChange);
-      if (p.state === 'granted') {
-        fetchGps(false); // 저정확도 워밍업 (배터리/속도 절약)
-      }
-    }).catch(() => {
-      // query 자체가 실패하면 fallback
-      fetchGps(false);
-    });
-
-    return () => {
-      perm?.removeEventListener('change', onChange);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // GPS 포함 체크박스 ON + 권한 granted → 고정확도 재요청 (배터리 절약 위해 ON 시점에만)
-  useEffect(() => {
-    if (gpsIncludeEnabled && gpsState === 'granted') {
-      fetchGps(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gpsIncludeEnabled, gpsState]);
-
-  const handleGpsIncludeToggle = (enabled: boolean) => {
-    setGpsIncludeEnabled(enabled);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('oripics_gps_include', enabled ? 'true' : 'false');
-    }
-  };
 
   const handleWatermarkToggle = (enabled: boolean) => {
     setWatermarkEnabled(enabled);
@@ -310,13 +188,6 @@ export default function Home() {
   };
 
   // 인디케이터 클릭: prompt 상태면 권한 요청, denied/unsupported면 안내 모달
-  const handleGpsIndicatorClick = () => {
-    if (gpsState === 'prompt' || gpsState === 'unknown') {
-      fetchGps(true); // 권한 팝업 트리거 + 고정확도 측위
-    } else if (gpsState === 'denied' || gpsState === 'unsupported') {
-      openGpsHelpModal();
-    }
-  };
 
   const t = useTranslations("Home");
   const tc = useTranslations("Common");
@@ -378,13 +249,6 @@ export default function Home() {
     return () => window.removeEventListener("paste", handlePaste);
   }, [status, sessionStatus, router]);
 
-  // GPS 토스트 자동 닫힘: 최종 상태(요청 중이 아닌 결과 메시지) 표시 후 3초 뒤 사라짐
-  useEffect(() => {
-    if (!debugMessage || debugMessage === "GPS 요청 중...") return;
-    const timer = setTimeout(() => setDebugMessage(null), 3000);
-    return () => clearTimeout(timer);
-  }, [debugMessage]);
-
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (status === "idle" || status === "dragover") setStatus("dragover");
@@ -417,25 +281,8 @@ export default function Home() {
     e.target.value = "";
     if (!file) return;
 
-    let gps: { lat: number; lng: number } | null = null;
-    if (uploadSource === "P" && gpsIncludeEnabled && gpsState === 'granted') {
-      setStatus("processing");
-      // GPS는 페이지 로드 + 'GPS 포함' 체크박스 ON 시점에 이미 fetch됨 → state(gpsCoords) 사용
-      // 캐시가 없으면 짧은 fallback 호출
-      if (gpsCoords) {
-        gps = gpsCoords;
-      } else {
-        gps = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
-          const t = setTimeout(() => resolve(null), 1500);
-          navigator.geolocation.getCurrentPosition(
-            (pos) => { clearTimeout(t); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
-            () => { clearTimeout(t); resolve(null); },
-            { timeout: 1500, maximumAge: 60000, enableHighAccuracy: true },
-          );
-        });
-      }
-    }
-    processFile(file, uploadSource, gps);
+    // GPS 취득 제거 (2026-08-24) — 웹은 F/C 경로만, 좌표 첨부 없음
+    processFile(file, uploadSource, null);
   };
 
   const onClickUpload = () => {
@@ -980,7 +827,6 @@ export default function Home() {
     setConfirming(false);
     setTimeLeft(0);
     setGeneratedLink(null);
-    setDebugMessage(null);
     setSingleUploadProgress(null);
     if (originalImagePreview) {
       URL.revokeObjectURL(originalImagePreview);
@@ -2398,19 +2244,6 @@ export default function Home() {
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {debugMessage && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] max-w-[90vw] px-4 py-3 rounded-xl bg-black/85 text-white text-sm font-mono shadow-2xl border border-white/10 flex items-start gap-3">
-          <span className="break-all">{debugMessage}</span>
-          <button
-            onClick={() => setDebugMessage(null)}
-            className="shrink-0 text-white/60 hover:text-white"
-            aria-label="close"
-          >
-            <X size={16} />
-          </button>
         </div>
       )}
 
