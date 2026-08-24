@@ -45,7 +45,7 @@ export default function ProfilePage() {
   const t = useTranslations("Profile");
   const tc = useTranslations("Common");
   const tCredits = useTranslations("Home.credits");
-  const { data: credits } = useCredits();
+  const { data: credits, refresh: refreshCredits } = useCredits();
 
   const [name, setName] = useState(session?.user?.name || "");
   const [password, setPassword] = useState("");
@@ -150,6 +150,8 @@ export default function ProfilePage() {
       setRefundDone(d?.refunded ?? 0);
       setShowRefundModal(false);
       setSubscription(null); // 즉시 종료 — 섹션 갱신
+      // 환불로 티어·크레딧이 원복됨 — 현재 플랜/잔여 횟수 카드 즉시 갱신 (2026-08-24 실측: 미갱신 stale)
+      void refreshCredits();
     } catch {
       setSubError(t("subscription.error_generic"));
     } finally {
