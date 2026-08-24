@@ -198,6 +198,8 @@
       "action_subscription_grant": "구독 갱신",
       "action_pdf_issue": "증명서 PDF 발급",
       "action_manual_adjust": "수동 조정",
+      "action_refund_cancel": "구독 환불 (이전 잔액 복원)",
+      "action_subscription_downgrade": "구독 만료 (무료 전환)",
       "modal": {
         "insufficient_title": "이번 달 인증 한도 도달",
         "insufficient_body": "Free 플랜은 월 5건까지 인증할 수 있어요. Pro로 업그레이드하면 월 250건 인증 + 보관함(5GB) 보관이 가능합니다.",

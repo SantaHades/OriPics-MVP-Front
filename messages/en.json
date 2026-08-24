@@ -198,6 +198,8 @@
       "action_subscription_grant": "Subscription renewal",
       "action_pdf_issue": "Certificate PDF issued",
       "action_manual_adjust": "Manual adjustment",
+      "action_refund_cancel": "Subscription refund (balance restored)",
+      "action_subscription_downgrade": "Subscription ended (moved to Free)",
       "modal": {
         "insufficient_title": "Monthly proof quota reached",
         "insufficient_body": "Free plan allows up to 5 proofs per month. Upgrade to Pro for 250 proofs/month + 5GB Storage Box.",
