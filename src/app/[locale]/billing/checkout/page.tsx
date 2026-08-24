@@ -106,6 +106,10 @@ export default function CheckoutPage() {
         },
         // webhook/서버가 userId·plan을 복원하기 위해 주입.
         customData: { userId, plan },
+        // 서비스 제공 주기(월간 구독). 미지정 시 SDK가 (null, null)을 전송해
+        // "offerPeriod violates AT_LEAST_ONE_REQUIRED"로 발급창 호출이 거부됨
+        // (2026-08-24 실측 — 7/24 e2e 후 PortOne측 검증 강화로 회귀)
+        offerPeriod: { interval: "1m" },
         redirectUrl,
       });
 
