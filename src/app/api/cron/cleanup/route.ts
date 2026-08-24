@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { assertCron } from "@/lib/security/cron";
+import { purgeExpiredRefreshTokens } from "@/lib/auth/refreshStore";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -140,5 +141,13 @@ export async function GET(req: NextRequest) {
     errors.push(`rate_limits purge: ${e?.message || e}`);
   }
 
-  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, rateLimitsPurged, errors });
+  // 만료된 모바일 refresh 토큰 정리 (A-38②, 2026-08-24) — 폐기분도 만료 후에는 재사용 감지 가치 없음
+  let refreshTokensPurged = 0;
+  try {
+    refreshTokensPurged = await purgeExpiredRefreshTokens();
+  } catch (e: any) {
+    errors.push(`refresh_tokens purge: ${e?.message || e}`);
+  }
+
+  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, rateLimitsPurged, refreshTokensPurged, errors });
 }

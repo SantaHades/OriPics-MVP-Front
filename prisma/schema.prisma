@@ -57,6 +57,25 @@ model User {
   proofs        ProofHistory[]
   creditTransactions CreditTransaction[]
   subscription  Subscription?
+  mobileRefreshTokens MobileRefreshToken[]
+}
+
+// 모바일 refresh 토큰 서버측 상태 (A-38②, 2026-08-24)
+// 기존 무상태 회전은 유출 시 개별 폐기가 불가능했음 — jti 단위로 발급을 기록해
+// 회전 시 구 토큰을 폐기하고, 폐기된 토큰 재사용(탈취 신호) 감지 시 사용자 전체 세션을 무효화한다.
+// ⚠️ 테이블 생성은 raw SQL로 수행 (prisma db push 금지 — 스키마 밖 links 테이블을 드롭하려 함)
+model MobileRefreshToken {
+  jti       String    @id
+  userId    String    @map("user_id")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("mobile_refresh_tokens")
 }
 
 model VerificationToken {

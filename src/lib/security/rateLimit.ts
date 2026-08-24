@@ -25,6 +25,8 @@ export const RATE_LIMITS = {
   passwordReset: { name: "pwreset", windowSec: 3600, max: 5 },
   /** 인증 코드 발송 — IP */
   sendVerification: { name: "sendverify", windowSec: 3600, max: 10 },
+  /** 모바일 refresh — IP. 정상 앱은 시간당 수 회 수준, 위조 토큰 대량 시도 차단 (A-38②) */
+  refresh: { name: "refresh", windowSec: 600, max: 30 },
   /**
    * 이미지 서명(/api/sign) — 사용자별. 정상 사용량을 크게 상회하되(시간당 120건),
    * 단일 계정이 전역 일일 카운터(uint16)를 소진해 전 사용자 서명을 막거나(H-3),

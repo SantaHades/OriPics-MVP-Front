@@ -1,7 +1,8 @@
 // 모바일 앱 전용 Bearer 토큰 (M1, 2026-08-07).
 // NextAuth 쿠키 세션과 별개로, 모바일은 자체 서명 JWT(HS256, NEXTAUTH_SECRET)를 사용한다.
-// access 7일 / refresh 90일, refresh는 무상태 회전(rotation) — 서버측 폐기 목록 없음(MVP 트레이드오프,
-// 유출 대응은 NEXTAUTH_SECRET 로테이션. 개별 폐기가 필요해지면 jti 블랙리스트 테이블 추가).
+// access 7일 / refresh 90일. refresh는 서버측 상태 회전 (A-38②, 2026-08-24) —
+// jti가 MobileRefreshToken 테이블에 기록되며 회전 시 구 토큰 폐기, 재사용 감지 시 전 기기 무효화.
+// 로직은 lib/auth/refreshStore.ts, access 토큰은 여전히 무상태(만료 7일).
 import { createHmac, timingSafeEqual, randomUUID } from "crypto";
 
 export const MOBILE_TOKEN_AUD = "oripics-mobile";
@@ -48,14 +49,22 @@ export function issueMobileTokens(userId: string): {
   accessToken: string;
   refreshToken: string;
   accessExpiresAt: number; // epoch seconds
+  /** refresh 토큰의 jti — 서버측 폐기 목록(MobileRefreshToken) 등록용 (A-38②) */
+  refreshJti: string;
+  /** refresh 토큰 만료 (epoch seconds) */
+  refreshExpiresAt: number;
 } {
   const now = Math.floor(Date.now() / 1000);
   const base = { sub: userId, aud: MOBILE_TOKEN_AUD, iat: now } as const;
   const accessExp = now + ACCESS_TTL_S;
+  const refreshExp = now + REFRESH_TTL_S;
+  const refreshJti = randomUUID();
   return {
     accessToken: signToken({ ...base, typ: "access", exp: accessExp, jti: randomUUID() }),
-    refreshToken: signToken({ ...base, typ: "refresh", exp: now + REFRESH_TTL_S, jti: randomUUID() }),
+    refreshToken: signToken({ ...base, typ: "refresh", exp: refreshExp, jti: refreshJti }),
     accessExpiresAt: accessExp,
+    refreshJti,
+    refreshExpiresAt: refreshExp,
   };
 }
 

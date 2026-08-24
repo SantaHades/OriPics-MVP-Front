@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { issueMobileTokens } from "@/lib/auth/mobileTokens";
+import { persistRefreshToken } from "@/lib/auth/refreshStore";
 import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
 
 export const runtime = "nodejs";
@@ -139,6 +140,7 @@ export async function POST(req: NextRequest) {
     select: { id: true, name: true, email: true, image: true, tier: true, credits: true },
   });
   const tokens = issueMobileTokens(userId);
+  await persistRefreshToken(userId, tokens.refreshJti, tokens.refreshExpiresAt); // A-38② 서버측 폐기 목록
   return NextResponse.json({
     access_token: tokens.accessToken,
     refresh_token: tokens.refreshToken,

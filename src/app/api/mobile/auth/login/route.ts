@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { issueMobileTokens } from "@/lib/auth/mobileTokens";
+import { persistRefreshToken } from "@/lib/auth/refreshStore";
 import { checkRateLimit, clientIp, RATE_LIMITS } from "@/lib/security/rateLimit";
 
 export const runtime = "nodejs";
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   const tokens = issueMobileTokens(user.id);
+  await persistRefreshToken(user.id, tokens.refreshJti, tokens.refreshExpiresAt); // A-38② 서버측 폐기 목록
   return NextResponse.json({
     access_token: tokens.accessToken,
     refresh_token: tokens.refreshToken,
