@@ -496,6 +496,8 @@
       "pdf_reissue": "재발급 (−{cost})",
       "pdf_reissue_tooltip": "새 시점으로 다시 발급합니다. 발급 1회가 차감됩니다.",
       "pdf_error": "PDF 처리 실패: {error}",
+      "pdf_tier_required": "증명서 PDF는 Pro 플랜 전용 기능입니다.",
+      "upgrade_cta": "Pro 구독하기",
       "delete_proof": "삭제",
       "delete_modal_title": "이 인증을 삭제할까요?",
       "delete_modal_description": "원본 이미지와 발급된 증명서가 영구 삭제되며, 공개링크도 더 이상 동작하지 않습니다. 차감된 이용 횟수는 환불되지 않습니다.",

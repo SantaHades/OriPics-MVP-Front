@@ -1159,7 +1159,20 @@ export default function ProfilePage() {
 
           {pdfError && (
             <div className="absolute bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 bg-red-600/90 text-white text-xs rounded-lg max-w-[80vw]" onClick={(e) => e.stopPropagation()}>
-              {t("proof_history.pdf_error", { error: pdfError.slice(0, 80) })}
+              {/* Pro 전용 거부는 원시 코드 대신 친화 문구 + 구독 전환 버튼 (2026-08-24 피드백) */}
+              {pdfError === "tier_required" ? (
+                <span className="flex items-center gap-2">
+                  {t("proof_history.pdf_tier_required")}
+                  <Link
+                    href="/billing/checkout?plan=pro_monthly"
+                    className="shrink-0 px-2.5 py-1 bg-white text-red-700 font-semibold rounded-full hover:bg-red-50 transition-colors"
+                  >
+                    {t("proof_history.upgrade_cta")}
+                  </Link>
+                </span>
+              ) : (
+                t("proof_history.pdf_error", { error: pdfError.slice(0, 80) })
+              )}
             </div>
           )}
         </div>

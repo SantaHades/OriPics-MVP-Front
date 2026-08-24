@@ -496,6 +496,8 @@
       "pdf_reissue": "Re-issue (−{cost})",
       "pdf_reissue_tooltip": "Generates a fresh PDF. Uses 1 issuance.",
       "pdf_error": "PDF action failed: {error}",
+      "pdf_tier_required": "Certificate PDF is a Pro-only feature.",
+      "upgrade_cta": "Upgrade to Pro",
       "delete_proof": "Delete",
       "delete_modal_title": "Delete this proof?",
       "delete_modal_description": "The original image and the issued certificate will be permanently deleted, and the public link will no longer work. Used allowance is not refunded.",
