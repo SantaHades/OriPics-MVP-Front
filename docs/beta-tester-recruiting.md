@@ -98,11 +98,11 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증(Conforma
   (Google 정책상 테스터 참여가 2주간 유지되어야 정식 출시가 가능합니다)
 - 앱이 이상하면 삭제 대신 채팅방에 알려주세요 — 바로 고쳐드립니다
 
-문의: hi@ori.pics / 테스터 채팅방: (오픈카톡 링크)
+문의: hi@ori.pics / 테스터 채팅방: https://open.kakao.com/o/gwyKJqKi
 ```
 
 ## 4. 체크리스트 (운영자용)
-- [ ] 테스터 오픈카톡방 개설 → 온보딩 문서의 링크 자리 채우기
+- [x] 테스터 오픈카톡방 개설 완료(2026-08-25): https://open.kakao.com/o/gwyKJqKi
 - [ ] 참여자 Gmail → Play Console internal 목록 추가
 - [ ] 가입 이메일 수집(**1:1 오픈채팅·hi@ori.pics 경유 — 단체방 수집 금지, 개인정보 노출**) → Pro 수동 부여 (AI에게 목록 전달)
 - [ ] 12명 옵트인 확인일 기록 (D+14 = 프로덕션 신청 가능일)
