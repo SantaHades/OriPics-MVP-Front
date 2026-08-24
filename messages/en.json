@@ -481,8 +481,8 @@
       "confirm_button": "Delete"
     },
     "proof_history": {
-      "title": "My Proof History",
-      "empty": "No proofs yet.",
+      "title": "My Public Links",
+      "empty": "No public links published yet.",
       "go_certify": "Certify an image →",
       "view_link": "View Link",
       "expired": "Expired",

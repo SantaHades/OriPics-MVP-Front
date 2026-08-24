@@ -481,8 +481,8 @@
       "confirm_button": "탈퇴하기"
     },
     "proof_history": {
-      "title": "내 증명 히스토리",
-      "empty": "아직 증명한 이미지가 없습니다.",
+      "title": "내 공개링크 목록",
+      "empty": "아직 발행한 공개링크가 없습니다.",
       "go_certify": "이미지 증명하러 가기 →",
       "view_link": "링크 보기",
       "expired": "만료됨",
