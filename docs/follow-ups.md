@@ -45,7 +45,7 @@
 | U-1 | SSL.com C2PA Certificates 영업팀 회신 8개 질문 답변 | NOW | 회신 도착 | P0 |
 | ~~U-2~~ | **✅ 완료** — Google Play Console 개인 계정 신원확인. 2026-08-23 실측: 계정 세부정보에 법적이름·주소 등록, 연락처 이메일·전화 인증됨(✓), 경고 배너 없음. Android 개발자 인증도 패키지 `com.santahades.oripics` 등록됨(✓) | 완료 | — | ✅ |
 | U-3 | Porkbun Tucker (Change of Registrant) 최종 회신 | NOW | 형식 확인용 | P3 |
-| U-4 | D-U-N-S Number 발급 (선택) | 언젠가 | 검증 가속용 | P3 |
+| ~~U-4~~ | **✅ 2026-08-24 완료** — D-U-N-S **963267517** (Apple duns-lookup 조회로 기존 발급 확인, 신규 신청 불필요). Apple 법인 멤버십·Play 조직 계정 전환에 사용 가능. ⚠️ D&B 표기="Santa Hades Co., Ltd."(띄어쓰기) — 전환 시 표기 일치 주의 | 완료 | — | ✅ |
 
 ### 1.2 가격·정책 결정 (SSL.com 비용 응답 후)
 
