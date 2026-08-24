@@ -610,6 +610,15 @@ export default function ProfilePage() {
               <p className="text-2xl font-extrabold capitalize">
                 {credits?.tier ?? "—"}
               </p>
+              {/* free 티어에 구독 전환 진입점 (2026-08-24 피드백) */}
+              {credits?.tier === "free" && (
+                <Link
+                  href="/billing/checkout?plan=pro_monthly"
+                  className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-full transition-colors"
+                >
+                  {t("proof_history.upgrade_cta")}
+                </Link>
+              )}
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
               <p className="text-xs text-slate-500 mb-1">{tCredits("balance_label")}</p>
