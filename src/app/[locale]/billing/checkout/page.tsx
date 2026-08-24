@@ -184,6 +184,11 @@ export default function CheckoutPage() {
             <p className="mt-1.5 text-[11px] text-slate-400">{t("phone_hint")}</p>
           </div>
 
+          {/* 크레딧 정액 SET 고지 — 잔여 무료분 대체(누적 아님) 기대치 정렬 (2026-08-24) */}
+          <div className="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-800 text-[11px] leading-relaxed">
+            {t("grant_notice")}
+          </div>
+
           {/* 청약철회 제한 사전 고지 (전자상거래법 제17조 제6항 요건) */}
           <div className="mb-4 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
             <p className="font-bold text-slate-700 mb-1">{t("withdrawal_notice_title")}</p>
