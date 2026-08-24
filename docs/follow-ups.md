@@ -75,7 +75,7 @@
 | U-17 | ~~Feature graphic 디자인~~ → **완료 (2026-08-18)** — `image/oripics-feature-graphic-1024x500.png`: 브랜드 마크(좌) + OriPics 워드마크(Avenir Next Condensed) + "사진 원본 증명 · The Original Proof" 태그라인, 연한 블루 그라데이션 배경, 중앙 정렬(양쪽 여백 110px). Play 콘솔 스토어 등록정보에 업로드 | 완료 | P0 |
 | U-18 | ~~스크린샷 캡처~~ → **완료 (2026-08-19)** — `image/screenshots/` 4장(로그인·홈 Pro·인증/검증·**촬영 실기기컷**, 전부 1320×2868 = App Store 6.9"·Play 겸용). 재캡처: 시뮬 3장=`scripts/capture-screenshots.sh`, 촬영컷=실기기. 데모 계정 demo-screenshots@ori.pics = App Review 심사 계정 겸용 | 완료 | P0 |
 | U-19 | Promo video 제작 (선택) | 베타 직전 | P3 |
-| U-20 | Apple Privacy Label 입력 (App Store Connect) — **입력값 확정: [store-privacy-forms.md §2](store-privacy-forms.md)** (2026-08-23 코드 실사) | 앱 심사 직전 | P0 |
+| ~~U-20~~ | **✅ 2026-08-24 완료** — ASC App Privacy 게시([store-privacy-forms.md §2](store-privacy-forms.md) 기준: 8개 유형, 추적 없음, 진단 2종=분석·비연결. 한국어 UI에서 Performance Data="실적 데이터"). 개인정보 처리방침 URL도 입력 확인 | 완료 | ✅ |
 | ~~U-21~~ | **✅ 2026-08-24 완료** — Play Console 데이터 보안 설문 제출([store-privacy-forms.md §3](store-privacy-forms.md) 기준: 공유 없음·수집 8종·삭제 URL·암호화). 계정 생성=앱 외(웹) 선언, 데모 계정(로그인 검증 완료) 등록 포함 | 완료 | ✅ |
 | U-22 | 카테고리 검토 (Photo & Video vs Utilities — 검색 노출) | 앱 심사 직전 | P2 |
 | U-23 | What's New 카피 매 버전 갱신 (출시 후 지속) | 매 버전 | P3 |

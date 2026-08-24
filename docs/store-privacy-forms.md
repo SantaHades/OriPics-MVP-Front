@@ -40,8 +40,8 @@
 | Location → **Precise Location** | Yes | App Functionality | **Yes** |
 | Identifiers → **User ID** | Yes | App Functionality | **Yes** |
 | Identifiers → **Device ID** | Yes | App Functionality (기기 무결성 검증 — 해시만) | **No** |
-| Diagnostics → **Crash Data** | Yes | App Functionality | **No** |
-| Diagnostics → **Performance Data** | Yes (Sentry traces 20%) | App Functionality | **No** |
+| Diagnostics → **Crash Data** (한국어 UI: 충돌 데이터) | Yes | Analytics(분석) | **No** |
+| Diagnostics → **Performance Data** (한국어 UI: **실적 데이터**) | Yes (Sentry traces 20%) | Analytics(분석) | **No** |
 
 그 외 카테고리(Health, Financial, Contacts, Browsing, Search History, Purchases, Advertising Data 등)는 전부 **미수집**으로 두면 됨.
 
