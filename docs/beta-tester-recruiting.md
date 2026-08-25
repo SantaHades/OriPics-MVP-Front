@@ -142,6 +142,8 @@ Google Play 비공개 테스트 단계라 테스터 12명이 필요합니다.
 
 ## 4. 체크리스트 (운영자용)
 - [x] 테스터 오픈카톡방 개설 완료(2026-08-25): https://open.kakao.com/o/gwyKJqKi
+- [x] Google 심사 통과·비공개 테스트 라이브(2026-08-25). **Android 초대(옵트인) 링크: https://play.google.com/apps/testing/com.santahades.oripics** — 반드시 이 링크를 먼저 발송(스토어 details 링크는 옵트인 후에만 작동). 링크는 internal 목록에 등록된 Gmail로 로그인해야 열림
+- [ ] iOS: TestFlight 외부 그룹 생성 → 베타 심사 → 공개 링크 (1.0.0(4) 업로드 완료, ASC 처리 대기)
 - [ ] 참여자 Gmail → Play Console internal 목록 추가
 - [ ] 가입 이메일 수집(**1:1 오픈채팅·hi@ori.pics 경유 — 단체방 수집 금지, 개인정보 노출**) → Pro 수동 부여 (AI에게 목록 전달)
 - [ ] 12명 옵트인 확인일 기록 (D+14 = 프로덕션 신청 가능일)
