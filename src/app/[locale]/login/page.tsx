@@ -67,8 +67,19 @@ export default function LoginPage() {
         </div>
 
         <div className="glass p-8 rounded-3xl border border-slate-200 shadow-2xl">
-          {/* 소셜 로그인 버튼 */}
+          {/* 소셜 로그인 버튼 — 순서: Apple·Google·Kakao·Naver (2026-08-26 대표 지정) */}
           <div className="flex justify-center gap-6 mb-8 group">
+            {/* Apple (2026-08-26, A-50 웹 트랙) */}
+            <button
+              onClick={() => signIn("apple", { callbackUrl: "/" })}
+              className="w-14 h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
+              title={t("apple")}
+            >
+              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
+                <path d="M17.05 20.28c-.98.95-2.05.86-3.08.38-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.38C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+              </svg>
+            </button>
+
             {/* Google */}
             <button
               onClick={() => signIn("google", { callbackUrl: "/" })}
@@ -76,15 +87,6 @@ export default function LoginPage() {
               title={t("google")}
             >
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
-            </button>
-
-            {/* Naver */}
-            <button
-              onClick={() => signIn("naver", { callbackUrl: "/" })}
-              className="w-14 h-14 bg-[#03C75A] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
-              title={t("naver")}
-            >
-              <span className="text-slate-900 font-extrabold text-xl">N</span>
             </button>
 
             {/* Kakao */}
@@ -98,15 +100,13 @@ export default function LoginPage() {
               </svg>
             </button>
 
-            {/* Apple (2026-08-26, A-50 웹 트랙) */}
+            {/* Naver */}
             <button
-              onClick={() => signIn("apple", { callbackUrl: "/" })}
-              className="w-14 h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
-              title={t("apple")}
+              onClick={() => signIn("naver", { callbackUrl: "/" })}
+              className="w-14 h-14 bg-[#03C75A] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
+              title={t("naver")}
             >
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
-                <path d="M17.05 20.28c-.98.95-2.05.86-3.08.38-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.38C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-              </svg>
+              <span className="text-slate-900 font-extrabold text-xl">N</span>
             </button>
           </div>
 
