@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 export interface CreditTransactionView {
   id: string;
@@ -21,7 +21,7 @@ export interface CreditsData {
 
 /**
  * 인증된 사용자의 크레딧 잔액·이력 조회 hook.
- * 비인증 시 data=null. 401 응답 시 자동 무시.
+ * 비인증 시 data=null. 세션이 인증 상태인데 401이면 죽은 세션(탈퇴 등) — 자동 로그아웃.
  */
 export function useCredits(): {
   data: CreditsData | null;
@@ -41,7 +41,10 @@ export function useCredits(): {
     try {
       const res = await fetch("/api/credits/me");
       if (res.status === 401) {
+        // JWT 세션 쿠키(30일)는 무상태라 계정 삭제 후에도 살아 있음 — 서버 401 = 무효 세션.
+        // 죽은 쿠키를 정리하고 로그아웃 (앱에서 탈퇴 후 웹 프로필이 이전 정보를 표시하던 문제, 2026-08-26)
         setData(null);
+        void signOut({ callbackUrl: "/" });
         return;
       }
       if (!res.ok) {
