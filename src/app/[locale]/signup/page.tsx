@@ -18,6 +18,9 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [agreed, setAgreed] = useState(false);
+  // 동의 전 소셜 버튼 클릭 → 인라인 에러 대신 팝업 (작은 창에서 안 보임, 2026-08-26 대표 피드백).
+  // 팝업의 [동의하고 계속하기]가 동의 체크 + 해당 provider 로그인까지 이어서 실행
+  const [pendingProvider, setPendingProvider] = useState<"apple" | "google" | "kakao" | "naver" | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -167,7 +170,7 @@ export default function SignupPage() {
             {/* Apple (2026-08-26, A-50 웹 트랙) */}
             <button
               onClick={() => {
-                if (!agreed) { setError(t("errors.must_agree")); return; }
+                if (!agreed) { setPendingProvider("apple"); return; }
                 signIn("apple", { callbackUrl: "/" });
               }}
               className="w-14 h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
@@ -179,7 +182,7 @@ export default function SignupPage() {
             </button>
             <button
               onClick={() => {
-                if (!agreed) { setError(t("errors.must_agree")); return; }
+                if (!agreed) { setPendingProvider("google"); return; }
                 signIn("google", { callbackUrl: "/" });
               }}
               className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
@@ -189,7 +192,7 @@ export default function SignupPage() {
             </button>
             <button
               onClick={() => {
-                if (!agreed) { setError(t("errors.must_agree")); return; }
+                if (!agreed) { setPendingProvider("kakao"); return; }
                 signIn("kakao", { callbackUrl: "/" });
               }}
               className="w-14 h-14 bg-[#FEE500] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
@@ -201,7 +204,7 @@ export default function SignupPage() {
             </button>
             <button
               onClick={() => {
-                if (!agreed) { setError(t("errors.must_agree")); return; }
+                if (!agreed) { setPendingProvider("naver"); return; }
                 signIn("naver", { callbackUrl: "/" });
               }}
               className="w-14 h-14 bg-[#03C75A] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
@@ -380,6 +383,55 @@ export default function SignupPage() {
           <ShieldCheck size={14} /> {t("shield_text")}
         </p>
       </div>
+
+      {/* 동의 안내 팝업 — 작은 창에서 인라인 에러가 안 보이는 문제 대응 (2026-08-26 대표 피드백).
+          [동의하고 계속하기] = 체크 + 선택한 provider로 즉시 진행 */}
+      {pendingProvider && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6"
+          onClick={() => setPendingProvider(null)}
+        >
+          <div
+            className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm text-slate-800 font-medium mb-2">{t("errors.must_agree")}</p>
+            <p className="text-xs text-slate-500 mb-5">
+              {t.rich("agree_label", {
+                terms: (chunks) => (
+                  <Link href="/terms" target="_blank" className="text-blue-600 underline">
+                    {chunks}
+                  </Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/privacy" target="_blank" className="text-blue-600 underline">
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPendingProvider(null)}
+                className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors"
+              >
+                {t("agree_close")}
+              </button>
+              <button
+                onClick={() => {
+                  const p = pendingProvider;
+                  setAgreed(true);
+                  setPendingProvider(null);
+                  signIn(p, { callbackUrl: "/" });
+                }}
+                className="flex-1 py-3 rounded-xl bg-blue-800 hover:bg-blue-700 text-white text-sm font-bold transition-colors"
+              >
+                {t("agree_continue")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

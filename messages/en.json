@@ -396,6 +396,8 @@
     "login_link": "Log in",
     "shield_text": "Secure data encryption technology is applied.",
     "agree_label": "I agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>. (Required)",
+    "agree_continue": "Agree and continue",
+    "agree_close": "Close",
     "errors": {
       "invalid_email": "Invalid email address. Please enter a valid format (e.g., name@domain.com).",
       "short_password": "Password must be at least 6 characters long.",
