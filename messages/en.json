@@ -308,16 +308,12 @@
           "a": "OriPics uses steganography technology to invisibly embed certification data into the pixel data of your image. When a certified image is selected again, the embedded data is extracted to instantly verify its authenticity. Even a single pixel modification is detected."
         },
         {
-          "q": "What's the difference between Standard and Verified certification?",
-          "a": "Both tiers provide the same integrity guarantee from the moment of certification onward — the server signs the image's pixel data at certification time, so changing even a single pixel afterward is detected. The difference is how much you can trust what happened before certification. Standard seals any image (e.g., from your gallery), proving it has remained unmodified since that moment. Verified is granted only to photos taken with the OriPics mobile app camera (Pro plan): through iOS App Attest / Android Play Integrity hardware attestation, Apple/Google confirm that a genuine app on a real device requested certification at the moment of capture. Both tiers are clearly distinguished on verification results and public link pages."
-        },
-        {
           "q": "Can I share a certified image with others?",
-          "a": "Yes! By creating a Quick Link, anyone can verify the original certification status in their web browser. Quick Links are valid for 7 days. Note: Sending the image file directly through social media (KakaoTalk, Instagram, WhatsApp, etc.) may break the certification, as these platforms automatically compress and resize images. To preserve the certification, we recommend sharing via Quick Link."
+          "a": "Yes! By creating a Quick Link, anyone can verify the original certification status in their web browser. Quick Links remain valid for 7 days on the Free plan, and for as long as you subscribe with Pro's Storage Box. Note: Sending the image file directly through social media (KakaoTalk, Instagram, WhatsApp, etc.) may break the certification, as these platforms automatically compress and resize images. To preserve the certification, we recommend sharing via Quick Link."
         },
         {
           "q": "Are my images stored on the server?",
-          "a": "During certification, your image is never sent to the server. Only if you create a Quick Link, the certified result image is stored securely in cloud storage — for 7 days on the Free plan, or for as long as you subscribe with Pro's Storage Box."
+          "a": "The computation needed for certification (hashing) runs directly on your device (browser/app). Once certification completes, the certified result image is stored securely in cloud storage — used for Quick Link viewing, later link publishing, and re-download — for 7 days on the Free plan, or for as long as you subscribe with Pro's Storage Box. Verification never sends your image to the server; only the certification data extracted on your device is checked."
         },
         {
           "q": "Does certification affect image quality?",
@@ -329,11 +325,7 @@
         },
         {
           "q": "Is GPS location included when I take a photo?",
-          "a": "Yes. When you shoot in the OriPics mobile app with location access allowed, the GPS coordinates at the moment of capture are included as part of the certification. Location data is embedded only in the image pixels and is not stored separately on the server. File selection and clipboard methods do not include GPS to prevent tampering."
-        },
-        {
-          "q": "GPS coordinates aren't saved after taking a photo on iPhone Safari — which settings should I check?",
-          "a": "Check these four in order. ① [Reset site permission — most reliable] Settings → Safari → Advanced → Website Data → search 'ori.pics' → swipe the entry left and Delete → revisit the site and tap Allow when the permission prompt reappears. ② [Safari-wide location policy] Settings → Safari → Location → set to Ask or Allow (Deny blocks every site). ③ [iOS system location services] Settings → Privacy & Security → Location Services → On → scroll down to 'Safari Websites' → While Using the App + Precise Location turned on. ④ [HTTPS required] Geolocation is always blocked over http://. Always access the site via https://ori.pics or https://www.ori.pics."
+          "a": "Yes. When you shoot in the OriPics mobile app with location access allowed, the GPS coordinates at the moment of capture are embedded into the image pixels under the server signature. If you create a Quick Link, the capture location is also shown on the viewer page. You can turn GPS off anytime on the camera screen. File selection and other non-camera methods do not include GPS to prevent tampering."
         },
         {
           "q": "Does editing EXIF metadata (timestamp, GPS) with an EXIF editor affect OriPics certification?",
@@ -341,7 +333,11 @@
         },
         {
           "q": "Are high-resolution images certified at original size?",
-          "a": "Images with the longest side exceeding 1800 pixels are automatically resized (proportionally) to fit within 1800 pixels before certification (e.g., 4032×3024 → 1800×1350). This is to speed up mobile download and sharing — the resized image becomes the certified original. Images at 1800 pixels or smaller are certified at their original size. If you need certification at full original resolution, please contact us."
+          "a": "Yes. For images whose longest side exceeds 1800 pixels, you can choose to certify a standard size (proportionally resized to 1800 pixels), the original size, or both. Original-size certification uses more credits depending on size (2× the standard rate, 3× above 100 megapixels). Images at 1800 pixels or smaller are certified as-is."
+        },
+        {
+          "q": "What's the difference between Standard and Verified certification?",
+          "a": "Both tiers provide the same integrity guarantee from the moment of certification onward — the server signs the image's pixel data at certification time, so changing even a single pixel afterward is detected. The difference is how much you can trust what happened before certification. Standard seals any image (e.g., from your gallery), proving it has remained unmodified since that moment. Verified is granted only to photos taken with the OriPics mobile app camera (Pro plan): through iOS App Attest / Android Play Integrity hardware attestation, Apple/Google confirm that a genuine app on a real device requested certification at the moment of capture. Both tiers are clearly distinguished on verification results and public link pages."
         }
       ]
     }
