@@ -313,7 +313,7 @@
         },
         {
           "q": "Are my images stored on the server?",
-          "a": "The computation needed for certification (hashing) runs directly on your device (browser/app). Once certification completes, the certified result image is stored securely in cloud storage — used for Quick Link viewing, later link publishing, and re-download — for 7 days on the Free plan, or for as long as you subscribe with Pro's Storage Box. Verification never sends your image to the server; only the certification data extracted on your device is checked."
+          "a": "Your images are not stored on the server. Certification is processed directly on your device (browser). Only when you publish a Quick Link is the certified result image stored in secure cloud storage — for 7 days on the Free plan, or for as long as you subscribe with Pro's Storage Box. Verification also never sends your image to the server."
         },
         {
           "q": "Does certification affect image quality?",
