@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
 
 export async function DELETE() {
   try {
-    const session = await getServerSession(authOptions);
+    // Bearer(모바일)→쿠키(웹) 공용 — 앱 내 탈퇴(2026-08-26)가 앱 세션의 계정을 삭제하도록.
+    // (기존 쿠키 전용이라 앱의 웹 링크 탈퇴는 브라우저에 로그인된 다른 계정이 표시되는 문제)
+    const userId = await getSessionUserId();
 
-    if (!session?.user?.email) {
+    if (!userId) {
       return NextResponse.json(
         { code: "unauthorized", message: "인증되지 않은 요청입니다." },
         { status: 401 }
@@ -15,7 +16,7 @@ export async function DELETE() {
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
+      where: { id: userId },
     });
 
     if (!user) {
@@ -25,11 +26,13 @@ export async function DELETE() {
       );
     }
 
-    // Cascade 설정으로 Account, Session도 자동 삭제됨
+    // Cascade 설정으로 Account, Session, MobileRefreshToken도 자동 삭제됨
     // PasswordResetToken은 별도로 삭제
-    await prisma.passwordResetToken.deleteMany({
-      where: { email: session.user.email },
-    });
+    if (user.email) {
+      await prisma.passwordResetToken.deleteMany({
+        where: { email: user.email },
+      });
+    }
 
     await prisma.user.delete({
       where: { id: user.id },
