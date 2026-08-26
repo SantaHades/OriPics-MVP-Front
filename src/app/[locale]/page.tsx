@@ -1042,9 +1042,11 @@ export default function Home() {
                 <Link
                   href="/profile#credits"
                   className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-[11px] sm:text-xs font-semibold border border-blue-100 hover:bg-blue-100 transition-colors whitespace-nowrap"
+                  // 칩 숫자 = 잔여 건수(크레딧)로 통일 — floor(/3) "인증 가능 횟수"는 앱·프로필의 잔액 20과
+                  // 달라 보여 혼란 (2026-08-26 대표 피드백: 앱 20건 vs 웹 6건)
                   title={t("credits.chip_title", { count: credits.credits })}
                 >
-                  {t("credits.chip", { count: Math.floor(credits.credits / CREDIT_COSTS.IMAGE_PROOF) })}
+                  {t("credits.chip", { count: credits.credits })}
                 </Link>
               )}
               <Link href="/profile" className="flex items-center gap-1.5 group hover:opacity-80 transition-all">

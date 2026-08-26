@@ -172,10 +172,10 @@
     },
     "credits": {
       "chip": "{count} left",
-      "chip_title": "{count} proofs remaining",
+      "chip_title": "{count} credits left — each photo proof uses 3",
       "section_title": "My usage",
       "tier_label": "Current plan",
-      "balance_label": "Remaining proofs",
+      "balance_label": "Balance",
       "balance_suffix": " proofs available",
       "renews_label": "Next renewal",
       "history_title": "Recent activity",
