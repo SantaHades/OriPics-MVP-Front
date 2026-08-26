@@ -308,6 +308,10 @@
           "a": "OriPics uses steganography technology to invisibly embed certification data into the pixel data of your image. When a certified image is selected again, the embedded data is extracted to instantly verify its authenticity. Even a single pixel modification is detected."
         },
         {
+          "q": "What's the difference between Standard and Verified certification?",
+          "a": "Both tiers provide the same integrity guarantee from the moment of certification onward — the server signs the image's pixel data at certification time, so changing even a single pixel afterward is detected. The difference is how much you can trust what happened before certification. Standard seals any image (e.g., from your gallery), proving it has remained unmodified since that moment. Verified is granted only to photos taken with the OriPics mobile app camera (Pro plan): through iOS App Attest / Android Play Integrity hardware attestation, Apple/Google confirm that a genuine app on a real device requested certification at the moment of capture. Both tiers are clearly distinguished on verification results and public link pages."
+        },
+        {
           "q": "Can I share a certified image with others?",
           "a": "Yes! By creating a Quick Link, anyone can verify the original certification status in their web browser. Quick Links are valid for 7 days. Note: Sending the image file directly through social media (KakaoTalk, Instagram, WhatsApp, etc.) may break the certification, as these platforms automatically compress and resize images. To preserve the certification, we recommend sharing via Quick Link."
         },
