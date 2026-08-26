@@ -1031,7 +1031,8 @@ export default function ProfilePage() {
       {/* 회원 탈퇴 확인 모달 */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-6 animate-in fade-in duration-200">
-          <div className="bg-[#1e293b] rounded-3xl max-w-md w-full p-8 border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-300">
+          {/* 배경 #1e293b(다크)에 라이트용 텍스트 색이 얹혀 안 보이던 문제 — 흰 배경으로 (2026-08-26 대표 피드백) */}
+          <div className="bg-white rounded-3xl max-w-md w-full p-8 border border-slate-200 shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="text-center mb-6">
               <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={28} className="text-red-600" />
@@ -1057,7 +1058,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(""); }}
-                className="flex-1 py-3 border border-slate-200 text-slate-600 font-medium rounded-xl hover:bg-white/80 transition-all"
+                className="flex-1 py-3 border border-slate-200 text-slate-600 font-medium rounded-xl hover:bg-slate-50 transition-all"
               >
                 {t("delete_account.cancel")}
               </button>
