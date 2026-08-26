@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
-import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check } from "lucide-react";
+import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check, Info } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
@@ -625,7 +625,24 @@ export default function ProfilePage() {
               )}
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
-              <p className="text-xs text-slate-500 mb-1">{tCredits("balance_label")}</p>
+              <p className="text-xs text-slate-500 mb-1 flex items-center gap-1">
+                {tCredits("balance_label")}
+                {/* 앱의 크레딧 칩 ⓘ와 동일 패턴 — 클릭하면 아래 차감 규칙 패널을 펼치고 스크롤 (2026-08-26 대표 피드백) */}
+                <button
+                  type="button"
+                  aria-label={tCredits("rules_toggle")}
+                  onClick={() => {
+                    const el = document.getElementById("credit-rules") as HTMLDetailsElement | null;
+                    if (el) {
+                      el.open = true;
+                      el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }}
+                  className="text-slate-400 hover:text-blue-600 transition-colors"
+                >
+                  <Info size={14} />
+                </button>
+              </p>
               <p className="text-2xl font-extrabold">{credits ? `${credits.credits}` : "—"}</p>
               {/* "N회 인증 가능" 추정 표기는 가변 차감(기본 3·Verified 4·대형 ×2~3)과 안 맞아 규칙 요약으로 교체 (2026-08-26 대표 피드백) */}
               <p className="text-xs text-slate-500 mt-1">{tCredits("balance_note")}</p>
@@ -641,7 +658,7 @@ export default function ProfilePage() {
           </div>
 
           {/* 차감 규칙·요금제 (2026-08-22) — 접힌 상태 기본, 모바일 앱 시트와 동일 내용 + 웹 가격 */}
-          <details className="rounded-2xl border border-slate-200 bg-white/40 mb-6 group">
+          <details id="credit-rules" className="rounded-2xl border border-slate-200 bg-white/40 mb-6 group scroll-mt-24">
             <summary className="px-5 py-3 text-sm font-semibold text-slate-700 cursor-pointer select-none list-none flex items-center justify-between">
               {tCredits("rules_toggle")}
               <span className="text-slate-400 group-open:rotate-180 transition-transform">⌄</span>
