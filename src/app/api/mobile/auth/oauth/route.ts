@@ -47,6 +47,56 @@ async function verifyKakao(accessToken: string): Promise<ProviderProfile | null>
   };
 }
 
+// Apple (2026-08-26, A-50) — 네이티브 앱의 identityToken(JWT)을 Apple 공개키(JWKS)로 검증.
+// aud=앱 번들 ID (웹 Services ID와 다름 — 네이티브 토큰은 번들 ID로 발급됨).
+// 이메일 가리기(Private Relay) 시 relay 주소가 옴 — 동일 이메일 매칭 실패 가능(웹과 동일 한계).
+const APPLE_ISS = "https://appleid.apple.com";
+const APPLE_NATIVE_AUD = "com.santahades.oripics";
+
+function b64urlToBuf(s: string): Buffer {
+  return Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+}
+
+async function verifyApple(idToken: string): Promise<ProviderProfile | null> {
+  try {
+    const parts = idToken.split(".");
+    if (parts.length !== 3) return null;
+    const header = JSON.parse(b64urlToBuf(parts[0]).toString("utf8"));
+    if (header.alg !== "RS256" || !header.kid) return null;
+
+    const jwksRes = await fetch(`${APPLE_ISS}/auth/keys`);
+    if (!jwksRes.ok) return null;
+    const jwks = await jwksRes.json();
+    const jwk = (jwks.keys as any[]).find((k) => k.kid === header.kid);
+    if (!jwk) return null;
+
+    const { createPublicKey, verify } = await import("crypto");
+    const key = createPublicKey({ key: jwk, format: "jwk" });
+    const ok = verify(
+      "sha256",
+      Buffer.from(`${parts[0]}.${parts[1]}`, "utf8"),
+      key,
+      b64urlToBuf(parts[2]),
+    );
+    if (!ok) return null;
+
+    const claims = JSON.parse(b64urlToBuf(parts[1]).toString("utf8"));
+    if (claims.iss !== APPLE_ISS) return null;
+    if (claims.aud !== APPLE_NATIVE_AUD) return null;
+    if (typeof claims.exp !== "number" || claims.exp <= Math.floor(Date.now() / 1000)) return null;
+    if (!claims.sub) return null;
+    return {
+      providerAccountId: String(claims.sub),
+      email: typeof claims.email === "string" ? claims.email : null,
+      name: null, // Apple은 id_token에 이름을 담지 않음 (최초 승인 시 클라이언트에만 전달)
+      image: null,
+    };
+  } catch (e) {
+    console.error("[mobile/auth/oauth] apple verify failed:", e);
+    return null;
+  }
+}
+
 async function verifyNaver(accessToken: string): Promise<ProviderProfile | null> {
   const res = await fetch("https://openapi.naver.com/v1/nid/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -74,6 +124,7 @@ export async function POST(req: NextRequest) {
   const provider = body.provider;
   let profile: ProviderProfile | null = null;
   if (provider === "google" && body.id_token) profile = await verifyGoogle(body.id_token);
+  else if (provider === "apple" && body.id_token) profile = await verifyApple(body.id_token);
   else if (provider === "kakao" && body.access_token) profile = await verifyKakao(body.access_token);
   else if (provider === "naver" && body.access_token) profile = await verifyNaver(body.access_token);
   else return NextResponse.json({ detail: "unsupported_provider_or_missing_token" }, { status: 400 });

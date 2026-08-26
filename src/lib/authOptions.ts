@@ -5,7 +5,9 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import KakaoProvider from "next-auth/providers/kakao";
 import NaverProvider from "next-auth/providers/naver";
+import AppleProvider from "next-auth/providers/apple";
 import * as bcrypt from "bcryptjs";
+import { appleClientSecret } from "@/lib/auth/appleClientSecret";
 import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rateLimit";
 
@@ -27,6 +29,13 @@ export const authOptions: NextAuthOptions = {
           image: profile.kakao_account?.profile?.profile_image_url,
         };
       },
+    }),
+    // Apple (2026-08-26) — clientSecret은 팀 키로 서명한 JWT(appleClientSecret).
+    // 이메일 가리기(Private Relay) 선택 시 relay 이메일이 와서 기존 소셜 계정과
+    // 이메일 매칭이 안 될 수 있음 — 그 경우 신규 계정으로 생성됨(알려진 한계).
+    AppleProvider({
+      clientId: process.env.APPLE_CLIENT_ID || "",
+      clientSecret: appleClientSecret(),
     }),
     NaverProvider({
       clientId: process.env.NAVER_CLIENT_ID || "",
@@ -91,6 +100,14 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+  },
+  // Apple은 콜백을 cross-site POST(form_post)로 보내므로 pkce 쿠키가 SameSite=Lax면
+  // 전송되지 않아 검증 실패 — None으로 완화 (pkce는 apple만 사용, 짧은 수명·httpOnly 유지)
+  cookies: {
+    pkceCodeVerifier: {
+      name: "next-auth.pkce.code_verifier",
+      options: { httpOnly: true, sameSite: "none", path: "/", secure: true },
+    },
   },
   callbacks: {
     async signIn({ user, account, profile }) {
