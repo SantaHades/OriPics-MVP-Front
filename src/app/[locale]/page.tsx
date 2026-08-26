@@ -62,6 +62,8 @@ interface ApiResponse {
   tier?: string;
   /** 서버가 유도한 공개링크 (V4+, 발행된 인증만) */
   verify_url?: string;
+  /** C2PA 자격증명 증거 (trust_report.evidence의 c2pa.manifest — 발행본 기준, 2026-08-26) */
+  c2pa?: { result?: string; issuer?: string };
 }
 
 const KNOWN_ERROR_CODES = ["empty_file", "invalid_image", "image_too_small", "dimension_mismatch"];
@@ -311,6 +313,10 @@ export default function Home() {
         return;
       }
       if (verifyRes.metadata) {
+        // C2PA 증거 (trust_report.evidence) — OriPics 스탬프 판독과 구분 표시 (2026-08-26)
+        const c2paEv = verifyRes.trust_report?.evidence?.find((e) => e.type === "c2pa.manifest") as
+          | { result?: string; details?: { signer?: { issuer?: string } } }
+          | undefined;
         setResultData({
           status: "verified",
           match: verifyRes.match,
@@ -318,6 +324,7 @@ export default function Home() {
           owner_exempt: verifyRes.owner_exempt,
           tier: verifyRes.tier,
           verify_url: verifyRes.trust_report?.subject?.verify_url,
+          c2pa: c2paEv ? { result: c2paEv.result, issuer: c2paEv.details?.signer?.issuer } : undefined,
         });
         setStatus("result_verified");
         void refreshCredits();
@@ -1632,6 +1639,10 @@ export default function Home() {
             <div className="flex flex-col items-center mb-8">
               <img src={originalImagePreview!} className="max-w-[200px] max-h-[200px] object-contain rounded border border-slate-200 mb-6" alt="Verify" />
               <div className="w-full bg-slate-50 rounded-xl p-6 text-sm text-slate-700">
+                {/* 판독 결과 이원 표시 (2026-08-26): OriPics 스탬프 섹션 ↔ 아래 C2PA 섹션 구분 */}
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wide pb-1">
+                  {t("verify.section_oripics")}
+                </div>
                 {/* verified 티어 (links.tier) — 촬영 시점 기기 검증 통과 표시 (2026-08-23) */}
                 {resultData.match && resultData.tier === "verified" && (
                   <div className="flex justify-between py-2 border-b border-slate-100">
@@ -1698,6 +1709,37 @@ export default function Home() {
                     <span className="px-3 py-1 bg-blue-500/20 text-blue-700 rounded-full text-xs font-bold border border-blue-200">{t("verify.match")}</span>
                   ) : (
                     <span className="px-3 py-1 bg-red-50 text-red-300 rounded-full text-xs font-bold border border-red-200">{t("verify.mismatch")}</span>
+                  )}
+                </div>
+
+                {/* C2PA 자격증명 섹션 (2026-08-26) — 발행본에서 읽은 증거. OriPics 스탬프 판독과 별개 축 */}
+                <div className="mt-4 pt-3 border-t border-slate-200">
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wide pb-1">
+                    {t("verify.section_c2pa")}
+                  </div>
+                  <div className="flex justify-between py-2 items-center">
+                    <span className="text-slate-500">{t("verify.c2pa_status")}</span>
+                    {(() => {
+                      const r = resultData.c2pa?.result;
+                      const badge = (cls: string, label: string) => (
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border ${cls}`}>{label}</span>
+                      );
+                      if (r === "trusted")
+                        return badge("bg-emerald-50 text-emerald-700 border-emerald-200", t("verify.c2pa_trusted"));
+                      if (r === "untrusted")
+                        return badge("bg-amber-50 text-amber-700 border-amber-200", t("verify.c2pa_untrusted"));
+                      if (r === "invalid")
+                        return badge("bg-red-50 text-red-600 border-red-200", t("verify.c2pa_invalid"));
+                      if (r === "absent")
+                        return badge("bg-slate-100 text-slate-500 border-slate-200", t("verify.c2pa_absent"));
+                      return badge("bg-slate-100 text-slate-500 border-slate-200", t("verify.c2pa_unchecked"));
+                    })()}
+                  </div>
+                  {resultData.c2pa?.issuer && (
+                    <div className="flex justify-between py-2 items-center">
+                      <span className="text-slate-500">{t("verify.c2pa_signer")}</span>
+                      <span className="font-medium text-xs">{resultData.c2pa.issuer}</span>
+                    </div>
                   )}
                 </div>
               </div>

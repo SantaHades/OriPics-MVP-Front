@@ -141,7 +141,16 @@
       "fail_desc": "Warning: This image is judged to have been tampered with or modified after certification. It may not be the original.",
       "owner_exempt": "Your own proof — no charge",
       "public_link": "Public Link",
-      "verify_another": "Verify Another Image"
+      "verify_another": "Verify Another Image",
+      "section_oripics": "OriPics Stamp Verification",
+      "section_c2pa": "C2PA Content Credentials (published copy)",
+      "c2pa_status": "Status",
+      "c2pa_signer": "Signer",
+      "c2pa_trusted": "Signature valid · Trusted",
+      "c2pa_untrusted": "Signature valid · Not on trust list",
+      "c2pa_invalid": "Tampering evidence detected",
+      "c2pa_absent": "Not present",
+      "c2pa_unchecked": "Could not check"
     },
     "how_it_works": {
       "title": "How It Works",
