@@ -357,6 +357,7 @@
     "naver": "Login with Naver",
     "kakao": "Login with Kakao",
     "apple": "Sign in with Apple",
+    "social_consent": "By continuing with social login, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
     "or_email": "Or continue with email",
     "email": "Email",
     "password": "Password",

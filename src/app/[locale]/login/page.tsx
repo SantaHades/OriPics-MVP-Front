@@ -110,6 +110,23 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* 간주 동의 고지 (2026-08-26) — 로그인 페이지 소셜 버튼은 신규 사용자면 즉석 가입되므로
+              약관·개인정보 수집 동의 고지 필요 (가입 페이지의 체크박스 게이트와 등가) */}
+          <p className="text-[11px] text-slate-500 text-center leading-relaxed mb-8 -mt-3">
+            {t.rich("social_consent", {
+              terms: (chunks) => (
+                <Link href="/terms" target="_blank" className="text-blue-600 underline">
+                  {chunks}
+                </Link>
+              ),
+              privacy: (chunks) => (
+                <Link href="/privacy" target="_blank" className="text-blue-600 underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
+          </p>
+
           <div className="relative mb-8">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-slate-200"></div>
