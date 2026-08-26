@@ -162,11 +162,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ detail: `OAuthAccountNotLinked_${usedProvider}` }, { status: 409 });
       }
     }
-    // 3) 신규 가입 (PrismaAdapter가 만드는 형태를 미러링)
+    // 3) 신규 가입 (PrismaAdapter가 만드는 형태를 미러링).
+    // Apple은 이름 미제공 — null이면 이메일 앞부분을 기본 이름으로 (UI "님" 공백 방지, 2026-08-26)
     const created = await prisma.user.create({
       data: {
         email: profile.email,
-        name: profile.name,
+        name: profile.name ?? (profile.email ? profile.email.split("@")[0] : null),
         image: profile.image,
         accounts: {
           create: {

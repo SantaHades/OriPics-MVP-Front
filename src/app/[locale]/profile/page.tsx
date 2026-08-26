@@ -538,6 +538,8 @@ export default function ProfilePage() {
                     type="text"
                     required
                     placeholder={t("name_placeholder")}
+                    // 브라우저 자동완성이 이름칸에 이메일을 채우는 오인 방지 (2026-08-26 실측 — Apple 가입 직후 gmail이 채워져 보임)
+                    autoComplete="nickname"
                     className="w-full bg-slate-100 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-blue-500/50 outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
                     value={name}
                     onChange={(e) => setName(e.target.value)}

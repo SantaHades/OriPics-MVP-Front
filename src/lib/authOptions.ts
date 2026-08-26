@@ -192,6 +192,17 @@ export const authOptions: NextAuthOptions = {
       } catch (e) {
         console.error("[authOptions] grantSignupCredits failed:", e);
       }
+      // Apple 등 이름 미제공 provider — 이메일 앞부분을 기본 이름으로 (UI "님" 공백 방지, 2026-08-26)
+      if (!user.name && user.email) {
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { name: user.email.split("@")[0] },
+          });
+        } catch (e) {
+          console.error("[authOptions] default name backfill failed:", e);
+        }
+      }
     },
   },
   pages: {
