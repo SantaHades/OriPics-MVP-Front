@@ -172,11 +172,11 @@
     },
     "credits": {
       "chip": "{count}건 남음",
-      "chip_title": "잔여 {count}건 — 사진 인증 1회당 3건 차감",
+      "chip_title": "잔여 {count}건 — 사진 인증 1회 기본 3건 차감 (Verified 4건 · 대형 사진 2~3배)",
       "section_title": "내 이용 현황",
       "tier_label": "현재 플랜",
       "balance_label": "잔여 건수",
-      "balance_suffix": "회 인증 가능",
+      "balance_note": "사진 인증 1회 = 기본 3건 차감 (Verified 4건 · 대형 사진은 2~3배)",
       "renews_label": "다음 갱신",
       "history_title": "최근 내역",
       "rules_toggle": "차감 규칙·요금제 보기",

@@ -626,12 +626,9 @@ export default function ProfilePage() {
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
               <p className="text-xs text-slate-500 mb-1">{tCredits("balance_label")}</p>
-              <p className="text-2xl font-extrabold">
-                {credits ? `${credits.credits}` : "—"}
-                <span className="text-sm font-normal text-slate-500 ml-1">
-                  ({Math.floor((credits?.credits ?? 0) / CREDIT_COSTS.IMAGE_PROOF)}{tCredits("balance_suffix")})
-                </span>
-              </p>
+              <p className="text-2xl font-extrabold">{credits ? `${credits.credits}` : "—"}</p>
+              {/* "N회 인증 가능" 추정 표기는 가변 차감(기본 3·Verified 4·대형 ×2~3)과 안 맞아 규칙 요약으로 교체 (2026-08-26 대표 피드백) */}
+              <p className="text-xs text-slate-500 mt-1">{tCredits("balance_note")}</p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
               <p className="text-xs text-slate-500 mb-1">{tCredits("renews_label")}</p>

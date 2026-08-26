@@ -172,11 +172,11 @@
     },
     "credits": {
       "chip": "{count} left",
-      "chip_title": "{count} credits left — each photo proof uses 3",
+      "chip_title": "{count} left — one photo proof uses 3 base (Verified 4 · large photos 2–3×)",
       "section_title": "My usage",
       "tier_label": "Current plan",
       "balance_label": "Balance",
-      "balance_suffix": " proofs available",
+      "balance_note": "One photo proof = 3 base (Verified 4 · large photos 2–3×)",
       "renews_label": "Next renewal",
       "history_title": "Recent activity",
       "rules_toggle": "Credit costs & plans",
