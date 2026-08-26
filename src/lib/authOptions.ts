@@ -36,6 +36,10 @@ export const authOptions: NextAuthOptions = {
     AppleProvider({
       clientId: process.env.APPLE_CLIENT_ID || "",
       clientSecret: appleClientSecret(),
+      // NextAuth 기본 pkce는 Apple 미문서 파라미터(code_challenge) — Apple 빠른 재로그인 경로가
+      // "오류로 인해 요청을 완료할 수 없습니다"를 내는 원인으로 지목(2026-08-26 실측). Apple 공식
+      // 지원인 state로 교체 (state 쿠키는 form_post cross-site POST 대응 SameSite=None — 아래 cookies)
+      checks: ["state"],
     }),
     NaverProvider({
       clientId: process.env.NAVER_CLIENT_ID || "",
@@ -101,9 +105,13 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  // Apple은 콜백을 cross-site POST(form_post)로 보내므로 pkce 쿠키가 SameSite=Lax면
-  // 전송되지 않아 검증 실패 — None으로 완화 (pkce는 apple만 사용, 짧은 수명·httpOnly 유지)
+  // Apple은 콜백을 cross-site POST(form_post)로 보내므로 검증 쿠키가 SameSite=Lax면
+  // 전송되지 않아 실패 — None으로 완화 (짧은 수명·httpOnly 유지. state=apple, pkce=미사용 잔존 대비)
   cookies: {
+    state: {
+      name: "next-auth.state",
+      options: { httpOnly: true, sameSite: "none", path: "/", secure: true },
+    },
     pkceCodeVerifier: {
       name: "next-auth.pkce.code_verifier",
       options: { httpOnly: true, sameSite: "none", path: "/", secure: true },
