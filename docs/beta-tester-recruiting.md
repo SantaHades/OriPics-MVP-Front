@@ -247,7 +247,7 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 - [x] 테스터 오픈카톡방 개설 완료(2026-08-25): https://open.kakao.com/o/gwyKJqKi
 - [x] Google 심사 통과·비공개 테스트 라이브(2026-08-25). **Android 초대(옵트인) 링크: https://play.google.com/apps/testing/com.santahades.oripics** — 반드시 이 링크를 먼저 발송(스토어 details 링크는 옵트인 후에만 작동). 링크는 internal 목록에 등록된 Gmail로 로그인해야 열림
 - [x] iOS: 베타 앱 심사 승인(2026-08-26, 1.0.0(4)) → **공개 링크: https://testflight.apple.com/join/zNwF6DKZ** (초대·이메일 불요, 링크만으로 설치. 빌드 90일 만료 — 새 빌드 업로드 시 자동 연장)
-- [ ] **1.0.0(5) 양 플랫폼 업로드** — 8/26 변경(A-48 봉인·Apple 로그인·앱 내 탈퇴·표기 통일) 미포함 상태. iPhone 모집 발송 전 권장(온보딩의 [Apple로 로그인] 안내가 1.0.0(5)부터 유효). TestFlight 후속 빌드는 통상 자동 승인
+- [x] **1.0.0(6) 양 플랫폼 제출 완료(2026-08-27)** — 소셜 로그인 4종(Apple·Google·카카오·네이버)+8/26 변경 전부 포함. iOS=TestFlight 제출됨(라이브 확인 후 iPhone 모집 발송), Android=Alpha 트랙 Google 검토 대기(승인 후 Android 모집 발송)
 - [ ] 참여자 Gmail → Play Console internal 목록 추가
 - [ ] 가입 이메일 수집(**1:1 오픈채팅·hi@ori.pics 경유 — 단체방 수집 금지, 개인정보 노출**) → Pro 수동 부여 (AI에게 목록 전달)
 - [ ] 12명 옵트인 확인일 기록 (D+14 = 프로덕션 신청 가능일)
