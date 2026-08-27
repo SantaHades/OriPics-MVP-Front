@@ -20,13 +20,20 @@ export default function LoginPage() {
   React.useEffect(() => {
     const errorParam = searchParams.get("error");
     if (errorParam) {
-      // OAuthAccountNotLinked_naver 같은 provider별 에러 코드 처리
+      // OAuthAccountNotLinked_<provider>_<email> 처리 — 이메일은 소셜 provider가 준 실제 값
+      // (입력칸 자동완성과 무관). 구형식(<provider>만)도 지원. 이메일 내 _ 대비 slice-join.
       if (errorParam.startsWith("OAuthAccountNotLinked_")) {
-        const provider = errorParam.split("_").pop() || "";
+        const parts = errorParam.split("_");
+        const provider = parts[1] || "";
+        const email = parts.slice(2).join("_");
         const providerKey = `errors.OAuthAccountNotLinked_${provider}`;
         // provider별 번역이 있으면 사용, 없으면 일반 메시지 사용
-        const msg = t(providerKey);
+        const msg = t(providerKey, { email: email || t("errors.emailFallback") });
         setError(msg.startsWith("errors.") ? t("errors.OAuthAccountNotLinked") : msg);
+        // 이메일/비밀번호 가입 계정이면 이메일을 미리 채워 바로 로그인 가능하게
+        if (provider === "credentials" && email) {
+          setFormData((prev) => ({ ...prev, email }));
+        }
       } else {
         const msg = t(`errors.${errorParam}`);
         setError(msg.startsWith("errors.") ? t("errors.default") : msg);

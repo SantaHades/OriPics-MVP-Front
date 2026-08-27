@@ -136,7 +136,9 @@ export const authOptions: NextAuthOptions = {
 
         if (existingUserByEmail && !existingUserByEmail.accounts.some(acc => acc.provider === account?.provider)) {
           const usedProvider = existingUserByEmail.accounts[0]?.provider || "credentials";
-          throw new Error(`OAuthAccountNotLinked_${usedProvider}`);
+          // 이메일을 함께 전달 — 로그인 페이지가 "어떤 이메일이 어디에 가입돼 있는지" 표시
+          // (형식: OAuthAccountNotLinked_<provider>_<email>. provider명엔 _가 없어 파싱 안전)
+          throw new Error(`OAuthAccountNotLinked_${usedProvider}_${user.email}`);
         }
       }
 

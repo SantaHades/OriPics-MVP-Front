@@ -1,7 +1,7 @@
 // 모바일 소셜 로그인 (M1) — 네이티브/AuthSession으로 얻은 provider 토큰을 서버에서 검증하고
 // Bearer 토큰을 발급한다. authOptions의 signIn 콜백과 동일한 계정 연결 규칙을 따른다:
 //  - Account(provider, providerAccountId) 기존 연결 → 해당 사용자
-//  - 미연결인데 동일 이메일 사용자가 존재 → 409 OAuthAccountNotLinked_<기존 provider>
+//  - 미연결인데 동일 이메일 사용자가 존재 → 409 OAuthAccountNotLinked_<기존 provider>_<email>
 //  - 신규 → User+Account 생성 + 가입 보너스(grantSignupCredits)
 // google은 id_token(aud 허용 목록 검증), kakao/naver는 access_token으로 프로필 조회.
 import { NextRequest, NextResponse } from "next/server";
@@ -159,7 +159,12 @@ export async function POST(req: NextRequest) {
       });
       if (existing) {
         const usedProvider = existing.accounts[0]?.provider || "credentials";
-        return NextResponse.json({ detail: `OAuthAccountNotLinked_${usedProvider}` }, { status: 409 });
+        // 이메일 포함(웹 signIn 콜백과 동일 형식) — 앱이 provider별 안내 메시지 표시.
+        // 구버전 앱은 startsWith 매칭이라 일반 메시지로 하위호환.
+        return NextResponse.json(
+          { detail: `OAuthAccountNotLinked_${usedProvider}_${profile.email}` },
+          { status: 409 },
+        );
       }
     }
     // 3) 신규 가입 (PrismaAdapter가 만드는 형태를 미러링).
