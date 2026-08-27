@@ -174,7 +174,9 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
-        token.name = user.name;
+        // 이름 미제공 provider(Apple 등): createUser의 이메일 앞부분 백필은 DB에만 반영되고
+        // 최초 세션 토큰엔 늦음 → 동일 규칙으로 토큰에도 즉시 폴백 (2026-08-27, "님"만 표시 증상)
+        token.name = user.name || (user.email ? user.email.split("@")[0] : null);
         token.email = user.email;
         token.picture = user.image;
       }

@@ -55,6 +55,13 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
+  // 세션이 마운트 이후에 로딩되면 useState 초기값이 빈 채로 남음 — 빈 이름칸에 Chrome
+  // 자동완성이 이메일을 밀어 넣는 증상(2026-08-27). 사용자 입력 전(빈 값)일 때만 동기화.
+  useEffect(() => {
+    if (session?.user?.name) setName((prev) => prev || session.user?.name || "");
+    if (session?.user?.image) setImage((prev) => prev || session.user?.image || "");
+  }, [session]);
+
   // 구독 관리 (일반해지 예약/재개 — 약관 제11조 제5항)
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [subBusy, setSubBusy] = useState(false);
