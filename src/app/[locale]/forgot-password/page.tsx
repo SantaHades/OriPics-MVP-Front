@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Link } from "@/navigation";
+import { useSearchParams } from "next/navigation";
 import { Mail, ArrowRight, RefreshCw, ArrowLeft, CheckCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
@@ -10,6 +11,9 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const locale = useLocale();
+  // 앱에서 연 경우(?from=app) — 웹 로그인으로 유도하면 앱 세션이 안 생기므로
+  // "로그인으로 돌아가기" 대신 앱 복귀 안내를 표시 (2026-08-27)
+  const fromApp = useSearchParams().get("from") === "app";
   
   const t = useTranslations("ForgotPassword");
 
@@ -91,9 +95,13 @@ export default function ForgotPasswordPage() {
           </form>
 
           <div className="mt-8 pt-8 border-t border-slate-100 text-center text-sm text-slate-500">
-            <Link href="/login" className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 transition-colors group">
-              <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> {t("back_to_login")}
-            </Link>
+            {fromApp ? (
+              <p className="text-slate-600">{t("back_to_app")}</p>
+            ) : (
+              <Link href="/login" className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 transition-colors group">
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> {t("back_to_login")}
+              </Link>
+            )}
           </div>
         </div>
       </div>

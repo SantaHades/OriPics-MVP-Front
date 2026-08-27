@@ -531,6 +531,7 @@
     "email_placeholder": "example@oripics.com",
     "submit": "Send Reset Link",
     "back_to_login": "Back to Login",
+    "back_to_app": "After checking the reset email, return to the app and sign in with your new password.",
     "success_message": "A reset link has been sent to your email.",
     "error_message": "An error occurred: {error}",
     "api_errors": {
