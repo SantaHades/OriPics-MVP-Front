@@ -258,4 +258,4 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 |---|---|---|---|---|
 | bookworm98@naver.com | 손효연 | 2026-08-27 | free / 12 | 1호, 이메일 가입, iPhone |
 | zooson2002@naver.com | 손성원 | 2026-08-27 | free / 20 | 2호, 네이버 가입, iPhone |
-| demitassepark@gmail.com | Ji Young Park | 2026-08-27 | free / 20 | 3호, 구글 가입 |
+| demitassepark@gmail.com | Ji Young Park | 2026-08-27 | free / 20 | 3호, 구글 가입, Android |
