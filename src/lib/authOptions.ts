@@ -36,9 +36,14 @@ export const authOptions: NextAuthOptions = {
     AppleProvider({
       clientId: process.env.APPLE_CLIENT_ID || "",
       clientSecret: appleClientSecret(),
-      // NextAuth 기본 pkce는 Apple 미문서 파라미터(code_challenge) — Apple 빠른 재로그인 경로가
-      // "오류로 인해 요청을 완료할 수 없습니다"를 내는 원인으로 지목(2026-08-26 실측). Apple 공식
-      // 지원인 state로 교체 (state 쿠키는 form_post cross-site POST 대응 SameSite=None — 아래 cookies)
+      // scope에서 name 제외 (2026-08-27 실측): grant 재사용(재로그인) 화면에서 name이 있으면
+      // Apple이 오류 배너("오류로 인해 요청을 완료할 수 없습니다")를 띄우고 오류를 콜백으로
+      // auto-POST해 재로그인이 실패한다. scope=email·무scope는 정상. name은 어차피 최초 인증의
+      // user POST 필드로만 오고 NextAuth v4는 미파싱 — 기본 이름은 createUser 이벤트가 백필.
+      // form_post는 scope 존재 시 Apple 필수라 유지.
+      authorization: { params: { scope: "email", response_mode: "form_post" } },
+      // NextAuth 기본 pkce는 Apple 미문서 파라미터(code_challenge) — state로 교체(Apple 공식 지원.
+      // state 쿠키는 form_post cross-site POST 대응 SameSite=None — 아래 cookies)
       checks: ["state"],
     }),
     NaverProvider({
