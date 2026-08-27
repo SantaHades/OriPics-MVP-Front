@@ -257,3 +257,4 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 | 이메일 | 이름 | 부여일 | 부여 전(tier/credits) | 비고 |
 |---|---|---|---|---|
 | bookworm98@naver.com | 손효연 | 2026-08-27 | free / 12 | 1호 테스터, 이메일 가입 |
+| zooson2002@naver.com | 손성원 | 2026-08-27 | free / 20 | 2호 테스터, 네이버 가입 |
