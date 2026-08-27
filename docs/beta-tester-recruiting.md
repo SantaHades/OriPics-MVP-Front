@@ -243,6 +243,11 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 문의: hi@ori.pics / 테스터 채팅방: https://open.kakao.com/o/gwyKJqKi
 ```
 
+## 5. Pro 부여 목록 (베타 종료 후 일괄 원복 — tier free·크레딧 정책값)
+| 이메일 | 이름 | 부여일 | 부여 전(tier/credits) | 비고 |
+|---|---|---|---|---|
+| bookworm98@naver.com | 손효연 | 2026-08-27 | free / 12 | 1호 테스터, 이메일 가입 |
+
 ## 4. 체크리스트 (운영자용)
 - [x] 테스터 오픈카톡방 개설 완료(2026-08-25): https://open.kakao.com/o/gwyKJqKi
 - [x] Google 심사 통과·비공개 테스트 라이브(2026-08-25). **Android 초대(옵트인) 링크: https://play.google.com/apps/testing/com.santahades.oripics** — 반드시 이 링크를 먼저 발송(스토어 details 링크는 옵트인 후에만 작동). 링크는 internal 목록에 등록된 Gmail로 로그인해야 열림
