@@ -449,7 +449,8 @@
       "size_error": "이미지 크기는 2MB 이하여야 합니다.",
       "save_success": "정보가 성공적으로 수정되었습니다!",
       "save_error": "정보 수정 실패: {error}",
-      "delete_error": "회원 탈퇴 실패: {error}"
+      "delete_error": "회원 탈퇴 실패: {error}",
+      "delete_done": "회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다."
     },
     "subscription": {
       "title": "구독 관리",

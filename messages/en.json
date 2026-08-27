@@ -449,7 +449,8 @@
       "size_error": "Image size must be under 2MB.",
       "save_success": "Profile updated successfully!",
       "save_error": "Failed to update profile: {error}",
-      "delete_error": "Failed to delete account: {error}"
+      "delete_error": "Failed to delete account: {error}",
+      "delete_done": "Your account has been deleted. Thank you for using OriPics."
     },
     "subscription": {
       "title": "Subscription",

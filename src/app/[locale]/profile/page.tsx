@@ -453,6 +453,9 @@ export default function ProfilePage() {
         const data = await res.json();
         throw new Error(data.message || "Failed to delete account");
       }
+      // 페이지를 떠나는 마지막 동작이라 인라인 메시지는 보이지 않음 — 앱(Alert)과 동일하게
+      // 블로킹 알림으로 완료를 고지 (2026-08-27, "완료 안내 없이 메인 이동" 피드백)
+      window.alert(t("messages.delete_done"));
       await signOut({ callbackUrl: "/" });
     } catch (error: any) {
       setMessage({ type: "error", text: t("messages.delete_error", { error: error.message }) });
