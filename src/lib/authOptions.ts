@@ -154,7 +154,17 @@ export const authOptions: NextAuthOptions = {
       });
 
       if (accountRecord?.user) {
-        console.log("=== FINAL ATTEMPT: UPDATE USER ===", { 
+        // 재로그인 시 토큰 최신화 (2026-08-28) — 어댑터는 기존 Account의 토큰을 갱신하지
+        // 않아 만료본만 남음. 탈퇴 시 연동(grant) 서버측 철회(revokeSocialGrants)에 필요.
+        await prisma.account.update({
+          where: { id: accountRecord.id },
+          data: {
+            access_token: account?.access_token ?? accountRecord.access_token,
+            refresh_token: account?.refresh_token ?? accountRecord.refresh_token,
+            expires_at: account?.expires_at ?? accountRecord.expires_at,
+          },
+        });
+        console.log("=== FINAL ATTEMPT: UPDATE USER ===", {
           id: accountRecord.user.id, 
           newName: user.name, 
           newImage: user.image,

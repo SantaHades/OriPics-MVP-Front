@@ -114,7 +114,7 @@ async function verifyNaver(accessToken: string): Promise<ProviderProfile | null>
 }
 
 export async function POST(req: NextRequest) {
-  let body: { provider?: string; id_token?: string; access_token?: string };
+  let body: { provider?: string; id_token?: string; access_token?: string; refresh_token?: string };
   try {
     body = await req.json();
   } catch {
@@ -150,6 +150,16 @@ export async function POST(req: NextRequest) {
         image: profile.image || account.user.image,
       },
     });
+    // 탈퇴 시 연동(grant) 서버측 철회용 토큰 최신화 (2026-08-28) — kakao/naver만 해당
+    if (body.access_token || body.refresh_token) {
+      await prisma.account.update({
+        where: { provider_providerAccountId: { provider, providerAccountId: profile.providerAccountId } },
+        data: {
+          access_token: body.access_token ?? undefined,
+          refresh_token: body.refresh_token ?? undefined,
+        },
+      });
+    }
   } else {
     // 2) 동일 이메일 기존 사용자 → 자동 연결하지 않음 (웹과 동일 정책)
     if (profile.email) {
@@ -179,6 +189,9 @@ export async function POST(req: NextRequest) {
             type: "oauth",
             provider,
             providerAccountId: profile.providerAccountId,
+            // 웹 탈퇴 시 연동 철회용 (2026-08-28) — kakao/naver는 SDK 토큰을 저장
+            access_token: body.access_token ?? null,
+            refresh_token: body.refresh_token ?? null,
           },
         },
       },

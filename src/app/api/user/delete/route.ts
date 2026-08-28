@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
+import { revokeSocialGrants } from "@/lib/auth/revokeSocialGrants";
 
 export async function DELETE() {
   try {
@@ -24,6 +25,16 @@ export async function DELETE() {
         { code: "user_not_found", message: "사용자를 찾을 수 없습니다." },
         { status: 404 }
       );
+    }
+
+    // 소셜 provider 연동(grant) 서버측 철회 (2026-08-28, best-effort) — 남기면 재로그인이
+    // 동의 화면 없이 자동 재가입됨. grant는 provider 계정 단위라 웹·앱 양쪽에 효과.
+    const socialAccounts = await prisma.account.findMany({
+      where: { userId: user.id },
+      select: { provider: true, access_token: true, refresh_token: true, expires_at: true },
+    });
+    if (socialAccounts.length > 0) {
+      await revokeSocialGrants(socialAccounts);
     }
 
     // Cascade 설정으로 Account, Session, MobileRefreshToken도 자동 삭제됨
