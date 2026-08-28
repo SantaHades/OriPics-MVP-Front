@@ -362,6 +362,12 @@ export function CertificateDocument({
 
   const certShortId = `cert_${data.linkId}_${data.issuedAt.getTime().toString(36)}`;
 
+  // 썸네일 박스 = 사진 비율 그대로 (긴 변 124pt) — 고정 정사각형이면 테두리와
+  // 이미지 모양이 어긋남 (2026-08-28 대표 피드백). react-pdf Image는 고정 치수 필수.
+  const thumbRatio = data.width > 0 && data.height > 0 ? data.width / data.height : 1;
+  const thumbW = thumbRatio >= 1 ? 124 : Math.max(24, Math.round(124 * thumbRatio));
+  const thumbH = thumbRatio >= 1 ? Math.max(24, Math.round(124 / thumbRatio)) : 124;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -455,7 +461,7 @@ export function CertificateDocument({
                   렌더가 멈출 수 있음 (2026-08-28 테스트 행 실측) */}
               <Image
                 src={data.imageDataUrl}
-                style={{ width: 124, height: 124, objectFit: "contain" }}
+                style={{ width: thumbW, height: thumbH, objectFit: "fill" }}
               />
             </View>
           ) : null}
