@@ -21,6 +21,16 @@ export default function SignupPage() {
   // 동의 전 소셜 버튼 클릭 → 인라인 에러 대신 팝업 (작은 창에서 안 보임, 2026-08-26 대표 피드백).
   // 팝업의 [동의하고 계속하기]가 동의 체크 + 해당 provider 로그인까지 이어서 실행
   const [pendingProvider, setPendingProvider] = useState<"apple" | "google" | "kakao" | "naver" | null>(null);
+  const [oauthBusy, setOauthBusy] = useState("");
+
+  // 소셜 버튼 중복 클릭 방지 (2026-08-28) — signIn 리다이렉트까지의 공백에 재클릭되면
+  // authorize가 이중 개시돼 state 쿠키가 덮이며 콜백 검증이 실패할 수 있음
+  const socialSignIn = (provider: "apple" | "google" | "kakao" | "naver") => {
+    if (oauthBusy || loading) return;
+    if (!agreed) { setPendingProvider(provider); return; }
+    setOauthBusy(provider);
+    signIn(provider, { callbackUrl: "/" });
+  };
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -169,48 +179,40 @@ export default function SignupPage() {
           <div className="flex justify-center gap-6 mb-8 group">
             {/* Apple (2026-08-26, A-50 웹 트랙) */}
             <button
-              onClick={() => {
-                if (!agreed) { setPendingProvider("apple"); return; }
-                signIn("apple", { callbackUrl: "/" });
-              }}
-              className="w-14 h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
+              onClick={() => socialSignIn("apple")}
+              disabled={!!oauthBusy || loading}
+              className="w-14 h-14 bg-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100 disabled:opacity-40 disabled:pointer-events-none"
               title={t("apple")}
             >
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
+              {oauthBusy === "apple" ? <RefreshCw className="w-6 h-6 text-white animate-spin" /> : <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
                 <path d="M17.05 20.28c-.98.95-2.05.86-3.08.38-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.38C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-              </svg>
+              </svg>}
             </button>
             <button
-              onClick={() => {
-                if (!agreed) { setPendingProvider("google"); return; }
-                signIn("google", { callbackUrl: "/" });
-              }}
-              className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
+              onClick={() => socialSignIn("google")}
+              disabled={!!oauthBusy || loading}
+              className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100 disabled:opacity-40 disabled:pointer-events-none"
               title={t("google")}
             >
-              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
+              {oauthBusy === "google" ? <RefreshCw className="w-6 h-6 text-slate-600 animate-spin" /> : <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />}
             </button>
             <button
-              onClick={() => {
-                if (!agreed) { setPendingProvider("kakao"); return; }
-                signIn("kakao", { callbackUrl: "/" });
-              }}
-              className="w-14 h-14 bg-[#FEE500] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
+              onClick={() => socialSignIn("kakao")}
+              disabled={!!oauthBusy || loading}
+              className="w-14 h-14 bg-[#FEE500] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100 disabled:opacity-40 disabled:pointer-events-none"
               title={t("kakao")}
             >
-              <svg viewBox="0 0 24 24" className="w-7 h-7 text-[#3C1E1E] fill-current">
+              {oauthBusy === "kakao" ? <RefreshCw className="w-6 h-6 text-[#3C1E1E] animate-spin" /> : <svg viewBox="0 0 24 24" className="w-7 h-7 text-[#3C1E1E] fill-current">
                 <path d="M12 3c-4.97 0-9 3.165-9 7.07 0 2.507 1.64 4.708 4.12 6.002-.164.553-.59 1.996-.675 2.304-.105.385.125.38.263.288.11-.073 1.74-1.18 2.42-1.64.28.04.566.06.853.06 4.97 0 9-3.166 9-7.07 0-3.905-4.03-7.07-9-7.07z" />
-              </svg>
+              </svg>}
             </button>
             <button
-              onClick={() => {
-                if (!agreed) { setPendingProvider("naver"); return; }
-                signIn("naver", { callbackUrl: "/" });
-              }}
-              className="w-14 h-14 bg-[#03C75A] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100"
+              onClick={() => socialSignIn("naver")}
+              disabled={!!oauthBusy || loading}
+              className="w-14 h-14 bg-[#03C75A] rounded-full flex items-center justify-center shadow-lg hover:scale-110 active:scale-[0.98] transition-all duration-300 group-hover:opacity-70 hover:!opacity-100 disabled:opacity-40 disabled:pointer-events-none"
               title={t("naver")}
             >
-              <span className="text-slate-900 font-extrabold text-xl">N</span>
+              {oauthBusy === "naver" ? <RefreshCw className="w-6 h-6 text-white animate-spin" /> : <span className="text-slate-900 font-extrabold text-xl">N</span>}
             </button>
           </div>
 
@@ -419,9 +421,11 @@ export default function SignupPage() {
               </button>
               <button
                 onClick={() => {
+                  if (oauthBusy) return;
                   const p = pendingProvider;
                   setAgreed(true);
                   setPendingProvider(null);
+                  setOauthBusy(p);
                   signIn(p, { callbackUrl: "/" });
                 }}
                 className="flex-1 py-3 rounded-xl bg-blue-800 hover:bg-blue-700 text-white text-sm font-bold transition-colors"
