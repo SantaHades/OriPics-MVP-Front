@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-28",
+  "outlets": [
+    {
+      "id": "yna",
+      "name": "연합뉴스",
+      "method": "email",
+      "email": "jebo@yna.co.kr"
+    },
+    {
+      "id": "jtbc",
+      "name": "JTBC 뉴스",
+      "method": "email",
+      "email": "jebo@jtbc.co.kr"
+    },
+    {
+      "id": "mbc",
+      "name": "MBC 뉴스",
+      "method": "email",
+      "email": "mbcjebo@mbc.co.kr"
+    },
+    {
+      "id": "sbs",
+      "name": "SBS 뉴스",
+      "method": "email",
+      "email": "sbs8news@sbs.co.kr"
+    },
+    {
+      "id": "kbs",
+      "name": "KBS 뉴스",
+      "method": "email",
+      "email": "kbs1234@kbs.co.kr"
+    },
+    {
+      "id": "yna-kakao",
+      "name": "연합뉴스 제보 (카카오톡)",
+      "method": "kakao",
+      "kakaoUrl": "https://pf.kakao.com/_ExiBfu/chat"
+    },
+    {
+      "id": "jtbc-kakao",
+      "name": "JTBC 제보 (카카오톡)",
+      "method": "kakao",
+      "kakaoUrl": "https://pf.kakao.com/_FxfUBK"
+    },
+    {
+      "id": "mbc-kakao",
+      "name": "MBC 제보 (카카오톡)",
+      "method": "kakao",
+      "kakaoUrl": "https://pf.kakao.com/_xeUrPj"
+    },
+    {
+      "id": "sbs-kakao",
+      "name": "SBS 제보 (카카오톡)",
+      "method": "kakao",
+      "kakaoUrl": "https://pf.kakao.com/_IexoNxb"
+    },
+    {
+      "id": "kbs-kakao",
+      "name": "KBS 제보 (카카오톡)",
+      "method": "kakao",
+      "kakaoUrl": "https://pf.kakao.com/_REkxbE"
+    }
+  ]
+}
