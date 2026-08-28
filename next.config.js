@@ -20,6 +20,12 @@ const nextConfig = {
     '/api/links/[id]/certificate': [
       './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-400-normal.woff',
       './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-700-normal.woff',
+      // 외부화 패키지(@oripics/certificate)와 그 런타임 의존(react)을 함수 번들에 강제
+      // 포함 — 미포함 시 함수가 로드 단계에서 500 (2026-08-28 실측)
+      './node_modules/@oripics/certificate/**',
+      './node_modules/react/**',
+      './node_modules/loose-envify/**',
+      './node_modules/js-tokens/**',
     ],
   },
   // 보안 헤더 (2026-08-22 보안 점검) — HSTS는 Vercel이 이미 부여.
