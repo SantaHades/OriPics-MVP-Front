@@ -17,6 +17,9 @@ const data: CertificateData = {
   lat: 37.123456,
   lng: 127.123456,
   issuedTo: "손용석 (timson9717@gmail.com)",
+  deviceCapturedAt: new Date("2026-08-28T09:00:00+09:00"),
+  publishedAt: new Date("2026-08-28T12:00:00+09:00"),
+  imageDataUrl: TINY_PNG,
   issuedAt: new Date("2026-08-28T17:00:00+09:00"),
   verifyUrl: "https://www.ori.pics/P260828-000000-000000",
   qrDataUrl: TINY_PNG,
@@ -30,5 +33,6 @@ describe("certificate PDF render", () => {
       expect(buf.length).toBeGreaterThan(1000);
       expect(buf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     }
-  }, 30000);
+  // 로컬(인텔 맥) 렌더는 로케일당 ~20초 — 짧은 타임아웃은 가짜 실패 (2026-08-28 실측)
+  }, 180000);
 });

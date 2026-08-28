@@ -1,6 +1,8 @@
 export interface CertificateData {
   linkId: string;
   capturedAt: Date;
+  deviceCapturedAt?: Date | null;
+  publishedAt?: Date | null;
   sourceCode: "F" | "P" | "C";
   width: number;
   height: number;
@@ -10,6 +12,7 @@ export interface CertificateData {
   issuedAt: Date;
   verifyUrl: string;
   qrDataUrl: string;
+  imageDataUrl?: string;
   c2pa?: { present: boolean; valid?: boolean; issuer?: string; claimGenerator?: string };
 }
 export declare function renderCertificatePdf(opts: {

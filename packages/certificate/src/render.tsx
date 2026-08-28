@@ -49,11 +49,18 @@ function ensureFontRegistered() {
   }
 }
 
+import { LOGO_DATA_URL, WATERMARK_DATA_URL } from "./logoData";
+
 type Locale = "ko" | "en";
 
 export interface CertificateData {
   linkId: string;
+  /** 스탬프에 기록된 인증(등록) 시각 */
   capturedAt: Date;
+  /** 기기 촬영 시각 (모바일 촬영 P — 있으면 인증 시각과 병기) */
+  deviceCapturedAt?: Date | null;
+  /** 공개링크 발행 시각 (인증 시각과 1분 이상 차이나면 병기) */
+  publishedAt?: Date | null;
   sourceCode: "F" | "P" | "C";
   width: number;
   height: number;
@@ -67,6 +74,8 @@ export interface CertificateData {
   verifyUrl: string;
   /** QR 코드 — PNG data URL 또는 SVG 문자열 (호출 측에서 생성) */
   qrDataUrl: string;
+  /** 대상 이미지 썸네일 — JPEG data URL (호출 측에서 축소 생성, 선택) */
+  imageDataUrl?: string;
   /** C2PA 매니페스트 요약 (선택) */
   c2pa?: {
     present: boolean;
@@ -84,6 +93,9 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     subject: "대상 이미지",
     linkId: "링크 ID",
     captured: "촬영·등록 일시",
+    capturedDevice: "촬영 일시 (기기 기록)",
+    certified: "인증 일시",
+    published: "공개링크 발행",
     source: "출처",
     source_F: "파일 업로드(웹)",
     source_P: "모바일 카메라(Verified)",
@@ -117,6 +129,9 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     subject: "Subject Image",
     linkId: "Link ID",
     captured: "Captured / registered",
+    capturedDevice: "Captured (device)",
+    certified: "Certified",
+    published: "Link published",
     source: "Source",
     source_F: "File upload (web)",
     source_P: "Mobile camera (Verified)",
@@ -284,6 +299,32 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: "#64748b",
   },
+  frameOuter: {
+    position: "absolute",
+    top: 20,
+    left: 20,
+    right: 20,
+    bottom: 20,
+    borderWidth: 1.4,
+    borderColor: "#b8c6da",
+  },
+  frameInner: {
+    position: "absolute",
+    top: 25,
+    left: 25,
+    right: 25,
+    bottom: 25,
+    borderWidth: 0.6,
+    borderColor: "#d8e1ec",
+  },
+  watermark: {
+    position: "absolute",
+    top: 268,
+    left: 158,
+    width: 280,
+    height: 280,
+    opacity: 0.05,
+  },
 });
 
 function formatTimestamp(d: Date, locale: Locale): string {
@@ -324,10 +365,14 @@ export function CertificateDocument({
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        {/* 문서 프레임(이중 테두리) + 배경 워터마크 — 공문서 무드 (2026-08-28 대표 요청) */}
+        <View fixed style={styles.frameOuter} />
+        <View fixed style={styles.frameInner} />
+        <Image fixed src={WATERMARK_DATA_URL} style={styles.watermark} />
         {/* 헤더 */}
         <View style={styles.header}>
           <View style={styles.brandRow}>
-            {logoDataUrl ? <Image src={logoDataUrl} style={{ width: 28, height: 28 }} /> : null}
+            <Image src={logoDataUrl ?? LOGO_DATA_URL} style={{ width: 26, height: 26 }} />
             <Text style={styles.brandText}>OriPics</Text>
           </View>
           <Text style={{ fontSize: 9, color: "#64748b" }}>{t.issuerSite}</Text>
@@ -347,17 +392,32 @@ export function CertificateDocument({
           </Text>
         </View>
 
-        {/* 대상 이미지 */}
+        {/* 대상 이미지 — 정보 행(좌) + 썸네일(우, 있을 때만. 세로/가로 모두 contain) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.subject}</Text>
+          <View style={{ flexDirection: "row" }}>
+          <View style={{ flex: 1 }}>
           <View style={styles.row}>
             <Text style={styles.label}>{t.linkId}</Text>
             <Text style={styles.monoValue}>{data.linkId}</Text>
           </View>
+          {data.deviceCapturedAt ? (
+            <View style={styles.row}>
+              <Text style={styles.label}>{t.capturedDevice}</Text>
+              <Text style={styles.value}>{formatTimestamp(data.deviceCapturedAt, locale)}</Text>
+            </View>
+          ) : null}
           <View style={styles.row}>
-            <Text style={styles.label}>{t.captured}</Text>
+            <Text style={styles.label}>{data.deviceCapturedAt ? t.certified : t.captured}</Text>
             <Text style={styles.value}>{formatTimestamp(data.capturedAt, locale)}</Text>
           </View>
+          {data.publishedAt &&
+          Math.abs(data.publishedAt.getTime() - data.capturedAt.getTime()) > 60_000 ? (
+            <View style={styles.row}>
+              <Text style={styles.label}>{t.published}</Text>
+              <Text style={styles.value}>{formatTimestamp(data.publishedAt, locale)}</Text>
+            </View>
+          ) : null}
           <View style={styles.row}>
             <Text style={styles.label}>{t.source}</Text>
             <Text style={styles.value}>{sourceLabel}</Text>
@@ -370,11 +430,35 @@ export function CertificateDocument({
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>{t.location}</Text>
-            <Text style={styles.monoValue}>
-              {data.lat != null && data.lng != null
-                ? `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`
-                : t.locationNone}
-            </Text>
+            {/* 좌표(ASCII)만 Courier — "기록 없음" 같은 한글을 Courier로 찍으면
+                글리프가 깨짐 (2026-08-28 첫 실발급에서 실측) */}
+            {data.lat != null && data.lng != null ? (
+              <Text style={styles.monoValue}>
+                {`${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`}
+              </Text>
+            ) : (
+              <Text style={styles.value}>{t.locationNone}</Text>
+            )}
+          </View>
+          </View>
+          {data.imageDataUrl ? (
+            <View
+              style={{
+                marginLeft: 16,
+                padding: 4,
+                borderWidth: 1,
+                borderColor: "#e2e8f0",
+                borderRadius: 4,
+              }}
+            >
+              {/* react-pdf Image는 고정 치수 필수 — max* 만 주면 레이아웃이 수렴하지 않고
+                  렌더가 멈출 수 있음 (2026-08-28 테스트 행 실측) */}
+              <Image
+                src={data.imageDataUrl}
+                style={{ width: 124, height: 124, objectFit: "contain" }}
+              />
+            </View>
+          ) : null}
           </View>
         </View>
 

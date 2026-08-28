@@ -102,7 +102,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const { data: row, error } = await supabase
     .from("links")
-    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id")
+    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id, captured_at, created_at")
     .eq("link_id", linkId)
     .single();
   if (error || !row) {
@@ -196,14 +196,29 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     }
   }
 
-  // 5. C2PA 매니페스트 best-effort 조회
+  // 5. 발행본 다운로드(1회) → C2PA 조회 + 증명서 썸네일 생성 (둘 다 best-effort)
   let c2paSummary: CertificateData["c2pa"] | undefined;
+  let imageDataUrl: string | undefined;
   try {
     const { data: blob } = await supabase.storage
       .from(BUCKET_NAME)
       .download(row.storage_path);
     if (blob) {
       const buf = Buffer.from(await blob.arrayBuffer());
+      // 대상 사진 썸네일 (2026-08-28 대표 요청) — 어떤 사진의 증명인지 문서에서 바로 확인.
+      // 축소 JPEG로 임베드해 PDF 용량 억제. 실패해도 PDF는 정상 발급.
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+        const sharpMod = require("sharp");
+        const sharp = (sharpMod.default ?? sharpMod) as typeof import("sharp").default;
+        const thumb = await sharp(buf)
+          .resize({ width: 480, height: 480, fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 78 })
+          .toBuffer();
+        imageDataUrl = `data:image/jpeg;base64,${thumb.toString("base64")}`;
+      } catch (thumbErr) {
+        console.warn("[certificate] thumbnail failed (ignored):", (thumbErr as any)?.message);
+      }
       const result = await readC2paManifest(buf);
       if (result.present) {
         // 증명서는 active manifest가 무결하고 서명자가 신뢰될 때만 valid 표기.
@@ -236,6 +251,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   const capturedAt = parseMetaTimestamp(row.timestamp) ?? new Date();
   const issuedAt = new Date();
   const certData: CertificateData = {
+    imageDataUrl,
+    // 촬영(기기)·인증·발행 시각 구분 표기 (2026-08-28 대표 질의) — captured_at은 모바일 촬영만 존재
+    deviceCapturedAt: row.captured_at ? new Date(row.captured_at) : null,
+    publishedAt: row.created_at ? new Date(row.created_at) : null,
     linkId: row.link_id,
     capturedAt,
     sourceCode: getSourceCode(row.timestamp),
