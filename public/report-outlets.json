@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "updatedAt": "2026-08-28",
   "outlets": [
     {
@@ -38,6 +38,20 @@
       "country": "KR"
     },
     {
+      "id": "ytn",
+      "name": "YTN 뉴스",
+      "method": "email",
+      "email": "social@ytn.co.kr",
+      "country": "KR"
+    },
+    {
+      "id": "channela",
+      "name": "채널A 뉴스",
+      "method": "email",
+      "email": "chabodo@ichannela.com",
+      "country": "KR"
+    },
+    {
       "id": "yna-kakao",
       "name": "연합뉴스 제보 (카카오톡)",
       "method": "kakao",
@@ -70,6 +84,20 @@
       "name": "KBS 제보 (카카오톡)",
       "method": "kakao",
       "kakaoUrl": "https://pf.kakao.com/_REkxbE",
+      "country": "KR"
+    },
+    {
+      "id": "ytn-kakao",
+      "name": "YTN 제보 (카카오톡)",
+      "method": "kakao",
+      "kakaoUrl": "https://pf.kakao.com/_rzGxau",
+      "country": "KR"
+    },
+    {
+      "id": "channela-kakao",
+      "name": "채널A 제보 (카카오톡)",
+      "method": "kakao",
+      "kakaoUrl": "https://pf.kakao.com/_zUxnRj",
       "country": "KR"
     }
   ]
