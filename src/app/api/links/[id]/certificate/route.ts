@@ -3,17 +3,18 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { createClient } from "@supabase/supabase-js";
 import QRCode from "qrcode";
-import { renderToBuffer } from "@react-pdf/renderer";
-import React from "react";
+// PDF 렌더는 @oripics/certificate(serverExternalPackages)가 번들 밖에서 수행 —
+// 앱 번들에서 React 엘리먼트를 만들면 Next 내장 React 별칭과 react-pdf의 React가
+// 어긋나 error #31 (2026-08-28 실측, 패키지 README·description 참조)
 import { prisma } from "@/lib/prisma";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
 import { readC2paManifest } from "@/lib/oripics-stamp/c2pa";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 import {
-  CertificateDocument,
+  renderCertificatePdf,
   type CertificateData,
-} from "@/lib/certificate/render";
+} from "@oripics/certificate";
 
 export const runtime = "nodejs";
 
@@ -251,12 +252,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 
   let pdfBuffer: Buffer;
   try {
-    const element = React.createElement(CertificateDocument as any, {
-      data: certData,
-      locale,
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    pdfBuffer = await renderToBuffer(element as any);
+    pdfBuffer = await renderCertificatePdf({ data: certData, locale });
   } catch (e: any) {
     console.error("[certificate] render failed", e);
     if (usedFreeGrant) {

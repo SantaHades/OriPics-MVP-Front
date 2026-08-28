@@ -10,7 +10,10 @@ const nextConfig = {
   outputFileTracingRoot: __dirname,
   // Next 15: experimental.serverComponentsExternalPackages → 최상위 serverExternalPackages 로 이동.
   // c2pa-node 네이티브 모듈을 서버 번들에서 제외해야 서명이 런타임에 정상 로드됨.
-  serverExternalPackages: ['@contentauth/c2pa-node'],
+  // @react-pdf/renderer: 번들하면 라우트의 React(Next 내장 React 19 별칭)와 react-pdf가
+  // 보는 React가 어긋나 renderToBuffer가 error #31로 실패 (2026-08-28 실측, Next 15 회귀).
+  // 외부화하면 node_modules의 react-pdf+react 18 조합을 그대로 사용.
+  serverExternalPackages: ['@contentauth/c2pa-node', '@oripics/certificate'],
   // Next 15: experimental.outputFileTracingIncludes → 최상위 outputFileTracingIncludes 로 이동.
   // 증명서 PDF 한글 폰트(woff)를 서버리스 함수 번들에 강제 포함 — 런타임 CDN 의존 제거.
   outputFileTracingIncludes: {
