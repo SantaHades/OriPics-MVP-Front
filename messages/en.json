@@ -223,7 +223,7 @@
       "subtitle": "Sign up and you're on Free automatically — 5 verified proofs per month, no credit card required",
       "month": "month",
       "price_tax_note": "VAT included",
-      "footnote": "Prices include VAT. Global USD pricing to be finalized. Standard size = longest side up to 1,800 px — larger photos count as 2\u20133 certifications depending on size (see deduction rules below).",
+      "footnote": "Prices include VAT. Global USD pricing to be finalized. Standard size = longest side up to 1,800 px — larger photos count as 2–3 certifications depending on size (see deduction rules below).",
       "free": {
         "name": "Free",
         "tagline": "Just sign up to start",
@@ -347,6 +347,22 @@
         {
           "q": "What's the difference between Standard and Verified certification?",
           "a": "Both tiers provide the same integrity guarantee from the moment of certification onward — the server signs the image's pixel data at certification time, so changing even a single pixel afterward is detected. The difference is how much you can trust what happened before certification. Standard seals any image (e.g., from your gallery), proving it has remained unmodified since that moment. Verified is granted only to photos taken with the OriPics mobile app camera (Pro plan): through iOS App Attest / Android Play Integrity hardware attestation, Apple/Google confirm that a genuine app on a real device requested certification at the moment of capture. Both tiers are clearly distinguished on verification results and public link pages."
+        },
+        {
+          "q": "How can I sign up or log in?",
+          "a": "OriPics supports Apple, Google, Kakao, and Naver social login as well as email/password sign-up, on both web and the mobile app. With social login, an account is created automatically with a single tap. Signing in with the same social account connects you to the same OriPics account on both web and app."
+        },
+        {
+          "q": "I see \"This email is already registered with another method.\"",
+          "a": "An OriPics account is unique per email address. For example, if you first signed up with Kakao and later try Google login with the same email, we don't link them automatically for security reasons — instead we guide you to sign in with your original method (the message shows the email and the method). Note that the email used by each social login is the one registered with that service, so if the emails differ across services, separate accounts will be created."
+        },
+        {
+          "q": "What happens if I choose 'Hide My Email' with Apple login?",
+          "a": "You'll be signed up under an Apple relay address (@privaterelay.appleid.com), so it won't match accounts created with your real email via other methods. To use one account across web and app, we recommend choosing 'Share My Email' on your first Apple login. Apple remembers this choice for future logins; to change it, remove the OriPics connection in your Apple account settings (Sign-In & Security → Sign in with Apple) and log in again."
+        },
+        {
+          "q": "What happens to social login connections when I delete my account?",
+          "a": "Deleting your account removes your OriPics data and also disconnects the social login link — OriPics disappears from the 'connected services' list of each provider. If you sign in with the same social account again later, you'll go through the consent screen as a first-time user and a brand-new account will be created; data from before deletion (proofs, links, remaining credits) cannot be restored."
         }
       ]
     }
