@@ -257,7 +257,8 @@
         "f3": "Team admin console, per-user analytics",
         "f4": "Tax invoicing · DPA · Priority support",
         "cta": "Contact sales",
-        "contact_subject": "[OriPics Business] Plan inquiry"
+        "contact_subject": "[OriPics Business] Plan inquiry",
+        "contact_copied": "Our contact address hi@ori.pics has been copied to your clipboard. Tell us your team size and use case and we will reply within a day."
       },
       "guide": {
         "title": "Credit deduction rules",

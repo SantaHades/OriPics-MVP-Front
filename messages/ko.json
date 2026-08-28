@@ -257,7 +257,8 @@
         "f3": "단체 관리 콘솔, 사용자별 통계",
         "f4": "세금계산서 발행 · DPA · 우선 지원",
         "cta": "영업팀 문의",
-        "contact_subject": "[OriPics Business] 도입 문의"
+        "contact_subject": "[OriPics Business] 도입 문의",
+        "contact_copied": "문의 주소 hi@ori.pics 가 클립보드에 복사되었습니다. 도입 규모와 용도를 함께 보내주시면 하루 안에 회신드립니다."
       },
       "guide": {
         "title": "이용횟수 차감규칙",
