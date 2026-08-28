@@ -1,66 +1,76 @@
 {
-  "version": 1,
+  "version": 2,
   "updatedAt": "2026-08-28",
   "outlets": [
     {
       "id": "yna",
       "name": "연합뉴스",
       "method": "email",
-      "email": "jebo@yna.co.kr"
+      "email": "jebo@yna.co.kr",
+      "country": "KR"
     },
     {
       "id": "jtbc",
       "name": "JTBC 뉴스",
       "method": "email",
-      "email": "jebo@jtbc.co.kr"
+      "email": "jebo@jtbc.co.kr",
+      "country": "KR"
     },
     {
       "id": "mbc",
       "name": "MBC 뉴스",
       "method": "email",
-      "email": "mbcjebo@mbc.co.kr"
+      "email": "mbcjebo@mbc.co.kr",
+      "country": "KR"
     },
     {
       "id": "sbs",
       "name": "SBS 뉴스",
       "method": "email",
-      "email": "sbs8news@sbs.co.kr"
+      "email": "sbs8news@sbs.co.kr",
+      "country": "KR"
     },
     {
       "id": "kbs",
       "name": "KBS 뉴스",
       "method": "email",
-      "email": "kbs1234@kbs.co.kr"
+      "email": "kbs1234@kbs.co.kr",
+      "country": "KR"
     },
     {
       "id": "yna-kakao",
       "name": "연합뉴스 제보 (카카오톡)",
       "method": "kakao",
-      "kakaoUrl": "https://pf.kakao.com/_ExiBfu/chat"
+      "kakaoUrl": "https://pf.kakao.com/_ExiBfu/chat",
+      "country": "KR"
     },
     {
       "id": "jtbc-kakao",
       "name": "JTBC 제보 (카카오톡)",
       "method": "kakao",
-      "kakaoUrl": "https://pf.kakao.com/_FxfUBK"
+      "kakaoUrl": "https://pf.kakao.com/_FxfUBK",
+      "country": "KR"
     },
     {
       "id": "mbc-kakao",
       "name": "MBC 제보 (카카오톡)",
       "method": "kakao",
-      "kakaoUrl": "https://pf.kakao.com/_xeUrPj"
+      "kakaoUrl": "https://pf.kakao.com/_xeUrPj",
+      "country": "KR"
     },
     {
       "id": "sbs-kakao",
       "name": "SBS 제보 (카카오톡)",
       "method": "kakao",
-      "kakaoUrl": "https://pf.kakao.com/_IexoNxb"
+      "kakaoUrl": "https://pf.kakao.com/_IexoNxb",
+      "country": "KR"
     },
     {
       "id": "kbs-kakao",
       "name": "KBS 제보 (카카오톡)",
       "method": "kakao",
-      "kakaoUrl": "https://pf.kakao.com/_REkxbE"
+      "kakaoUrl": "https://pf.kakao.com/_REkxbE",
+      "country": "KR"
     }
   ]
 }
