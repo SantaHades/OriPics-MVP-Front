@@ -50,7 +50,9 @@
       "processing_step": "🔄 [{current}/{total}] {label} 처리 중…",
       "error": "원본증명처리 실패",
       "retry": "다시 시도",
-      "app_capture_note": "📱 사진 촬영 인증(Verified · GPS 포함)은 OriPics 모바일 앱에서 이용할 수 있습니다."
+      "app_capture_note": "📱 사진 촬영 인증(Verified · GPS 포함)은 OriPics 모바일 앱에서 이용할 수 있습니다.",
+      "app_ios_button": "iPhone 앱 설치",
+      "app_android_button": "Android 앱 설치"
     },
     "gps": {
       "status_active": "GPS 활성화 됨",

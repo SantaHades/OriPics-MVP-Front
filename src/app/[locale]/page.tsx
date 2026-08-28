@@ -20,6 +20,7 @@ import { saveReceipt, getReceipt, removeReceipt } from "@/lib/oripics-stamp/rece
 import { useCredits } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
+import { ANDROID_INTENT_URL, ANDROID_STORE_URL, IOS_APP_URL } from "@/lib/appLinks";
 
 type ProcessStatus = "idle" | "dragover" | "processing" | "size_selection" | "result_stamped" | "result_multi" | "result_verified" | "error";
 
@@ -1169,7 +1170,36 @@ export default function Home() {
                 ) : null}
               </div>
               {(status === "idle" || status === "dragover") && (
-                <p className="mt-4 text-xs text-slate-500">{t("upload.app_capture_note")}</p>
+                <div className="mt-4">
+                  <p className="text-xs text-slate-500">{t("upload.app_capture_note")}</p>
+                  {/* 앱 설치/실행 버튼 (2026-08-28) — 링크는 lib/appLinks.ts에서 관리(베타→정식 교체 지점).
+                      Android는 intent 스킴으로 설치 시 실행·미설치 시 스토어 폴백, iOS는 링크(Universal Links는 정식 출시 때) */}
+                  <div className="mt-3 flex justify-center gap-3">
+                    <a
+                      href={IOS_APP_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-700 transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white" aria-hidden>
+                        <path d="M17.05 20.28c-.98.95-2.05.86-3.08.38-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.38C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.53 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                      </svg>
+                      {t("upload.app_ios_button")}
+                    </a>
+                    <button
+                      onClick={() => {
+                        const isAndroid = /android/i.test(navigator.userAgent);
+                        window.location.href = isAndroid ? ANDROID_INTENT_URL : ANDROID_STORE_URL;
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-700 transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-white" aria-hidden>
+                        <path d="M3 20.5V3.5c0-.6.4-1.1.9-1.3l10.6 9.8L3.9 21.8c-.5-.2-.9-.7-.9-1.3zm13.8-6.2L6.05 21.34l8.49-8.49 2.26 1.45zm3.35-3.35c.4.3.65.77.65 1.3 0 .52-.24.98-.62 1.28l-2.03 1.3-2.5-2.5 2.5-2.5 2 1.12zM6.05 2.66l10.76 7.04-2.27 2.27-8.49-9.31z" />
+                      </svg>
+                      {t("upload.app_android_button")}
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
