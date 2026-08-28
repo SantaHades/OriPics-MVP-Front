@@ -258,7 +258,8 @@
         "f4": "Tax invoicing · DPA · Priority support",
         "cta": "Contact sales",
         "contact_subject": "[OriPics Business] Plan inquiry",
-        "contact_copied": "Our contact address hi@ori.pics has been copied to your clipboard. Tell us your team size and use case and we will reply within a day."
+        "contact_copied": "Our contact address hi@ori.pics has been copied to your clipboard. Tell us your team size and use case and we will reply within a day.",
+        "f5": "Bulk photo certification (batch) — contact sales"
       },
       "guide": {
         "title": "Credit deduction rules",
@@ -366,6 +367,10 @@
         {
           "q": "What happens to social login connections when I delete my account?",
           "a": "Deleting your account removes your OriPics data and also disconnects the social login link — OriPics disappears from the 'connected services' list of each provider. If you sign in with the same social account again later, you'll go through the consent screen as a first-time user and a brand-new account will be created; data from before deletion (proofs, links, remaining credits) cannot be restored."
+        },
+        {
+          "q": "Can I certify a large batch of photos at once?",
+          "a": "The web and app are designed for certifying photos individually or in small batches. If you need to certify hundreds of photos at once (asset audits, bulk field records, archive provenance, etc.), we support batch processing and API integration — email hi@ori.pics with your volume and use case and we'll suggest an approach and pricing."
         }
       ]
     }

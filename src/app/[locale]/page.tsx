@@ -1949,6 +1949,7 @@ export default function Home() {
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f2")}</li>
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f3")}</li>
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f4")}</li>
+                <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-purple-600 mt-0.5" /> {t("pricing.business.f5")}</li>
               </ul>
               {/* mailto 단독은 메일 클라이언트 미설정 브라우저에서 무반응(2026-08-28 실측) —
                   주소 복사+안내를 먼저 하고 mailto는 보조로 시도 */}
@@ -2018,7 +2019,7 @@ export default function Home() {
         </div>
 
         <div className="space-y-3">
-          {Array.from({ length: 14 }, (_, i) => i).map((i) => (
+          {Array.from({ length: 15 }, (_, i) => i).map((i) => (
             <div
               key={i}
               className={`border rounded-2xl transition-all duration-300 overflow-hidden ${openFaq === i
