@@ -846,11 +846,16 @@ export default function Home() {
 
   const handleDownload = () => {
     if (resultData?.image) {
-      // 파일명 결정: 공개링크가 있으면 링크ID, 없으면 oripics_타임스탬프
+      // 파일명 결정: 링크 ID(발행 전에도 인증 확정 시 확보됨 — 스탬프에 새겨진 값과 동일),
+      // 없으면 oripics_타임스탬프 폴백 (2026-08-28: 미발행 다운로드도 링크 ID로 — 소스코드 F/P/C 식별 가능)
       let filename = `oripics_${new Date().getTime()}.png`;
       if (generatedLink) {
         const parts = generatedLink.split('/');
         filename = `${parts[parts.length - 1]}.png`;
+      } else if (confirmedSingle?.linkId) {
+        filename = `${confirmedSingle.linkId}.png`;
+      } else if (sessionID) {
+        filename = `${sessionID}.png`;
       }
 
       // iOS 기기 감지
