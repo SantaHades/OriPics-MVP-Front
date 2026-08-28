@@ -7,7 +7,9 @@ export const ANDROID_STORE_URL = "https://play.google.com/apps/testing/com.santa
 
 // Android: 앱이 설치돼 있으면 실행, 없으면 스토어로 폴백 (Chrome intent 스킴).
 // scheme=oripics 는 app.json "scheme"과 일치해야 함.
+// 경로는 반드시 빈 값(→ oripics:///, 홈 탭) — 임의 경로(예: open)는 expo-router가
+// Unmatched Route 화면을 띄움 (2026-08-28 Galaxy 실측)
 export const ANDROID_INTENT_URL =
-  "intent://open#Intent;scheme=oripics;package=com.santahades.oripics;S.browser_fallback_url=" +
+  "intent:///#Intent;scheme=oripics;package=com.santahades.oripics;S.browser_fallback_url=" +
   encodeURIComponent(ANDROID_STORE_URL) +
   ";end";
