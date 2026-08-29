@@ -1095,10 +1095,13 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-6 py-12 flex flex-col items-center">
         <section className="w-full text-center mb-16 pt-8 flex flex-col items-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-6 whitespace-pre-line md:whitespace-normal">{t("hero.title")}</h1>
-          <p className="text-slate-700 md:text-lg mb-4 max-w-xl mx-auto whitespace-pre-line">
-            {t("hero.description")}
+          {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
+          <p className="text-sm md:text-base text-slate-600 mb-4 whitespace-pre-line leading-relaxed">
+            {t("hero.eyebrow")}
           </p>
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-5 whitespace-pre-line leading-snug">
+            {t("hero.title")}
+          </h1>
 
           {/* 인증 방식·사용 사례 진입 링크 (2026-08-29 대표 기획) — 신뢰(이중 인증)와
               효용(직군별 시나리오)으로 이어지는 통로 */}

@@ -19,10 +19,11 @@
   },
   "Home": {
     "hero": {
-      "title": "Prove Your Image\nis Original.",
+      "title": "An invisible digital fingerprint in your photo\nproves it is the original.",
       "description": "By embedding an invisible digital fingerprint,\nyou can verify the authenticity anytime.",
-      "link_how": "How can I trust it?",
-      "link_cases": "Where is it used?"
+      "link_how": "What is a digital fingerprint?",
+      "link_cases": "Where is it used?",
+      "eyebrow": "Photo originality certification\nConformant to the international C2PA standard"
     },
     "upload": {
       "idle": "☁️ Select or paste an image",
