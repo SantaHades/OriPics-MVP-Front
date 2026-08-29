@@ -40,6 +40,30 @@ function parseMetaTimestamp(ts: string): Date | null {
   }
 }
 
+// captured_at(모바일 촬영 기기 시각)은 YYMMDDHHMMSS+ms 3자리(15자리) 컴팩트 UTC —
+// 스탬프 timestamp(접두문자+14자리)와 다른 포맷. naive new Date()는 Invalid Date가 되어
+// PDF 렌더가 "Invalid time value"로 실패 (2026-08-29 실측). ISO 문자열도 허용.
+function parseFlexibleDate(v: unknown): Date | null {
+  if (v == null) return null;
+  const str = String(v);
+  if (/^\d{15}$/.test(str)) {
+    const d = new Date(
+      Date.UTC(
+        parseInt("20" + str.slice(0, 2), 10),
+        parseInt(str.slice(2, 4), 10) - 1,
+        parseInt(str.slice(4, 6), 10),
+        parseInt(str.slice(6, 8), 10),
+        parseInt(str.slice(8, 10), 10),
+        parseInt(str.slice(10, 12), 10),
+        parseInt(str.slice(12, 15), 10),
+      ),
+    );
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function getSourceCode(ts: string): "F" | "P" | "C" {
   const first = ts[0];
   if (first === "P" || first === "C") return first;
@@ -253,8 +277,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   const certData: CertificateData = {
     imageDataUrl,
     // 촬영(기기)·인증·발행 시각 구분 표기 (2026-08-28 대표 질의) — captured_at은 모바일 촬영만 존재
-    deviceCapturedAt: row.captured_at ? new Date(row.captured_at) : null,
-    publishedAt: row.created_at ? new Date(row.created_at) : null,
+    deviceCapturedAt: parseFlexibleDate(row.captured_at),
+    publishedAt: parseFlexibleDate(row.created_at),
     linkId: row.link_id,
     capturedAt,
     sourceCode: getSourceCode(row.timestamp),
