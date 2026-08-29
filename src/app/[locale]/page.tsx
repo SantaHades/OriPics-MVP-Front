@@ -1099,7 +1099,7 @@ export default function Home() {
 
           {/* 인증 방식·사용 사례 진입 링크 (2026-08-29 대표 기획) — 신뢰(이중 인증)와
               효용(직군별 시나리오)으로 이어지는 통로 */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-16">
             <Link
               href="/how-it-works"
               className="text-sm text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300"
