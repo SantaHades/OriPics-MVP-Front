@@ -1093,13 +1093,13 @@ export default function Home() {
       <main className="max-w-5xl mx-auto px-6 py-12 flex flex-col items-center">
         <section className="w-full text-center mb-16 pt-8 flex flex-col items-center">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-6 whitespace-pre-line md:whitespace-normal">{t("hero.title")}</h1>
-          <p className="text-slate-700 md:text-lg mb-12 max-w-xl mx-auto whitespace-pre-line">
+          <p className="text-slate-700 md:text-lg mb-4 max-w-xl mx-auto whitespace-pre-line">
             {t("hero.description")}
           </p>
 
           {/* 인증 방식·사용 사례 진입 링크 (2026-08-29 대표 기획) — 신뢰(이중 인증)와
               효용(직군별 시나리오)으로 이어지는 통로 */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
             <Link
               href="/how-it-works"
               className="text-sm text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300"
