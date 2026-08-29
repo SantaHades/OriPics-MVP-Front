@@ -76,6 +76,8 @@ export interface CertificateData {
   qrDataUrl: string;
   /** 대상 이미지 썸네일 — JPEG data URL (호출 측에서 축소 생성, 선택) */
   imageDataUrl?: string;
+  /** 표기 시간대 (IANA) — 미지정 시 Asia/Seoul. 서버는 UTC라 명시 필수 (2026-08-29) */
+  timeZone?: string;
   /** C2PA 매니페스트 요약 (선택) */
   c2pa?: {
     present: boolean;
@@ -327,7 +329,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function formatTimestamp(d: Date, locale: Locale): string {
+function formatTimestamp(d: Date, locale: Locale, timeZone: string): string {
   const opts: Intl.DateTimeFormatOptions = {
     year: "numeric",
     month: "2-digit",
@@ -335,7 +337,9 @@ function formatTimestamp(d: Date, locale: Locale): string {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
+    // 시간대 라벨(GMT+9 등)은 증거 문서라 반드시 함께 표기
     timeZoneName: "short",
+    timeZone,
   };
   return new Intl.DateTimeFormat(locale === "ko" ? "ko-KR" : "en-US", opts).format(d);
 }
@@ -352,6 +356,7 @@ export function CertificateDocument({
 }) {
   ensureFontRegistered();
   const t = STRINGS[locale];
+  const tz = data.timeZone ?? "Asia/Seoul";
 
   const sourceLabel =
     data.sourceCode === "P"
@@ -410,18 +415,18 @@ export function CertificateDocument({
           {data.deviceCapturedAt ? (
             <View style={styles.row}>
               <Text style={styles.label}>{t.capturedDevice}</Text>
-              <Text style={styles.value}>{formatTimestamp(data.deviceCapturedAt, locale)}</Text>
+              <Text style={styles.value}>{formatTimestamp(data.deviceCapturedAt, locale, tz)}</Text>
             </View>
           ) : null}
           <View style={styles.row}>
             <Text style={styles.label}>{data.deviceCapturedAt ? t.certified : t.captured}</Text>
-            <Text style={styles.value}>{formatTimestamp(data.capturedAt, locale)}</Text>
+            <Text style={styles.value}>{formatTimestamp(data.capturedAt, locale, tz)}</Text>
           </View>
           {data.publishedAt &&
           Math.abs(data.publishedAt.getTime() - data.capturedAt.getTime()) > 60_000 ? (
             <View style={styles.row}>
               <Text style={styles.label}>{t.published}</Text>
-              <Text style={styles.value}>{formatTimestamp(data.publishedAt, locale)}</Text>
+              <Text style={styles.value}>{formatTimestamp(data.publishedAt, locale, tz)}</Text>
             </View>
           ) : null}
           <View style={styles.row}>
@@ -518,7 +523,7 @@ export function CertificateDocument({
         <View style={styles.footer} fixed>
           <View>
             <Text style={styles.footerText}>
-              {t.issued}: {formatTimestamp(data.issuedAt, locale)}
+              {t.issued}: {formatTimestamp(data.issuedAt, locale, tz)}
             </Text>
             <Text style={styles.footerText}>
               {t.issuer}: {t.issuerName}

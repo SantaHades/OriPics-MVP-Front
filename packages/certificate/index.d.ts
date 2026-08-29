@@ -12,6 +12,7 @@ export interface CertificateData {
   issuedAt: Date;
   verifyUrl: string;
   qrDataUrl: string;
+  timeZone?: string;
   imageDataUrl?: string;
   c2pa?: { present: boolean; valid?: boolean; issuer?: string; claimGenerator?: string };
 }
