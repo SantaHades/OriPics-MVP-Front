@@ -1097,6 +1097,24 @@ export default function Home() {
             {t("hero.description")}
           </p>
 
+          {/* 인증 방식·사용 사례 진입 링크 (2026-08-29 대표 기획) — 신뢰(이중 인증)와
+              효용(직군별 시나리오)으로 이어지는 통로 */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
+            <Link
+              href="/how-it-works"
+              className="text-sm text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300"
+            >
+              {t("hero.link_how")}
+            </Link>
+            <span className="text-slate-300">·</span>
+            <Link
+              href="/use-cases"
+              className="text-sm text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300"
+            >
+              {t("hero.link_cases")}
+            </Link>
+          </div>
+
           {status !== "result_stamped" && status !== "result_verified" && (
             <div className="w-full max-w-2xl flex flex-col items-center">
               {(status === "idle" || status === "dragover") && (

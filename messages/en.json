@@ -20,7 +20,9 @@
   "Home": {
     "hero": {
       "title": "Prove Your Image\nis Original.",
-      "description": "By embedding an invisible digital fingerprint,\nyou can verify the authenticity anytime."
+      "description": "By embedding an invisible digital fingerprint,\nyou can verify the authenticity anytime.",
+      "link_how": "How can I trust it?",
+      "link_cases": "Where is it used?"
     },
     "upload": {
       "idle": "☁️ Select or paste an image",
