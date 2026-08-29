@@ -1099,7 +1099,8 @@ export default function Home() {
           <p className="text-sm md:text-base text-slate-600 mb-4 whitespace-pre-line leading-relaxed">
             {t("hero.eyebrow")}
           </p>
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-5 whitespace-pre-line leading-snug">
+          {/* 모바일=3줄 고정 줄바꿈(대표 시안), 데스크톱=자연 흐름 */}
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-5 whitespace-pre-line md:whitespace-normal leading-snug max-w-2xl mx-auto">
             {t("hero.title")}
           </h1>
 
