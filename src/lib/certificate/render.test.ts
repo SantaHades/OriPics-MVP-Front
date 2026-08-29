@@ -24,9 +24,23 @@ const data: CertificateData = {
   verifyUrl: "https://www.ori.pics/P260828-000000-000000",
   qrDataUrl: TINY_PNG,
   c2pa: { present: true, valid: false, issuer: "OriPics Sandbox CA", claimGenerator: "OriPics/1.0" },
-  // 기기 검증 상세 섹션 (2026-08-29) — verified 렌더 경로 회귀 방지
+  // 기기 검증 상세 섹션 (2026-08-29) — verified 렌더 경로 회귀 방지 (전 필드 최악 케이스)
   tier: "verified",
-  verifiedDetail: { platform: "ios", zoomFactor: 1.0, lensPosition: "ultra-wide" },
+  verifiedDetail: {
+    platform: "ios",
+    zoomFactor: 1.0,
+    lensPosition: "ultra-wide",
+    attestTokenHash: "a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    deviceIntegrity: "passed",
+    deviceModel: "iPhone 12 Pro Max",
+    osVersion: "18.5",
+    appVersion: "1.0.0",
+    iso: 100,
+    exposureTime: 1 / 120,
+    fNumber: 1.6,
+    focalLength: 5.1,
+    stampVersion: 5,
+  },
 };
 
 describe("certificate PDF render", () => {

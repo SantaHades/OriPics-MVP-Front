@@ -85,6 +85,21 @@ export interface CertificateData {
     platform?: "ios" | "android";
     zoomFactor?: number;
     lensPosition?: string;
+    /** attest 토큰 SHA-256 (hex 32자) — 어서션 기재값, 증거 대조용 */
+    attestTokenHash?: string;
+    /** Play Integrity 등급(MEETS_*) 또는 'passed'(iOS) */
+    deviceIntegrity?: string;
+    /** A-56 촬영 세부 (빌드 8+ 신규 인증부터, 서명된 값만) */
+    deviceModel?: string;
+    osVersion?: string;
+    appVersion?: string;
+    iso?: number;
+    /** 노출 시간(초) — 1 미만이면 1/x초로 표기 */
+    exposureTime?: number;
+    fNumber?: number;
+    focalLength?: number;
+    /** OriPics 스탬프 알고리즘 버전 (서버 기록) */
+    stampVersion?: number;
   };
   /** C2PA 매니페스트 요약 (선택) */
   c2pa?: {
@@ -125,8 +140,16 @@ const STRINGS: Record<Locale, Record<string, string>> = {
       "정품 Android 기기에서, 위·변조되지 않은 OriPics 정식 앱이 촬영 시점에 이 사진을 인증했음을 Google의 하드웨어 검증으로 확인했습니다.",
     verifiedFact_unknown:
       "정품 기기에서, 위·변조되지 않은 OriPics 정식 앱이 촬영 시점에 이 사진을 인증했음이 하드웨어 수준에서 확인되었습니다.",
-    verifiedLens: "촬영 렌즈",
-    verifiedZoom: "촬영 배율",
+    verifiedTech: "기술 상세",
+    verifiedTech_ios:
+      "Apple DeviceCheck App Attest — Secure Enclave 하드웨어 키 증명(attestation)을 Apple 루트 CA 인증서 체인·nonce 바인딩·앱 ID(com.santahades.oripics)·production 환경(AAGUID)까지 서버 측에서 검증.",
+    verifiedTech_android:
+      "Google Play Integrity API — Google 서명 무결성 평결(verdict)을 서버 측에서 검증, 기기 무결성 등급 MEETS_DEVICE_INTEGRITY 이상 확인. 패키지: com.santahades.oripics",
+    verifiedTech_unknown:
+      "Apple App Attest / Google Play Integrity 하드웨어 증명 토큰을 서버 측에서 검증.",
+    verifiedEvidence: "증명 데이터",
+    verifiedDevice: "촬영 기기",
+    verifiedCapture: "촬영 정보",
     lens_wide: "광각 (기본 카메라)",
     "lens_ultra-wide": "초광각",
     lens_telephoto: "망원",
@@ -179,8 +202,16 @@ const STRINGS: Record<Locale, Record<string, string>> = {
       "Google's hardware attestation confirmed that a genuine Android device, running an untampered official OriPics app, certified this photo at the moment of capture.",
     verifiedFact_unknown:
       "Hardware-level attestation confirmed that a genuine device running the untampered official OriPics app certified this photo at the moment of capture.",
-    verifiedLens: "Capture lens",
-    verifiedZoom: "Zoom factor",
+    verifiedTech: "Technical detail",
+    verifiedTech_ios:
+      "Apple DeviceCheck App Attest — Secure Enclave hardware key attestation verified server-side: Apple root CA chain, nonce binding, app ID (com.santahades.oripics), production environment (AAGUID).",
+    verifiedTech_android:
+      "Google Play Integrity API — Google-signed integrity verdict verified server-side; device integrity MEETS_DEVICE_INTEGRITY or higher confirmed. Package: com.santahades.oripics",
+    verifiedTech_unknown:
+      "Apple App Attest / Google Play Integrity hardware attestation token verified server-side.",
+    verifiedEvidence: "Evidence data",
+    verifiedDevice: "Capture device",
+    verifiedCapture: "Capture details",
     lens_wide: "Wide (main camera)",
     "lens_ultra-wide": "Ultra-wide",
     lens_telephoto: "Telephoto",
@@ -212,7 +243,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#0f172a",
     padding: 48,
-    paddingBottom: 64,
+    paddingBottom: 60,
   },
   header: {
     flexDirection: "row",
@@ -220,8 +251,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
-    paddingBottom: 10,
-    marginBottom: 12,
+    paddingBottom: 8,
+    marginBottom: 10,
   },
   brandRow: {
     flexDirection: "row",
@@ -235,7 +266,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   titleBlock: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   title: {
     fontSize: 22,
@@ -248,7 +279,7 @@ const styles = StyleSheet.create({
     color: "#64748b",
   },
   section: {
-    marginBottom: 10,
+    marginBottom: 9,
   },
   sectionTitle: {
     fontSize: 9,
@@ -260,7 +291,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    marginBottom: 3,
+    marginBottom: 2,
   },
   label: {
     width: 110,
@@ -288,8 +319,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   qrImage: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
   },
   qrTextBlock: {
     flex: 1,
@@ -306,7 +337,7 @@ const styles = StyleSheet.create({
     color: "#475569",
   },
   c2paBlock: {
-    padding: 10,
+    padding: 8,
     backgroundColor: "#f0fdf4",
     borderLeftWidth: 3,
     borderLeftColor: "#16a34a",
@@ -414,8 +445,8 @@ export function CertificateDocument({
   // 썸네일 박스 = 사진 비율 그대로 (긴 변 124pt) — 고정 정사각형이면 테두리와
   // 이미지 모양이 어긋남 (2026-08-28 대표 피드백). react-pdf Image는 고정 치수 필수.
   const thumbRatio = data.width > 0 && data.height > 0 ? data.width / data.height : 1;
-  const thumbW = thumbRatio >= 1 ? 112 : Math.max(24, Math.round(112 * thumbRatio));
-  const thumbH = thumbRatio >= 1 ? Math.max(24, Math.round(112 / thumbRatio)) : 112;
+  const thumbW = thumbRatio >= 1 ? 104 : Math.max(24, Math.round(104 * thumbRatio));
+  const thumbH = thumbRatio >= 1 ? Math.max(24, Math.round(104 / thumbRatio)) : 104;
 
   return (
     <Document>
@@ -517,9 +548,41 @@ export function CertificateDocument({
           </View>
         </View>
 
-        {/* 기기 검증 (Verified) 상세 — links.tier=verified일 때만. 렌즈·배율은
-            발행본 C2PA 서명 어서션 값이라 편집 불가한 사실만 기재 (2026-08-29 대표 요청) */}
-        {data.tier === "verified" ? (
+        {/* 기기 검증 (Verified) 상세 — links.tier=verified일 때만. 값은 전부
+            발행본 C2PA 서명 어서션(com.oripics.verified) 기재분 = 편집 불가한 사실.
+            쉬운 말(확인된 사실) + 어려운 말(기술 상세·증명 데이터) 병기 (2026-08-29 대표 요청) */}
+        {data.tier === "verified" ? (() => {
+          const vd = data.verifiedDetail;
+          const fmtExposure = (sec: number) =>
+            sec >= 1 ? `${sec}s` : `1/${Math.round(1 / sec)}s`;
+          const deviceParts = [
+            vd?.deviceModel,
+            vd?.osVersion
+              ? vd?.platform === "ios"
+                ? `iOS ${vd.osVersion}`
+                : vd?.platform === "android"
+                  ? `Android ${vd.osVersion}`
+                  : `OS ${vd.osVersion}`
+              : null,
+            vd?.appVersion ? `OriPics ${vd.appVersion}` : null,
+          ].filter(Boolean) as string[];
+          const captureParts = [
+            vd?.lensPosition ? (t[`lens_${vd.lensPosition}`] ?? vd.lensPosition) : null,
+            vd?.zoomFactor != null ? `${vd.zoomFactor.toFixed(1)}×` : null,
+            vd?.iso != null ? `ISO ${vd.iso}` : null,
+            vd?.exposureTime != null ? fmtExposure(vd.exposureTime) : null,
+            vd?.fNumber != null ? `f/${vd.fNumber}` : null,
+            vd?.focalLength != null ? `${vd.focalLength}mm` : null,
+          ].filter(Boolean) as string[];
+          const evidenceParts = [
+            vd?.platform ? `platform=${vd.platform}` : null,
+            vd?.deviceIntegrity ? `device_integrity=${vd.deviceIntegrity}` : null,
+            vd?.lensPosition ? `lens_position=${vd.lensPosition}` : null,
+            vd?.zoomFactor != null ? `zoom_factor=${vd.zoomFactor.toFixed(1)}` : null,
+            vd?.stampVersion != null ? `stamp_version=${vd.stampVersion}` : null,
+            vd?.attestTokenHash ? `attest_sha256=${vd.attestTokenHash}` : null,
+          ].filter(Boolean) as string[];
+          return (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t.verifiedTitle}</Text>
             <View
@@ -528,16 +591,16 @@ export function CertificateDocument({
                 borderWidth: 1,
                 borderColor: "#bfdbfe",
                 borderRadius: 4,
-                paddingVertical: 6,
+                paddingVertical: 5,
                 paddingHorizontal: 10,
               }}
             >
               <View style={styles.row}>
                 <Text style={styles.label}>{t.verifiedAuthority}</Text>
                 <Text style={styles.value}>
-                  {data.verifiedDetail?.platform === "ios"
+                  {vd?.platform === "ios"
                     ? t.verifiedAuthority_ios
-                    : data.verifiedDetail?.platform === "android"
+                    : vd?.platform === "android"
                       ? t.verifiedAuthority_android
                       : t.verifiedAuthority_unknown}
                 </Text>
@@ -545,30 +608,47 @@ export function CertificateDocument({
               <View style={styles.row}>
                 <Text style={styles.label}>{t.verifiedFact}</Text>
                 <Text style={[styles.value, { flex: 1 }]}>
-                  {data.verifiedDetail?.platform === "ios"
+                  {vd?.platform === "ios"
                     ? t.verifiedFact_ios
-                    : data.verifiedDetail?.platform === "android"
+                    : vd?.platform === "android"
                       ? t.verifiedFact_android
                       : t.verifiedFact_unknown}
                 </Text>
               </View>
-              {data.verifiedDetail?.lensPosition ? (
+              {deviceParts.length > 0 ? (
                 <View style={styles.row}>
-                  <Text style={styles.label}>{t.verifiedLens}</Text>
-                  <Text style={styles.value}>
-                    {t[`lens_${data.verifiedDetail.lensPosition}`] ?? data.verifiedDetail.lensPosition}
-                  </Text>
+                  <Text style={styles.label}>{t.verifiedDevice}</Text>
+                  <Text style={styles.value}>{deviceParts.join(" · ")}</Text>
                 </View>
               ) : null}
-              {data.verifiedDetail?.zoomFactor != null ? (
+              {captureParts.length > 0 ? (
                 <View style={styles.row}>
-                  <Text style={styles.label}>{t.verifiedZoom}</Text>
-                  <Text style={styles.value}>{`${data.verifiedDetail.zoomFactor.toFixed(1)}×`}</Text>
+                  <Text style={styles.label}>{t.verifiedCapture}</Text>
+                  <Text style={styles.value}>{captureParts.join(" · ")}</Text>
+                </View>
+              ) : null}
+              <View style={styles.row}>
+                <Text style={styles.label}>{t.verifiedTech}</Text>
+                <Text style={[styles.value, { flex: 1, fontSize: 8, color: "#475569" }]}>
+                  {vd?.platform === "ios"
+                    ? t.verifiedTech_ios
+                    : vd?.platform === "android"
+                      ? t.verifiedTech_android
+                      : t.verifiedTech_unknown}
+                </Text>
+              </View>
+              {evidenceParts.length > 0 ? (
+                <View style={styles.row}>
+                  <Text style={styles.label}>{t.verifiedEvidence}</Text>
+                  <Text style={[styles.monoValue, { fontSize: 7 }]}>
+                    {`com.oripics.verified: ${evidenceParts.join(" · ")}`}
+                  </Text>
                 </View>
               ) : null}
             </View>
           </View>
-        ) : null}
+          );
+        })() : null}
 
         {/* 검증 QR */}
         <View style={styles.section}>

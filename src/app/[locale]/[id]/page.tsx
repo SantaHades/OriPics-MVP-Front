@@ -7,6 +7,7 @@ import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
+import { VerifiedDetailLines, type VerifiedAssertionData } from "@/components/VerifiedDetailLines";
 import { useCredits } from "@/lib/credits/useCredits";
 
 interface LinkData {
@@ -364,40 +365,24 @@ export default function LinkViewer() {
                   <div>
                     <p className="text-xs text-slate-500 mb-1">{t("tier_label")}</p>
                     <p className="text-sm font-bold text-blue-600">{t("tier_verified")}</p>
-                    {/* 기기 검증 상세 (2026-08-29) — C2PA 서명 어서션의 플랫폼·렌즈·배율.
-                        c2pa 조회 전/구 링크(어서션 없음)는 일반 문구 폴백 */}
+                    {/* 기기 검증 상세 (2026-08-29) — C2PA 서명 어서션 원값을 쉬운 말+기술
+                        상세로 병기. c2pa 조회 전/구 링크(어서션 없음)는 일반 문구 폴백 */}
                     {(() => {
                       const va = c2pa?.assertions?.find((a) =>
                         a.label?.startsWith("com.oripics.verified"),
-                      )?.data;
-                      const platform = va?.platform;
-                      const lens = typeof va?.lens_position === "string" ? va.lens_position : null;
-                      const zoom = typeof va?.zoom_factor === "number" ? va.zoom_factor : null;
+                      )?.data as VerifiedAssertionData | undefined;
+                      const actionsData = c2pa?.assertions?.find((a) =>
+                        a.label?.startsWith("c2pa.actions"),
+                      )?.data as any;
+                      const sv = actionsData?.actions?.[0]?.parameters?.["com.oripics.version"];
+                      const vd = va
+                        ? { ...va, ...(typeof sv === "number" ? { stamp_version: sv } : {}) }
+                        : undefined;
                       return (
-                        <>
-                          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                            {platform === "ios"
-                              ? t("tier_verified_desc_ios")
-                              : platform === "android"
-                                ? t("tier_verified_desc_android")
-                                : t("tier_verified_desc")}
-                          </p>
-                          {(lens || zoom != null) && (
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              {lens && (
-                                <>
-                                  {t("lens_label")} {t(`lens_${lens.replace("-", "_")}` as any)}
-                                </>
-                              )}
-                              {lens && zoom != null && " · "}
-                              {zoom != null && (
-                                <>
-                                  {t("zoom_label")} {zoom.toFixed(1)}×
-                                </>
-                              )}
-                            </p>
-                          )}
-                        </>
+                        <VerifiedDetailLines
+                          vd={vd}
+                          t={t as unknown as (key: string) => string}
+                        />
                       );
                     })()}
                   </div>

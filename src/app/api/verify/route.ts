@@ -376,18 +376,36 @@ export async function POST(req: NextRequest) {
 
   // 기기 검증 상세 (2026-08-29) — 발행본 C2PA com.oripics.verified 어서션에서
   // 플랫폼·렌즈·배율을 추출해 판독 결과에 병기. 어서션은 서명돼 있어 편집 불가.
-  let verifiedDetail: { platform?: string; zoom_factor?: number; lens_position?: string } | null =
-    null;
+  let verifiedDetail: Record<string, unknown> | null = null;
   if (linkTier === "verified" && c2paLookup.checked && c2paLookup.result.present) {
     const va = c2paLookup.result.assertions?.find((a) =>
       a.label?.startsWith("com.oripics.verified"),
     )?.data as Record<string, unknown> | undefined;
     if (va) {
-      verifiedDetail = {
-        ...(va.platform === "ios" || va.platform === "android" ? { platform: va.platform } : {}),
-        ...(typeof va.zoom_factor === "number" ? { zoom_factor: va.zoom_factor } : {}),
-        ...(typeof va.lens_position === "string" ? { lens_position: va.lens_position } : {}),
-      };
+      verifiedDetail = {};
+      // 어서션 원값(snake_case) 화이트리스트 — 문자열/수치 타입만 통과
+      const strKeys = [
+        "platform",
+        "device_integrity",
+        "lens_position",
+        "device_model",
+        "os_version",
+        "app_version",
+        "attest_token_hash",
+      ];
+      const numKeys = ["zoom_factor", "iso", "exposure_time", "f_number", "focal_length"];
+      for (const key of strKeys) {
+        if (typeof va[key] === "string" && va[key]) verifiedDetail[key] = va[key];
+      }
+      for (const key of numKeys) {
+        if (typeof va[key] === "number" && Number.isFinite(va[key])) verifiedDetail[key] = va[key];
+      }
+      const actionsData = c2paLookup.result.assertions?.find((a) =>
+        a.label?.startsWith("c2pa.actions"),
+      )?.data as any;
+      const sv = actionsData?.actions?.[0]?.parameters?.["com.oripics.version"];
+      if (typeof sv === "number" && Number.isFinite(sv)) verifiedDetail.stamp_version = sv;
+      if (Object.keys(verifiedDetail).length === 0) verifiedDetail = null;
     }
   }
 

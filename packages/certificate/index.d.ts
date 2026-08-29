@@ -20,6 +20,16 @@ export interface CertificateData {
     platform?: "ios" | "android";
     zoomFactor?: number;
     lensPosition?: string;
+    attestTokenHash?: string;
+    deviceIntegrity?: string;
+    deviceModel?: string;
+    osVersion?: string;
+    appVersion?: string;
+    iso?: number;
+    exposureTime?: number;
+    fNumber?: number;
+    focalLength?: number;
+    stampVersion?: number;
   };
 }
 export declare function renderCertificatePdf(opts: {

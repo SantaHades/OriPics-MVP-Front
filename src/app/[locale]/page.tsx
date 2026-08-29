@@ -21,6 +21,7 @@ import { useCredits } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 import { ANDROID_INTENT_URL, ANDROID_STORE_URL, IOS_APP_URL } from "@/lib/appLinks";
+import { VerifiedDetailLines, type VerifiedAssertionData } from "@/components/VerifiedDetailLines";
 
 type ProcessStatus = "idle" | "dragover" | "processing" | "size_selection" | "result_stamped" | "result_multi" | "result_verified" | "error";
 
@@ -62,7 +63,7 @@ interface ApiResponse {
   /** 검증 등급 — "verified"(attest 통과 촬영 인증) | undefined(standard·구 링크) */
   tier?: string;
   /** 기기 검증 상세 (C2PA com.oripics.verified 어서션, 2026-08-29) */
-  verified_detail?: { platform?: string; zoom_factor?: number; lens_position?: string };
+  verified_detail?: VerifiedAssertionData;
   /** 서버가 유도한 공개링크 (V4+, 발행된 인증만) */
   verify_url?: string;
   /** C2PA 자격증명 증거 (trust_report.evidence의 c2pa.manifest — 발행본 기준, 2026-08-26) */
@@ -1709,32 +1710,12 @@ export default function Home() {
                         <BadgeCheck size={16} /> {t("verify.tier_verified")}
                       </span>
                     </div>
-                    {/* 기기 검증 상세 (2026-08-29) — 플랫폼별 쉬운 말 설명 + 서명된 렌즈·배율 */}
-                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                      {resultData.verified_detail?.platform === "ios"
-                        ? t("verify.tier_verified_desc_ios")
-                        : resultData.verified_detail?.platform === "android"
-                          ? t("verify.tier_verified_desc_android")
-                          : t("verify.tier_verified_desc")}
-                    </p>
-                    {(resultData.verified_detail?.lens_position ||
-                      resultData.verified_detail?.zoom_factor != null) && (
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {resultData.verified_detail?.lens_position && (
-                          <>
-                            {t("verify.lens_label")}{" "}
-                            {t(`verify.lens_${resultData.verified_detail.lens_position.replace("-", "_")}` as any)}
-                          </>
-                        )}
-                        {resultData.verified_detail?.lens_position &&
-                          resultData.verified_detail?.zoom_factor != null && " · "}
-                        {resultData.verified_detail?.zoom_factor != null && (
-                          <>
-                            {t("verify.zoom_label")} {resultData.verified_detail.zoom_factor.toFixed(1)}×
-                          </>
-                        )}
-                      </p>
-                    )}
+                    {/* 기기 검증 상세 (2026-08-29) — 쉬운 말 + 기술 상세·증명 데이터 병기 */}
+                    <VerifiedDetailLines
+                      vd={resultData.verified_detail}
+                      t={t as unknown as (key: string) => string}
+                      keyPrefix="verify."
+                    />
                   </div>
                 )}
                 {resultData.metadata.captured_at && (

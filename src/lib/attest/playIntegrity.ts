@@ -17,6 +17,8 @@ export interface PlayIntegrityConfig {
   packageName: string;
   /** 사이드로드/미인식 앱 허용 (dev build 테스트용 — 운영에서는 false) */
   allowUnrecognizedApp: boolean;
+  /** A-49①: MEETS_STRONG_INTEGRITY 요구 상향 (env 플래그, 기본 false — 구형 기기 탈락 트레이드오프) */
+  requireStrong?: boolean;
 }
 
 export interface PlayVerdictPayload {
@@ -38,7 +40,7 @@ export type PlayEvalResult =
 /** verdict payload 판정 (순수 함수 — now 주입 가능) */
 export function evaluatePlayIntegrityVerdict(
   payload: PlayVerdictPayload,
-  expected: { nonce: string; packageName: string; allowUnrecognizedApp: boolean },
+  expected: { nonce: string; packageName: string; allowUnrecognizedApp: boolean; requireStrong?: boolean },
   now: number = Date.now(),
 ): PlayEvalResult {
   const req = payload.requestDetails;
@@ -72,6 +74,9 @@ export function evaluatePlayIntegrityVerdict(
 
   const verdicts = payload.deviceIntegrity?.deviceRecognitionVerdict ?? [];
   if (verdicts.includes("MEETS_STRONG_INTEGRITY")) return { ok: true, deviceIntegrity: "MEETS_STRONG_INTEGRITY" };
+  if (expected.requireStrong) {
+    return { ok: false, reason: `strong_integrity_required:${verdicts.join(",") || "none"}` };
+  }
   if (verdicts.includes("MEETS_DEVICE_INTEGRITY")) return { ok: true, deviceIntegrity: "MEETS_DEVICE_INTEGRITY" };
   return { ok: false, reason: `device_integrity_failed:${verdicts.join(",") || "none"}` };
 }
@@ -140,6 +145,7 @@ export async function verifyPlayIntegrity(
     nonce,
     packageName: config.packageName,
     allowUnrecognizedApp: config.allowUnrecognizedApp,
+    requireStrong: config.requireStrong,
   });
   if (!evaluated.ok) return evaluated;
   return {

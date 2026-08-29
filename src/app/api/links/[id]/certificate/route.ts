@@ -256,14 +256,32 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
           claimGenerator: result.claim_generator,
         };
         // 기기 검증 상세 (2026-08-29 대표 요청) — 발행 시 서명된 com.oripics.verified
-        // 어서션(플랫폼·렌즈·배율)을 증명서에 그대로 기재. 어서션 무결성은 위 valid가 보증.
+        // 어서션 전체(플랫폼·무결성 등급·렌즈·배율·촬영 세부·토큰 해시)를 증명서에 기재.
+        // 어서션 무결성은 위 valid가 보증. 스탬프 버전은 c2pa.actions 파라미터에서.
         const va = result.assertions?.find((a) => a.label?.startsWith("com.oripics.verified"))
           ?.data as Record<string, unknown> | undefined;
         if (va) {
+          const numV = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+          const strV = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+          const actionsData = result.assertions?.find((a) => a.label?.startsWith("c2pa.actions"))
+            ?.data as any;
+          const stampVersion = numV(
+            actionsData?.actions?.[0]?.parameters?.["com.oripics.version"],
+          );
           verifiedDetail = {
             ...(va.platform === "ios" || va.platform === "android" ? { platform: va.platform } : {}),
-            ...(typeof va.zoom_factor === "number" ? { zoomFactor: va.zoom_factor } : {}),
-            ...(typeof va.lens_position === "string" ? { lensPosition: va.lens_position } : {}),
+            ...(numV(va.zoom_factor) !== undefined ? { zoomFactor: numV(va.zoom_factor) } : {}),
+            ...(strV(va.lens_position) ? { lensPosition: strV(va.lens_position) } : {}),
+            ...(strV(va.attest_token_hash) ? { attestTokenHash: strV(va.attest_token_hash) } : {}),
+            ...(strV(va.device_integrity) ? { deviceIntegrity: strV(va.device_integrity) } : {}),
+            ...(strV(va.device_model) ? { deviceModel: strV(va.device_model) } : {}),
+            ...(strV(va.os_version) ? { osVersion: strV(va.os_version) } : {}),
+            ...(strV(va.app_version) ? { appVersion: strV(va.app_version) } : {}),
+            ...(numV(va.iso) !== undefined ? { iso: numV(va.iso) } : {}),
+            ...(numV(va.exposure_time) !== undefined ? { exposureTime: numV(va.exposure_time) } : {}),
+            ...(numV(va.f_number) !== undefined ? { fNumber: numV(va.f_number) } : {}),
+            ...(numV(va.focal_length) !== undefined ? { focalLength: numV(va.focal_length) } : {}),
+            ...(stampVersion !== undefined ? { stampVersion } : {}),
           };
         }
       } else {

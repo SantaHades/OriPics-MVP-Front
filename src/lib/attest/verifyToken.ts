@@ -76,6 +76,7 @@ export async function verifyAttestToken(input: VerifyTokenInput): Promise<Verify
       serviceAccountJson,
       packageName,
       allowUnrecognizedApp: process.env.GOOGLE_PLAY_INTEGRITY_ALLOW_UNRECOGNIZED === "true",
+      requireStrong: process.env.PLAY_INTEGRITY_REQUIRE_STRONG === "true",
     });
     if (!result.ok) return { ok: false, reason: result.reason };
     return {

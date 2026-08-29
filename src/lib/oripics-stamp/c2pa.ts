@@ -25,11 +25,24 @@ export interface C2paAttachInput {
   lat?: number | null;
   lng?: number | null;
   stampVersion: number;
+  // ⚠️ 키는 snake_case — sign 라우트가 만드는 verified_info(JWT 경유)를 publish가
+  // 그대로 전달한다. 과거 camelCase 기대(attestTokenHash 등)로 어긋나 zoom/lens/해시가
+  // 어서션에서 조용히 탈락했었음 (2026-08-29 실측 수정).
   verifiedInfo?: {
     platform: 'ios' | 'android';
-    attestTokenHash: string;
-    zoomFactor?: number;
-    lensPosition?: string;
+    attest_token_hash: string;
+    /** Play Integrity 등급(MEETS_*) 또는 'passed'(iOS) */
+    device_integrity?: string;
+    zoom_factor?: number;
+    lens_position?: string;
+    /** A-56 촬영 세부 (빌드 8+ 클라이언트가 보고, attest 통과 앱 기준) */
+    device_model?: string;
+    os_version?: string;
+    app_version?: string;
+    iso?: number;
+    exposure_time?: number;
+    f_number?: number;
+    focal_length?: number;
   };
 }
 
@@ -250,16 +263,27 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
 
   builder.addAssertion('com.oripics.proof', proofData);
   if (input.tier === 'verified' && input.verifiedInfo) {
+    const vi = input.verifiedInfo;
+    const optional: Record<string, unknown> = {};
+    for (const key of [
+      'zoom_factor',
+      'lens_position',
+      'device_model',
+      'os_version',
+      'app_version',
+      'iso',
+      'exposure_time',
+      'f_number',
+      'focal_length',
+    ] as const) {
+      const v = (vi as Record<string, unknown>)[key];
+      if (v != null && v !== '') optional[key] = v;
+    }
     builder.addAssertion('com.oripics.verified', {
-      platform: input.verifiedInfo.platform,
-      attest_token_hash: input.verifiedInfo.attestTokenHash,
-      device_integrity: 'passed',
-      ...(input.verifiedInfo.zoomFactor != null
-        ? { zoom_factor: input.verifiedInfo.zoomFactor }
-        : {}),
-      ...(input.verifiedInfo.lensPosition
-        ? { lens_position: input.verifiedInfo.lensPosition }
-        : {}),
+      platform: vi.platform,
+      attest_token_hash: vi.attest_token_hash,
+      device_integrity: vi.device_integrity ?? 'passed',
+      ...optional,
     });
   }
 

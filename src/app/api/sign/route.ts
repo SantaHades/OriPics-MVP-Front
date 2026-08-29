@@ -94,6 +94,14 @@ export async function POST(req: NextRequest) {
     platform,
     zoom_factor,
     lens_position,
+    // A-56 (빌드 8+): 촬영 세부 — attest 통과 앱이 보고한 값만 서명·기재
+    device_model,
+    os_version,
+    app_version,
+    iso,
+    exposure_time,
+    f_number,
+    focal_length,
   } = body || {};
   if (typeof inner_hash !== "string" || !HEX64.test(inner_hash)) {
     return NextResponse.json({ detail: "invalid_inner_hash" }, { status: 400 });
@@ -134,7 +142,7 @@ export async function POST(req: NextRequest) {
   const isVerifiedRequest = requestedTier === "verified";
   const tier: "standard" | "verified" = isVerifiedRequest ? "verified" : "standard";
   let verifiedInfo:
-    | { platform: "ios" | "android"; attest_token_hash: string; zoom_factor?: number; lens_position?: string }
+    | ({ platform: "ios" | "android"; attest_token_hash: string } & Record<string, unknown>)
     | undefined;
 
   if (isVerifiedRequest) {
@@ -151,6 +159,24 @@ export async function POST(req: NextRequest) {
     if (platform !== "ios" && platform !== "android") {
       return NextResponse.json({ detail: "invalid_platform" }, { status: 400 });
     }
+    // A-56: 촬영 세부 sanitize — 문자열은 길이 제한, 수치는 유한·양수·상식 범위만
+    const cleanStr = (v: unknown, max: number) =>
+      typeof v === "string" && v.trim().length > 0 ? v.trim().slice(0, max) : undefined;
+    const cleanNum = (v: unknown, max: number) =>
+      typeof v === "number" && Number.isFinite(v) && v > 0 && v <= max
+        ? Math.round(v * 1000) / 1000
+        : undefined;
+    const captureDetail: Record<string, unknown> = {};
+    const cdEntries: Array<[string, unknown]> = [
+      ["device_model", cleanStr(device_model, 64)],
+      ["os_version", cleanStr(os_version, 32)],
+      ["app_version", cleanStr(app_version, 32)],
+      ["iso", cleanNum(iso, 1_000_000)],
+      ["exposure_time", cleanNum(exposure_time, 3600)],
+      ["f_number", cleanNum(f_number, 512)],
+      ["focal_length", cleanNum(focal_length, 10_000)],
+    ];
+    for (const [k, v] of cdEntries) if (v !== undefined) captureDetail[k] = v;
     const challenge = verifyChallenge(nonce);
     if (!challenge.ok) {
       // 403 (401 아님): 세션은 유효하나 attest 거부 — 모바일 클라이언트는 401을
@@ -165,8 +191,11 @@ export async function POST(req: NextRequest) {
       verifiedInfo = {
         platform,
         attest_token_hash: tokenResult.attestTokenHash,
+        // A-49②: 무결성 등급 기록 — Android=MEETS_*(verdict 실측), iOS=passed
+        device_integrity: tokenResult.deviceIntegrity ?? "passed",
         ...(typeof zoom_factor === "number" ? { zoom_factor } : {}),
         ...(typeof lens_position === "string" ? { lens_position } : {}),
+        ...captureDetail,
       };
     } catch (e) {
       if (e instanceof AttestVerifierNotImplementedError) {
@@ -179,8 +208,10 @@ export async function POST(req: NextRequest) {
           verifiedInfo = {
             platform,
             attest_token_hash: hash,
+            device_integrity: "dev_stub",
             ...(typeof zoom_factor === "number" ? { zoom_factor } : {}),
             ...(typeof lens_position === "string" ? { lens_position } : {}),
+            ...captureDetail,
           };
         } else {
           console.error("[sign] verified requested but attest verifier not configured — refusing");
