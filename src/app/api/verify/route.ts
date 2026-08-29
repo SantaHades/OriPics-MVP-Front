@@ -360,15 +360,20 @@ export async function POST(req: NextRequest) {
   // 검증 등급 (links.tier, 2026-08-23) — verified(attest 통과 촬영 인증)면 판독 결과에 표기.
   // 표시용 조회라 실패해도 검증 결과에는 영향 없음. 구 링크는 null(=standard).
   let linkTier: string | null = null;
+  let dbVerifiedInfo: Record<string, unknown> | null = null;
   if (effectiveLinkId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
       const { data } = await supabase
         .from("links")
-        .select("tier")
+        .select("tier, verified_info")
         .eq("link_id", effectiveLinkId)
         .single();
       linkTier = data?.tier ?? null;
+      dbVerifiedInfo =
+        data?.verified_info && typeof data.verified_info === "object"
+          ? (data.verified_info as Record<string, unknown>)
+          : null;
     } catch {
       /* noop */
     }
@@ -407,6 +412,20 @@ export async function POST(req: NextRequest) {
       if (typeof sv === "number" && Number.isFinite(sv)) verifiedDetail.stamp_version = sv;
       if (Object.keys(verifiedDetail).length === 0) verifiedDetail = null;
     }
+  }
+  // 어서션 부재(C2PA 미첨부 기간·구 링크) 시 links.verified_info 폴백 (2026-08-29)
+  if (!verifiedDetail && linkTier === "verified" && dbVerifiedInfo) {
+    const fb: Record<string, unknown> = {};
+    for (const key of [
+      "platform", "device_integrity", "lens_position", "device_model",
+      "os_version", "app_version", "attest_token_hash",
+    ]) {
+      if (typeof dbVerifiedInfo[key] === "string" && dbVerifiedInfo[key]) fb[key] = dbVerifiedInfo[key];
+    }
+    for (const key of ["zoom_factor", "iso", "exposure_time", "f_number", "focal_length", "stamp_version"]) {
+      if (typeof dbVerifiedInfo[key] === "number" && Number.isFinite(dbVerifiedInfo[key])) fb[key] = dbVerifiedInfo[key];
+    }
+    if (Object.keys(fb).length > 0) verifiedDetail = fb;
   }
 
   const evidence: TrustReport["evidence"] = [buildSealEvidence(seal)];

@@ -16,7 +16,7 @@ export async function GET() {
   const [user, transactions] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { tier: true, credits: true, creditsRenewAt: true },
+      select: { tier: true, credits: true, creditsRenewAt: true, name: true, email: true },
     }),
     prisma.creditTransaction.findMany({
       where: { userId },
@@ -53,6 +53,9 @@ export async function GET() {
           tier: refreshed.tier,
           credits: refreshed.credits,
           creditsRenewAt: refreshed.creditsRenewAt,
+          // 앱 부팅 시 사용자 표시 복원용 (2026-08-29) — 로그인 응답에만 있던 name/email이
+          // 재시작 후 증발해 홈탭이 '내 계정' 폴백으로 떨어지던 문제
+          user: { id: userId, name: user.name, email: user.email },
           recentTransactions: transactions,
         });
       }
@@ -63,6 +66,7 @@ export async function GET() {
     tier: user.tier,
     credits: user.credits,
     creditsRenewAt: user.creditsRenewAt,
+    user: { id: userId, name: user.name, email: user.email },
     recentTransactions: transactions,
   });
 }

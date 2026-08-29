@@ -21,6 +21,8 @@ interface LinkData {
   captured_at?: string | null;
   /** 검증 등급 — "verified"(attest 통과 촬영 인증) | null(standard, 구 행 포함) */
   tier?: string | null;
+  /** verified 상세 (발행 시 서버 기록, snake_case) — 어서션 부재 시 폴백 (2026-08-29) */
+  verified_info?: Record<string, unknown> | null;
   storage_path: string;
   signed_url: string;
   /** 소유자 여부 — 서버가 세션과 대조해 판정 (user_id 자체는 노출하지 않음, 2026-08-22) */
@@ -377,7 +379,7 @@ export default function LinkViewer() {
                       const sv = actionsData?.actions?.[0]?.parameters?.["com.oripics.version"];
                       const vd = va
                         ? { ...va, ...(typeof sv === "number" ? { stamp_version: sv } : {}) }
-                        : undefined;
+                        : ((data!.verified_info ?? undefined) as VerifiedAssertionData | undefined);
                       return (
                         <VerifiedDetailLines
                           vd={vd}

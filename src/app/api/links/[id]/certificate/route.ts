@@ -70,6 +70,30 @@ function getSourceCode(ts: string): "F" | "P" | "C" {
   return "F";
 }
 
+// links.verified_info(snake_case jsonb) → CertificateData.verifiedDetail(camelCase)
+function mapDbVerifiedInfo(vi: unknown): CertificateData["verifiedDetail"] | undefined {
+  if (!vi || typeof vi !== "object") return undefined;
+  const v = vi as Record<string, unknown>;
+  const numV = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : undefined);
+  const strV = (x: unknown) => (typeof x === "string" && x ? x : undefined);
+  const out: NonNullable<CertificateData["verifiedDetail"]> = {
+    ...(v.platform === "ios" || v.platform === "android" ? { platform: v.platform } : {}),
+    ...(numV(v.zoom_factor) !== undefined ? { zoomFactor: numV(v.zoom_factor) } : {}),
+    ...(strV(v.lens_position) ? { lensPosition: strV(v.lens_position) } : {}),
+    ...(strV(v.attest_token_hash) ? { attestTokenHash: strV(v.attest_token_hash) } : {}),
+    ...(strV(v.device_integrity) ? { deviceIntegrity: strV(v.device_integrity) } : {}),
+    ...(strV(v.device_model) ? { deviceModel: strV(v.device_model) } : {}),
+    ...(strV(v.os_version) ? { osVersion: strV(v.os_version) } : {}),
+    ...(strV(v.app_version) ? { appVersion: strV(v.app_version) } : {}),
+    ...(numV(v.iso) !== undefined ? { iso: numV(v.iso) } : {}),
+    ...(numV(v.exposure_time) !== undefined ? { exposureTime: numV(v.exposure_time) } : {}),
+    ...(numV(v.f_number) !== undefined ? { fNumber: numV(v.f_number) } : {}),
+    ...(numV(v.focal_length) !== undefined ? { focalLength: numV(v.focal_length) } : {}),
+    ...(numV(v.stamp_version) !== undefined ? { stampVersion: numV(v.stamp_version) } : {}),
+  };
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function certificateStoragePath(linkId: string): string {
   return `certificates/${linkId}.pdf`;
 }
@@ -126,7 +150,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const { data: row, error } = await supabase
     .from("links")
-    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id, captured_at, created_at, tier")
+    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id, captured_at, created_at, tier, verified_info")
     .eq("link_id", linkId)
     .single();
   if (error || !row) {
@@ -321,9 +345,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     verifyUrl,
     qrDataUrl,
     c2pa: c2paSummary,
-    // 구 verified 행(어서션 이전)도 tier만으로 일반 문구 표시 — 렌즈·배율은 있을 때만
     tier: row.tier === "verified" ? "verified" : "standard",
-    ...(row.tier === "verified" && verifiedDetail ? { verifiedDetail } : {}),
+    // 어서션(서명본) 우선, 없으면 links.verified_info(발행 시 서버 기록) 폴백 —
+    // C2PA 미첨부 기간(운영 cert 대기)에도 플랫폼·촬영 세부 표시 (2026-08-29)
+    ...(row.tier === "verified" && (verifiedDetail ?? mapDbVerifiedInfo(row.verified_info))
+      ? { verifiedDetail: verifiedDetail ?? mapDbVerifiedInfo(row.verified_info) }
+      : {}),
   };
 
   let pdfBuffer: Buffer;

@@ -317,6 +317,12 @@ export async function POST(req: NextRequest) {
   if (tier === "verified") {
     // 검증 등급(attest 통과) — 뷰어 배지 표시용. null=standard (구 행 하위호환)
     row.tier = "verified";
+    // verified 상세를 DB에도 영속 (2026-08-29) — C2PA 첨부는 ORIPICS_C2PA_ENABLED가
+    // 꺼진 기간(운영 cert 대기) 동안 스킵되므로, 어서션만 믿으면 상세가 증발한다.
+    // 표시 계층은 어서션 우선 → 이 컬럼 폴백. stamp_version도 함께 보관.
+    if (verified_info && typeof verified_info === "object") {
+      row.verified_info = { ...verified_info, stamp_version: stampVersion };
+    }
   }
 
   const { error: dbErr } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
