@@ -2059,9 +2059,17 @@ export default function Home() {
       <footer className="w-full border-t border-slate-200 py-16 flex flex-col items-center gap-6 text-slate-500 text-sm">
         <img src="/logo-long.png" alt="OriPics Logo" className="h-24 object-contain opacity-60 hover:opacity-100 transition-opacity cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
         <div className="flex flex-wrap items-center justify-center gap-3">
-          <a href="mailto:hi@ori.pics" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
+          {/* mailto 단독은 메일 클라이언트 미설정 브라우저에서 무반응 — 복사+안내 우선 (영업팀 문의와 동일 패턴) */}
+          <button
+            onClick={() => {
+              navigator.clipboard?.writeText("hi@ori.pics").catch(() => {});
+              window.alert(tc("contact_copied"));
+              window.location.href = "mailto:hi@ori.pics";
+            }}
+            className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all"
+          >
             {tc("contact")}
-          </a>
+          </button>
           <Link href="/terms" className="px-6 py-2 border border-slate-200 rounded-full hover:bg-white/80 transition-all">
             {tc("terms")}
           </Link>
