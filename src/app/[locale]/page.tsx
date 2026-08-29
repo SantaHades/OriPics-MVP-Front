@@ -1099,9 +1099,22 @@ export default function Home() {
           <p className="text-sm md:text-base text-slate-600 mb-4 whitespace-pre-line leading-relaxed">
             {t("hero.eyebrow")}
           </p>
-          {/* 모바일=3줄 고정 줄바꿈(대표 시안), 데스크톱=자연 흐름 */}
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-5 whitespace-pre-line md:whitespace-normal leading-snug max-w-2xl mx-auto">
-            {t("hero.title")}
+          {/* 모바일=3줄(1|2|3), 데스크톱=2줄(1+2|3) — 대표 시안 반응형 줄바꿈 (2026-08-29) */}
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-5 leading-snug max-w-2xl mx-auto">
+            {(() => {
+              const lines = t("hero.title").split("\n");
+              if (lines.length !== 3) return t("hero.title");
+              return (
+                <>
+                  {lines[0]}
+                  <br className="md:hidden" />
+                  <span className="hidden md:inline"> </span>
+                  {lines[1]}
+                  <br />
+                  {lines[2]}
+                </>
+              );
+            })()}
           </h1>
 
           {/* 인증 방식·사용 사례 진입 링크 (2026-08-29 대표 기획) — 신뢰(이중 인증)와
