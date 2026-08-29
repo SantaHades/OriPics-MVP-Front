@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
-    paddingBottom: 16,
-    marginBottom: 24,
+    paddingBottom: 10,
+    marginBottom: 12,
   },
   brandRow: {
     flexDirection: "row",
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   titleBlock: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   title: {
     fontSize: 22,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     color: "#64748b",
   },
   section: {
-    marginBottom: 18,
+    marginBottom: 10,
   },
   sectionTitle: {
     fontSize: 9,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    marginBottom: 4,
+    marginBottom: 3,
   },
   label: {
     width: 110,
@@ -282,14 +282,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    padding: 12,
+    padding: 8,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 6,
   },
   qrImage: {
-    width: 80,
-    height: 80,
+    width: 64,
+    height: 64,
   },
   qrTextBlock: {
     flex: 1,
@@ -327,8 +327,8 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontSize: 8,
     color: "#475569",
-    lineHeight: 1.5,
-    marginTop: 4,
+    lineHeight: 1.4,
+    marginTop: 2,
   },
   footer: {
     position: "absolute",
@@ -414,8 +414,8 @@ export function CertificateDocument({
   // 썸네일 박스 = 사진 비율 그대로 (긴 변 124pt) — 고정 정사각형이면 테두리와
   // 이미지 모양이 어긋남 (2026-08-28 대표 피드백). react-pdf Image는 고정 치수 필수.
   const thumbRatio = data.width > 0 && data.height > 0 ? data.width / data.height : 1;
-  const thumbW = thumbRatio >= 1 ? 124 : Math.max(24, Math.round(124 * thumbRatio));
-  const thumbH = thumbRatio >= 1 ? Math.max(24, Math.round(124 / thumbRatio)) : 124;
+  const thumbW = thumbRatio >= 1 ? 112 : Math.max(24, Math.round(112 * thumbRatio));
+  const thumbH = thumbRatio >= 1 ? Math.max(24, Math.round(112 / thumbRatio)) : 112;
 
   return (
     <Document>

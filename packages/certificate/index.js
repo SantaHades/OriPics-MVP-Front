@@ -221529,8 +221529,8 @@ var styles = StyleSheet.create({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
-    paddingBottom: 16,
-    marginBottom: 24
+    paddingBottom: 10,
+    marginBottom: 12
   },
   brandRow: {
     flexDirection: "row",
@@ -221544,7 +221544,7 @@ var styles = StyleSheet.create({
     marginLeft: 8
   },
   titleBlock: {
-    marginBottom: 24
+    marginBottom: 12
   },
   title: {
     fontSize: 22,
@@ -221557,7 +221557,7 @@ var styles = StyleSheet.create({
     color: "#64748b"
   },
   section: {
-    marginBottom: 18
+    marginBottom: 10
   },
   sectionTitle: {
     fontSize: 9,
@@ -221569,7 +221569,7 @@ var styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    marginBottom: 4
+    marginBottom: 3
   },
   label: {
     width: 110,
@@ -221591,14 +221591,14 @@ var styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    padding: 12,
+    padding: 8,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 6
   },
   qrImage: {
-    width: 80,
-    height: 80
+    width: 64,
+    height: 64
   },
   qrTextBlock: {
     flex: 1,
@@ -221636,8 +221636,8 @@ var styles = StyleSheet.create({
   disclaimer: {
     fontSize: 8,
     color: "#475569",
-    lineHeight: 1.5,
-    marginTop: 4
+    lineHeight: 1.4,
+    marginTop: 2
   },
   footer: {
     position: "absolute",
@@ -221706,8 +221706,8 @@ function CertificateDocument({
   const sourceLabel = data2.sourceCode === "P" ? t4.source_P : data2.sourceCode === "C" ? t4.source_C : t4.source_F;
   const certShortId = `cert_${data2.linkId}_${data2.issuedAt.getTime().toString(36)}`;
   const thumbRatio = data2.width > 0 && data2.height > 0 ? data2.width / data2.height : 1;
-  const thumbW = thumbRatio >= 1 ? 124 : Math.max(24, Math.round(124 * thumbRatio));
-  const thumbH = thumbRatio >= 1 ? Math.max(24, Math.round(124 / thumbRatio)) : 124;
+  const thumbW = thumbRatio >= 1 ? 112 : Math.max(24, Math.round(112 * thumbRatio));
+  const thumbH = thumbRatio >= 1 ? Math.max(24, Math.round(112 / thumbRatio)) : 112;
   return /* @__PURE__ */ import_react5.default.createElement(Document, null, /* @__PURE__ */ import_react5.default.createElement(Page, { size: "A4", style: styles.page }, /* @__PURE__ */ import_react5.default.createElement(View, { fixed: true, style: styles.frameOuter }), /* @__PURE__ */ import_react5.default.createElement(View, { fixed: true, style: styles.frameInner }), /* @__PURE__ */ import_react5.default.createElement(Image, { fixed: true, src: WATERMARK_DATA_URL, style: styles.watermark }), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.header }, /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.brandRow }, /* @__PURE__ */ import_react5.default.createElement(Image, { src: logoDataUrl ?? LOGO_DATA_URL, style: { width: 26, height: 26 } }), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.brandText }, "OriPics")), /* @__PURE__ */ import_react5.default.createElement(Text, { style: { fontSize: 9, color: "#64748b" } }, t4.issuerSite)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.titleBlock }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.title }, t4.title), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.subtitle }, t4.subtitle)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.issuedTo), /* @__PURE__ */ import_react5.default.createElement(Text, { style: { fontSize: 13, fontWeight: "bold", color: "#0f172a" } }, data2.issuedTo)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.subject), /* @__PURE__ */ import_react5.default.createElement(View, { style: { flexDirection: "row" } }, /* @__PURE__ */ import_react5.default.createElement(View, { style: { flex: 1 } }, /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.linkId), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, data2.linkId)), data2.deviceCapturedAt ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.capturedDevice), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, formatTimestamp(data2.deviceCapturedAt, locale, tz))) : null, /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, data2.deviceCapturedAt ? t4.certified : t4.captured), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, formatTimestamp(data2.capturedAt, locale, tz))), data2.publishedAt && Math.abs(data2.publishedAt.getTime() - data2.capturedAt.getTime()) > 6e4 ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.published), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, formatTimestamp(data2.publishedAt, locale, tz))) : null, /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.source), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, sourceLabel)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.resolution), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, data2.width, " \xD7 ", data2.height, " px")), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.location), data2.lat != null && data2.lng != null ? /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, `${data2.lat.toFixed(6)}, ${data2.lng.toFixed(6)}`) : /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, t4.locationNone))), data2.imageDataUrl ? /* @__PURE__ */ import_react5.default.createElement(
     View,
     {
