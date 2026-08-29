@@ -15,6 +15,12 @@ export interface CertificateData {
   timeZone?: string;
   imageDataUrl?: string;
   c2pa?: { present: boolean; valid?: boolean; issuer?: string; claimGenerator?: string };
+  tier?: "standard" | "verified";
+  verifiedDetail?: {
+    platform?: "ios" | "android";
+    zoomFactor?: number;
+    lensPosition?: string;
+  };
 }
 export declare function renderCertificatePdf(opts: {
   data: CertificateData;

@@ -1,6 +1,6 @@
 {
   "name": "@oripics/certificate",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "증명서 PDF 렌더 — Next 서버 번들 밖(serverExternalPackages)에서 실행. react-pdf 전체를 이 산출물에 번들(자기완결, react만 외부)해 서버리스 트레이싱 누락·ESM require 문제를 차단. 번들 없이는 Next 내장 React 별칭과 어긋나 error #31(2026-08-28 실측). 소스 수정 시 npm run build 후 index.js 커밋. ⚠️수정 시 version도 반드시 범프 — Vercel node_modules 캐시가 같은 버전의 file: 패키지를 갱신하지 않아 구 산출물이 배포됨(2026-08-28 실측, ERR_REQUIRE_ESM 재발 원인).",
   "main": "index.js",
   "types": "index.d.ts",

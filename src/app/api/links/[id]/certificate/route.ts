@@ -126,7 +126,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const { data: row, error } = await supabase
     .from("links")
-    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id, captured_at, created_at")
+    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id, captured_at, created_at, tier")
     .eq("link_id", linkId)
     .single();
   if (error || !row) {
@@ -222,6 +222,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
 
   // 5. 발행본 다운로드(1회) → C2PA 조회 + 증명서 썸네일 생성 (둘 다 best-effort)
   let c2paSummary: CertificateData["c2pa"] | undefined;
+  let verifiedDetail: CertificateData["verifiedDetail"] | undefined;
   let imageDataUrl: string | undefined;
   try {
     const { data: blob } = await supabase.storage
@@ -254,6 +255,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
           issuer: result.signature?.issuer,
           claimGenerator: result.claim_generator,
         };
+        // 기기 검증 상세 (2026-08-29 대표 요청) — 발행 시 서명된 com.oripics.verified
+        // 어서션(플랫폼·렌즈·배율)을 증명서에 그대로 기재. 어서션 무결성은 위 valid가 보증.
+        const va = result.assertions?.find((a) => a.label?.startsWith("com.oripics.verified"))
+          ?.data as Record<string, unknown> | undefined;
+        if (va) {
+          verifiedDetail = {
+            ...(va.platform === "ios" || va.platform === "android" ? { platform: va.platform } : {}),
+            ...(typeof va.zoom_factor === "number" ? { zoomFactor: va.zoom_factor } : {}),
+            ...(typeof va.lens_position === "string" ? { lensPosition: va.lens_position } : {}),
+          };
+        }
       } else {
         c2paSummary = { present: false };
       }
@@ -291,6 +303,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     verifyUrl,
     qrDataUrl,
     c2pa: c2paSummary,
+    // 구 verified 행(어서션 이전)도 tier만으로 일반 문구 표시 — 렌즈·배율은 있을 때만
+    tier: row.tier === "verified" ? "verified" : "standard",
+    ...(row.tier === "verified" && verifiedDetail ? { verifiedDetail } : {}),
   };
 
   let pdfBuffer: Buffer;

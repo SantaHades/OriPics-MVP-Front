@@ -374,6 +374,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // 기기 검증 상세 (2026-08-29) — 발행본 C2PA com.oripics.verified 어서션에서
+  // 플랫폼·렌즈·배율을 추출해 판독 결과에 병기. 어서션은 서명돼 있어 편집 불가.
+  let verifiedDetail: { platform?: string; zoom_factor?: number; lens_position?: string } | null =
+    null;
+  if (linkTier === "verified" && c2paLookup.checked && c2paLookup.result.present) {
+    const va = c2paLookup.result.assertions?.find((a) =>
+      a.label?.startsWith("com.oripics.verified"),
+    )?.data as Record<string, unknown> | undefined;
+    if (va) {
+      verifiedDetail = {
+        ...(va.platform === "ios" || va.platform === "android" ? { platform: va.platform } : {}),
+        ...(typeof va.zoom_factor === "number" ? { zoom_factor: va.zoom_factor } : {}),
+        ...(typeof va.lens_position === "string" ? { lens_position: va.lens_position } : {}),
+      };
+    }
+  }
+
   const evidence: TrustReport["evidence"] = [buildSealEvidence(seal)];
   if (c2paLookup.checked) {
     evidence.push(buildC2paEvidence(c2paLookup.result));
@@ -400,6 +417,7 @@ export async function POST(req: NextRequest) {
     version: seal.version,
     metadata: seal.metadata,
     ...(linkTier ? { tier: linkTier } : {}),
+    ...(verifiedDetail ? { verified_detail: verifiedDetail } : {}),
     ...(seal.reason ? { reason: seal.reason } : {}),
     ...(ownerExempt ? { owner_exempt: true } : {}),
     trust_report,

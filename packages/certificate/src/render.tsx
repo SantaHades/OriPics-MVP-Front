@@ -78,6 +78,14 @@ export interface CertificateData {
   imageDataUrl?: string;
   /** 표기 시간대 (IANA) — 미지정 시 Asia/Seoul. 서버는 UTC라 명시 필수 (2026-08-29) */
   timeZone?: string;
+  /** 검증 등급 (links.tier) — verified면 기기 검증 상세 섹션 표시 (2026-08-29 대표 요청) */
+  tier?: "standard" | "verified";
+  /** verified 상세 — 발행본 C2PA com.oripics.verified 어서션에서 추출 (서명된 값만) */
+  verifiedDetail?: {
+    platform?: "ios" | "android";
+    zoomFactor?: number;
+    lensPosition?: string;
+  };
   /** C2PA 매니페스트 요약 (선택) */
   c2pa?: {
     present: boolean;
@@ -105,6 +113,24 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     resolution: "해상도",
     location: "위치(GPS)",
     locationNone: "기록 없음",
+    verifiedTitle: "기기 검증 (Verified)",
+    verifiedAuthority: "검증 주체",
+    verifiedAuthority_ios: "Apple App Attest (iOS)",
+    verifiedAuthority_android: "Google Play Integrity (Android)",
+    verifiedAuthority_unknown: "Apple App Attest / Google Play Integrity",
+    verifiedFact: "확인된 사실",
+    verifiedFact_ios:
+      "정품 Apple 기기에서, 위·변조되지 않은 OriPics 정식 앱이 촬영 시점에 이 사진을 인증했음을 Apple의 하드웨어 검증으로 확인했습니다.",
+    verifiedFact_android:
+      "정품 Android 기기에서, 위·변조되지 않은 OriPics 정식 앱이 촬영 시점에 이 사진을 인증했음을 Google의 하드웨어 검증으로 확인했습니다.",
+    verifiedFact_unknown:
+      "정품 기기에서, 위·변조되지 않은 OriPics 정식 앱이 촬영 시점에 이 사진을 인증했음이 하드웨어 수준에서 확인되었습니다.",
+    verifiedLens: "촬영 렌즈",
+    verifiedZoom: "촬영 배율",
+    lens_wide: "광각 (기본 카메라)",
+    "lens_ultra-wide": "초광각",
+    lens_telephoto: "망원",
+    lens_front: "전면",
     verification: "온라인 검증",
     verifyScan: "QR을 스캔하면 누구나 원본 무결성을 확인할 수 있습니다.",
     c2pa: "Content Credentials (C2PA)",
@@ -141,6 +167,24 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     resolution: "Resolution",
     location: "Location (GPS)",
     locationNone: "Not recorded",
+    verifiedTitle: "Device Verification (Verified)",
+    verifiedAuthority: "Verified by",
+    verifiedAuthority_ios: "Apple App Attest (iOS)",
+    verifiedAuthority_android: "Google Play Integrity (Android)",
+    verifiedAuthority_unknown: "Apple App Attest / Google Play Integrity",
+    verifiedFact: "Attested facts",
+    verifiedFact_ios:
+      "Apple's hardware attestation confirmed that a genuine Apple device, running an untampered official OriPics app, certified this photo at the moment of capture.",
+    verifiedFact_android:
+      "Google's hardware attestation confirmed that a genuine Android device, running an untampered official OriPics app, certified this photo at the moment of capture.",
+    verifiedFact_unknown:
+      "Hardware-level attestation confirmed that a genuine device running the untampered official OriPics app certified this photo at the moment of capture.",
+    verifiedLens: "Capture lens",
+    verifiedZoom: "Zoom factor",
+    lens_wide: "Wide (main camera)",
+    "lens_ultra-wide": "Ultra-wide",
+    lens_telephoto: "Telephoto",
+    lens_front: "Front",
     verification: "Online verification",
     verifyScan: "Scan the QR to verify the image's originality online.",
     c2pa: "Content Credentials (C2PA)",
@@ -472,6 +516,59 @@ export function CertificateDocument({
           ) : null}
           </View>
         </View>
+
+        {/* 기기 검증 (Verified) 상세 — links.tier=verified일 때만. 렌즈·배율은
+            발행본 C2PA 서명 어서션 값이라 편집 불가한 사실만 기재 (2026-08-29 대표 요청) */}
+        {data.tier === "verified" ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t.verifiedTitle}</Text>
+            <View
+              style={{
+                backgroundColor: "#eff6ff",
+                borderWidth: 1,
+                borderColor: "#bfdbfe",
+                borderRadius: 4,
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+              }}
+            >
+              <View style={styles.row}>
+                <Text style={styles.label}>{t.verifiedAuthority}</Text>
+                <Text style={styles.value}>
+                  {data.verifiedDetail?.platform === "ios"
+                    ? t.verifiedAuthority_ios
+                    : data.verifiedDetail?.platform === "android"
+                      ? t.verifiedAuthority_android
+                      : t.verifiedAuthority_unknown}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>{t.verifiedFact}</Text>
+                <Text style={[styles.value, { flex: 1 }]}>
+                  {data.verifiedDetail?.platform === "ios"
+                    ? t.verifiedFact_ios
+                    : data.verifiedDetail?.platform === "android"
+                      ? t.verifiedFact_android
+                      : t.verifiedFact_unknown}
+                </Text>
+              </View>
+              {data.verifiedDetail?.lensPosition ? (
+                <View style={styles.row}>
+                  <Text style={styles.label}>{t.verifiedLens}</Text>
+                  <Text style={styles.value}>
+                    {t[`lens_${data.verifiedDetail.lensPosition}`] ?? data.verifiedDetail.lensPosition}
+                  </Text>
+                </View>
+              ) : null}
+              {data.verifiedDetail?.zoomFactor != null ? (
+                <View style={styles.row}>
+                  <Text style={styles.label}>{t.verifiedZoom}</Text>
+                  <Text style={styles.value}>{`${data.verifiedDetail.zoomFactor.toFixed(1)}×`}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
         {/* 검증 QR */}
         <View style={styles.section}>

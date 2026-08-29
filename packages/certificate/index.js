@@ -221431,6 +221431,21 @@ var STRINGS = {
     resolution: "\uD574\uC0C1\uB3C4",
     location: "\uC704\uCE58(GPS)",
     locationNone: "\uAE30\uB85D \uC5C6\uC74C",
+    verifiedTitle: "\uAE30\uAE30 \uAC80\uC99D (Verified)",
+    verifiedAuthority: "\uAC80\uC99D \uC8FC\uCCB4",
+    verifiedAuthority_ios: "Apple App Attest (iOS)",
+    verifiedAuthority_android: "Google Play Integrity (Android)",
+    verifiedAuthority_unknown: "Apple App Attest / Google Play Integrity",
+    verifiedFact: "\uD655\uC778\uB41C \uC0AC\uC2E4",
+    verifiedFact_ios: "\uC815\uD488 Apple \uAE30\uAE30\uC5D0\uC11C, \uC704\xB7\uBCC0\uC870\uB418\uC9C0 \uC54A\uC740 OriPics \uC815\uC2DD \uC571\uC774 \uCD2C\uC601 \uC2DC\uC810\uC5D0 \uC774 \uC0AC\uC9C4\uC744 \uC778\uC99D\uD588\uC74C\uC744 Apple\uC758 \uD558\uB4DC\uC6E8\uC5B4 \uAC80\uC99D\uC73C\uB85C \uD655\uC778\uD588\uC2B5\uB2C8\uB2E4.",
+    verifiedFact_android: "\uC815\uD488 Android \uAE30\uAE30\uC5D0\uC11C, \uC704\xB7\uBCC0\uC870\uB418\uC9C0 \uC54A\uC740 OriPics \uC815\uC2DD \uC571\uC774 \uCD2C\uC601 \uC2DC\uC810\uC5D0 \uC774 \uC0AC\uC9C4\uC744 \uC778\uC99D\uD588\uC74C\uC744 Google\uC758 \uD558\uB4DC\uC6E8\uC5B4 \uAC80\uC99D\uC73C\uB85C \uD655\uC778\uD588\uC2B5\uB2C8\uB2E4.",
+    verifiedFact_unknown: "\uC815\uD488 \uAE30\uAE30\uC5D0\uC11C, \uC704\xB7\uBCC0\uC870\uB418\uC9C0 \uC54A\uC740 OriPics \uC815\uC2DD \uC571\uC774 \uCD2C\uC601 \uC2DC\uC810\uC5D0 \uC774 \uC0AC\uC9C4\uC744 \uC778\uC99D\uD588\uC74C\uC774 \uD558\uB4DC\uC6E8\uC5B4 \uC218\uC900\uC5D0\uC11C \uD655\uC778\uB418\uC5C8\uC2B5\uB2C8\uB2E4.",
+    verifiedLens: "\uCD2C\uC601 \uB80C\uC988",
+    verifiedZoom: "\uCD2C\uC601 \uBC30\uC728",
+    lens_wide: "\uAD11\uAC01 (\uAE30\uBCF8 \uCE74\uBA54\uB77C)",
+    "lens_ultra-wide": "\uCD08\uAD11\uAC01",
+    lens_telephoto: "\uB9DD\uC6D0",
+    lens_front: "\uC804\uBA74",
     verification: "\uC628\uB77C\uC778 \uAC80\uC99D",
     verifyScan: "QR\uC744 \uC2A4\uCE94\uD558\uBA74 \uB204\uAD6C\uB098 \uC6D0\uBCF8 \uBB34\uACB0\uC131\uC744 \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.",
     c2pa: "Content Credentials (C2PA)",
@@ -221466,6 +221481,21 @@ var STRINGS = {
     resolution: "Resolution",
     location: "Location (GPS)",
     locationNone: "Not recorded",
+    verifiedTitle: "Device Verification (Verified)",
+    verifiedAuthority: "Verified by",
+    verifiedAuthority_ios: "Apple App Attest (iOS)",
+    verifiedAuthority_android: "Google Play Integrity (Android)",
+    verifiedAuthority_unknown: "Apple App Attest / Google Play Integrity",
+    verifiedFact: "Attested facts",
+    verifiedFact_ios: "Apple's hardware attestation confirmed that a genuine Apple device, running an untampered official OriPics app, certified this photo at the moment of capture.",
+    verifiedFact_android: "Google's hardware attestation confirmed that a genuine Android device, running an untampered official OriPics app, certified this photo at the moment of capture.",
+    verifiedFact_unknown: "Hardware-level attestation confirmed that a genuine device running the untampered official OriPics app certified this photo at the moment of capture.",
+    verifiedLens: "Capture lens",
+    verifiedZoom: "Zoom factor",
+    lens_wide: "Wide (main camera)",
+    "lens_ultra-wide": "Ultra-wide",
+    lens_telephoto: "Telephoto",
+    lens_front: "Front",
     verification: "Online verification",
     verifyScan: "Scan the QR to verify the image's originality online.",
     c2pa: "Content Credentials (C2PA)",
@@ -221696,7 +221726,23 @@ function CertificateDocument({
         style: { width: thumbW, height: thumbH, objectFit: "fill" }
       }
     )
-  ) : null)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.verification), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.qrBlock }, /* @__PURE__ */ import_react5.default.createElement(Image, { src: data2.qrDataUrl, style: styles.qrImage }), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.qrTextBlock }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.qrUrl }, data2.verifyUrl), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.qrHint }, t4.verifyScan)))), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.c2pa), data2.c2pa?.present ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.c2paBlock }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.c2paStatus, { color: data2.c2pa.valid ? "#15803d" : "#b45309" }] }, t4.c2paPresent, " \u2014 ", data2.c2pa.valid ? t4.c2paValid : t4.c2paInvalid), data2.c2pa.claimGenerator ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.c2paGenerator), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, data2.c2pa.claimGenerator)) : null, data2.c2pa.issuer ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.c2paIssuer), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, data2.c2pa.issuer)) : null) : /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.c2paBlockMissing }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: { fontSize: 10, color: "#64748b" } }, t4.c2paAbsent))), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.disclaimerTitle), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.disclaimer }, t4.disclaimer)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.footer, fixed: true }, /* @__PURE__ */ import_react5.default.createElement(View, null, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.footerText }, t4.issued, ": ", formatTimestamp(data2.issuedAt, locale, tz)), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.footerText }, t4.issuer, ": ", t4.issuerName)), /* @__PURE__ */ import_react5.default.createElement(View, null, /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.footerText, { textAlign: "right" }] }, t4.certId, ":"), /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.footerText, { fontFamily: "Courier", textAlign: "right" }] }, certShortId)))));
+  ) : null)), data2.tier === "verified" ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.verifiedTitle), /* @__PURE__ */ import_react5.default.createElement(
+    View,
+    {
+      style: {
+        backgroundColor: "#eff6ff",
+        borderWidth: 1,
+        borderColor: "#bfdbfe",
+        borderRadius: 4,
+        paddingVertical: 6,
+        paddingHorizontal: 10
+      }
+    },
+    /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.verifiedAuthority), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, data2.verifiedDetail?.platform === "ios" ? t4.verifiedAuthority_ios : data2.verifiedDetail?.platform === "android" ? t4.verifiedAuthority_android : t4.verifiedAuthority_unknown)),
+    /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.verifiedFact), /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.value, { flex: 1 }] }, data2.verifiedDetail?.platform === "ios" ? t4.verifiedFact_ios : data2.verifiedDetail?.platform === "android" ? t4.verifiedFact_android : t4.verifiedFact_unknown)),
+    data2.verifiedDetail?.lensPosition ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.verifiedLens), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, t4[`lens_${data2.verifiedDetail.lensPosition}`] ?? data2.verifiedDetail.lensPosition)) : null,
+    data2.verifiedDetail?.zoomFactor != null ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.verifiedZoom), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.value }, `${data2.verifiedDetail.zoomFactor.toFixed(1)}\xD7`)) : null
+  )) : null, /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.verification), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.qrBlock }, /* @__PURE__ */ import_react5.default.createElement(Image, { src: data2.qrDataUrl, style: styles.qrImage }), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.qrTextBlock }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.qrUrl }, data2.verifyUrl), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.qrHint }, t4.verifyScan)))), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.c2pa), data2.c2pa?.present ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.c2paBlock }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.c2paStatus, { color: data2.c2pa.valid ? "#15803d" : "#b45309" }] }, t4.c2paPresent, " \u2014 ", data2.c2pa.valid ? t4.c2paValid : t4.c2paInvalid), data2.c2pa.claimGenerator ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.c2paGenerator), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, data2.c2pa.claimGenerator)) : null, data2.c2pa.issuer ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.c2paIssuer), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, data2.c2pa.issuer)) : null) : /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.c2paBlockMissing }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: { fontSize: 10, color: "#64748b" } }, t4.c2paAbsent))), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.disclaimerTitle), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.disclaimer }, t4.disclaimer)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.footer, fixed: true }, /* @__PURE__ */ import_react5.default.createElement(View, null, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.footerText }, t4.issued, ": ", formatTimestamp(data2.issuedAt, locale, tz)), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.footerText }, t4.issuer, ": ", t4.issuerName)), /* @__PURE__ */ import_react5.default.createElement(View, null, /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.footerText, { textAlign: "right" }] }, t4.certId, ":"), /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.footerText, { fontFamily: "Courier", textAlign: "right" }] }, certShortId)))));
 }
 
 // src/index.ts

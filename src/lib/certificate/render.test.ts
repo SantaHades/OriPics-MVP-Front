@@ -24,6 +24,9 @@ const data: CertificateData = {
   verifyUrl: "https://www.ori.pics/P260828-000000-000000",
   qrDataUrl: TINY_PNG,
   c2pa: { present: true, valid: false, issuer: "OriPics Sandbox CA", claimGenerator: "OriPics/1.0" },
+  // 기기 검증 상세 섹션 (2026-08-29) — verified 렌더 경로 회귀 방지
+  tier: "verified",
+  verifiedDetail: { platform: "ios", zoomFactor: 1.0, lensPosition: "ultra-wide" },
 };
 
 describe("certificate PDF render", () => {

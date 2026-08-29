@@ -61,6 +61,8 @@ interface ApiResponse {
   owner_exempt?: boolean;
   /** 검증 등급 — "verified"(attest 통과 촬영 인증) | undefined(standard·구 링크) */
   tier?: string;
+  /** 기기 검증 상세 (C2PA com.oripics.verified 어서션, 2026-08-29) */
+  verified_detail?: { platform?: string; zoom_factor?: number; lens_position?: string };
   /** 서버가 유도한 공개링크 (V4+, 발행된 인증만) */
   verify_url?: string;
   /** C2PA 자격증명 증거 (trust_report.evidence의 c2pa.manifest — 발행본 기준, 2026-08-26) */
@@ -1700,11 +1702,39 @@ export default function Home() {
                 </div>
                 {/* verified 티어 (links.tier) — 촬영 시점 기기 검증 통과 표시 (2026-08-23) */}
                 {resultData.match && resultData.tier === "verified" && (
-                  <div className="flex justify-between py-2 border-b border-slate-100">
-                    <span className="text-slate-500">{t("verify.tier_label")}</span>
-                    <span className="font-bold text-blue-600 inline-flex items-center gap-1">
-                      <BadgeCheck size={16} /> {t("verify.tier_verified")}
-                    </span>
+                  <div className="py-2 border-b border-slate-100">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">{t("verify.tier_label")}</span>
+                      <span className="font-bold text-blue-600 inline-flex items-center gap-1">
+                        <BadgeCheck size={16} /> {t("verify.tier_verified")}
+                      </span>
+                    </div>
+                    {/* 기기 검증 상세 (2026-08-29) — 플랫폼별 쉬운 말 설명 + 서명된 렌즈·배율 */}
+                    <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                      {resultData.verified_detail?.platform === "ios"
+                        ? t("verify.tier_verified_desc_ios")
+                        : resultData.verified_detail?.platform === "android"
+                          ? t("verify.tier_verified_desc_android")
+                          : t("verify.tier_verified_desc")}
+                    </p>
+                    {(resultData.verified_detail?.lens_position ||
+                      resultData.verified_detail?.zoom_factor != null) && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {resultData.verified_detail?.lens_position && (
+                          <>
+                            {t("verify.lens_label")}{" "}
+                            {t(`verify.lens_${resultData.verified_detail.lens_position.replace("-", "_")}` as any)}
+                          </>
+                        )}
+                        {resultData.verified_detail?.lens_position &&
+                          resultData.verified_detail?.zoom_factor != null && " · "}
+                        {resultData.verified_detail?.zoom_factor != null && (
+                          <>
+                            {t("verify.zoom_label")} {resultData.verified_detail.zoom_factor.toFixed(1)}×
+                          </>
+                        )}
+                      </p>
+                    )}
                   </div>
                 )}
                 {resultData.metadata.captured_at && (

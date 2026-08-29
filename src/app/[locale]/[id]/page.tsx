@@ -37,6 +37,8 @@ interface C2paStatus {
   claim_generator?: string;
   signature?: { issuer?: string; time?: string; alg?: string };
   validation_status?: Array<{ code: string; explanation?: string }>;
+  /** 매니페스트 어서션 — com.oripics.verified(플랫폼·렌즈·배율) 추출용 (2026-08-29) */
+  assertions?: Array<{ label?: string; data?: Record<string, unknown> }>;
 }
 
 export default function LinkViewer() {
@@ -362,7 +364,42 @@ export default function LinkViewer() {
                   <div>
                     <p className="text-xs text-slate-500 mb-1">{t("tier_label")}</p>
                     <p className="text-sm font-bold text-blue-600">{t("tier_verified")}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{t("tier_verified_desc")}</p>
+                    {/* 기기 검증 상세 (2026-08-29) — C2PA 서명 어서션의 플랫폼·렌즈·배율.
+                        c2pa 조회 전/구 링크(어서션 없음)는 일반 문구 폴백 */}
+                    {(() => {
+                      const va = c2pa?.assertions?.find((a) =>
+                        a.label?.startsWith("com.oripics.verified"),
+                      )?.data;
+                      const platform = va?.platform;
+                      const lens = typeof va?.lens_position === "string" ? va.lens_position : null;
+                      const zoom = typeof va?.zoom_factor === "number" ? va.zoom_factor : null;
+                      return (
+                        <>
+                          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                            {platform === "ios"
+                              ? t("tier_verified_desc_ios")
+                              : platform === "android"
+                                ? t("tier_verified_desc_android")
+                                : t("tier_verified_desc")}
+                          </p>
+                          {(lens || zoom != null) && (
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {lens && (
+                                <>
+                                  {t("lens_label")} {t(`lens_${lens.replace("-", "_")}` as any)}
+                                </>
+                              )}
+                              {lens && zoom != null && " · "}
+                              {zoom != null && (
+                                <>
+                                  {t("zoom_label")} {zoom.toFixed(1)}×
+                                </>
+                              )}
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
