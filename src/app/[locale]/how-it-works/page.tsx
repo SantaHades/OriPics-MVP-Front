@@ -186,7 +186,7 @@ export default function HowItWorksPage() {
         {/* 삼중 보안 — 섹션 헤딩 (2026-08-30 대표 시안: 세 가지 보안키 프레임) */}
         <div className="flex items-center gap-2 mb-2">
           <Layers className="text-blue-600" size={20} />
-          <h2 className="text-xl font-bold">
+          <h2 className="text-2xl font-bold tracking-tight">
             {ko ? "삼중 보안 — 세 가지의 보안키 적용" : "Triple security — three secret keys"}
           </h2>
         </div>
