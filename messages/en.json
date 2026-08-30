@@ -538,7 +538,7 @@
     },
     "delete_account": {
       "title": "Delete Account",
-      "description": "All account data will be permanently deleted and cannot be recovered.",
+      "description": "All account information and data (public links, certificates, image data, etc.) will be permanently deleted and cannot be recovered.",
       "button": "Delete Account",
       "modal_title": "Are you sure you want to delete your account?",
       "modal_description": "This will permanently delete your account information and all linked login data. This action cannot be undone.",
