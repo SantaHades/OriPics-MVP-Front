@@ -291,9 +291,9 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 ### 승급 대기 (가입 확인 시 Pro 부여 — 2026-08-31 갱신, 조회 시 전원 미가입)
 | 이메일 | 이름 | 플랫폼 | 비고 |
 |---|---|---|---|
-| mira9962@naver.com / mira6591@gmail.com | 박미라 | Android | Gmail 확보됨(mira6591) — **Play internal 등록 필요** |
+| mira9962@naver.com / mira6591@gmail.com | 박미라 | Android | Play internal 등록 완료(8/31) — 온보딩 발송·옵트인 대기 |
 | beetle486@naver.com | 탁이 | iPhone | |
 | sjharu@naver.com | 윤승주 | iPhone | (8/31 정정 — 당초 탁이 2계정으로 전달됐으나 윤승주) |
-| nougi6701@gmail.com | 허노욱 | Android | **Play internal 등록 필요** |
+| nougi6701@gmail.com | 허노욱 | Android | Play internal 등록 완료(8/31) — 온보딩 발송·옵트인 대기 |
 
 ⚠️소셜 가입 시 실제 가입 이메일이 위 주소와 다를 수 있음(카카오=카카오계정 메일 등) — 조회 안 되면 가입 방법 확인.
