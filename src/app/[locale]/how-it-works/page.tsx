@@ -178,8 +178,8 @@ export default function HowItWorksPage() {
           </h1>
           <p className="text-slate-600 leading-relaxed">
             {ko
-              ? "사진 한 장에 세 겹의 봉인을 넣고, 서로 다른 두 개의 검증 체계로 지킵니다."
-              : "Three seals go into every photo, protected by two independent verification systems."}
+              ? "사진 한 장에 보안 장치 3개를 심어 두고, 원본인지 아닌지는 서로 다른 2가지 방법으로 확인합니다."
+              : "We build three layers of security into every photo, and check originality in two independent ways."}
           </p>
         </div>
 
