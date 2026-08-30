@@ -171,7 +171,9 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
    → https://play.google.com/apps/testing/com.santahades.oripics
 ③ "테스터 되기" 수락 → "Google Play에서 다운로드" → OriPics 설치
 
-※ 폰의 Play 스토어 계정이 등록해 드린 Gmail과 같아야 링크가 열립니다.
+※ 따로 로그인할 필요는 없습니다 — 폰에 이미 로그인된 구글 계정을 그대로 씁니다.
+   단, 등록해 드린 Gmail이 폰에 추가돼 있어야 하고, 구글 계정이 여러 개라면
+   링크 페이지 우상단과 Play 스토어 프로필을 그 Gmail로 전환해 주세요.
    (Gmail이 없으시면 하나 만들어서 알려주세요 — Google 정책상 필수입니다)
 
 ━━ 2. 로그인 (30초)
