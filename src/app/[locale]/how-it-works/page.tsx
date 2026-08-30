@@ -22,8 +22,8 @@ const SEAL_CARDS = {
   ko: [
     {
       icon: Fingerprint,
-      title: "① 픽셀 지문 (스테가노그래피)",
-      body: "인증 순간, 보이지 않는 디지털 지문을 이미지 픽셀 자체에 새깁니다. 파일에 붙이는 꼬리표가 아니라 그림 안에 스며든 서명이라, 단 한 픽셀만 수정돼도 판독에서 즉시 감지됩니다. (이중 해시 구조, 특허 출원)",
+      title: "① 디지털 지문 (스테가노그래피)",
+      body: "인증 순간, 보이지 않는 워터마크를 이미지 픽셀 자체에 새깁니다. 파일에 붙이는 꼬리표가 아니라 그림 안에 스며든 서명이라, 단 한 픽셀만 수정돼도 판독에서 즉시 감지됩니다. (이중 해시 구조, 특허 출원)",
     },
     {
       icon: ShieldCheck,
@@ -39,8 +39,8 @@ const SEAL_CARDS = {
   en: [
     {
       icon: Fingerprint,
-      title: "① Pixel fingerprint (steganography)",
-      body: "At the moment of certification, an invisible digital fingerprint is embedded into the image pixels themselves. It's not a tag attached to the file — it's a signature woven into the picture, so changing even a single pixel is instantly detected. (Dual-hash structure, patent pending)",
+      title: "① Digital fingerprint (steganography)",
+      body: "At the moment of certification, an invisible watermark is embedded into the image pixels themselves. It's not a tag attached to the file — it's a signature woven into the picture, so changing even a single pixel is instantly detected. (Dual-hash structure, patent pending)",
     },
     {
       icon: ShieldCheck,
@@ -183,7 +183,18 @@ export default function HowItWorksPage() {
           </p>
         </div>
 
-        {/* 3중 봉인 */}
+        {/* 삼중 보안 — 섹션 헤딩 (2026-08-30 대표 시안: 세 가지 보안키 프레임) */}
+        <div className="flex items-center gap-2 mb-2">
+          <Layers className="text-blue-600" size={20} />
+          <h2 className="text-xl font-bold">
+            {ko ? "삼중 보안 — 세 가지의 보안키 적용" : "Triple security — three secret keys"}
+          </h2>
+        </div>
+        <p className="text-sm text-slate-600 mb-6">
+          {ko
+            ? "OriPics 인증 과정에는 외부에서 절대 알 수 없는 세 가지의 키값을 적용합니다."
+            : "The OriPics certification process applies three key values that can never be known from outside."}
+        </p>
         <div className="grid sm:grid-cols-3 gap-4 mb-16">
           {seal.map((c) => (
             <div key={c.title} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
