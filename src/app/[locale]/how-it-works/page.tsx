@@ -81,7 +81,7 @@ const DUAL = {
     bands: [
       "누군가 파일을 재저장해 C2PA 서명이 깨져도 — 픽셀이 그대로면 OriPics 판독으로 원본임을 확인할 수 있습니다.",
       "표준 생태계(Adobe 등)에서 확인이 필요하면 — C2PA 자격증명이 그 역할을 합니다.",
-      "EXIF를 조작해도 — 두 체계 모두 EXIF를 신뢰 근거로 쓰지 않아 검증 결과가 흔들리지 않습니다.",
+      "EXIF를 조작해도 — 시각·위치의 근거는 서명된 기록이라 속일 수 없습니다. OriPics는 픽셀로 원본을 그대로 확인하고, C2PA는 파일이 바뀐 것 자체를 감지합니다.",
     ],
   },
   en: {
@@ -109,7 +109,7 @@ const DUAL = {
     bands: [
       "If someone re-saves the file and breaks the C2PA signature — the pixels still verify as original through OriPics.",
       "If you need verification inside the standards ecosystem (Adobe etc.) — the C2PA credential does that job.",
-      "If EXIF is manipulated — neither system relies on EXIF, so the verdict doesn't budge.",
+      "If EXIF is manipulated — time and location rest on signed records, so they can't be faked. OriPics still confirms originality from the pixels, and C2PA detects that the file itself was altered.",
     ],
   },
 };
