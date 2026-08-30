@@ -293,7 +293,7 @@
         "title": "Credit deduction rules",
         "row_local": "Local detection",
         "row_verify": "Server verification",
-        "row_standard": "Gallery proof (Standard)",
+        "row_standard": "File proof (Standard)",
         "row_verified": "Camera proof (Verified · Pro)",
         "row_link": "Public link",
         "row_pdf": "Certificate PDF",

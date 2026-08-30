@@ -293,7 +293,7 @@
         "title": "이용건수 차감규칙",
         "row_local": "로컬 판독",
         "row_verify": "서버 검증",
-        "row_standard": "갤러리 인증 (Standard)",
+        "row_standard": "일반파일 인증 (Standard)",
         "row_verified": "촬영 인증 (Verified · Pro)",
         "row_link": "공개링크 발행",
         "row_pdf": "인증서 PDF 발급",
