@@ -261,3 +261,14 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 | demitassepark@gmail.com | Ji Young Park | 2026-08-27 | free / 20 | 3호, 구글 가입, Android |
 | timson9717@gmail.com | cherry66 | 2026-08-28 | free / 826 | 대표 계정(크레딧 유지), PDF 발행 테스트 |
 | parkdemi1995@gmail.com | 박데미 | 2026-08-29 | free / 12 | 4호, 구글 가입, Android (Play internal 등록됨) |
+
+### 승급 대기 (가입 확인 시 Pro 부여 — 2026-08-31 대표 전달, 8/31 조회 시 전원 미가입)
+| 이메일 | 이름 | 플랫폼 | 비고 |
+|---|---|---|---|
+| mira9962@naver.com | 박미라 | Android | ⚠️Gmail 미보유 — Play 테스터 등록엔 Gmail 필요(옵트인 링크가 등록 Gmail로만 작동) |
+| huna75@gmail.com | 박성훈 | iPhone | |
+| ansuk9898@gmail.com | 박안숙 | iPhone | |
+| beetle486@naver.com | 탁이 | iPhone | 2계정 중 1 |
+| sjharu@naver.com | 탁이 | iPhone | 2계정 중 2 |
+
+⚠️소셜 가입 시 실제 가입 이메일이 위 주소와 다를 수 있음(카카오=카카오계정 메일 등) — 조회 안 되면 가입 방법 확인.
