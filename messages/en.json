@@ -119,7 +119,10 @@
       "download_stamped": "Download image",
       "create_link_button": "Create public link (−{cost})",
       "c2pa_after_publish_note": "Content Credentials (C2PA) manifest and Certificate PDF become available after creating the public link.",
-      "save_for_later_hint": "💾 Save the downloaded image — within about 30 days you can drag it again in this browser to create a public link."
+      "save_for_later_hint": "💾 Save the downloaded image — within about 30 days you can drag it again in this browser to create a public link.",
+      "link_created_paid": "✅ Share link created (kept in your vault)",
+      "link_hint_paid": "Stored in your vault (5GB) for as long as you subscribe.",
+      "multi_desc_paid": "Both options were processed. Each link is kept in your vault while subscribed."
     },
     "size_select": {
       "title": "Choose proof size",

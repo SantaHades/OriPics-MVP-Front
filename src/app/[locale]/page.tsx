@@ -1539,7 +1539,11 @@ export default function Home() {
 
             {generatedLink && (
               <div className="mt-8 p-6 bg-slate-50 border border-slate-200 rounded-2xl animate-in zoom-in duration-500">
-                <p className="text-slate-700 text-sm font-bold mb-3">{t("result.link_created")}</p>
+                <p className="text-slate-700 text-sm font-bold mb-3">
+                  {credits?.tier === "pro" || credits?.tier === "business"
+                    ? t("result.link_created_paid")
+                    : t("result.link_created")}
+                </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     readOnly
@@ -1563,7 +1567,11 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
-                <p className="mt-3 text-[10px] text-slate-500 text-center">{t("result.link_hint")}</p>
+                <p className="mt-3 text-[10px] text-slate-500 text-center">
+                  {credits?.tier === "pro" || credits?.tier === "business"
+                    ? t("result.link_hint_paid")
+                    : t("result.link_hint")}
+                </p>
               </div>
             )}
 
@@ -1601,7 +1609,11 @@ export default function Home() {
               <CheckCircle size={28} />
               <h2 className="text-2xl font-bold">{t("result.multi_title")}</h2>
             </div>
-            <p className="text-sm text-slate-600 mb-6">{t("result.multi_desc")}</p>
+            <p className="text-sm text-slate-600 mb-6">
+              {credits?.tier === "pro" || credits?.tier === "business"
+                ? t("result.multi_desc_paid")
+                : t("result.multi_desc")}
+            </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               {multiResults.map((item, idx) => (
