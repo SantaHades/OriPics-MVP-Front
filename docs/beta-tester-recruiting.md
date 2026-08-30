@@ -213,6 +213,9 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 ① 앱스토어에서 Apple 공식 베타 앱 'TestFlight' 설치
 ② 아이폰에서 이 링크 열기 → '수락' → '설치'
    → https://testflight.apple.com/join/zNwF6DKZ
+   ※ TestFlight를 먼저 열면 "개발자가 초대해야 합니다 / 교환" 화면이
+   보일 수 있는데 무시하셔도 됩니다 — 이메일 초대·교환 코드가 아니라
+   위 링크를 Safari에서 여는 방식입니다. 링크만 열면 바로 설치됩니다.
 
 ━━ 2. 시작하기 (30초)
 ① OriPics 앱 실행 → [Apple로 로그인]·[Google]·[카카오]·[네이버] 중
