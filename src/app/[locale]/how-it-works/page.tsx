@@ -217,12 +217,12 @@ export default function HowItWorksPage() {
               <div
                 key={col.title}
                 className={`p-6 rounded-3xl border shadow-sm ${
-                  i === 0 ? "bg-blue-600/5 border-blue-200" : "bg-emerald-600/5 border-emerald-200"
+                  i === 0 ? "bg-[#447095]/5 border-[#447095]/25" : "bg-slate-500/5 border-slate-300"
                 }`}
               >
                 <span
                   className={`inline-block text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full mb-3 ${
-                    i === 0 ? "bg-blue-600/10 text-blue-700" : "bg-emerald-600/10 text-emerald-700"
+                    i === 0 ? "bg-[#447095]/10 text-[#35597a]" : "bg-slate-500/10 text-slate-700"
                   }`}
                 >
                   {col.tag}
@@ -231,21 +231,21 @@ export default function HowItWorksPage() {
                 <ul className="space-y-2">
                   {col.points.map((p) => (
                     <li key={p} className="text-xs text-slate-600 leading-relaxed flex gap-2">
-                      <span className={i === 0 ? "text-blue-600" : "text-emerald-600"}>•</span> {p}
+                      <span className={i === 0 ? "text-[#447095]" : "text-slate-500"}>•</span> {p}
                     </li>
                   ))}
                 </ul>
               </div>
             ))}
           </div>
-          <div className="p-6 rounded-3xl bg-slate-900 text-white">
+          <div className="p-6 rounded-3xl bg-slate-600 text-white">
             <h3 className="font-bold mb-3 text-sm flex items-center gap-2">
               <Globe2 size={16} /> {dual.bandTitle}
             </h3>
             <ul className="space-y-2">
               {dual.bands.map((b) => (
-                <li key={b} className="text-xs text-slate-300 leading-relaxed flex gap-2">
-                  <span className="text-blue-400">✓</span> {b}
+                <li key={b} className="text-xs text-slate-100 leading-relaxed flex gap-2">
+                  <span className="text-sky-300">✓</span> {b}
                 </li>
               ))}
             </ul>
