@@ -2196,6 +2196,30 @@ export default function Home() {
                 <span className="font-medium">{t("upload.upload_menu.file")}</span>
               </button>
 
+              {/* 모바일 브라우저 전용: 촬영 인증은 앱으로 유도 (2026-08-30 대표 요청 —
+                  OS 파일 시트의 '사진 찍기'는 제거 불가라, Verified 촬영 경로를 명시 제공) */}
+              {typeof navigator !== "undefined" && /android|iphone|ipad|ipod/i.test(navigator.userAgent) && (
+                <>
+                  <div className="h-px bg-white/80 my-2"></div>
+                  <button
+                    onClick={() => {
+                      setShowUploadMenu(false);
+                      const isAndroid = /android/i.test(navigator.userAgent);
+                      window.location.href = isAndroid ? ANDROID_INTENT_URL : IOS_APP_URL;
+                    }}
+                    className="w-full flex items-center gap-4 p-4 hover:bg-white/80 rounded-2xl transition-colors text-left"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-600">
+                      <Camera size={22} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{t("upload.upload_menu.app_camera")}</span>
+                      <span className="text-xs text-slate-500">{t("upload.upload_menu.app_camera_subtext")}</span>
+                    </div>
+                  </button>
+                </>
+              )}
+
               <div className="h-px bg-white/80 my-2"></div>
 
               <button

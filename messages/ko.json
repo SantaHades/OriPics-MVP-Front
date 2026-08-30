@@ -48,7 +48,9 @@
         "paste_subtext": "복사된 이미지를 즉시 불러오기",
         "no_image": "클립보드에 이미지가 없습니다.",
         "paste_error": "클립보드 접근 권한이 없거나 지원되지 않는 브라우저입니다.",
-        "cancel": "취소"
+        "cancel": "취소",
+        "app_camera": "사진 찍어 인증하기 (Verified)",
+        "app_camera_subtext": "OriPics 앱으로 연결 — 촬영 시점까지 검증됩니다"
       },
       "processing": "🔄 원본증명처리 과정을 진행하고 있습니다...",
       "processing_step": "🔄 [{current}/{total}] {label} 처리 중…",

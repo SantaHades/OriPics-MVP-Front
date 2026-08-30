@@ -48,7 +48,9 @@
         "paste_subtext": "Load copied image instantly",
         "no_image": "No image found in clipboard.",
         "paste_error": "Clipboard access denied or browser not supported.",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "app_camera": "Take & certify a photo (Verified)",
+        "app_camera_subtext": "Opens the OriPics app — verified at capture time"
       },
       "processing": "🔄 Processing original proof...",
       "processing_step": "🔄 [{current}/{total}] Processing {label}…",
