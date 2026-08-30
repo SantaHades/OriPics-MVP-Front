@@ -29,7 +29,7 @@
       "idle": "☁️ Select or paste an image",
       "idle_mobile": "☁️ Select an image\nor take a photo",
       "dragover": "✨ Drop it here!",
-      "subtext": "Drag & drop, select file, or paste",
+      "subtext": "Drag & drop, paste (Ctrl V), or <u>choose a file</u>",
       "subtext_mobile": "Select file, paste, or take photo",
       "limit": "Support: PNG, JPG, WebP, etc. | Max: 50MB",
       "login_required": "Sign in required — click to go to login",
@@ -56,7 +56,8 @@
       "retry": "Try Again",
       "app_capture_note": "📱 Camera capture (Verified · with GPS) is available in the OriPics mobile app.",
       "app_ios_button": "Get the iPhone app",
-      "app_android_button": "Get the Android app"
+      "app_android_button": "Get the Android app",
+      "section_title": "Verify · Certify your photos"
     },
     "gps": {
       "status_active": "GPS Activated",

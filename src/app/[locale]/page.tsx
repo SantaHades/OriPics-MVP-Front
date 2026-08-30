@@ -1137,6 +1137,10 @@ export default function Home() {
 
           {status !== "result_stamped" && status !== "result_verified" && (
             <div className="w-full max-w-2xl flex flex-col items-center">
+              {/* 업로드 섹션 타이틀 (2026-08-30 대표 시안) — 판독·인증이 이 박스 하나임을 명시 */}
+              {(status === "idle" || status === "dragover") && (
+                <h2 className="text-2xl md:text-3xl font-extrabold mb-5">{t("upload.section_title")}</h2>
+              )}
               {(status === "idle" || status === "dragover") && (
                 <div className="w-full flex justify-start mb-2 text-xs gap-1">
                   <label className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none">
@@ -1173,7 +1177,11 @@ export default function Home() {
                     <p className="text-xl font-medium mb-2 whitespace-pre-line">
                       {status === "dragover" ? t("upload.dragover") : t("upload.idle")}
                     </p>
-                    <p className="text-sm text-slate-600 mt-1">{t("upload.subtext")}</p>
+                    <p className="text-sm text-slate-600 mt-1">
+                      {t.rich("upload.subtext", {
+                        u: (chunks) => <span className="underline underline-offset-2">{chunks}</span>,
+                      })}
+                    </p>
                     <p className="text-xs text-slate-500 mt-2">{t("upload.limit")}</p>
                     {sessionStatus === "unauthenticated" && (
                       <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">

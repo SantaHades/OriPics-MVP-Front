@@ -29,7 +29,7 @@
       "idle": "☁️ 이미지를 선택하거나 붙여넣으세요",
       "idle_mobile": "☁️ 이미지를 선택하거나\n사진을 찍어 주세요",
       "dragover": "✨ 여기에 놓으세요!",
-      "subtext": "드래그앤드롭, 파일 선택, 또는 클립보드 붙여넣기",
+      "subtext": "드래그앤드롭, 붙여넣기 (Ctrl V), 또는 <u>파일 선택</u>",
       "subtext_mobile": "파일 선택, 클립보드 붙여넣기, 또는 사진찍기",
       "limit": "지원: PNG, JPG, WebP 등 | 최대: 50MB",
       "login_required": "로그인 후 사용 가능 — 클릭하면 로그인 페이지로 이동합니다",
@@ -56,7 +56,8 @@
       "retry": "다시 시도",
       "app_capture_note": "📱 사진 촬영 인증(Verified · GPS 포함)은 OriPics 모바일 앱에서 이용할 수 있습니다.",
       "app_ios_button": "iPhone 앱 설치",
-      "app_android_button": "Android 앱 설치"
+      "app_android_button": "Android 앱 설치",
+      "section_title": "사진/이미지 판독하기 · 인증하기"
     },
     "gps": {
       "status_active": "GPS 활성화 됨",
