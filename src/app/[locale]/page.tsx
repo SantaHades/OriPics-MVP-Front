@@ -1927,13 +1927,13 @@ export default function Home() {
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-center mb-12">{t("how_it_works.title")}</h2>
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* 데스크톱 전용 점선 커넥터 — 카드 간 진행 흐름 시각화 */}
-            <div className="hidden md:block absolute top-[5.5rem] left-[16.6%] right-[16.6%] border-t-2 border-dashed border-slate-200 pointer-events-none" aria-hidden="true"></div>
+            <div className="hidden md:block absolute top-[5.2rem] left-[16.6%] right-[16.6%] border-t-2 border-dashed border-slate-200 pointer-events-none" aria-hidden="true"></div>
 
             <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
-              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-sky-600 mb-3">STEP 01</span>
+              <span className="text-xs font-mono font-bold tracking-[0.2em] text-sky-600 mb-3">STEP 01</span>
               <div className="relative mb-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 text-white flex items-center justify-center shadow-lg shadow-sky-400/25 ring-4 ring-sky-50">
-                  <ImageUp size={36} strokeWidth={1.75} />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 text-white flex items-center justify-center shadow-lg shadow-sky-400/25 ring-4 ring-sky-50">
+                  <ImageUp size={30} strokeWidth={1.75} />
                 </div>
               </div>
               <h3 className="font-bold text-lg mb-2">{t("how_it_works.step1_title")}</h3>
@@ -1941,10 +1941,10 @@ export default function Home() {
             </div>
 
             <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
-              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-teal-600 mb-3">STEP 02</span>
+              <span className="text-xs font-mono font-bold tracking-[0.2em] text-teal-600 mb-3">STEP 02</span>
               <div className="relative mb-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-400/25 ring-4 ring-teal-50">
-                  <Lock size={36} strokeWidth={1.75} />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-400/25 ring-4 ring-teal-50">
+                  <Lock size={30} strokeWidth={1.75} />
                 </div>
               </div>
               <h3 className="font-bold text-lg mb-2">{t("how_it_works.step2_title")}</h3>
@@ -1952,9 +1952,9 @@ export default function Home() {
             </div>
 
             <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
-              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-600 mb-3">STEP 03</span>
+              <span className="text-xs font-mono font-bold tracking-[0.2em] text-emerald-600 mb-3">STEP 03</span>
               <div className="relative mb-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg shadow-emerald-400/25 ring-4 ring-emerald-50 p-3">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg shadow-emerald-400/25 ring-4 ring-emerald-50 p-3">
                   <img src="/logo.png" alt="OriPics" className="w-full h-full object-contain brightness-0 invert" />
                 </div>
               </div>
