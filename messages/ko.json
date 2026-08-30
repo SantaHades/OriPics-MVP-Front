@@ -59,7 +59,8 @@
       "app_capture_note": "📱 사진 촬영 인증(Verified · GPS 포함)은 OriPics 모바일 앱에서 이용할 수 있습니다.",
       "app_ios_button": "iPhone 앱 설치",
       "app_android_button": "Android 앱 설치",
-      "section_title": "사진/이미지\n판독하기 · 인증하기"
+      "section_title": "사진/이미지\n판독하기 · 인증하기",
+      "size_selecting": "인증을 시작합니다. 먼저 사이즈를 선택해 주세요."
     },
     "gps": {
       "status_active": "GPS 활성화 됨",
@@ -134,7 +135,8 @@
       "link_extra_note": "인증 후 공개링크를 생성하면 건수가 추가로 차감됩니다.",
       "preview_alt": "선택한 이미지 미리보기",
       "confirm": "인증 처리 시작",
-      "cancel": "취소"
+      "cancel": "취소",
+      "credits_deduct": "건 차감"
     },
     "verify": {
       "success_title": "원본 검증 성공",

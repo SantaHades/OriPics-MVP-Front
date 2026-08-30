@@ -59,7 +59,8 @@
       "app_capture_note": "📱 Camera capture (Verified · with GPS) is available in the OriPics mobile app.",
       "app_ios_button": "Get the iPhone app",
       "app_android_button": "Get the Android app",
-      "section_title": "Verify · Certify\nyour photos"
+      "section_title": "Verify · Certify\nyour photos",
+      "size_selecting": "Certification is starting — choose a size below first."
     },
     "gps": {
       "status_active": "GPS Activated",
@@ -134,7 +135,8 @@
       "link_extra_note": "Creating a public link after a proof uses an additional charge from your monthly allowance.",
       "preview_alt": "Selected image preview",
       "confirm": "Start proof",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "credits_deduct": " proof(s) deducted"
     },
     "verify": {
       "success_title": "Verification Successful",

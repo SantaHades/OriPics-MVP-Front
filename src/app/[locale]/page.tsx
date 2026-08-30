@@ -1233,6 +1233,11 @@ export default function Home() {
                       <div className="bg-blue-500 h-2 rounded-full animate-pulse w-full"></div>
                     </div>
                   </div>
+                ) : status === "size_selection" ? (
+                  <div className="flex flex-col items-center text-slate-600">
+                    <ImageUp size={40} className="text-blue-600 mb-4" />
+                    <p className="text-lg font-medium">{t("upload.size_selecting")}</p>
+                  </div>
                 ) : status === "error" ? (
                   <div className="flex flex-col items-center text-red-600">
                     <AlertTriangle size={48} className="mb-4" />
@@ -1308,11 +1313,10 @@ export default function Home() {
                   strong: (chunks) => <strong className="font-semibold">{chunks}</strong>,
                 })}
               </p>
-              <p className="text-xs text-slate-500 mb-6">
-                {longest > 10000 || pixels > 100_000_000
-                  ? t("size_select.hint_huge")
-                  : t("size_select.hint_large")}
-              </p>
+              {(longest > 10000 || pixels > 100_000_000) && (
+                <p className="text-xs text-slate-500 mb-4">{t("size_select.hint_huge")}</p>
+              )}
+              <div className="mb-4" />
 
               {/* 업로드한 이미지 미리보기 — Blob URL이 있을 때만 표시 (페이지 새로고침 시 손실) */}
               {originalImagePreview && (
@@ -1347,7 +1351,7 @@ export default function Home() {
                         {t("size_select.standard_label")}
                       </span>
                       <span className="text-xs font-mono text-slate-500">
-                        ≤ {MAX_DIMENSION}px · {stdMult} {t("size_select.credits")}
+                        ≤ {MAX_DIMENSION}px · {stdMult}{t("size_select.credits_deduct")}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600">{t("size_select.standard_desc")}</p>
@@ -1375,7 +1379,7 @@ export default function Home() {
                         {t("size_select.original_label")}
                       </span>
                       <span className="text-xs font-mono text-slate-500">
-                        {originalWidth}×{originalHeight} · {origMult} {t("size_select.credits")}
+                        {originalWidth}×{originalHeight} · {origMult}{t("size_select.credits_deduct")}
                       </span>
                     </div>
                     <p className="text-xs text-slate-600">{t("size_select.original_desc")}</p>
