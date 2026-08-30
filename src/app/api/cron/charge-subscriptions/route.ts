@@ -6,6 +6,7 @@ import {
   type PlanId,
 } from "@/lib/payment/subscriptionGrant";
 import { assertCron } from "@/lib/security/cron";
+import { sendGraceDowngradeNotice, sendGraceReminder } from "@/lib/notifications/graceMailer";
 
 const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET ?? "";
 const BATCH_SIZE = 200;
@@ -37,6 +38,8 @@ export async function GET(req: NextRequest) {
   let alreadyDone = 0;
   let failed = 0;
   let downgraded = 0;
+  let graceNoticed = 0;
+  let graceReminded = 0;
   const errors: string[] = [];
 
   // 0) 일반해지 예약(cancelAtPeriodEnd) 구독이 기간 만료된 경우: 청구 대신 종료 처리.
@@ -70,6 +73,26 @@ export async function GET(req: NextRequest) {
           WHERE user_id = ${sub.userId} AND expires_at IS NULL`,
       ]);
       downgraded++;
+      // §5.3 즉시 알림 (A-58) — 유예 만료일·링크 수 안내. 발송 실패는 다운그레이드에 무영향
+      try {
+        const [user, rows] = await Promise.all([
+          prisma.user.findUnique({ where: { id: sub.userId }, select: { email: true } }),
+          prisma.$queryRaw<Array<{ cnt: bigint; min_exp: Date | null }>>`
+            SELECT count(*) AS cnt, min(expires_at) AS min_exp FROM public.links
+            WHERE user_id = ${sub.userId} AND expires_at IS NOT NULL AND expires_at > now()`,
+        ]);
+        const cnt = Number(rows?.[0]?.cnt ?? 0);
+        if (user?.email && cnt > 0 && rows[0].min_exp) {
+          await sendGraceDowngradeNotice({
+            email: user.email,
+            linkCount: cnt,
+            expiresAt: new Date(rows[0].min_exp),
+          });
+          graceNoticed++;
+        }
+      } catch (e: any) {
+        errors.push(`grace_notice: ${e?.message || e}`);
+      }
     }
   } catch (e: any) {
     errors.push(`downgrade: ${e?.message || e}`);
@@ -126,5 +149,56 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, charged, alreadyDone, failed, downgraded, errors: errors.slice(0, 20) });
+  // 2) 삭제 임박 리마인더 (§5.3, A-58) — 유예 링크가 7/3/1일 내 만료되는 해지 사용자에게 발송.
+  //    이 크론은 일 1회 실행이라 (6,7]·(2,3]·(0,1]일 창(window) 매칭만으로 자연 중복 방지.
+  //    대상은 subscription.status=canceled(=한 번이라도 구독했던) 사용자 한정 —
+  //    처음부터 Free로 발행한 7일 링크에는 발송하지 않는다(고지된 기본 정책이라 스팸 방지).
+  try {
+    const rows = await prisma.$queryRaw<Array<{ user_id: string; cnt: bigint; min_exp: Date }>>`
+      SELECT user_id, count(*) AS cnt, min(expires_at) AS min_exp
+      FROM public.links
+      WHERE expires_at IS NOT NULL AND expires_at > now()
+        AND (
+          expires_at <= now() + interval '1 day'
+          OR (expires_at > now() + interval '2 days' AND expires_at <= now() + interval '3 days')
+          OR (expires_at > now() + interval '6 days' AND expires_at <= now() + interval '7 days')
+        )
+      GROUP BY user_id`;
+    if (rows.length > 0) {
+      const canceled = await prisma.subscription.findMany({
+        where: { userId: { in: rows.map((r) => r.user_id) }, status: "canceled" },
+        select: { userId: true },
+      });
+      const canceledSet = new Set(canceled.map((c) => c.userId));
+      const users = await prisma.user.findMany({
+        where: { id: { in: rows.map((r) => r.user_id).filter((id) => canceledSet.has(id)) }, tier: "free" },
+        select: { id: true, email: true },
+      });
+      const emailById = new Map(users.map((u) => [u.id, u.email]));
+      for (const row of rows) {
+        const email = emailById.get(row.user_id);
+        if (!email) continue;
+        const msLeft = new Date(row.min_exp).getTime() - Date.now();
+        const daysLeft = Math.max(1, Math.ceil(msLeft / 86_400_000));
+        try {
+          await sendGraceReminder({
+            email,
+            linkCount: Number(row.cnt),
+            daysLeft,
+            expiresAt: new Date(row.min_exp),
+          });
+          graceReminded++;
+        } catch (e: any) {
+          errors.push(`grace_reminder ${row.user_id}: ${e?.message || e}`);
+        }
+      }
+    }
+  } catch (e: any) {
+    errors.push(`grace_scan: ${e?.message || e}`);
+  }
+
+  return NextResponse.json({
+    ok: true, charged, alreadyDone, failed, downgraded, graceNoticed, graceReminded,
+    errors: errors.slice(0, 20),
+  });
 }

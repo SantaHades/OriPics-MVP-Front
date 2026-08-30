@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import * as PortOne from "@portone/server-sdk";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
+import { sendGraceDowngradeNotice } from "@/lib/notifications/graceMailer";
 import { computeRefundQuote, countProofUsage, PROOF_UNIT_PRICE } from "@/lib/payment/refund";
 import { PLAN_PRICES, isPlanId } from "@/lib/payment/subscriptionGrant";
 
@@ -207,6 +208,26 @@ export async function POST(req: NextRequest) {
         SET expires_at = now() + interval '37 days'
         WHERE user_id = ${userId} AND expires_at IS NULL`;
     });
+
+    // §5.3 즉시 알림 (A-58) — 환불 성공에 무영향(best-effort)
+    try {
+      const [user, rows] = await Promise.all([
+        prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
+        prisma.$queryRaw<Array<{ cnt: bigint; min_exp: Date | null }>>`
+          SELECT count(*) AS cnt, min(expires_at) AS min_exp FROM public.links
+          WHERE user_id = ${userId} AND expires_at IS NOT NULL AND expires_at > now()`,
+      ]);
+      const cnt = Number(rows?.[0]?.cnt ?? 0);
+      if (user?.email && cnt > 0 && rows[0].min_exp) {
+        await sendGraceDowngradeNotice({
+          email: user.email,
+          linkCount: cnt,
+          expiresAt: new Date(rows[0].min_exp),
+        });
+      }
+    } catch (e) {
+      console.error("[billing] grace notice failed (ignored):", (e as any)?.message);
+    }
 
     return NextResponse.json({ ok: true, refunded: quote.refundAmount, quote });
   }
