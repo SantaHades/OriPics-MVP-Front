@@ -842,14 +842,17 @@ export default function Home() {
     if (resultData?.image) {
       // 파일명 결정: 링크 ID(발행 전에도 인증 확정 시 확보됨 — 스탬프에 새겨진 값과 동일),
       // 없으면 oripics_타임스탬프 폴백 (2026-08-28: 미발행 다운로드도 링크 ID로 — 소스코드 F/P/C 식별 가능)
+      // 발행 전 파일명엔 '임시저장-' 접두(2026-08-30 대표 요청) — 발행본과 혼동 방지.
+      // 재드래그 발행(영수증 매칭)은 파일 내용 기준이라 파일명 무관.
+      const draftPrefix = t("result.unpublished_filename_prefix");
       let filename = `oripics_${new Date().getTime()}.png`;
       if (generatedLink) {
         const parts = generatedLink.split('/');
         filename = `${parts[parts.length - 1]}.png`;
       } else if (confirmedSingle?.linkId) {
-        filename = `${confirmedSingle.linkId}.png`;
+        filename = `${draftPrefix}${confirmedSingle.linkId}.png`;
       } else if (sessionID) {
-        filename = `${sessionID}.png`;
+        filename = `${draftPrefix}${sessionID}.png`;
       }
 
       // iOS 기기 감지
@@ -1714,7 +1717,7 @@ export default function Home() {
                     onClick={() => {
                       const a = document.createElement("a");
                       a.href = item.display.image!;
-                      a.download = `${item.draft.sign.link_id}.png`;
+                      a.download = `${item.phase === "published" ? "" : t("result.unpublished_filename_prefix")}${item.draft.sign.link_id}.png`;
                       a.click();
                     }}
                     className="mt-auto w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-900 font-semibold rounded-lg flex items-center justify-center gap-2 text-sm transition-colors"
