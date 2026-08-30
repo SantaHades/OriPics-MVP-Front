@@ -127,7 +127,9 @@ export default function Home() {
   // B-2'' (2026-05-17): confirm 후 publish에 필요한 정보 보관. 같은 페이지 세션에서만 publish 가능.
   const [confirmedSingle, setConfirmedSingle] = useState<{ stampedBlob: Blob; signedUploadUrl: string; receipt: string; linkId: string; timestamp: string; proofCost: number } | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
+  // 서명 업로드 URL 만료 시각 — 만료 후엔 publishStamped가 영수증으로 fresh URL 재발급
+  // (2026-08-30 대표 결정: 카운트다운 UI 제거 — 발행 권한은 영수증 30일이라 시간제한 무의미)
+  const signExpiresAtRef = useRef<number>(0);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [isLinking, setIsLinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -199,19 +201,6 @@ export default function Home() {
   const tc = useTranslations("Common");
   const tLV = useTranslations("LinkViewer");
 
-
-  // Timer for Link Creation Button (3 minutes)
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (status === "result_stamped" && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setSessionID(null); // Clear session after timeout
-    }
-    return () => clearInterval(timer);
-  }, [status, timeLeft]);
 
   // 처리 경과 초 카운터 — status === "processing" 동안만 1초 tick
   useEffect(() => {
@@ -458,7 +447,7 @@ export default function Home() {
         },
       });
       setSessionID(draft.sign.link_id);
-      setTimeLeft(draft.sign.jwt_ttl);
+      signExpiresAtRef.current = Date.now() + draft.sign.jwt_ttl * 1000;
       setGeneratedLink(null);
       setStatus("result_stamped");
       void refreshCredits();
@@ -554,7 +543,7 @@ export default function Home() {
           },
         });
         setSessionID(draft.sign.link_id);
-        setTimeLeft(draft.sign.jwt_ttl);
+        signExpiresAtRef.current = Date.now() + draft.sign.jwt_ttl * 1000;
         setGeneratedLink(null);
         setSizeSelection(null);
         setStatus("result_stamped");
@@ -712,7 +701,9 @@ export default function Home() {
       const result = await publishStamped({
         apiBase: "",
         blob: item.draft.blob,
-        signedUploadUrl: item.draft.sign.signed_upload_url,
+        ...(Date.now() < signExpiresAtRef.current
+          ? { signedUploadUrl: item.draft.sign.signed_upload_url }
+          : {}),
         receipt: item.receipt,
         thumbnailDataUrl,
         onUploadProgress: (loaded, total) => {
@@ -836,7 +827,7 @@ export default function Home() {
     setStampedDraft(null);
     setConfirmedSingle(null);
     setConfirming(false);
-    setTimeLeft(0);
+    signExpiresAtRef.current = 0;
     setGeneratedLink(null);
     setSingleUploadProgress(null);
     if (originalImagePreview) {
@@ -924,7 +915,10 @@ export default function Home() {
       const result = await publishStamped({
         apiBase: "",
         blob: confirmedSingle.stampedBlob,
-        signedUploadUrl: confirmedSingle.signedUploadUrl,
+        // 서명 URL 유효 시에만 재사용 — 만료면 publishStamped가 영수증으로 fresh URL 발급
+        ...(Date.now() < signExpiresAtRef.current
+          ? { signedUploadUrl: confirmedSingle.signedUploadUrl }
+          : {}),
         receipt: confirmedSingle.receipt,
         thumbnailDataUrl,
         onUploadProgress: (loaded, total) => setSingleUploadProgress({ loaded, total }),
@@ -1487,7 +1481,7 @@ export default function Home() {
               </p>
             )}
 
-            {sessionID && !generatedLink && timeLeft > 0 && (
+            {sessionID && !generatedLink && (
               <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-300 w-full">
                 <p className="text-xs text-slate-500 mb-3 text-center max-w-md">
                   {t("result.c2pa_after_publish_note")}
@@ -1503,12 +1497,6 @@ export default function Home() {
                   <span className="text-xs font-normal opacity-80 italic">
                     {uploadSource}
                     {resultData.metadata.timestamp.slice(1, 7)}-xxxx
-                  </span>
-                  <span className="text-xs font-normal opacity-80 mt-1">
-                    {t("result.link_time_left", {
-                      minutes: Math.floor(timeLeft / 60),
-                      seconds: timeLeft % 60
-                    })}
                   </span>
                 </button>
                 {isLinking && singleUploadProgress && singleUploadProgress.total > 0 && (() => {

@@ -91,7 +91,6 @@
       "download": "Download Stamped Image",
       "process_another": "Process Another Image",
       "create_link": "🔗 Create Public Link",
-      "link_time_left": "Time left: {minutes}m {seconds}s — afterwards, reopen your downloaded certified image in this browser to create it within 30 days",
       "link_created": "✅ Public link created (stored for 7 days)",
       "copy": "Copy",
       "copy_success": "Link copied to clipboard!",
