@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
 import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check, Info } from "lucide-react";
 import { Link } from "@/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
 
@@ -45,6 +45,7 @@ export default function ProfilePage() {
   const t = useTranslations("Profile");
   const tc = useTranslations("Common");
   const tCredits = useTranslations("Home.credits");
+  const locale = useLocale();
   const { data: credits, refresh: refreshCredits } = useCredits();
 
   const [name, setName] = useState(session?.user?.name || "");
@@ -618,6 +619,27 @@ export default function ProfilePage() {
             <h2 className="text-lg font-bold">{tCredits("section_title")}</h2>
           </div>
 
+          {/* 보관 유예 경고 (A-58 §5.3) — 이메일 알림의 제품 내 백업 채널 */}
+          {credits?.grace && (
+            <div className="mb-4 p-4 rounded-2xl border border-amber-300 bg-amber-50 text-sm text-amber-900">
+              <p className="font-bold mb-1">
+                ⚠️ {tCredits("grace_title", { count: credits.grace.count })}
+              </p>
+              <p className="text-xs leading-relaxed">
+                {tCredits("grace_body", {
+                  date: new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ko-KR", {
+                    timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric",
+                  }).format(new Date(credits.grace.expires_at)),
+                })}
+              </p>
+              <Link
+                href="/billing/checkout?plan=pro_monthly"
+                className="mt-2 inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-full transition-colors"
+              >
+                {tCredits("grace_cta")}
+              </Link>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
               <p className="text-xs text-slate-500 mb-1">{tCredits("tier_label")}</p>

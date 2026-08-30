@@ -16,6 +16,8 @@ export interface CreditsData {
   tier: string;
   credits: number;
   creditsRenewAt: string | null;
+  /** 보관 유예 요약 (A-58) — 해지 후 만료 예정 링크가 있을 때만 존재 */
+  grace?: { count: number; expires_at: string };
   recentTransactions: CreditTransactionView[];
 }
 

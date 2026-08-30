@@ -242,7 +242,10 @@
         "next_renewal": "Next renewal: {date}",
         "cta_pro": "See Pro",
         "close": "Close"
-      }
+      },
+      "grace_title": "{count} public link(s) will be deleted soon",
+      "grace_body": "Your subscription ended and the grace period is running — they will be permanently deleted on {date} and cannot be recovered. Re-subscribe to Pro before then to restore unlimited storage, or download your images from the vault.",
+      "grace_cta": "Re-subscribe to keep them"
     },
     "pricing": {
       "eyebrow": "Pricing",
