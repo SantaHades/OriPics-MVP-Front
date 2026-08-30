@@ -167,7 +167,7 @@ export default function UseCasesPage() {
             {ko ? "사용 사례" : "Use cases"}
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-snug mb-4">
-            {ko ? "사진 한 장이 돈이 되는 순간, OriPics가 지킵니다" : "When one photo is worth money, OriPics protects it"}
+            {ko ? "사진 한 장이 증거가 되는 순간, OriPics가 지킵니다" : "When one photo becomes the evidence, OriPics protects it"}
           </h1>
           <p className="text-slate-600 leading-relaxed">
             {ko
