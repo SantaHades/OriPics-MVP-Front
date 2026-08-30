@@ -2091,8 +2091,11 @@ export default function Home() {
             </div>
           </div>
 
+          {/* 안내문구는 차감규칙 위로 (2026-08-30 대표 요청) */}
+          <p className="text-center text-xs text-slate-500 mt-6">{t("pricing.footnote")}</p>
+
           {/* Credits guide — 차감 기준 통합 표기 */}
-          <div className="mt-8 p-5 rounded-2xl bg-slate-100/60 border border-slate-200">
+          <div className="mt-6 p-5 rounded-2xl bg-slate-100/60 border border-slate-200">
             <p className="text-lg font-extrabold text-slate-800 mb-3">
               {t("pricing.guide.title")}
             </p>
@@ -2128,7 +2131,6 @@ export default function Home() {
             <p className="text-xs text-slate-500 mt-2">{t("pricing.guide.mult_note")}</p>
           </div>
 
-          <p className="text-center text-xs text-slate-500 mt-6">{t("pricing.footnote")}</p>
         </section>
 
       </main>
