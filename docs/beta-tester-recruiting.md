@@ -271,13 +271,13 @@ Adobe·Microsoft·Sony가 만든 국제 표준 C2PA의 적합성 인증 제품�
 | demitassepark@gmail.com | Ji Young Park | 2026-08-27 | free / 20 | 3호, 구글 가입, Android |
 | timson9717@gmail.com | cherry66 | 2026-08-28 | free / 826 | 대표 계정(크레딧 유지), PDF 발행 테스트 |
 | parkdemi1995@gmail.com | 박데미 | 2026-08-29 | free / 12 | 4호, 구글 가입, Android (Play internal 등록됨) |
+| ansuk98@naver.com | 박안숙 | 2026-08-31 | free / 7 | 5호, iPhone — 전달받은 주소(ansuk9898@gmail.com)와 다름, 실가입=네이버 메일 |
+| huna75@daum.net | 박성훈 | 2026-08-31 | free / 20 | 6호, iPhone — 전달받은 주소(huna75@gmail.com)와 다름, 실가입=다음 메일 |
 
 ### 승급 대기 (가입 확인 시 Pro 부여 — 2026-08-31 대표 전달, 8/31 조회 시 전원 미가입)
 | 이메일 | 이름 | 플랫폼 | 비고 |
 |---|---|---|---|
 | mira9962@naver.com | 박미라 | Android | ⚠️Gmail 미보유 — Play 테스터 등록엔 Gmail 필요(옵트인 링크가 등록 Gmail로만 작동) |
-| huna75@gmail.com | 박성훈 | iPhone | |
-| ansuk9898@gmail.com | 박안숙 | iPhone | |
 | beetle486@naver.com | 탁이 | iPhone | 2계정 중 1 |
 | sjharu@naver.com | 탁이 | iPhone | 2계정 중 2 |
 
