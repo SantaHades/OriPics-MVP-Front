@@ -1141,9 +1141,9 @@ export default function Home() {
               {(status === "idle" || status === "dragover") && (
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-5 text-center">
                   {(() => {
-                    // 모바일 2줄(사진/이미지 | 판독하기·인증하기), 데스크톱 1줄 — 2026-08-30 대표 요청
-                    const [first, ...rest] = (t("upload.section_title") as string).split(" ");
-                    if (rest.length === 0) return t("upload.section_title");
+                    // 모바일 2줄(\n 기준), 데스크톱 1줄 — 2026-08-30 대표 요청
+                    const [first, ...rest] = (t("upload.section_title") as string).split("\n");
+                    if (rest.length === 0) return first;
                     return (
                       <>
                         {first}
