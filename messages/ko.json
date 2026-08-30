@@ -129,7 +129,7 @@
       "original_desc": "촬영 그대로의 해상도로 보관. 인쇄·법정 제출에 권장.",
       "credits": "건",
       "total_label": "합계",
-      "link_extra_note": "인증 후 공개링크를 생성하면 횟수가 추가로 차감됩니다.",
+      "link_extra_note": "인증 후 공개링크를 생성하면 건수가 추가로 차감됩니다.",
       "preview_alt": "선택한 이미지 미리보기",
       "confirm": "인증 처리 시작",
       "cancel": "취소"
@@ -279,7 +279,7 @@
         "f5": "대량 사진 일괄 인증(배치) — 도입 문의"
       },
       "guide": {
-        "title": "이용횟수 차감규칙",
+        "title": "이용건수 차감규칙",
         "row_local": "로컬 판독",
         "row_verify": "서버 검증",
         "row_standard": "갤러리 인증 (Standard)",
@@ -304,8 +304,8 @@
     "verify_confirm": {
       "title": "이미 인증된 이미지입니다",
       "body": "이 이미지에는 OriPics 인증 시일이 포함되어 있습니다. 자세한 인증 내용을 확인하시겠습니까?",
-      "cost_notice": "확인 시 검증 조회 1회가 차감됩니다.",
-      "cost_notice_dynamic": "확인 시 검증 조회 {cost}회가 차감됩니다 (사이즈 {mult}× 적용).",
+      "cost_notice": "확인 시 검증 조회 1건이 차감됩니다.",
+      "cost_notice_dynamic": "확인 시 검증 조회 {cost}건이 차감됩니다 (사이즈 {mult}× 적용).",
       "yes": "예, 확인",
       "no": "아니오"
     },
@@ -554,13 +554,13 @@
       "pdf_issue": "증명서 PDF 발급 (−{cost})",
       "pdf_download": "증명서 다운로드",
       "pdf_reissue": "재발급 (−{cost})",
-      "pdf_reissue_tooltip": "새 시점으로 다시 발급합니다. 발급 1회가 차감됩니다.",
+      "pdf_reissue_tooltip": "새 시점으로 다시 발급합니다. 발급 비용이 다시 차감됩니다.",
       "pdf_error": "PDF 처리 실패: {error}",
       "pdf_tier_required": "증명서 PDF는 Pro 플랜 전용 기능입니다.",
       "upgrade_cta": "Pro 구독하기",
       "delete_proof": "삭제",
       "delete_modal_title": "이 인증을 삭제할까요?",
-      "delete_modal_description": "원본 이미지와 발급된 증명서가 영구 삭제되며, 공개링크도 더 이상 동작하지 않습니다. 차감된 이용 횟수는 환불되지 않습니다.",
+      "delete_modal_description": "원본 이미지와 발급된 증명서가 영구 삭제되며, 공개링크도 더 이상 동작하지 않습니다. 차감된 이용 건수는 환불되지 않습니다.",
       "delete_modal_cancel": "취소",
       "delete_modal_confirm": "삭제"
     },
@@ -672,9 +672,9 @@
     "error_generic": "결제 처리 중 오류가 발생했습니다.",
     "pay_button": "결제하기",
     "processing": "결제창을 여는 중…",
-    "grant_notice": "구독 시작 시 월 이용횟수가 플랜 제공량(Pro 1,000회)으로 설정됩니다. 기존 무료 플랜의 남은 횟수는 이월되지 않고 대체되며, 매월 갱신 시에도 동일하게 제공량으로 재설정됩니다.",
+    "grant_notice": "구독 시작 시 월 이용건수가 플랜 제공량(Pro 1,000건)으로 설정됩니다. 기존 무료 플랜의 남은 건수는 이월되지 않고 대체되며, 매월 갱신 시에도 동일하게 제공량으로 재설정됩니다.",
     "withdrawal_notice_title": "청약철회 안내",
-    "withdrawal_notice_body": "결제 후 7일 이내에 인증 횟수를 사용하지 않은 경우 전액 환불됩니다. 인증 횟수 사용을 시작하면 「전자상거래법」 제17조 제2항에 따라 사용한 부분에 대한 청약철회가 제한되며, 미사용분은 환불 정책의 산정 기준에 따라 환불됩니다. 무료 플랜에서 서비스를 미리 사용해 보실 수 있습니다.",
+    "withdrawal_notice_body": "결제 후 7일 이내에 인증 건수를 사용하지 않은 경우 전액 환불됩니다. 인증 건수 사용을 시작하면 「전자상거래법」 제17조 제2항에 따라 사용한 부분에 대한 청약철회가 제한되며, 미사용분은 환불 정책의 산정 기준에 따라 환불됩니다. 무료 플랜에서 서비스를 미리 사용해 보실 수 있습니다.",
     "withdrawal_notice_agree": "결제 시 위 내용과 이용약관 제11조(환불 및 청약철회)에 동의한 것으로 간주됩니다.",
     "withdrawal_notice_link_terms": "이용약관 제11조",
     "withdrawal_notice_link_refund": "환불 정책",
