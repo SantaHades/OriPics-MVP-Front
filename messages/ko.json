@@ -36,7 +36,7 @@
       "toggle_camera": "카메라로도 촬영하기",
       "watermark_include": "인증마크 포함",
       "watermark_help_aria": "인증마크 안내",
-      "watermark_help_title": "이미지에 인증마크 표시하기",
+      "watermark_help_title": "인증 이미지에 로고 표시하기",
       "watermark_help_body": "체크 시 이미지의 좌측 상단에 OriPics 로고가 인증마크로 표시됩니다. 누구나 한눈에 OriPics로 인증된 이미지임을 알 수 있습니다.",
       "upload_menu": {
         "title": "이미지 선택",
