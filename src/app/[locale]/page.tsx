@@ -1141,27 +1141,6 @@ export default function Home() {
               {(status === "idle" || status === "dragover") && (
                 <h2 className="text-2xl md:text-3xl font-extrabold mb-5">{t("upload.section_title")}</h2>
               )}
-              {(status === "idle" || status === "dragover") && (
-                <div className="w-full flex justify-start mb-2 text-xs gap-1">
-                  <label className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 text-slate-700 cursor-pointer hover:bg-slate-50 select-none">
-                    <input
-                      type="checkbox"
-                      checked={watermarkEnabled}
-                      onChange={(e) => handleWatermarkToggle(e.target.checked)}
-                      className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
-                    />
-                    <span>{t('upload.watermark_include')}</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowWatermarkHelpModal(true)}
-                    className="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center"
-                    aria-label={t('upload.watermark_help_aria') as string}
-                  >
-                    <HelpCircle size={14} />
-                  </button>
-                </div>
-              )}
               <div
                 className={`relative w-full p-10 rounded-2xl border-2 border-dashed transition-all duration-300 ${status === "dragover" ? "border-blue-400 bg-blue-500/10" : "border-slate-600 glass hover:border-slate-400"
                   }`}
@@ -1169,6 +1148,37 @@ export default function Home() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
+                {(status === "idle" || status === "dragover") && (
+                  <div
+                    className="absolute top-3 left-3 flex items-center gap-1 text-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <label
+                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-slate-200 cursor-pointer hover:bg-slate-50 select-none"
+                      title={t('upload.watermark_include') as string}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={watermarkEnabled}
+                        onChange={(e) => handleWatermarkToggle(e.target.checked)}
+                        className="rounded border-slate-300 text-orange-500 focus:ring-orange-500 w-3.5 h-3.5"
+                      />
+                      <img
+                        src="/logo.png"
+                        alt={t('upload.watermark_include') as string}
+                        className={`w-4 h-4 object-contain transition-opacity ${watermarkEnabled ? "opacity-100" : "opacity-30 grayscale"}`}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowWatermarkHelpModal(true)}
+                      className="w-6 h-6 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 flex items-center justify-center"
+                      aria-label={t('upload.watermark_help_aria') as string}
+                    >
+                      <HelpCircle size={14} />
+                    </button>
+                  </div>
+                )}
                 {status === "idle" || status === "dragover" ? (
                   <div className="flex flex-col items-center cursor-pointer" onClick={() => { if (!requireAuthOrRedirect()) return; setShowUploadMenu(true); }}>
                     <div className="flex items-center justify-center gap-6 mb-4">
