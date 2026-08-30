@@ -245,7 +245,13 @@
       },
       "grace_title": "공개링크 {count}건이 곧 삭제됩니다",
       "grace_body": "구독 종료로 보관 유예 중입니다 — {date}에 영구 삭제되며 복구할 수 없습니다. 만료 전 Pro를 재구독하면 무기한 보관이 자동 복원되고, 보관함에서 이미지를 다운로드해 직접 보관할 수도 있습니다.",
-      "grace_cta": "Pro 재구독하고 계속 보관하기"
+      "grace_cta": "Pro 재구독하고 계속 보관하기",
+      "storage_label": "보관함 사용량",
+      "storage_view": "사용량 보기",
+      "storage_loading": "계산 중…",
+      "storage_retry": "다시 시도",
+      "storage_free_note": "Free 플랜은 링크별 7일 보관",
+      "storage_files": "발행 파일 {count}개"
     },
     "pricing": {
       "eyebrow": "요금제",

@@ -46,6 +46,29 @@ export default function ProfilePage() {
   const tc = useTranslations("Common");
   const tCredits = useTranslations("Home.credits");
   const locale = useLocale();
+  // 보관함 사용량 — 온디맨드 조회 (2026-08-31 대표 결정: 버튼 클릭 시에만, 결과 유지)
+  const [storageUsage, setStorageUsage] = useState<{ bytes: number; files: number; limit_bytes: number | null } | null>(null);
+  const [storageLoading, setStorageLoading] = useState(false);
+  const [storageError, setStorageError] = useState(false);
+  const fetchStorageUsage = async () => {
+    if (storageLoading) return;
+    setStorageLoading(true);
+    setStorageError(false);
+    try {
+      const res = await fetch("/api/user/storage");
+      if (!res.ok) throw new Error(String(res.status));
+      setStorageUsage(await res.json());
+    } catch {
+      setStorageError(true);
+    } finally {
+      setStorageLoading(false);
+    }
+  };
+  const fmtBytes = (b: number) => {
+    if (b < 1024 ** 2) return `${Math.max(0, Math.round(b / 1024))} KB`;
+    if (b < 1024 ** 3) return `${(b / 1024 ** 2).toFixed(1)} MB`;
+    return `${(b / 1024 ** 3).toFixed(2)} GB`;
+  };
   const { data: credits, refresh: refreshCredits } = useCredits();
 
   const [name, setName] = useState(session?.user?.name || "");
@@ -640,7 +663,7 @@ export default function ProfilePage() {
               </Link>
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
               <p className="text-xs text-slate-500 mb-1">{tCredits("tier_label")}</p>
               <p className="text-2xl font-extrabold capitalize">
@@ -686,6 +709,43 @@ export default function ProfilePage() {
                   ? new Date(credits.creditsRenewAt).toLocaleDateString()
                   : "—"}
               </p>
+            </div>
+            {/* 보관함 사용량 (A-61, 2026-08-31) — 버튼 클릭 시 조회 */}
+            <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
+              <p className="text-xs text-slate-500 mb-1">{tCredits("storage_label")}</p>
+              {storageUsage ? (
+                <>
+                  <p className="text-sm font-semibold text-slate-700">
+                    {fmtBytes(storageUsage.bytes)}
+                    {storageUsage.limit_bytes ? ` / ${fmtBytes(storageUsage.limit_bytes)}` : ""}
+                  </p>
+                  {storageUsage.limit_bytes ? (
+                    <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                      <div
+                        className="h-1.5 bg-blue-500 rounded-full"
+                        style={{ width: `${Math.min(100, (storageUsage.bytes / storageUsage.limit_bytes) * 100)}%` }}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 mt-1">{tCredits("storage_free_note")}</p>
+                  )}
+                  <p className="text-xs text-slate-500 mt-1">
+                    {tCredits("storage_files", { count: storageUsage.files })}
+                  </p>
+                </>
+              ) : (
+                <button
+                  onClick={fetchStorageUsage}
+                  disabled={storageLoading}
+                  className="mt-1 px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-60"
+                >
+                  {storageLoading
+                    ? tCredits("storage_loading")
+                    : storageError
+                      ? tCredits("storage_retry")
+                      : tCredits("storage_view")}
+                </button>
+              )}
             </div>
           </div>
 

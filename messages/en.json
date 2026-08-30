@@ -245,7 +245,13 @@
       },
       "grace_title": "{count} public link(s) will be deleted soon",
       "grace_body": "Your subscription ended and the grace period is running — they will be permanently deleted on {date} and cannot be recovered. Re-subscribe to Pro before then to restore unlimited storage, or download your images from the vault.",
-      "grace_cta": "Re-subscribe to keep them"
+      "grace_cta": "Re-subscribe to keep them",
+      "storage_label": "Vault usage",
+      "storage_view": "Check usage",
+      "storage_loading": "Calculating…",
+      "storage_retry": "Retry",
+      "storage_free_note": "Free plan keeps each link for 7 days",
+      "storage_files": "{count} published file(s)"
     },
     "pricing": {
       "eyebrow": "Pricing",
