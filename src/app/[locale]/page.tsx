@@ -1930,9 +1930,9 @@ export default function Home() {
             <div className="hidden md:block absolute top-[5.2rem] left-[16.6%] right-[16.6%] border-t-2 border-dashed border-slate-200 pointer-events-none" aria-hidden="true"></div>
 
             <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
-              <span className="text-xs font-mono font-bold tracking-[0.2em] text-sky-600 mb-3">STEP 01</span>
+              <span className="text-xs font-mono font-bold tracking-[0.2em] text-slate-500 mb-3">STEP 01</span>
               <div className="relative mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 text-white flex items-center justify-center shadow-lg shadow-sky-400/25 ring-4 ring-sky-50">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#5b82a6] to-[#447095] text-white flex items-center justify-center shadow-lg shadow-slate-400/20 ring-4 ring-slate-100">
                   <ImageUp size={30} strokeWidth={1.75} />
                 </div>
               </div>
@@ -1941,9 +1941,9 @@ export default function Home() {
             </div>
 
             <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
-              <span className="text-xs font-mono font-bold tracking-[0.2em] text-teal-600 mb-3">STEP 02</span>
+              <span className="text-xs font-mono font-bold tracking-[0.2em] text-slate-500 mb-3">STEP 02</span>
               <div className="relative mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-400 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-teal-400/25 ring-4 ring-teal-50">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#447095] to-[#35597a] text-white flex items-center justify-center shadow-lg shadow-slate-400/20 ring-4 ring-slate-100">
                   <Lock size={30} strokeWidth={1.75} />
                 </div>
               </div>
@@ -1952,9 +1952,9 @@ export default function Home() {
             </div>
 
             <div className="glass p-6 rounded-2xl flex flex-col items-center text-center relative bg-white/60">
-              <span className="text-xs font-mono font-bold tracking-[0.2em] text-emerald-600 mb-3">STEP 03</span>
+              <span className="text-xs font-mono font-bold tracking-[0.2em] text-slate-500 mb-3">STEP 03</span>
               <div className="relative mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-lg shadow-emerald-400/25 ring-4 ring-emerald-50 p-3">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#35597a] to-slate-800 flex items-center justify-center shadow-lg shadow-slate-400/20 ring-4 ring-slate-100 p-3">
                   <img src="/logo.png" alt="OriPics" className="w-full h-full object-contain brightness-0 invert" />
                 </div>
               </div>
