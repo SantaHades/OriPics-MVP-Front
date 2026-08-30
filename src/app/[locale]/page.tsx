@@ -130,6 +130,8 @@ export default function Home() {
   // 서명 업로드 URL 만료 시각 — 만료 후엔 publishStamped가 영수증으로 fresh URL 재발급
   // (2026-08-30 대표 결정: 카운트다운 UI 제거 — 발행 권한은 영수증 30일이라 시간제한 무의미)
   const signExpiresAtRef = useRef<number>(0);
+  // 미발행 인증본을 저장/발행 없이 이탈하면 복구 불가(서버 무저장) — 경고 게이트 (2026-08-30)
+  const savedOrPublishedRef = useRef(true);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [isLinking, setIsLinking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -448,6 +450,7 @@ export default function Home() {
       });
       setSessionID(draft.sign.link_id);
       signExpiresAtRef.current = Date.now() + draft.sign.jwt_ttl * 1000;
+      savedOrPublishedRef.current = false;
       setGeneratedLink(null);
       setStatus("result_stamped");
       void refreshCredits();
@@ -544,6 +547,7 @@ export default function Home() {
         });
         setSessionID(draft.sign.link_id);
         signExpiresAtRef.current = Date.now() + draft.sign.jwt_ttl * 1000;
+        savedOrPublishedRef.current = false;
         setGeneratedLink(null);
         setSizeSelection(null);
         setStatus("result_stamped");
@@ -838,12 +842,46 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // 미저장 인증본 이탈 확인 — 저장/발행했거나 인증 결과 화면이 아니면 그냥 통과
+  const confirmDiscardUnsaved = () => {
+    const hasUnsavedSingle =
+      status === "result_stamped" && !generatedLink && !savedOrPublishedRef.current;
+    const hasUnsavedMulti =
+      !!multiResults && multiResults.some((i) => i.phase === "ready") && !savedOrPublishedRef.current;
+    if (hasUnsavedSingle || hasUnsavedMulti) {
+      return window.confirm(t("result.unsaved_leave_warning"));
+    }
+    return true;
+  };
+  const handleProcessAnother = () => {
+    if (!confirmDiscardUnsaved()) return;
+    savedOrPublishedRef.current = true;
+    resetState();
+  };
+
+  // 새로고침·탭 닫기 가드 — 미저장 미발행 인증본이 있으면 브라우저 기본 확인창
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      const unsavedSingle =
+        status === "result_stamped" && !generatedLink && !savedOrPublishedRef.current;
+      const unsavedMulti =
+        !!multiResults && multiResults.some((i) => i.phase === "ready") && !savedOrPublishedRef.current;
+      if (unsavedSingle || unsavedMulti) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [status, generatedLink, multiResults]);
+
   const handleDownload = () => {
     if (resultData?.image) {
       // 파일명 결정: 링크 ID(발행 전에도 인증 확정 시 확보됨 — 스탬프에 새겨진 값과 동일),
       // 없으면 oripics_타임스탬프 폴백 (2026-08-28: 미발행 다운로드도 링크 ID로 — 소스코드 F/P/C 식별 가능)
       // 발행 전 파일명엔 '임시저장-' 접두(2026-08-30 대표 요청) — 발행본과 혼동 방지.
       // 재드래그 발행(영수증 매칭)은 파일 내용 기준이라 파일명 무관.
+      savedOrPublishedRef.current = true;
       const draftPrefix = t("result.unpublished_filename_prefix");
       let filename = `oripics_${new Date().getTime()}.png`;
       if (generatedLink) {
@@ -929,6 +967,7 @@ export default function Home() {
       const baseUrl = window.location.origin;
       const fullLink = `${baseUrl}/${result.link_id}`;
       setGeneratedLink(fullLink);
+      savedOrPublishedRef.current = true;
       setSessionID(null);
 
       // 공개 완료 → localStorage receipt 제거
@@ -1473,7 +1512,7 @@ export default function Home() {
               <button onClick={handleDownload} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-xl flex items-center justify-center gap-2">
                 <Download size={18} /> {t("result.download")}
               </button>
-              <button onClick={resetState} className="px-6 py-3 glass hover:bg-slate-100 text-slate-900 font-medium rounded-xl flex items-center justify-center gap-2">
+              <button onClick={handleProcessAnother} className="px-6 py-3 glass hover:bg-slate-100 text-slate-900 font-medium rounded-xl flex items-center justify-center gap-2">
                 <RefreshCw size={18} /> {t("result.process_another")}
               </button>
             </div>
@@ -1715,6 +1754,7 @@ export default function Home() {
 
                   <button
                     onClick={() => {
+                      savedOrPublishedRef.current = true;
                       const a = document.createElement("a");
                       a.href = item.display.image!;
                       a.download = `${item.phase === "published" ? "" : t("result.unpublished_filename_prefix")}${item.draft.sign.link_id}.png`;
@@ -1729,7 +1769,7 @@ export default function Home() {
             </div>
 
             <button
-              onClick={resetState}
+              onClick={handleProcessAnother}
               className="w-full py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-900 font-bold rounded-xl flex items-center justify-center gap-2"
             >
               <RefreshCw size={18} /> {t("result.process_another")}

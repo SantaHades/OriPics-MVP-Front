@@ -122,7 +122,8 @@
       "link_created_paid": "✅ Public link created (kept in your vault)",
       "link_hint_paid": "Stored in your vault (5GB) for as long as you subscribe.",
       "multi_desc_paid": "Both options were processed. Each link is kept in your vault while subscribed.",
-      "unpublished_filename_prefix": "draft-"
+      "unpublished_filename_prefix": "draft-",
+      "unsaved_leave_warning": "You haven't saved the certified image to a file yet. If you leave now, it cannot be recovered and the used credits are not refunded. Continue?"
     },
     "size_select": {
       "title": "Choose proof size",

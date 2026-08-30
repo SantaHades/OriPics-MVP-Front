@@ -122,7 +122,8 @@
       "link_created_paid": "✅ 공개링크가 생성되었습니다 (보관함에 계속 보관)",
       "link_hint_paid": "보관함(5GB)에서 구독 중 계속 보관됩니다.",
       "multi_desc_paid": "선택하신 두 옵션 모두 처리되었습니다. 각 링크는 보관함에서 구독 중 계속 보관됩니다.",
-      "unpublished_filename_prefix": "임시저장-"
+      "unpublished_filename_prefix": "임시저장-",
+      "unsaved_leave_warning": "인증 이미지를 아직 파일로 저장하지 않았습니다. 지금 나가면 이 인증본은 복구할 수 없으며, 사용한 건수는 환불되지 않습니다. 계속할까요?"
     },
     "size_select": {
       "title": "사이즈 선택",
