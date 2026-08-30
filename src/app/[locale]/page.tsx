@@ -2129,6 +2129,7 @@ export default function Home() {
               ))}
             </div>
             <p className="text-xs text-slate-500 mt-2">{t("pricing.guide.mult_note")}</p>
+            <p className="text-xs text-slate-500 mt-1">{t("pricing.guide.carryover_note")}</p>
           </div>
 
         </section>
