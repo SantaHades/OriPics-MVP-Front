@@ -1139,7 +1139,21 @@ export default function Home() {
             <div className="w-full max-w-2xl flex flex-col items-center">
               {/* 업로드 섹션 타이틀 (2026-08-30 대표 시안) — 판독·인증이 이 박스 하나임을 명시 */}
               {(status === "idle" || status === "dragover") && (
-                <h2 className="text-2xl md:text-3xl font-extrabold mb-5">{t("upload.section_title")}</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-5 text-center">
+                  {(() => {
+                    // 모바일 2줄(사진/이미지 | 판독하기·인증하기), 데스크톱 1줄 — 2026-08-30 대표 요청
+                    const [first, ...rest] = (t("upload.section_title") as string).split(" ");
+                    if (rest.length === 0) return t("upload.section_title");
+                    return (
+                      <>
+                        {first}
+                        <br className="sm:hidden" />
+                        <span className="hidden sm:inline"> </span>
+                        {rest.join(" ")}
+                      </>
+                    );
+                  })()}
+                </h2>
               )}
               <div
                 className={`relative w-full p-10 rounded-2xl border-2 border-dashed transition-all duration-300 ${status === "dragover" ? "border-blue-400 bg-blue-500/10" : "border-slate-600 glass hover:border-slate-400"
@@ -1863,7 +1877,7 @@ export default function Home() {
         )}
 
         <section id="how-it-works" className="w-full max-w-4xl mt-12 mb-20 scroll-mt-24">
-          <h2 className="text-3xl font-bold text-center mb-12">{t("how_it_works.title")}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-center mb-12">{t("how_it_works.title")}</h2>
           <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* 데스크톱 전용 점선 커넥터 — 카드 간 진행 흐름 시각화 */}
             <div className="hidden md:block absolute top-[5.5rem] left-[16.6%] right-[16.6%] border-t-2 border-dashed border-slate-200 pointer-events-none" aria-hidden="true"></div>
