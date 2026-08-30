@@ -112,7 +112,7 @@ export interface CertificateData {
 
 const STRINGS: Record<Locale, Record<string, string>> = {
   ko: {
-    title: "원본 증명서",
+    title: "원본 인증서",
     subtitle: "Certificate of Originality",
     issuedTo: "발급 대상",
     subject: "대상 이미지",
@@ -147,7 +147,7 @@ const STRINGS: Record<Locale, Record<string, string>> = {
       "Google Play Integrity API — Google 서명 무결성 평결(verdict)을 서버 측에서 검증, 기기 무결성 등급 MEETS_DEVICE_INTEGRITY 이상 확인. 패키지: com.santahades.oripics",
     verifiedTech_unknown:
       "Apple App Attest / Google Play Integrity 하드웨어 증명 토큰을 서버 측에서 검증.",
-    verifiedEvidence: "증명 데이터",
+    verifiedEvidence: "인증 데이터",
     verifiedDevice: "촬영 기기",
     verifiedCapture: "촬영 정보",
     lens_wide: "광각 (기본 카메라)",
@@ -165,17 +165,17 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     c2paGenerator: "Generator",
     disclaimerTitle: "고지",
     disclaimer:
-      "본 증명서는 OriPics 플랫폼이 대상 이미지의 픽셀 무결성·출처 메타데이터를 발급 시점에 확인하였음을 증명합니다. 콘텐츠의 합법성·진실성 자체를 보증하지 않으며, 이미지 저작권은 발급 대상자 또는 적법한 권리자에게 귀속됩니다.",
+      "본 인증서는 OriPics 플랫폼이 대상 이미지의 픽셀 무결성·출처 메타데이터를 발급 시점에 확인하였음을 인증합니다. 콘텐츠의 합법성·진실성 자체를 보증하지 않으며, 이미지 저작권은 발급 대상자 또는 적법한 권리자에게 귀속됩니다.",
     issued: "발급",
     issuer: "발급자",
     issuerName: "주식회사 산타하데스 (SantaHades Co., Ltd.)",
     issuerSite: "www.ori.pics",
-    certId: "증명서 ID",
-    footer: "OriPics — 사진의 원본을 증명합니다.",
+    certId: "인증서 ID",
+    footer: "OriPics — 사진의 원본을 인증합니다.",
   },
   en: {
     title: "Certificate of Originality",
-    subtitle: "OriPics 원본 증명서",
+    subtitle: "OriPics 원본 인증서",
     issuedTo: "Issued to",
     subject: "Subject Image",
     linkId: "Link ID",
@@ -550,7 +550,7 @@ export function CertificateDocument({
 
         {/* 기기 검증 (Verified) 상세 — links.tier=verified일 때만. 값은 전부
             발행본 C2PA 서명 어서션(com.oripics.verified) 기재분 = 편집 불가한 사실.
-            쉬운 말(확인된 사실) + 어려운 말(기술 상세·증명 데이터) 병기 (2026-08-29 대표 요청) */}
+            쉬운 말(확인된 사실) + 어려운 말(기술 상세·인증 데이터) 병기 (2026-08-29 대표 요청) */}
         {data.tier === "verified" ? (() => {
           const vd = data.verifiedDetail;
           const fmtExposure = (sec: number) =>

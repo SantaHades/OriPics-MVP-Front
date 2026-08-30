@@ -1763,7 +1763,7 @@ export default function Home() {
                         <BadgeCheck size={16} /> {t("verify.tier_verified")}
                       </span>
                     </div>
-                    {/* 기기 검증 상세 (2026-08-29) — 쉬운 말 + 기술 상세·증명 데이터 병기 */}
+                    {/* 기기 검증 상세 (2026-08-29) — 쉬운 말 + 기술 상세·인증 데이터 병기 */}
                     <VerifiedDetailLines
                       vd={resultData.verified_detail}
                       t={t as unknown as (key: string) => string}

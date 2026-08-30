@@ -34,7 +34,7 @@ function PrivacyKo() {
       <h2>1. 개인정보의 처리 목적</h2>
       <ul>
         <li>회원 가입 및 본인 확인, 계정 관리, 부정 이용 방지</li>
-        <li>이미지 원본 증명 처리·검증·보관 및 결과 링크 제공</li>
+        <li>이미지 원본 인증 처리·검증·보관 및 결과 링크 제공</li>
         <li>모바일 사진 인증(Verified) 시 기기 무결성 검증</li>
         <li>유료 구독(Pro·Business) 결제 처리 및 환불 (J-7 도입 후)</li>
         <li>고객 문의 응대, 공지 및 약관 변경 사항 안내</li>
@@ -67,7 +67,7 @@ function PrivacyKo() {
             <td>Google·Naver·Kakao OAuth 동의</td>
           </tr>
           <tr>
-            <td>증명 데이터</td>
+            <td>인증 데이터</td>
             <td>업로드한 이미지, 이미지 메타데이터(타임스탬프·해상도), GPS 좌표(이용자 동의 시)</td>
             <td>이미지 인증 처리 시 자동 수집</td>
           </tr>
@@ -124,7 +124,7 @@ function PrivacyKo() {
           </tr>
           <tr>
             <td>Supabase Inc.</td>
-            <td>데이터베이스(회원 정보·증명 메타데이터)·이미지 스토리지</td>
+            <td>데이터베이스(회원 정보·인증 메타데이터)·이미지 스토리지</td>
             <td>미국 또는 회사가 지정한 region</td>
           </tr>
           <tr>

@@ -28,7 +28,7 @@ interface ProofRecord {
   height: number;
   timestamp: string;
   createdAt: string;
-  /** 증명서 PDF 발급 여부 */
+  /** 인증서 PDF 발급 여부 */
   pdfIssued?: boolean;
   /** PDF 발급 시점 ISO (재발급 시점 표시용) */
   pdfIssuedAt?: string | null;
@@ -170,7 +170,7 @@ export default function ProfilePage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [proofs, setProofs] = useState<ProofRecord[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(true);
-  // "더 보기" 페이지네이션 (2026-08-21): 증명 히스토리 50개/최근 내역 20건 초과분 열람
+  // "더 보기" 페이지네이션 (2026-08-21): 인증 히스토리 50개/최근 내역 20건 초과분 열람
   const [proofCursor, setProofCursor] = useState<string | null>(null);
   const [loadingMoreProofs, setLoadingMoreProofs] = useState(false);
   const [extraTxs, setExtraTxs] = useState<CreditTransactionView[]>([]);
@@ -189,7 +189,7 @@ export default function ProfilePage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 증명 히스토리 불러오기
+  // 인증 히스토리 불러오기
   useEffect(() => {
     const fetchProofs = async () => {
       try {
@@ -240,7 +240,7 @@ export default function ProfilePage() {
     return `${supabaseUrl}/storage/v1/object/public/oripics-proofs/${yymmdd}/${linkId}_preview.jpg`;
   };
 
-  // "더 보기" — 증명 히스토리 다음 50개
+  // "더 보기" — 인증 히스토리 다음 50개
   const loadMoreProofs = async () => {
     if (!proofCursor || loadingMoreProofs) return;
     setLoadingMoreProofs(true);
@@ -948,7 +948,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* 증명 히스토리 섹션 */}
+        {/* 인증 히스토리 섹션 */}
         <div className="mt-12 pt-8 border-t border-slate-100">
           <div className="flex items-center gap-3 mb-6">
             <History size={20} className="text-blue-600" />
@@ -1102,7 +1102,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* 증명 이미지 미리보기 모달 */}
+      {/* 인증 이미지 미리보기 모달 */}
       {previewProof && (
         <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"

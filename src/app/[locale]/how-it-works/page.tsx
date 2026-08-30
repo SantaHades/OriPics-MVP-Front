@@ -174,7 +174,7 @@ export default function HowItWorksPage() {
             {ko ? "인증 방식" : "How it works"}
           </p>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-snug mb-4">
-            {ko ? "OriPics는 어떻게 원본을 증명하나요?" : "How does OriPics prove originality?"}
+            {ko ? "OriPics는 어떻게 원본을 인증하나요?" : "How does OriPics prove originality?"}
           </h1>
           <p className="text-slate-600 leading-relaxed">
             {ko
