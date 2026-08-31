@@ -11,6 +11,7 @@ import {
   verifyAttestToken,
   AttestVerifierNotImplementedError,
 } from "@/lib/attest/verifyToken";
+import { StepTimer } from "@/lib/timing";
 import {
   getSalt,
   makeTimestamp,
@@ -52,8 +53,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   }
 
+  const t = new StepTimer();
+
   // J-3: 인증 + 잔액 사전확인 (tier에 따라 비용 결정)
-  const userId = await getSessionUserId();
+  const userId = await t.span("auth", () => getSessionUserId());
   if (!userId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }
@@ -61,15 +64,19 @@ export async function POST(req: NextRequest) {
   // H-3: 사용자별 레이트리밋. sign은 크레딧을 소비하지 않고(차감은 confirm) 전역
   // 일일 카운터를 증가 + signed-upload-url을 발급하므로, 무제한 호출 시 카운터
   // 소진(전 사용자 서명 차단)·고아 스토리지 비용을 유발한다.
-  const rl = await checkRateLimit(RATE_LIMITS.sign, userId);
+  // 레이트리밋(upsert)과 사용자 조회는 서로 독립 — 병렬 실행.
+  const [rl, user] = await t.span("preflight_db", () =>
+    Promise.all([
+      checkRateLimit(RATE_LIMITS.sign, userId),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { credits: true, tier: true },
+      }),
+    ]),
+  );
   if (!rl.allowed) {
     return tooManyRequests(rl, "인증 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.");
   }
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { credits: true, tier: true },
-  });
   if (!user) {
     return NextResponse.json({ detail: "user_not_found" }, { status: 401 });
   }
@@ -184,7 +191,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: `nonce_${challenge.reason}` }, { status: 403 });
     }
     try {
-      const tokenResult = await verifyAttestToken({ platform, token: attest_token, nonce });
+      // Android는 여기서 Google OAuth + Play Integrity 순차 2회 네트워크 호출 —
+      // verified sign 지연의 주요 후보 (attest_verify 스팬으로 계측).
+      const tokenResult = await t.span("attest_verify", () =>
+        verifyAttestToken({ platform, token: attest_token, nonce }),
+      );
       if (!tokenResult.ok) {
         return NextResponse.json({ detail: `attest_${tokenResult.reason}` }, { status: 403 });
       }
@@ -263,7 +274,9 @@ export async function POST(req: NextRequest) {
   const dateStr = `${dateUtc.getUTCFullYear()}-${String(dateUtc.getUTCMonth() + 1).padStart(2, "0")}-${String(dateUtc.getUTCDate()).padStart(2, "0")}`;
   let counter: number;
   try {
-    const { data, error } = await supabase.rpc("next_link_counter", { p_date: dateStr });
+    const { data, error } = await t.span("counter_rpc", () =>
+      supabase.rpc("next_link_counter", { p_date: dateStr }),
+    );
     if (error || data == null) throw error || new Error("no_counter");
     counter = Number(data);
     if (!Number.isInteger(counter) || counter < 1) throw new Error(`invalid_counter:${data}`);
@@ -311,9 +324,9 @@ export async function POST(req: NextRequest) {
   let signedUploadUrl: string | null = null;
   let uploadToken: string | null = null;
   try {
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .createSignedUploadUrl(storagePath);
+    const { data, error } = await t.span("signed_upload_url", () =>
+      supabase.storage.from(BUCKET_NAME).createSignedUploadUrl(storagePath),
+    );
     if (error || !data) throw error || new Error("no_data");
     signedUploadUrl = (data as any).signedUrl || (data as any).signedURL || null;
     uploadToken = (data as any).token || null;
@@ -350,7 +363,8 @@ export async function POST(req: NextRequest) {
   }
   const jwt = issueJwt(jwtPayload);
 
-  return NextResponse.json({
+  t.log("sign", { link_id: linkId, tier });
+  return t.withServerTiming(NextResponse.json({
     version: versionNum,
     salt_id: CURRENT_SALT_ID,
     ...(capturedAtStr ? { captured_at: capturedAtStr } : {}),
@@ -363,5 +377,5 @@ export async function POST(req: NextRequest) {
     upload_token: uploadToken,
     jwt,
     jwt_ttl: JWT_TTL_SECONDS,
-  });
+  }));
 }

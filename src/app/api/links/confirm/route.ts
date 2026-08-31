@@ -4,6 +4,7 @@ import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits } from "@/lib/credits/consumeCredits";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
+import { StepTimer } from "@/lib/timing";
 
 const JWT_SECRET = process.env.ORIPICS_JWT_SECRET!;
 const RECEIPT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30일
@@ -56,6 +57,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   }
 
+  const t = new StepTimer();
+
   let body: any;
   try {
     body = await req.json();
@@ -92,7 +95,7 @@ export async function POST(req: NextRequest) {
   // L-1: 세션 검증 — sign JWT만으로 통과시키지 않고, 로그인 세션(웹 쿠키 또는
   // 모바일 Bearer)의 사용자가 JWT의 user_id와 일치해야 크레딧을 차감한다.
   // (탈취된 JWT를 다른 계정 세션에서 사용하는 것을 차단)
-  const sessionUserId = await getSessionUserId();
+  const sessionUserId = await t.span("auth", () => getSessionUserId());
   if (!sessionUserId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }
@@ -107,12 +110,14 @@ export async function POST(req: NextRequest) {
   const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
 
   // proof 비용 차감 (race-safe atomic)
-  const consume = await consumeCredits({
-    userId: user_id,
-    amount: proofCost,
-    action: creditAction,
-    metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier },
-  });
+  const consume = await t.span("consume_credits", () =>
+    consumeCredits({
+      userId: user_id,
+      amount: proofCost,
+      action: creditAction,
+      metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier },
+    }),
+  );
   if (!consume.ok) {
     return NextResponse.json(
       {
@@ -162,13 +167,16 @@ export async function POST(req: NextRequest) {
   const receipt = issueReceiptJwt(receiptPayload);
 
   console.log(`[confirm] proof charged link_id=${link_id} cost=${proofCost}`);
+  t.log("links/confirm", { link_id, tier });
 
-  return NextResponse.json({
-    receipt,
-    link_id,
-    timestamp,
-    proof_cost: proofCost,
-    size_multiplier: sizeMultiplier,
-    tier,
-  });
+  return t.withServerTiming(
+    NextResponse.json({
+      receipt,
+      link_id,
+      timestamp,
+      proof_cost: proofCost,
+      size_multiplier: sizeMultiplier,
+      tier,
+    }),
+  );
 }

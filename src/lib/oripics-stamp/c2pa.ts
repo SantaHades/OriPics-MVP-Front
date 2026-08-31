@@ -49,6 +49,20 @@ export interface C2paAttachInput {
 export interface C2paAttachResult {
   buffer: Buffer;
   bytesAdded: number;
+  /**
+   * 단계별 소요(ms) — publish의 [timing] 로그로 합류.
+   *   init_ms:       네이티브 모듈 import + signer/settings 구성 (콜드스타트 지표)
+   *   probe_ms:      기존 매니페스트 감지 (Reader.fromAsset — 이미지 풀 파싱)
+   *   ingredient_ms: parentOf ingredient 해시 (standard 경로만)
+   *   sign_ms:       builder.sign — TSA HTTP 왕복 + verify_after_sign 포함.
+   *                  TSA(SSL.com)가 느려지면 여기서 드러난다.
+   */
+  timings: {
+    init_ms: number;
+    probe_ms: number;
+    ingredient_ms?: number;
+    sign_ms: number;
+  };
 }
 
 const CERT_PEM = process.env.ORIPICS_C2PA_CERT_PEM;
@@ -141,6 +155,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     throw new Error('c2pa_signing_keys_missing');
   }
 
+  const tInit = Date.now();
   const c2pa = await import('@contentauth/c2pa-node');
   const { Builder, LocalSigner, Reader } = c2pa;
 
@@ -156,9 +171,11 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   // dev 모드(CA_PEM): dev CA를 trust anchor로. production: 공식 C2PA Trust List.
   // (서명 후 verifyAfterSign으로 즉시 검증)
   const settings: any = buildTrustSettings(c2pa, { verifyAfterSign: true });
+  const initMs = Date.now() - tInit;
 
   // === Prior manifest 감지 (actions 결정보다 먼저) ===
   // 기존 C2PA가 있으면 c2pa.opened, 없으면 c2pa.created
+  const tProbe = Date.now();
   let priorManifest: { label: string; data: any } | null = null;
   try {
     const existingReader = await Reader.fromAsset({ buffer: input.pngBuffer, mimeType: 'image/png' }, settings);
@@ -173,6 +190,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   } catch {
     // 기존 매니페스트 없음 또는 읽기 오류 — 계속 진행
   }
+  const probeMs = Date.now() - tProbe;
 
   // === Manifest ===
   // Action selection (C2PA conformance — Scott S. Perry 2026-05-30 지침 반영):
@@ -191,6 +209,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   //       * 창작 귀속이 필요하면 CAWG 어서션(gathered_assertions)을 쓰라는 게 spec 권고지만,
   //         OriPics는 "봉인/스탬프"만 주장하므로(com.oripics.proof) CAWG는 사용하지 않음.
   const useCreated = input.tier === 'verified' && !priorManifest;
+  let ingredientMs: number | undefined;
 
   const proofData: any = {
     tier: input.tier,
@@ -232,6 +251,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   } else {
     // 업로드 원본을 parentOf ingredient로. prior manifest 있으면 그 메타를 승계,
     // 없으면 unknown provenance ingredient.
+    const tIngredient = Date.now();
     try {
       const ingredientJson = JSON.stringify({
         title: priorManifest?.data?.title || 'Uploaded image (user-submitted)',
@@ -248,6 +268,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
     } catch (e: any) {
       console.warn(`[c2pa] ingredient add failed: ${e?.message}`);
     }
+    ingredientMs = Date.now() - tIngredient;
     builder.setIntent('edit'); // → c2pa.opened 자동
   }
 
@@ -296,7 +317,9 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   //   - 반환값(Buffer) = 매니페스트 box (JUMBF) 바이트 — 보통 디버그/검증용
   //   - outputAsset.buffer ← 서명된 자산(signed PNG) 으로 mutate됨
   // (c2pa-node v0.5.x — DestinationBufferAsset 타입 주석 참조)
+  const tSign = Date.now();
   builder.sign(signer, inputAsset, outputAsset);
+  const signMs = Date.now() - tSign;
 
   const signedBuffer = outputAsset.buffer;
   if (!signedBuffer || signedBuffer.length === 0) {
@@ -306,6 +329,12 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
   return {
     buffer: signedBuffer,
     bytesAdded: signedBuffer.length - input.pngBuffer.length,
+    timings: {
+      init_ms: initMs,
+      probe_ms: probeMs,
+      ...(ingredientMs !== undefined ? { ingredient_ms: ingredientMs } : {}),
+      sign_ms: signMs,
+    },
   };
 }
 

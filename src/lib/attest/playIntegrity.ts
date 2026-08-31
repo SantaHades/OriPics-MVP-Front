@@ -85,9 +85,20 @@ function b64urlJson(obj: unknown): string {
   return Buffer.from(JSON.stringify(obj)).toString("base64url");
 }
 
+// Google API 호출 타임아웃 — verified sign이 Google 장애/지연에 무한정 끌려가지 않도록.
+const GOOGLE_FETCH_TIMEOUT_MS = 5_000;
+
+// OAuth access token 캐시 (모듈 레벨) — warm 인스턴스에서 verified sign마다
+// 토큰 재발급 왕복 1회를 절약한다. 만료 60초 전에 갱신. SA 교체(client_email
+// 기준) 시 무효화. 서버리스 인스턴스별 독립 캐시라 동시성 이슈 없음.
+let tokenCache: { email: string; token: string; expiresAtSec: number } | null = null;
+
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
   const sa = JSON.parse(serviceAccountJson);
   const now = Math.floor(Date.now() / 1000);
+  if (tokenCache && tokenCache.email === sa.client_email && tokenCache.expiresAtSec - 60 > now) {
+    return tokenCache.token;
+  }
   const header = b64urlJson({ alg: "RS256", typ: "JWT" });
   const claims = b64urlJson({
     iss: sa.client_email,
@@ -105,10 +116,16 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: `grant_type=${encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer")}&assertion=${assertion}`,
+    signal: AbortSignal.timeout(GOOGLE_FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`google_oauth_failed:${res.status}`);
   const data = await res.json();
   if (!data.access_token) throw new Error("google_oauth_no_token");
+  tokenCache = {
+    email: sa.client_email,
+    token: data.access_token,
+    expiresAtSec: now + (typeof data.expires_in === "number" ? data.expires_in : 3600),
+  };
   return data.access_token;
 }
 
@@ -126,14 +143,21 @@ export async function verifyPlayIntegrity(
     return { ok: false, reason: e?.message ?? "google_oauth_failed" };
   }
 
-  const res = await fetch(
-    `https://playintegrity.googleapis.com/v1/${encodeURIComponent(config.packageName)}:decodeIntegrityToken`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({ integrityToken }),
-    },
-  );
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://playintegrity.googleapis.com/v1/${encodeURIComponent(config.packageName)}:decodeIntegrityToken`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ integrityToken }),
+        signal: AbortSignal.timeout(GOOGLE_FETCH_TIMEOUT_MS),
+      },
+    );
+  } catch (e: any) {
+    // 타임아웃/네트워크 오류 — 403 attest_* 로 내려가면 모바일이 1회 재시도한다(certify.ts)
+    return { ok: false, reason: e?.name === "TimeoutError" ? "decode_timeout" : `decode_network:${e?.message}` };
+  }
   if (!res.ok) {
     return { ok: false, reason: `decode_failed:${res.status}` };
   }

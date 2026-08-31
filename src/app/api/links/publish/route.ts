@@ -6,7 +6,8 @@ import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
 import { prisma } from "@/lib/prisma";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
-import { extractFinalHashFromPngBuffer, computeInnerHashFromPngBuffer, hexToBytes } from "@/lib/oripics-stamp/server";
+import { decodePngPixels, extractFinalHashFromPixels, computeInnerHashFromPixels, hexToBytes } from "@/lib/oripics-stamp/server";
+import { StepTimer } from "@/lib/timing";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -62,7 +63,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   }
 
-  const sessionUserId = await getSessionUserId();
+  const t = new StepTimer();
+
+  const sessionUserId = await t.span("auth", () => getSessionUserId());
   if (!sessionUserId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }
@@ -102,10 +105,33 @@ export async function POST(req: NextRequest) {
   // 보관 정책 (pricing-policy §11.2 보관함 모델):
   //   free → 7일 만료. pro/business → 보관함 활성 중 무기한(expires_at=null,
   //   다운그레이드 시 charge-subscriptions cron이 grace 만료를 설정).
-  const owner = await prisma.user.findUnique({
-    where: { id: user_id },
-    select: { tier: true },
-  });
+  // 0. tier 조회와 idempotency 체크는 서로 독립 — 병렬 실행.
+  const [owner, existing] = await t.span("preflight_db", () =>
+    Promise.all([
+      prisma.user.findUnique({
+        where: { id: user_id },
+        select: { tier: true },
+      }),
+      supabase
+        .from("links")
+        .select("link_id")
+        .eq("link_id", link_id)
+        .maybeSingle()
+        .then((r) => r.data),
+    ]),
+  );
+
+  // 이미 publish된 동일 link_id가 있으면 idempotent
+  if (existing) {
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${storage_path}`;
+    return NextResponse.json({
+      link_id,
+      timestamp,
+      public_url: publicUrl,
+      already_published: true,
+    });
+  }
+
   const isPaidTier = owner?.tier === "pro" || owner?.tier === "business";
   const expiresAt = isPaidTier
     ? null
@@ -114,11 +140,11 @@ export async function POST(req: NextRequest) {
   // Pro 보관함 용량 체크(5GB): 초과 시 새 공개링크 생성 차단(기존 링크는 삭제하지 않음).
   if (isPaidTier) {
     try {
-      const [usage]: any[] = await prisma.$queryRaw`
+      const [usage]: any[] = await t.span("quota_check", () => prisma.$queryRaw`
         SELECT COALESCE(sum((o.metadata->>'size')::bigint), 0)::bigint AS bytes
         FROM storage.objects o
         JOIN public.links l ON o.name = l.storage_path
-        WHERE l.user_id = ${user_id} AND o.bucket_id = ${BUCKET_NAME}`;
+        WHERE l.user_id = ${user_id} AND o.bucket_id = ${BUCKET_NAME}`);
       const usedBytes = Number(usage?.bytes ?? 0);
       if (usedBytes >= STORAGE_QUOTA_BYTES) {
         return NextResponse.json(
@@ -132,31 +158,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 0. 이미 publish된 동일 link_id가 있으면 idempotent
-  {
-    const { data: existing } = await supabase
-      .from("links")
-      .select("link_id")
-      .eq("link_id", link_id)
-      .maybeSingle();
-    if (existing) {
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${storage_path}`;
-      return NextResponse.json({
-        link_id,
-        timestamp,
-        public_url: publicUrl,
-        already_published: true,
-      });
-    }
-  }
-
   // 1. LINK_CREATE(-2) 차감
-  const consume = await consumeCredits({
+  const consume = await t.span("consume_credits", () => consumeCredits({
     userId: user_id,
     amount: CREDIT_COSTS.LINK_CREATE,
     action: "link_create",
     metadata: { link_id, storage_path },
-  });
+  }));
   if (!consume.ok) {
     return NextResponse.json(
       {
@@ -184,11 +192,13 @@ export async function POST(req: NextRequest) {
   // 2. Storage에서 LSB-stamped PNG 다운로드 (클라가 sign signed_upload_url로 업로드한 결과)
   let pngBuffer: Buffer;
   try {
-    const { data: blob, error: dlErr } = await supabase.storage
-      .from(BUCKET_NAME)
-      .download(storage_path);
-    if (dlErr || !blob) throw new Error(`download_failed:${dlErr?.message || "no_blob"}`);
-    pngBuffer = Buffer.from(await blob.arrayBuffer());
+    pngBuffer = await t.span("storage_download", async () => {
+      const { data: blob, error: dlErr } = await supabase.storage
+        .from(BUCKET_NAME)
+        .download(storage_path);
+      if (dlErr || !blob) throw new Error(`download_failed:${dlErr?.message || "no_blob"}`);
+      return Buffer.from(await blob.arrayBuffer());
+    });
   } catch (e: any) {
     console.error(`[publish] storage download failed link_id=${link_id}:`, e?.message || e);
     await refund(`storage_download_error:${e?.message || "unknown"}`);
@@ -202,9 +212,14 @@ export async function POST(req: NextRequest) {
   // hash 필드가 없으면 구 receipt (배포 전 발급) — 검증 생략 (하위호환)
   if (claims.final_hash_hex || claims.inner_hash_hex) {
     try {
+      // PNG 풀 디코드는 대형 이미지에서 수 초 — (A)(B)가 같은 픽셀을 쓰므로 1회만.
+      const pixels = await t.span("png_decode", () => decodePngPixels(pngBuffer, width, height));
+
       // (A) border LSB → final_hash 검증
       if (claims.final_hash_hex) {
-        const extractedFinalHash = await extractFinalHashFromPngBuffer(pngBuffer, width, height, stampVersion);
+        const extractedFinalHash = await t.span("hash_verify_final", () =>
+          extractFinalHashFromPixels(pixels, width, height, stampVersion),
+        );
         const expectedFinalHash = hexToBytes(claims.final_hash_hex as string);
         if (
           extractedFinalHash.length !== expectedFinalHash.length ||
@@ -217,7 +232,9 @@ export async function POST(req: NextRequest) {
 
       // (B) inner 픽셀 재계산 → inner_hash 검증
       if (claims.inner_hash_hex) {
-        const recomputedInnerHash = await computeInnerHashFromPngBuffer(pngBuffer, width, height);
+        const recomputedInnerHash = await t.span("hash_verify_inner", () =>
+          computeInnerHashFromPixels(pixels, width, height),
+        );
         const expectedInnerHash = hexToBytes(claims.inner_hash_hex as string);
         if (
           recomputedInnerHash.length !== expectedInnerHash.length ||
@@ -240,7 +257,7 @@ export async function POST(req: NextRequest) {
       const c2paStart = Date.now();
       const c2paTier: Tier = tier === "verified" ? "verified" : "standard";
 
-      const signResult = await attachC2paManifest({
+      const signResult = await t.span("c2pa_attach", () => attachC2paManifest({
         pngBuffer,
         tier: c2paTier,
         linkId: link_id,
@@ -253,19 +270,27 @@ export async function POST(req: NextRequest) {
         ...(c2paTier === "verified" && verified_info
           ? { verifiedInfo: verified_info }
           : {}),
+      }));
+      // c2pa 내부 breakdown 합류 — sign_ms 안에 TSA HTTP 왕복이 들어 있다.
+      t.add("c2pa_init", signResult.timings.init_ms);
+      t.add("c2pa_probe", signResult.timings.probe_ms);
+      t.add("c2pa_ingredient", signResult.timings.ingredient_ms);
+      t.add("c2pa_sign", signResult.timings.sign_ms);
+
+      await t.span("c2pa_reupload", async () => {
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(storage_path, signResult.buffer, {
+            contentType: "image/png",
+            upsert: true,
+            cacheControl: IMMUTABLE_CACHE_SECONDS,
+          });
+        if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
       });
 
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(storage_path, signResult.buffer, {
-          contentType: "image/png",
-          upsert: true,
-          cacheControl: IMMUTABLE_CACHE_SECONDS,
-        });
-      if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
-
       console.log(
-        `[publish] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded} ms=${Date.now() - c2paStart}`,
+        `[publish] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded} ms=${Date.now() - c2paStart} ` +
+          `init_ms=${signResult.timings.init_ms} probe_ms=${signResult.timings.probe_ms} ingredient_ms=${signResult.timings.ingredient_ms ?? "-"} sign_ms=${signResult.timings.sign_ms}`,
       );
     } catch (e: any) {
       console.error(`[publish] c2pa attach failed link_id=${link_id}:`, e?.message || e);
@@ -279,13 +304,15 @@ export async function POST(req: NextRequest) {
     try {
       const jpegBuffer = Buffer.from(preview.slice("data:image/jpeg;base64,".length), "base64");
       const candidatePath = storage_path.replace(/\.png$/, "_preview.jpg");
-      const { error: pvErr } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(candidatePath, jpegBuffer, {
-          contentType: "image/jpeg",
-          upsert: true,
-          cacheControl: IMMUTABLE_CACHE_SECONDS,
-        });
+      const { error: pvErr } = await t.span("preview_upload", () =>
+        supabase.storage
+          .from(BUCKET_NAME)
+          .upload(candidatePath, jpegBuffer, {
+            contentType: "image/jpeg",
+            upsert: true,
+            cacheControl: IMMUTABLE_CACHE_SECONDS,
+          }),
+      );
       if (!pvErr) previewPath = candidatePath;
       else console.error(`[publish] preview upload failed link_id=${link_id}:`, pvErr.message);
     } catch (e: any) {
@@ -325,7 +352,9 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { error: dbErr } = await supabase.from("links").upsert(row, { onConflict: "link_id" });
+  const { error: dbErr } = await t.span("links_upsert", () =>
+    supabase.from("links").upsert(row, { onConflict: "link_id" }),
+  );
   if (dbErr) {
     console.error(`[publish] db upsert failed link_id=${link_id}:`, dbErr.message);
     await refund(`db_error:${dbErr.message}`);
@@ -338,16 +367,18 @@ export async function POST(req: NextRequest) {
     if (typeof thumbnail === "string" && thumbnail.length > 0 && thumbnail.length < 200_000) {
       thumbnailStr = thumbnail;
     }
-    await prisma.proofHistory.create({
-      data: {
-        userId: user_id,
-        linkId: link_id,
-        thumbnail: thumbnailStr,
-        width,
-        height,
-        timestamp,
-      },
-    });
+    await t.span("proof_history", () =>
+      prisma.proofHistory.create({
+        data: {
+          userId: user_id,
+          linkId: link_id,
+          thumbnail: thumbnailStr,
+          width,
+          height,
+          timestamp,
+        },
+      }),
+    );
   } catch (e: any) {
     if (!String(e?.message || "").includes("Unique constraint")) {
       console.warn("[publish] ProofHistory create failed:", e?.message || e);
@@ -355,9 +386,12 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(`[publish] ok link_id=${link_id}`);
-  return NextResponse.json({
-    link_id,
-    timestamp,
-    public_url: publicUrl,
-  });
+  t.log("links/publish", { link_id, tier: tier === "verified" ? "verified" : "standard", bytes: pngBuffer.length });
+  return t.withServerTiming(
+    NextResponse.json({
+      link_id,
+      timestamp,
+      public_url: publicUrl,
+    }),
+  );
 }

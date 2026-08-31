@@ -422,20 +422,11 @@ export function hexToBytes(hex: string): Uint8Array {
 }
 
 /**
- * PNG 버퍼의 inner 픽셀(border 제외)로부터 inner_hash를 서버 측 재계산.
- * inner_hash = SHA-256( uint32BE(width) ‖ uint32BE(height) ‖ inner_RGBA )
- * v2.ts computeInnerHash와 동일한 로직을 Node.js로 포팅.
- * /api/links/publish에서 JWT inner_hash_hex와 비교하여 inner 픽셀 무결성 검증.
+ * PNG 버퍼 → RGBA 픽셀 디코드 (치수 검증 포함).
+ * PNG.sync.read는 전체 디코드라 대형 이미지에서 수 초 걸린다 — publish에서
+ * final/inner hash 검증이 같은 픽셀을 쓰므로 반드시 1회만 디코드해 공유할 것.
  */
-export async function computeInnerHashFromPngBuffer(
-  pngBuffer: Buffer,
-  width: number,
-  height: number,
-): Promise<Uint8Array> {
-  const innerW = width - 2;
-  const innerH = height - 2;
-  if (innerW <= 0 || innerH <= 0) throw new Error("image_too_small_for_inner_hash");
-
+export function decodePngPixels(pngBuffer: Buffer, width: number, height: number): Uint8Array {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PNG } = require("pngjs") as {
     PNG: { sync: { read: (buf: Buffer) => { width: number; height: number; data: Buffer } } };
@@ -444,7 +435,23 @@ export async function computeInnerHashFromPngBuffer(
   if (png.width !== width || png.height !== height) {
     throw new Error(`png_dimensions_mismatch:${png.width}x${png.height}`);
   }
-  const pixels = new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength);
+  return new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength);
+}
+
+/**
+ * RGBA 픽셀의 inner 영역(border 제외)으로부터 inner_hash를 서버 측 재계산.
+ * inner_hash = SHA-256( uint32BE(width) ‖ uint32BE(height) ‖ inner_RGBA )
+ * v2.ts computeInnerHash와 동일한 로직을 Node.js로 포팅.
+ * /api/links/publish에서 JWT inner_hash_hex와 비교하여 inner 픽셀 무결성 검증.
+ */
+export function computeInnerHashFromPixels(
+  pixels: Uint8Array,
+  width: number,
+  height: number,
+): Uint8Array {
+  const innerW = width - 2;
+  const innerH = height - 2;
+  if (innerW <= 0 || innerH <= 0) throw new Error("image_too_small_for_inner_hash");
 
   // uint32BE(width) ‖ uint32BE(height) ‖ inner rows RGBA
   // v2.ts computeInnerHash와 동일한 구조
@@ -465,26 +472,16 @@ export async function computeInnerHashFromPngBuffer(
 }
 
 /**
- * PNG 버퍼에서 LSB 스테가노그래피로 삽입된 V4 payload를 추출하고 finalHash를 반환.
+ * RGBA 픽셀에서 LSB 스테가노그래피로 삽입된 V4/V5 payload를 추출하고 finalHash를 반환.
  * Edge-to-Backend 인증 (Level 1): /api/links/publish에서 receipt JWT의 final_hash_hex와 비교.
- * pngjs(이미 설치됨)를 사용하여 PNG→RGBA 픽셀 변환 후 LSB 추출.
+ * 픽셀은 decodePngPixels()로 1회 디코드한 것을 공유한다.
  */
-export async function extractFinalHashFromPngBuffer(
-  pngBuffer: Buffer,
+export function extractFinalHashFromPixels(
+  pixels: Uint8Array,
   width: number,
   height: number,
   stampVersion: 4 | 5 = 4,
-): Promise<Uint8Array> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { PNG } = require("pngjs") as {
-    PNG: { sync: { read: (buf: Buffer) => { width: number; height: number; data: Buffer } } };
-  };
-  const png = PNG.sync.read(pngBuffer);
-  if (png.width !== width || png.height !== height) {
-    throw new Error(`png_dimensions_mismatch:${png.width}x${png.height}`);
-  }
-  const pixels = new Uint8Array(png.data.buffer, png.data.byteOffset, png.data.byteLength);
-
+): Uint8Array {
   const isV5 = stampVersion === 5;
   const mode = isV5 ? selectEmbedModeV5(width, height) : selectEmbedModeV4(width, height);
   const payloadLength = isV5 ? PAYLOAD_LENGTH_V5 : PAYLOAD_LENGTH_V4;
