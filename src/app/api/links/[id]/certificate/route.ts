@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { createClient } from "@supabase/supabase-js";
 import QRCode from "qrcode";
 // PDF 렌더는 @oripics/certificate(serverExternalPackages)가 번들 밖에서 수행 —
@@ -111,8 +110,9 @@ function certificateStoragePath(linkId: string): string {
  */
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id;
+  // 웹 쿠키 + 모바일 Bearer 겸용 (2026-08-31) — 기존 getServerSession(쿠키 전용)은
+  // 앱의 패스 PDF 자동 워밍이 전부 401로 조용히 실패하던 원인 (A-54 앱 PDF 발급도 함께 해소)
+  const userId = await getSessionUserId();
   if (!userId) {
     return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   }
