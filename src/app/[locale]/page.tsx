@@ -2091,6 +2091,22 @@ export default function Home() {
             </div>
           </div>
 
+          {/* 원데이 패스 배너 (A-60 Phase 3) — 구독 3플랜 아래 단품 노출. KG MID 심사 "상품 노출" 요건 겸용 */}
+          <Link
+            href="/pass"
+            className="mt-6 flex items-center justify-between gap-4 p-5 rounded-2xl bg-blue-50 border border-blue-200 hover:border-blue-300 transition-colors group"
+          >
+            <div>
+              <p className="text-sm font-bold text-slate-900">
+                🎟️ {t("pricing.pass_banner_title")}
+              </p>
+              <p className="text-xs text-slate-600 mt-0.5">{t("pricing.pass_banner_body")}</p>
+            </div>
+            <span className="shrink-0 text-sm font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">
+              {t("pricing.pass_banner_cta")} →
+            </span>
+          </Link>
+
           {/* 안내문구는 차감규칙 위로 (2026-08-30 대표 요청) */}
           <p className="text-center text-xs text-slate-500 mt-6">{t("pricing.footnote")}</p>
 

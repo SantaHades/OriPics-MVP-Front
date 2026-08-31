@@ -92,6 +92,16 @@ export default function ProfilePage() {
   const [passConfirmOpen, setPassConfirmOpen] = useState(false);
   // 사용 안내 전체 팝업 — 등록 전·후 공통 "자세히 보기" (2026-08-31 대표)
   const [passDetailsOpen, setPassDetailsOpen] = useState(false);
+  // 선물 랜딩(/pass/{code} → ?pass_code=)에서 넘어온 코드 자동 입력 (A-60 Phase 3).
+  // useSearchParams 대신 location 직접 읽기 — 클라이언트 페이지 prerender 시 Suspense 요구 회피
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const q = new URLSearchParams(window.location.search).get("pass_code");
+    if (q) {
+      setPassCode(q);
+      setTimeout(() => document.getElementById("pass")?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+    }
+  }, []);
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
     fetch("/api/pass/active")

@@ -290,6 +290,9 @@
       "pass_details_close": "닫기"
     },
     "pricing": {
+      "pass_banner_title": "원데이 패스 — 필요한 그 하루만, ₩3,300 (부가세 포함)",
+      "pass_banner_body": "구독 없이 24시간 · 촬영 인증 10회 · 공개링크 1년 보관 · 선물 가능",
+      "pass_banner_cta": "자세히 보기",
       "eyebrow": "요금제",
       "title": "필요한 만큼 골라서 시작하세요",
       "subtitle": "회원가입하면 자동으로 Free 플랜 — 매월 사진 인증 5건 제공",
