@@ -260,7 +260,7 @@
       "pass_active_note": "While the pass is active, photos captured in the app are certified with the pass (Verified included, any size).",
       "pass_inactive_note": "Have a pass code? Redeem it here — 24 hours and 10 capture proofs from redemption (Verified included). Public links are kept for 1 year.",
       "pass_code_placeholder": "OP-XXXX-XXXX-XXXX",
-      "pass_redeem": "Redeem pass",
+      "pass_redeem": "Redeem One-Day Pass",
       "pass_redeeming": "Redeeming…",
       "pass_err_invalid_code": "Code not found. Please check and try again.",
       "pass_err_invalid_code_format": "Invalid code format (e.g., OP-XXXX-XXXX-XXXX).",
