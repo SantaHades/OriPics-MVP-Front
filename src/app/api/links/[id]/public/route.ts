@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   const { data: row, error } = await supabase
     .from("links")
     .select(
-      "link_id, timestamp, width, height, lat, lng, captured_at, tier, verified_info, storage_path, signed_url, preview_path, expires_at, user_id",
+      "link_id, timestamp, width, height, lat, lng, captured_at, tier, verified_info, storage_path, signed_url, preview_path, expires_at, user_id, pass_id",
     )
     .eq("link_id", linkId)
     .single();
@@ -47,9 +47,14 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
 
   const session = await getServerSession(authOptions);
   const sessionUserId = (session?.user as any)?.id ?? null;
-  const { user_id, ...publicFields } = row;
+  // pass_id 원본은 비공개(내부 식별자) — 뷰어에는 패스 발행 여부(boolean)만 (A-60 PDF 버튼 게이트)
+  const { user_id, pass_id, ...publicFields } = row as typeof row & { pass_id?: string | null };
 
   return NextResponse.json({
-    link: { ...publicFields, is_owner: !!user_id && !!sessionUserId && user_id === sessionUserId },
+    link: {
+      ...publicFields,
+      is_pass: !!pass_id,
+      is_owner: !!user_id && !!sessionUserId && user_id === sessionUserId,
+    },
   });
 }

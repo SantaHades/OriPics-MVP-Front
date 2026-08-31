@@ -31,6 +31,8 @@ interface LinkData {
   preview_path?: string | null;
   /** 보관 만료 (null = 보관함 활성 중 무기한) */
   expires_at?: string | null;
+  /** 원데이 패스 발행 여부 (A-60) — 소유자 PDF 버튼이 티어 무관 허용됨 */
+  is_pass?: boolean;
 }
 
 interface C2paStatus {
@@ -66,7 +68,8 @@ export default function LinkViewer() {
 
   const isOwner = !!data?.is_owner;
   const isPaidTier = credits?.tier === "pro" || credits?.tier === "business";
-  const canDownloadCertificate = isOwner && isPaidTier;
+  // A-60: 패스 발행 링크는 PDF가 패스에 포함 — 소유자면 티어 무관 발급 가능 (서버 certificate 게이트와 동일)
+  const canDownloadCertificate = isOwner && (isPaidTier || !!data?.is_pass);
 
   const handleDownloadCertificate = async () => {
     if (!data || !canDownloadCertificate) return;
@@ -513,7 +516,7 @@ export default function LinkViewer() {
                   )}
                 </>
               )}
-              {isOwner && !isPaidTier && (
+              {isOwner && !canDownloadCertificate && (
                 <p className="text-xs text-slate-500 text-center pt-1">
                   {t("cert_pro_only")}
                 </p>
