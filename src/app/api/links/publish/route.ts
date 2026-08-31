@@ -97,6 +97,10 @@ export async function POST(req: NextRequest) {
     user_id, link_id, storage_path, timestamp, width, height, lat_e6, lng_e6,
     tier, verified_info, captured_at,
   } = claims;
+  // A-60: 원데이 패스 발행 — proof는 confirm에서 패스로 차감됨. publish는
+  // LINK_CREATE 차감 생략 + Pro와 동일한 보관 규칙 + links.pass_id 태그.
+  const passId: string | null =
+    typeof claims.pass_id === "string" && claims.pass_id ? claims.pass_id : null;
   // stamp_version 없는 구 receipt(V5 배포 전 발급)는 V4 (하위호환)
   const stampVersion: 4 | 5 = claims.stamp_version === 5 ? 5 : 4;
 
@@ -133,12 +137,33 @@ export async function POST(req: NextRequest) {
   }
 
   const isPaidTier = owner?.tier === "pro" || owner?.tier === "business";
-  const expiresAt = isPaidTier
-    ? null
-    : new Date(Date.now() + FREE_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  // Pro 보관함 용량 체크(5GB): 초과 시 새 공개링크 생성 차단(기존 링크는 삭제하지 않음).
-  if (isPaidTier) {
+  // A-60: 패스 24h 창이 살아 있으면 Pro와 동일(무기한 — 만료 시 cron이 37일 유예 설정).
+  // 창 종료 후 늦은 publish(모바일 재시도)는 cron 스윕이 이미 지나갔으므로 유예를 직접 설정.
+  let passWindowActive = false;
+  if (passId) {
+    const pass = await t.span("pass_lookup", () =>
+      prisma.dayPass.findUnique({
+        where: { id: passId },
+        select: { redeemerId: true, expiresAt: true },
+      }),
+    );
+    passWindowActive =
+      !!pass && pass.redeemerId === user_id &&
+      !!pass.expiresAt && pass.expiresAt.getTime() > Date.now();
+  }
+
+  const GRACE_DAYS = 37; // 30일 유예 + 7일 free 정책 (§11.2 — charge-subscriptions cron과 동일)
+  const expiresAt =
+    isPaidTier || passWindowActive
+      ? null
+      : passId
+        ? new Date(Date.now() + GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString()
+        : new Date(Date.now() + FREE_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  // 보관함 용량 체크(5GB): 초과 시 새 공개링크 생성 차단(기존 링크는 삭제하지 않음).
+  // 패스 활성 사용자도 Pro와 동일하게 체크 (A-60 — 전용 쿼터 없음, 기존 규칙 공유).
+  if (isPaidTier || passWindowActive) {
     try {
       const [usage]: any[] = await t.span("quota_check", () => prisma.$queryRaw`
         SELECT COALESCE(sum((o.metadata->>'size')::bigint), 0)::bigint AS bytes
@@ -158,25 +183,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 1. LINK_CREATE(-2) 차감
-  const consume = await t.span("consume_credits", () => consumeCredits({
-    userId: user_id,
-    amount: CREDIT_COSTS.LINK_CREATE,
-    action: "link_create",
-    metadata: { link_id, storage_path },
-  }));
-  if (!consume.ok) {
-    return NextResponse.json(
-      {
-        detail: "insufficient_credits",
-        balance: consume.balance,
-        required: CREDIT_COSTS.LINK_CREATE,
-      },
-      { status: 402 },
-    );
+  // 1. LINK_CREATE(-2) 차감 — 패스 발행은 링크 비용이 패스 1회에 포함되므로 생략(A-60)
+  if (!passId) {
+    const consume = await t.span("consume_credits", () => consumeCredits({
+      userId: user_id,
+      amount: CREDIT_COSTS.LINK_CREATE,
+      action: "link_create",
+      metadata: { link_id, storage_path },
+    }));
+    if (!consume.ok) {
+      return NextResponse.json(
+        {
+          detail: "insufficient_credits",
+          balance: consume.balance,
+          required: CREDIT_COSTS.LINK_CREATE,
+        },
+        { status: 402 },
+      );
+    }
   }
 
   const refund = async (reason: string) => {
+    if (passId) return; // 패스 발행은 publish에서 차감한 크레딧이 없음
     try {
       await refundCredits({
         userId: user_id,
@@ -341,6 +369,10 @@ export async function POST(req: NextRequest) {
     // 촬영시각(기기 기록, V5) — 뷰어 표시용. 스탬프 meta에도 서명 포함되어 있음.
     row.captured_at = captured_at;
   }
+  if (passId) {
+    // 패스 발행 태그 (A-60) — 뷰어/목록 표시 + 재등록 시 유예 복원 대상 식별
+    row.pass_id = passId;
+  }
   if (tier === "verified") {
     // 검증 등급(attest 통과) — 뷰어 배지 표시용. null=standard (구 행 하위호환)
     row.tier = "verified";
@@ -376,6 +408,7 @@ export async function POST(req: NextRequest) {
           width,
           height,
           timestamp,
+          passId, // A-60: 앱 목록탭 "패스" 태그 (null = 일반 발행)
         },
       }),
     );

@@ -4,6 +4,8 @@ import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits } from "@/lib/credits/consumeCredits";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
+import { consumePassProof } from "@/lib/pass/dayPass";
+import { prisma } from "@/lib/prisma";
 import { StepTimer } from "@/lib/timing";
 
 const JWT_SECRET = process.env.ORIPICS_JWT_SECRET!;
@@ -86,6 +88,7 @@ export async function POST(req: NextRequest) {
     inner_hash_hex,
     stamp_version,
     captured_at,
+    pass_id, // A-60: sign이 활성 패스를 확인한 경우에만 존재
   } = claims;
 
   if (!user_id) {
@@ -109,26 +112,59 @@ export async function POST(req: NextRequest) {
   const proofCost = baseProofCost * sizeMultiplier;
   const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
 
-  // proof 비용 차감 (race-safe atomic)
-  const consume = await t.span("consume_credits", () =>
-    consumeCredits({
-      userId: user_id,
-      amount: proofCost,
-      action: creditAction,
-      metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier },
-    }),
-  );
-  if (!consume.ok) {
-    return NextResponse.json(
-      {
-        detail: "insufficient_credits",
-        balance: consume.balance,
-        required: proofCost,
-        tier,
-        size_multiplier: sizeMultiplier,
-      },
-      { status: 402 },
+  let passRemaining: number | null = null;
+  if (typeof pass_id === "string" && pass_id) {
+    // A-60: 패스 1회 차감 (사이즈 무관, 크레딧 미차감). 소유자 검증 포함 원자 UPDATE.
+    const passResult = await t.span("consume_pass", () => consumePassProof(pass_id, user_id));
+    if (!passResult.ok) {
+      // sign~confirm 사이 만료/소진 (드묾) — 클라이언트는 sign부터 재시도(크레딧 폴백)
+      return NextResponse.json({ detail: "pass_not_active", tier }, { status: 402 });
+    }
+    passRemaining = passResult.remaining;
+    // 웹 프로필 최근 내역 표시용 기록 (delta 0 — 크레딧 무변동, best-effort)
+    try {
+      const balance = await prisma.user.findUnique({
+        where: { id: user_id },
+        select: { credits: true },
+      });
+      await prisma.creditTransaction.create({
+        data: {
+          userId: user_id,
+          delta: 0,
+          action: "day_pass_proof",
+          balanceAfter: balance?.credits ?? 0,
+          metadata: {
+            link_id, tier, pass_id,
+            pass_used: passResult.usedProofs,
+            pass_total: passResult.totalProofs,
+          } as any,
+        },
+      });
+    } catch (e: any) {
+      console.warn("[confirm] day_pass_proof tx record failed:", e?.message || e);
+    }
+  } else {
+    // proof 비용 차감 (race-safe atomic)
+    const consume = await t.span("consume_credits", () =>
+      consumeCredits({
+        userId: user_id,
+        amount: proofCost,
+        action: creditAction,
+        metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier },
+      }),
     );
+    if (!consume.ok) {
+      return NextResponse.json(
+        {
+          detail: "insufficient_credits",
+          balance: consume.balance,
+          required: proofCost,
+          tier,
+          size_multiplier: sizeMultiplier,
+        },
+        { status: 402 },
+      );
+    }
   }
 
   // receipt JWT 발급 (publish 시 재제출)
@@ -164,19 +200,28 @@ export async function POST(req: NextRequest) {
   if (captured_at) {
     receiptPayload.captured_at = captured_at;
   }
+  if (typeof pass_id === "string" && pass_id) {
+    // A-60: publish가 LINK_CREATE 차감 생략 + links.pass_id 기록에 사용
+    receiptPayload.pass_id = pass_id;
+  }
   const receipt = issueReceiptJwt(receiptPayload);
 
-  console.log(`[confirm] proof charged link_id=${link_id} cost=${proofCost}`);
-  t.log("links/confirm", { link_id, tier });
+  console.log(
+    passRemaining !== null
+      ? `[confirm] pass proof link_id=${link_id} pass_id=${pass_id} remaining=${passRemaining}`
+      : `[confirm] proof charged link_id=${link_id} cost=${proofCost}`,
+  );
+  t.log("links/confirm", { link_id, tier, ...(passRemaining !== null ? { pass: true } : {}) });
 
   return t.withServerTiming(
     NextResponse.json({
       receipt,
       link_id,
       timestamp,
-      proof_cost: proofCost,
+      proof_cost: passRemaining !== null ? 0 : proofCost,
       size_multiplier: sizeMultiplier,
       tier,
+      ...(passRemaining !== null ? { pass_remaining: passRemaining } : {}),
     }),
   );
 }

@@ -7,6 +7,7 @@ import { checkRateLimit, tooManyRequests, RATE_LIMITS } from "@/lib/security/rat
 import { CREDIT_COSTS } from "@/lib/payment";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 import { verifyChallenge } from "@/lib/attest/challenge";
+import { getActivePass } from "@/lib/pass/dayPass";
 import {
   verifyAttestToken,
   AttestVerifierNotImplementedError,
@@ -144,8 +145,16 @@ export async function POST(req: NextRequest) {
     capturedAtStr = formatCapturedAtUtc(captured_at_ms);
   }
 
+  // A-60: 원데이 패스 — 촬영(P/C) 경로는 활성 패스가 있으면 무조건 패스 차감
+  // (크레딧 보유·티어 불문 패스 우선). 웹 업로드(F)는 패스 미적용(기존 크레딧).
+  const uploadType = ["F", "P", "C"].includes(upload_type) ? upload_type : "F";
+  const activePass =
+    uploadType === "P" || uploadType === "C"
+      ? await t.span("pass_check", () => getActivePass(userId))
+      : null;
+
   // D-pre-3: tier 결정 + verified attestation 검증
-  // verified는 모바일 P 경로 + Pro 이상 티어에서만 허용
+  // verified는 모바일 P 경로 + (Pro 이상 티어 또는 활성 원데이 패스)에서 허용
   const isVerifiedRequest = requestedTier === "verified";
   const tier: "standard" | "verified" = isVerifiedRequest ? "verified" : "standard";
   let verifiedInfo:
@@ -153,8 +162,8 @@ export async function POST(req: NextRequest) {
     | undefined;
 
   if (isVerifiedRequest) {
-    // Verified 티어 = Pro 이상만 (pricing-policy §2)
-    if (user.tier === "free") {
+    // Verified 티어 = Pro 이상 (pricing-policy §2). 활성 원데이 패스는 Pro 동급(A-60).
+    if (user.tier === "free" && !activePass) {
       return NextResponse.json(
         { detail: "verified_requires_pro", tier: user.tier },
         { status: 403 },
@@ -238,10 +247,11 @@ export async function POST(req: NextRequest) {
   // Standard: IMAGE_PROOF(3) × sizeMultiplier
   // Verified: VERIFIED_PROOF(4) × sizeMultiplier
   // sizeMultiplier: 긴 변 ≤ 1800 = 1×, > 1800 ≤ 100MP = 2×, > 100MP = 3×
+  // A-60: 활성 패스가 있으면 크레딧이 아닌 패스 카운터를 쓰므로 잔액 검사 생략(사이즈 무관).
   const sizeMultiplier = getProofMultiplier(width, height);
   const baseProofCost = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
   const proofCost = baseProofCost * sizeMultiplier;
-  if (user.credits < proofCost) {
+  if (!activePass && user.credits < proofCost) {
     return NextResponse.json(
       {
         detail: "insufficient_credits",
@@ -254,7 +264,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const uploadType = ["F", "P", "C"].includes(upload_type) ? upload_type : "F";
   // V4: GPS는 optional (없으면 0 sentinel). 모든 신규 인증 V4.
   const hasGps = Number.isInteger(lat_e6) && Number.isInteger(lng_e6);
 
@@ -360,6 +369,10 @@ export async function POST(req: NextRequest) {
   }
   if (verifiedInfo) {
     jwtPayload.verified_info = verifiedInfo;
+  }
+  if (activePass) {
+    // A-60: confirm이 크레딧 대신 이 패스에서 1회 차감
+    jwtPayload.pass_id = activePass.id;
   }
   const jwt = issueJwt(jwtPayload);
 

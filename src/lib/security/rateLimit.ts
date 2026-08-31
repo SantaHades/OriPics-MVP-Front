@@ -33,6 +33,8 @@ export const RATE_LIMITS = {
    * 고아 signed-upload-url을 무한 생성하는 것을 차단.
    */
   sign: { name: "sign", windowSec: 3600, max: 120 },
+  /** 원데이 패스 코드 등록(/api/pass/redeem) — 사용자별. 코드 무차별 대입 방어 (A-60) */
+  passRedeem: { name: "passredeem", windowSec: 3600, max: 10 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export interface RateLimitResult {

@@ -131,7 +131,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     return NextResponse.json({ detail: "supabase_not_configured" }, { status: 500 });
   }
 
-  // 1. 사용자 티어 확인 — Pro/Business만 발급 가능
+  // 1. 사용자 조회 (티어 게이트는 링크 조회 후 — 패스 링크는 free도 발급 가능, A-60)
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, email: true, name: true, tier: true, creditsRenewAt: true },
@@ -139,18 +139,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   if (!user) {
     return NextResponse.json({ detail: "user_not_found" }, { status: 404 });
   }
-  if (user.tier !== "pro" && user.tier !== "business") {
-    return NextResponse.json(
-      { detail: "tier_required", required: "pro" },
-      { status: 403 },
-    );
-  }
 
   // 2. 링크 조회 + 소유자 검증
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const { data: row, error } = await supabase
     .from("links")
-    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id, captured_at, created_at, tier, verified_info")
+    .select("link_id, timestamp, width, height, lat, lng, storage_path, user_id, captured_at, created_at, tier, verified_info, pass_id")
     .eq("link_id", linkId)
     .single();
   if (error || !row) {
@@ -158,6 +152,15 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   }
   if (row.user_id !== userId) {
     return NextResponse.json({ detail: "not_owner" }, { status: 403 });
+  }
+
+  // 티어 게이트 — Pro/Business, 또는 원데이 패스로 발행한 링크(PDF가 패스에 포함, A-60)
+  const isPassLink = !!row.pass_id;
+  if (!isPassLink && user.tier !== "pro" && user.tier !== "business") {
+    return NextResponse.json(
+      { detail: "tier_required", required: "pro" },
+      { status: 403 },
+    );
   }
 
   // 3. 캐시 확인 (reissue=1이 아닐 때만)
@@ -191,7 +194,20 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   //    Business는 무제한 무료. 무료 발급도 pdf_issue(delta 0)로 기록해 주기별 카운트.
   const FREE_PDF_PER_CYCLE = 5;
   let usedFreeGrant = false;
-  if (user.tier === "business") {
+  if (isPassLink) {
+    // A-60: 패스 발행 링크 — PDF는 패스에 포함(차감 0). Pro 월 무료 5회 카운트와도
+    // 분리(action=day_pass_pdf)해 패스 사용이 Pro 무료분을 갉아먹지 않게 한다.
+    const balance = await prisma.user.findUnique({ where: { id: userId }, select: { credits: true } });
+    await prisma.creditTransaction.create({
+      data: {
+        userId,
+        delta: 0,
+        action: "day_pass_pdf",
+        balanceAfter: balance?.credits ?? 0,
+        metadata: { link_id: linkId, pass_id: row.pass_id, locale, reissue } as any,
+      },
+    });
+  } else if (user.tier === "business") {
     usedFreeGrant = true;
   } else {
     // 주기 시작 = 다음 갱신일(creditsRenewAt) - 1개월. 없으면 최근 30일 폴백.
@@ -213,34 +229,36 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     usedFreeGrant = freeIssued < FREE_PDF_PER_CYCLE;
   }
 
-  if (usedFreeGrant) {
-    // 무료 발급 기록 (delta 0 — 주기 카운트용)
-    const balance = await prisma.user.findUnique({ where: { id: userId }, select: { credits: true } });
-    await prisma.creditTransaction.create({
-      data: {
-        userId,
-        delta: 0,
-        action: "pdf_issue",
-        balanceAfter: balance?.credits ?? 0,
-        metadata: { link_id: linkId, locale, reissue, free_monthly: true } as any,
-      },
-    });
-  } else {
-    const consume = await consumeCredits({
-      userId,
-      amount: CREDIT_COSTS.CERTIFICATE_PDF,
-      action: "pdf_issue",
-      metadata: { link_id: linkId, locale, reissue } as any,
-    });
-    if (!consume.ok) {
-      return NextResponse.json(
-        {
-          detail: "insufficient_credits",
-          balance: consume.balance,
-          required: CREDIT_COSTS.CERTIFICATE_PDF,
+  if (!isPassLink) {
+    if (usedFreeGrant) {
+      // 무료 발급 기록 (delta 0 — 주기 카운트용)
+      const balance = await prisma.user.findUnique({ where: { id: userId }, select: { credits: true } });
+      await prisma.creditTransaction.create({
+        data: {
+          userId,
+          delta: 0,
+          action: "pdf_issue",
+          balanceAfter: balance?.credits ?? 0,
+          metadata: { link_id: linkId, locale, reissue, free_monthly: true } as any,
         },
-        { status: 402 },
-      );
+      });
+    } else {
+      const consume = await consumeCredits({
+        userId,
+        amount: CREDIT_COSTS.CERTIFICATE_PDF,
+        action: "pdf_issue",
+        metadata: { link_id: linkId, locale, reissue } as any,
+      });
+      if (!consume.ok) {
+        return NextResponse.json(
+          {
+            detail: "insufficient_credits",
+            balance: consume.balance,
+            required: CREDIT_COSTS.CERTIFICATE_PDF,
+          },
+          { status: 402 },
+        );
+      }
     }
   }
 
@@ -358,7 +376,17 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     pdfBuffer = await renderCertificatePdf({ data: certData, locale });
   } catch (e: any) {
     console.error("[certificate] render failed", e);
-    if (usedFreeGrant) {
+    if (isPassLink) {
+      // 패스 발급 기록 원복 (delta 0 — 통계 오염 방지)
+      await prisma.creditTransaction.deleteMany({
+        where: {
+          userId,
+          action: "day_pass_pdf",
+          delta: 0,
+          metadata: { path: ["link_id"], equals: linkId },
+        },
+      }).catch((rfErr) => console.warn("[certificate] pass-issue rollback failed:", rfErr));
+    } else if (usedFreeGrant) {
       // 무료 발급분 원복: 실패한 delta-0 기록 제거 (주기 카운트에서 제외)
       await prisma.creditTransaction.deleteMany({
         where: {

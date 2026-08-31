@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
   let downgraded = 0;
   let graceNoticed = 0;
   let graceReminded = 0;
+  let passGraced = 0;
   const errors: string[] = [];
 
   // 0) 일반해지 예약(cancelAtPeriodEnd) 구독이 기간 만료된 경우: 청구 대신 종료 처리.
@@ -149,6 +150,57 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // 1.5) A-60: 만료된 원데이 패스 → 패스 발행 링크에 유예(37일) 설정.
+  //      Pro 해지(위 0번)와 동일 규칙. grace_applied_at 마커로 멱등 — lazy 상태 전이
+  //      (redeem/getActivePass가 expired로 바꾼 경우)와 무관하게 정확히 1회 적용.
+  //      이메일은 발송하지 않음(고지된 기본 정책 — A-58 free 7일 링크 미발송과 동일 취지).
+  try {
+    const expiredPasses = await prisma.dayPass.findMany({
+      where: {
+        redeemerId: { not: null },
+        expiresAt: { lte: new Date() },
+        graceAppliedAt: null,
+      },
+      select: { id: true, redeemerId: true, status: true },
+      take: BATCH_SIZE,
+    });
+    for (const pass of expiredPasses) {
+      const uid = pass.redeemerId as string;
+      // 현재 유료 티어거나 다른 활성 패스가 있으면 무기한 유지 — 마커만 기록
+      const [u, otherActive] = await Promise.all([
+        prisma.user.findUnique({ where: { id: uid }, select: { tier: true } }),
+        prisma.dayPass.findFirst({
+          where: {
+            redeemerId: uid,
+            status: "redeemed",
+            expiresAt: { gt: new Date() },
+            id: { not: pass.id },
+          },
+          select: { id: true },
+        }),
+      ]);
+      const isPaid = u?.tier === "pro" || u?.tier === "business";
+      if (!isPaid && !otherActive) {
+        await prisma.$executeRaw`
+          UPDATE public.links
+          SET expires_at = now() + interval '37 days'
+          WHERE user_id = ${uid} AND pass_id IS NOT NULL AND expires_at IS NULL`;
+        passGraced++;
+      }
+      await prisma.dayPass.update({
+        where: { id: pass.id },
+        data: {
+          graceAppliedAt: new Date(),
+          ...(pass.status === "redeemed" || pass.status === "exhausted"
+            ? { status: "expired" }
+            : {}),
+        },
+      });
+    }
+  } catch (e: any) {
+    errors.push(`pass_grace: ${e?.message || e}`);
+  }
+
   // 2) 삭제 임박 리마인더 (§5.3, A-58) — 유예 링크가 7/3/1일 내 만료되는 해지 사용자에게 발송.
   //    이 크론은 일 1회 실행이라 (6,7]·(2,3]·(0,1]일 창(window) 매칭만으로 자연 중복 방지.
   //    대상은 subscription.status=canceled(=한 번이라도 구독했던) 사용자 한정 —
@@ -198,7 +250,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    ok: true, charged, alreadyDone, failed, downgraded, graceNoticed, graceReminded,
+    ok: true, charged, alreadyDone, failed, downgraded, graceNoticed, graceReminded, passGraced,
     errors: errors.slice(0, 20),
   });
 }

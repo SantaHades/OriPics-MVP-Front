@@ -58,6 +58,8 @@ model User {
   creditTransactions CreditTransaction[]
   subscription  Subscription?
   mobileRefreshTokens MobileRefreshToken[]
+  dayPassesPurchased DayPass[] @relation("DayPassPurchaser")
+  dayPassesRedeemed  DayPass[] @relation("DayPassRedeemer")
 }
 
 // 모바일 refresh 토큰 서버측 상태 (A-38②, 2026-08-24)
@@ -104,6 +106,7 @@ model ProofHistory {
   height          Int
   timestamp       String   // 스테가노그래피 타임스탬프 (proof 시점)
   createdAt       DateTime @default(now())  // publish 시점 (B-2 흐름)
+  passId          String?  // 원데이 패스로 발행 시 패스 id (A-60 — 목록탭 태그)
   // 증명서 PDF 캐시 경로 (Supabase Storage). 발급 후 재다운로드 무료, 재발급 시 -10 차감.
   pdfStoragePath  String?
   pdfIssuedAt     DateTime?
@@ -154,6 +157,34 @@ model Subscription {
 
   @@index([gatewayCustomerId])
   @@index([gatewaySubscriptionId])
+}
+
+/// 원데이 패스 (A-60, 2026-08-31) — 선물 가능 1일 이용권.
+/// ⚠️ 테이블 생성은 raw SQL (db_migrations/2026_08_31_day_pass.sql) — prisma db push 금지.
+/// 계정당 활성 1장은 partial unique index(day_pass_one_active, status='redeemed')로 DB에서 강제.
+/// status: issued(미등록) | redeemed(활성) | exhausted(10회 소진) | expired(24h 경과) | revoked(환불 등)
+model DayPass {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  status         String    @default("issued")
+  purchaserId    String?   @map("purchaser_id")
+  redeemerId     String?   @map("redeemer_id")
+  issuedAt       DateTime  @default(now()) @map("issued_at")
+  codeExpiresAt  DateTime  @map("code_expires_at")
+  redeemedAt     DateTime? @map("redeemed_at")
+  expiresAt      DateTime? @map("expires_at")
+  totalProofs    Int       @default(10) @map("total_proofs")
+  usedProofs     Int       @default(0) @map("used_proofs")
+  graceAppliedAt DateTime? @map("grace_applied_at")
+  paymentId      String?   @map("payment_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  purchaser User? @relation("DayPassPurchaser", fields: [purchaserId], references: [id], onDelete: SetNull)
+  redeemer  User? @relation("DayPassRedeemer", fields: [redeemerId], references: [id], onDelete: SetNull)
+
+  @@index([redeemerId])
+  @@map("day_passes")
 }
 
 /// 레이트리밋 fixed-window 카운터 (2026-08-22 보안 점검).
