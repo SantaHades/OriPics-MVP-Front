@@ -95,13 +95,13 @@ export default function PassProductPage() {
         {/* 가격 카드 + 구매(준비 중) */}
         <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm mb-14 sm:flex items-center justify-between gap-8">
           <div>
-            <p className="text-sm text-slate-500 mb-1">{ko ? "1장 (등록 후 24시간)" : "One pass (24h from redemption)"}</p>
+            <p className="text-sm text-slate-500 mb-1">{ko ? "1장" : "One pass"}</p>
             <p className="text-4xl font-extrabold tracking-tight">
               ₩3,300
               <span className="text-sm font-normal text-slate-500"> {ko ? "(부가세 포함)" : "(VAT included)"}</span>
             </p>
             <p className="text-xs text-slate-500 mt-2">
-              {ko ? "촬영 인증 10회 · 인증서 PDF · 공개링크 1년 보관 · 선물 가능" : "10 capture proofs · certificate PDF · 1-year links · giftable"}
+              {ko ? "등록 후 24시간 이내 · 촬영 인증 10회 · 인증서 PDF · 공개링크 1년 보관 · 선물 가능" : "24h from redemption · 10 capture proofs · certificate PDF · 1-year links · giftable"}
             </p>
           </div>
           <div className="mt-6 sm:mt-0 shrink-0 text-center">
