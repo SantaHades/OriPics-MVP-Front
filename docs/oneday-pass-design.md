@@ -106,5 +106,6 @@ model DayPass {
 
 - **Phase 1 (지금)**: DB(DayPass·pass_id 컬럼·partial index) → redeem/active API +
   어드민 발급 → sign/confirm/publish/certificate 분기. e2e는 어드민 발급 코드로.
-- **Phase 2**: 모바일 등록·자동발행·홈탭/목록 + 웹 프로필/목록 표시.
+- **Phase 2** ✅(8/31 구현 완료): 웹=프로필 패스 카드·코드 등록·최근 내역 라벨·히스토리 태그(배포됨).
+  모바일=홈 패스 카드·QR 등록 모달·셔터→자동 발행+PDF 워밍·목록 태그 — **빌드 10 탑승 대기**(실기기 검증 필요).
 - **Phase 3 (포트원 회신 후)**: 단건 결제 → 코드 발급 → 선물 링크. 약관·환불 문구.
