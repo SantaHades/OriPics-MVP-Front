@@ -4,6 +4,7 @@
 // 신청 이메일은 /api/beta/apply가 hi@ori.pics로 전달 → 대표가 Google 테스터 목록에
 // 수동 등록. Android 참여 링크는 등록된 구글 계정만 접속 가능하므로 그 안내를 병기.
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "next/navigation";
 import { X, RefreshCw, CheckCircle, Apple, Smartphone, MessageCircle } from "lucide-react";
 import { IOS_APP_URL, ANDROID_STORE_URL } from "@/lib/appLinks";
@@ -113,8 +114,10 @@ export default function BetaRecruit({ variant = "nav" }: { variant?: "nav" | "he
         {t.trigger}
       </button>
 
-      {open && (
-        // items-center는 카드가 창보다 길면 상단이 화면 밖으로 잘림(데스크톱 실측 8/31) —
+      {/* 포털 필수: 네비의 glass(backdrop-filter)가 fixed의 기준을 네비로 바꿔
+          팝업이 네비 높이로 잘림(데스크톱 실측 8/31) — body에 직접 렌더 */}
+      {open && typeof document !== "undefined" && createPortal(
+        // items-center는 카드가 창보다 길면 상단이 화면 밖으로 잘림 —
         // 상단 여백 고정 + 백드롭 스크롤로 어떤 창 높이에서도 전체 내용 접근 보장
         <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 px-4" onClick={() => setOpen(false)}>
           <div
@@ -199,7 +202,8 @@ export default function BetaRecruit({ variant = "nav" }: { variant?: "nav" | "he
               <MessageCircle size={15} /> {t.kakao}
             </a>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
