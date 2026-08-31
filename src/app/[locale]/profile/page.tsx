@@ -90,6 +90,8 @@ export default function ProfilePage() {
   const [passError, setPassError] = useState<string | null>(null);
   // 등록 전 확인 창 (2026-08-31 대표) — 24h 즉시 시작·크레딧 대신 우선 차감·자동 발행·환불 불가 고지
   const [passConfirmOpen, setPassConfirmOpen] = useState(false);
+  // 사용 안내 전체 팝업 — 등록 전·후 공통 "자세히 보기" (2026-08-31 대표)
+  const [passDetailsOpen, setPassDetailsOpen] = useState(false);
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
     fetch("/api/pass/active")
@@ -715,10 +717,24 @@ export default function ProfilePage() {
                 })}
               </p>
               <p className="text-xs text-slate-500 mt-1">{tCredits("pass_active_note")}</p>
+              <button
+                type="button"
+                onClick={() => setPassDetailsOpen(true)}
+                className="mt-2 text-xs font-semibold text-blue-600 hover:text-blue-500 underline underline-offset-2"
+              >
+                {tCredits("pass_details_link")}
+              </button>
             </>
           ) : (
             <>
-              <p className="text-xs text-slate-500 mb-3">{tCredits("pass_inactive_note")}</p>
+              <p className="text-xs text-slate-500 mb-1">{tCredits("pass_inactive_note")}</p>
+              <button
+                type="button"
+                onClick={() => setPassDetailsOpen(true)}
+                className="mb-3 text-xs font-semibold text-blue-600 hover:text-blue-500 underline underline-offset-2"
+              >
+                {tCredits("pass_details_link")}
+              </button>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -744,6 +760,31 @@ export default function ProfilePage() {
             </>
           )}
         </div>
+
+        {/* 패스 사용 안내 전체 팝업 — 등록 전·후 공통 (2026-08-31 대표) */}
+        {passDetailsOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[80vh] overflow-y-auto">
+              <h3 className="text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                <Ticket size={20} className="text-blue-600" />
+                {tCredits("pass_details_title")}
+              </h3>
+              <ul className="text-sm text-slate-600 mb-5 space-y-2 list-disc pl-5">
+                {(["pass_details_1", "pass_details_2", "pass_details_3", "pass_details_4", "pass_details_5", "pass_details_6", "pass_details_7", "pass_details_8", "pass_details_9"] as const).map((k) => (
+                  <li key={k}>{tCredits(k)}</li>
+                ))}
+              </ul>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setPassDetailsOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  {tCredits("pass_details_close")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 패스 등록 확인 모달 — 24h 즉시 시작·우선 차감·자동 발행·환불 불가 고지 후 등록 */}
         {passConfirmOpen && (

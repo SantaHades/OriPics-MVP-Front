@@ -275,7 +275,19 @@
       "pass_confirm_3": "앱에서 촬영하는 사진은 자동으로 인증되고 공개링크·인증서까지 발행됩니다.",
       "pass_confirm_4": "등록 후에는 환불이 불가합니다.",
       "pass_confirm_go": "지금 등록",
-      "pass_confirm_cancel": "취소"
+      "pass_confirm_cancel": "취소",
+      "pass_details_link": "자세히 보기",
+      "pass_details_title": "원데이 패스 사용 안내",
+      "pass_details_1": "등록 즉시 24시간 동안 사용할 수 있어요 (일시정지 불가).",
+      "pass_details_2": "촬영 인증 10회 — 사진 크기와 무관하게 1회씩 차감돼요.",
+      "pass_details_3": "활성 동안 촬영 인증은 잔여 건수(크레딧) 대신 패스에서 우선 차감돼요.",
+      "pass_details_4": "Verified(촬영 기기 검증) 인증이 포함돼요 — Free 플랜이어도 사용 가능해요.",
+      "pass_details_5": "촬영하면 자동으로 인증되고 공개링크·인증서 PDF까지 발행돼요 (추가 차감 없음).",
+      "pass_details_6": "공개링크는 발행 시점부터 1년 보관돼요 (Pro 구독 전환 시 무기한).",
+      "pass_details_7": "활성 패스는 계정당 1장 — 10회를 모두 쓰거나 24시간이 지나면 곧바로 새 패스를 등록할 수 있어요.",
+      "pass_details_8": "웹에서 파일 업로드로 인증하는 경우는 패스가 아닌 잔여 건수에서 차감돼요.",
+      "pass_details_9": "등록 후에는 환불이 불가하고, 미등록 코드의 유효기간은 발급일로부터 1년이에요.",
+      "pass_details_close": "닫기"
     },
     "pricing": {
       "eyebrow": "요금제",
