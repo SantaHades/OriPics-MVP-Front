@@ -1134,6 +1134,10 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-6 py-12 flex flex-col items-center">
         <section className="w-full text-center mb-16 pt-8 flex flex-col items-center">
+          {/* 베타 모집 배지 — 모바일 전용 (네비 배지는 xs+ 전용, 2026-08-31 대표: 히어로 문구 바로 위 좌측정렬) */}
+          <div className="w-full text-left xs:hidden mb-3">
+            <BetaRecruit variant="hero" />
+          </div>
           {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
           <p className="text-sm md:text-base text-slate-600 mb-4 whitespace-pre-line leading-relaxed">
             {t("hero.eyebrow")}

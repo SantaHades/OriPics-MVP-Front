@@ -58,7 +58,7 @@ const T = {
   },
 };
 
-export default function BetaRecruit() {
+export default function BetaRecruit({ variant = "nav" }: { variant?: "nav" | "hero" }) {
   const params = useParams();
   const t = T[(((params?.locale as string) || "ko") === "en" ? "en" : "ko")];
 
@@ -107,15 +107,18 @@ export default function BetaRecruit() {
           e.stopPropagation(); // 로고 그룹의 scrollTo(0,0) 클릭과 분리
           setOpen(true);
         }}
-        className="hidden xs:inline-flex items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] sm:text-xs font-semibold border border-amber-200 hover:bg-amber-200 transition-colors whitespace-nowrap"
+        // nav=데스크톱(xs+) 전용, hero=모바일 전용(히어로 문구 위 좌측 — 2026-08-31 대표)
+        className={`${variant === "nav" ? "hidden xs:inline-flex" : "inline-flex xs:hidden"} items-center px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] sm:text-xs font-semibold border border-amber-200 hover:bg-amber-200 transition-colors whitespace-nowrap`}
       >
         {t.trigger}
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4 py-6" onClick={() => setOpen(false)}>
+        // items-center는 카드가 창보다 길면 상단이 화면 밖으로 잘림(데스크톱 실측 8/31) —
+        // 상단 여백 고정 + 백드롭 스크롤로 어떤 창 높이에서도 전체 내용 접근 보장
+        <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 px-4" onClick={() => setOpen(false)}>
           <div
-            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[85vh] overflow-y-auto text-left"
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl text-left mx-auto mt-20 mb-10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
