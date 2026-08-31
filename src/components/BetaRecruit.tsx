@@ -106,6 +106,10 @@ export default function BetaRecruit({ variant = "nav" }: { variant?: "nav" | "he
         type="button"
         onClick={(e) => {
           e.stopPropagation(); // 로고 그룹의 scrollTo(0,0) 클릭과 분리
+          // 다시 열면 새 신청 폼으로 (완료 상태 리셋 — 2026-08-31 대표 피드백)
+          setDone(false);
+          setError(null);
+          setEmail("");
           setOpen(true);
         }}
         // nav=데스크톱(xs+) 전용, hero=모바일 전용(히어로 문구 위 좌측 — 2026-08-31 대표)
