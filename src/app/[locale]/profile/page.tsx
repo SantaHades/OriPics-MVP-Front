@@ -88,6 +88,8 @@ export default function ProfilePage() {
   const [passCode, setPassCode] = useState("");
   const [passBusy, setPassBusy] = useState(false);
   const [passError, setPassError] = useState<string | null>(null);
+  // 등록 전 확인 창 (2026-08-31 대표) — 24h 즉시 시작·크레딧 대신 우선 차감·자동 발행·환불 불가 고지
+  const [passConfirmOpen, setPassConfirmOpen] = useState(false);
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
     fetch("/api/pass/active")
@@ -722,7 +724,7 @@ export default function ProfilePage() {
                   type="text"
                   value={passCode}
                   onChange={(e) => { setPassCode(e.target.value); setPassError(null); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleRedeemPass(); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && passCode.trim() && !passBusy) setPassConfirmOpen(true); }}
                   placeholder={tCredits("pass_code_placeholder")}
                   autoCapitalize="characters"
                   autoCorrect="off"
@@ -731,7 +733,7 @@ export default function ProfilePage() {
                 />
                 <button
                   type="button"
-                  onClick={handleRedeemPass}
+                  onClick={() => setPassConfirmOpen(true)}
                   disabled={passBusy || !passCode.trim()}
                   className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors disabled:opacity-60 whitespace-nowrap"
                 >
@@ -742,6 +744,42 @@ export default function ProfilePage() {
             </>
           )}
         </div>
+
+        {/* 패스 등록 확인 모달 — 24h 즉시 시작·우선 차감·자동 발행·환불 불가 고지 후 등록 */}
+        {passConfirmOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+              <h3 className="text-xl font-bold text-slate-900 mb-3">
+                {tCredits("pass_confirm_title")}
+              </h3>
+              <ul className="text-sm text-slate-600 mb-5 space-y-2 list-disc pl-5">
+                <li>{tCredits("pass_confirm_1")}</li>
+                <li>{tCredits("pass_confirm_2")}</li>
+                <li>{tCredits("pass_confirm_3")}</li>
+                <li className="font-semibold text-slate-700">{tCredits("pass_confirm_4")}</li>
+              </ul>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setPassConfirmOpen(false)}
+                  disabled={passBusy}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                >
+                  {tCredits("pass_confirm_cancel")}
+                </button>
+                <button
+                  onClick={() => {
+                    setPassConfirmOpen(false);
+                    void handleRedeemPass();
+                  }}
+                  disabled={passBusy}
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                >
+                  {tCredits("pass_confirm_go")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 크레딧 섹션 (J-4) */}
         <div id="credits" className="mt-12 pt-8 border-t border-slate-100 scroll-mt-24">

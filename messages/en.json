@@ -268,7 +268,14 @@
       "pass_err_pass_already_active": "You already have an active pass. You can redeem a new code once it runs out.",
       "pass_err_code_expired": "This code has expired (1-year validity).",
       "pass_err_code_revoked": "This code has been deactivated.",
-      "pass_err_generic": "Redemption failed. Please try again later."
+      "pass_err_generic": "Redemption failed. Please try again later.",
+      "pass_confirm_title": "Redeem this pass now?",
+      "pass_confirm_1": "Your 24-hour window starts immediately upon redemption (cannot be paused).",
+      "pass_confirm_2": "While the pass is active, capture proofs are deducted from the pass first, instead of your credits.",
+      "pass_confirm_3": "Photos captured in the app are certified automatically, with a public link and certificate issued.",
+      "pass_confirm_4": "Redeemed passes are non-refundable.",
+      "pass_confirm_go": "Redeem now",
+      "pass_confirm_cancel": "Cancel"
     },
     "pricing": {
       "eyebrow": "Pricing",
