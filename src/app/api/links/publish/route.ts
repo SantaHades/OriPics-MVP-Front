@@ -16,6 +16,7 @@ const BUCKET_NAME = "oripics-proofs";
 const C2PA_ENABLED = process.env.ORIPICS_C2PA_ENABLED === "true";
 // 보관 정책 (pricing-policy §11.2)
 const FREE_RETENTION_DAYS = 7;
+const PASS_LINK_RETENTION_DAYS = 365; // A-60: 패스 발행 링크 1년 고정 보관
 const STORAGE_QUOTA_BYTES = 5 * 1024 * 1024 * 1024; // Pro 보관함 5GB
 // 인증 이미지는 불변 — CDN 캐시 1년 (egress 대비책 계층 2, A-36 선행)
 const IMMUTABLE_CACHE_SECONDS = "31536000";
@@ -138,32 +139,18 @@ export async function POST(req: NextRequest) {
 
   const isPaidTier = owner?.tier === "pro" || owner?.tier === "business";
 
-  // A-60: 패스 24h 창이 살아 있으면 Pro와 동일(무기한 — 만료 시 cron이 37일 유예 설정).
-  // 창 종료 후 늦은 publish(모바일 재시도)는 cron 스윕이 이미 지나갔으므로 유예를 직접 설정.
-  let passWindowActive = false;
-  if (passId) {
-    const pass = await t.span("pass_lookup", () =>
-      prisma.dayPass.findUnique({
-        where: { id: passId },
-        select: { redeemerId: true, expiresAt: true },
-      }),
-    );
-    passWindowActive =
-      !!pass && pass.redeemerId === user_id &&
-      !!pass.expiresAt && pass.expiresAt.getTime() > Date.now();
-  }
-
-  const GRACE_DAYS = 37; // 30일 유예 + 7일 free 정책 (§11.2 — charge-subscriptions cron과 동일)
-  const expiresAt =
-    isPaidTier || passWindowActive
-      ? null
-      : passId
-        ? new Date(Date.now() + GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString()
-        : new Date(Date.now() + FREE_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  // A-60: 패스 발행 링크 = 발행 시점부터 1년 고정 보관 (2026-08-31 대표 —
+  // 사고 증거 등 용도라 확정적 보관 기간 고지. 유예/복원 없이 cleanup cron이 자연 처리).
+  // 이후 Pro 구독 시 기존 재구독 복원 규칙대로 무기한 전환.
+  const expiresAt = isPaidTier
+    ? null
+    : passId
+      ? new Date(Date.now() + PASS_LINK_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString()
+      : new Date(Date.now() + FREE_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
   // 보관함 용량 체크(5GB): 초과 시 새 공개링크 생성 차단(기존 링크는 삭제하지 않음).
-  // 패스 활성 사용자도 Pro와 동일하게 체크 (A-60 — 전용 쿼터 없음, 기존 규칙 공유).
-  if (isPaidTier || passWindowActive) {
+  // 패스 발행도 Pro와 동일하게 체크 (A-60 — 전용 쿼터 없음, 기존 규칙 공유).
+  if (isPaidTier || passId) {
     try {
       const [usage]: any[] = await t.span("quota_check", () => prisma.$queryRaw`
         SELECT COALESCE(sum((o.metadata->>'size')::bigint), 0)::bigint AS bytes
@@ -358,7 +345,7 @@ export async function POST(req: NextRequest) {
     storage_path,
     signed_url: publicUrl,
     user_id,
-    expires_at: expiresAt, // free: +7일 / 유료: null(보관함 활성 중 무기한)
+    expires_at: expiresAt, // free: +7일 / 패스: +1년 고정 / 유료: null(보관함 활성 중 무기한)
     preview_path: previewPath, // 뷰어 경량 표시본 (없으면 뷰어가 원본 폴백)
   };
   if (lat_e6 != null && lng_e6 != null) {

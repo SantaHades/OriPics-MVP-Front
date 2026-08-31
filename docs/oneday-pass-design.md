@@ -11,7 +11,7 @@
 | 내용 | 사이즈 무관 촬영 인증 10회 + 인증서 PDF, 등록 후 24시간 |
 | 구매/등록 자격 | 로그인만 하면 가능 (free 포함). 구매자≠등록자 가능(선물) |
 | Verified | Pro와 동일하게 포함 — 패스 활성 중 free여도 verified 촬영 허용 |
-| 공개링크 보관 | **Pro와 완전 동일** — 발행 시 expires_at=null, 패스 만료 시 구독 해지와 동일한 유예(30일+7일=37일, §11.2), 새 패스 등록/Pro 전환 시 복원 |
+| 공개링크 보관 | **발행 시점부터 1년 고정** (expires_at=발행+365일) — 사고 증거 등 용도라 확정 기간 고지 (8/31 대표: 초안의 "Pro 동일 37일 유예"는 너무 짧아 폐기). 1년 경과분은 cleanup cron 자연 삭제. Pro 구독 전환 시 기존 규칙대로 무기한 |
 | 보관소 | **전용 보관소 없음** — 기존 보관함(같은 버킷·links)을 공유하고 기존 5GB 쿼터 체크를 패스 활성 사용자에게도 동일 적용. 별도 1GB 인프라·초과분 애드온은 만들지 않음 (기획 원안의 "전용 1GB"는 폐기, 대표 8/31 재검토 지시) |
 | 차감 규칙 | 등록 직후~24시간 내 **촬영(P/C 경로) 인증은 무조건 패스 1건씩 차감** (크레딧·티어 불문 패스 우선). 사이즈 배수 무시 |
 | 자동 발행 | 셔터 → 공개링크 생성 + 인증서 PDF 생성까지 백그라운드 자동 |
@@ -54,7 +54,7 @@ model DayPass {
 - **동시 1장 강제**: Postgres partial unique index (raw migration, db_migrations)
   `CREATE UNIQUE INDEX day_pass_one_active ON "DayPass"("redeemerId") WHERE status = 'redeemed';`
   redeem 시 INSERT/UPDATE가 인덱스 위반이면 409. 상태 전이(redeemed→exhausted/expired)는
-  차감·조회 시점 lazy + cleanup cron 보정.
+  차감·등록·조회 시점 lazy — 링크 보관이 1년 고정이라 별도 cron 스윕 불필요.
 - **links.pass_id** (nullable, Supabase links 테이블) — 공개링크 목록·뷰어 태그용.
 - **ProofHistory.passId** (nullable) — 앱 목록탭 카드 태그용.
 - **CreditTransaction**에 amount=0, action="day_pass_proof", metadata={pass_id, link_id}
@@ -74,11 +74,10 @@ model DayPass {
 - **confirm**: pass_id 있으면 consumeCredits 대신 패스 원자 차감
   (`UPDATE ... SET usedProofs=usedProofs+1 WHERE id=? AND usedProofs<totalProofs AND expiresAt>now()`),
   실패 시 402 pass_exhausted → 클라이언트는 크레딧 플로우 폴백 or 안내.
-- **publish**: pass_id 링크는 LINK_CREATE 차감 생략, expires_at=null(Pro 동일),
-  links.pass_id 기록. 쿼터는 기존 5GB 체크에 "활성 패스" 조건 추가.
+- **publish**: pass_id 링크는 LINK_CREATE 차감 생략, expires_at=발행+365일(1년 고정,
+  유료 티어면 null), links.pass_id 기록. 쿼터는 기존 5GB 체크에 패스 발행 포함.
 - **certificate**: 패스 링크는 tier_required·크레딧 차감 생략(§1 확정 대기 1).
-- **charge-subscriptions cron**: 만료 패스(expiresAt<now, 소유 링크에 무기한 보관분 존재,
-  현재 유료 아님·다른 활성 패스 없음) → 기존 grace 설정·알림 로직 재사용.
+- **cron**: 추가 작업 없음 — 1년 경과 링크는 기존 cleanup cron이 자연 삭제.
 
 ### 3.3 모바일 (빌드 10+)
 - 코드 등록 화면(홈탭 진입) — ⚠️ 앱 내 "구매" 버튼·웹 구매 유도 문구 금지(iOS 3.1.1).
@@ -106,6 +105,6 @@ model DayPass {
 ## 5. 단계
 
 - **Phase 1 (지금)**: DB(DayPass·pass_id 컬럼·partial index) → redeem/active API +
-  어드민 발급 → sign/confirm/publish/certificate 분기 → grace cron 연계. e2e는 어드민 발급 코드로.
+  어드민 발급 → sign/confirm/publish/certificate 분기. e2e는 어드민 발급 코드로.
 - **Phase 2**: 모바일 등록·자동발행·홈탭/목록 + 웹 프로필/목록 표시.
 - **Phase 3 (포트원 회신 후)**: 단건 결제 → 코드 발급 → 선물 링크. 약관·환불 문구.

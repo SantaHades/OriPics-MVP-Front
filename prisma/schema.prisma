@@ -175,7 +175,6 @@ model DayPass {
   expiresAt      DateTime? @map("expires_at")
   totalProofs    Int       @default(10) @map("total_proofs")
   usedProofs     Int       @default(0) @map("used_proofs")
-  graceAppliedAt DateTime? @map("grace_applied_at")
   paymentId      String?   @map("payment_id")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")

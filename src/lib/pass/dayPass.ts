@@ -120,7 +120,7 @@ export async function consumePassProof(
 }
 
 export type RedeemResult =
-  | { ok: true; pass: ActivePass; restoredLinks: number }
+  | { ok: true; pass: ActivePass }
   | {
       ok: false;
       reason:
@@ -132,8 +132,9 @@ export type RedeemResult =
     };
 
 /**
- * 코드 등록 (원자적). 성공 시 24h 활성 + 과거 패스 링크(유예 중) 복원.
+ * 코드 등록 (원자적). 성공 시 24h 활성.
  * 활성 패스 중복은 partial unique index 위반(23505)으로 잡는다.
+ * (패스 발행 링크는 발행 시점부터 1년 고정 보관이라 재등록 시 복원 개념 없음.)
  */
 export async function redeemPass(code: string, userId: string): Promise<RedeemResult> {
   // 자기 자신의 만료분 lazy 전이 (unique index 자리 비우기)
@@ -179,18 +180,6 @@ export async function redeemPass(code: string, userId: string): Promise<RedeemRe
     return { ok: false, reason: "code_expired" };
   }
 
-  // 과거 패스로 발행해 유예(expires_at 설정)로 내려간 링크 복원 — Pro 재구독 복원과 동일 취지.
-  // pass_id 있는 링크만 대상 (free 7일 링크는 그대로).
-  let restoredLinks = 0;
-  try {
-    restoredLinks = await prisma.$executeRaw`
-      UPDATE public.links
-      SET expires_at = NULL
-      WHERE user_id = ${userId} AND pass_id IS NOT NULL AND expires_at > now()`;
-  } catch (e: any) {
-    console.warn("[pass] link restore failed (non-fatal):", e?.message || e);
-  }
-
   const r = rows[0];
   return {
     ok: true,
@@ -202,6 +191,5 @@ export async function redeemPass(code: string, userId: string): Promise<RedeemRe
       totalProofs: Number(r.total_proofs),
       usedProofs: Number(r.used_proofs),
     },
-    restoredLinks,
   };
 }

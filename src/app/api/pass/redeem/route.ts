@@ -10,7 +10,7 @@ export const runtime = "nodejs";
  *
  * 입력: JSON { code }
  * 정책: 로그인만 하면 티어 무관 등록 가능. 계정당 활성 패스 1장(DB 강제).
- *       등록 시점부터 24시간 · 촬영 인증 10회. 과거 패스 링크(유예 중) 복원.
+ *       등록 시점부터 24시간 · 촬영 인증 10회.
  * 오류: 404 invalid_code · 409 code_already_used/pass_already_active ·
  *       410 code_expired/code_revoked · 429 rate_limited
  */
@@ -45,9 +45,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: result.reason }, { status });
   }
 
-  console.log(
-    `[pass] redeemed pass_id=${result.pass.id} user=${userId} restored_links=${result.restoredLinks}`,
-  );
+  console.log(`[pass] redeemed pass_id=${result.pass.id} user=${userId}`);
   return NextResponse.json({
     pass: {
       code_masked: maskPassCode(result.pass.code),
@@ -57,6 +55,5 @@ export async function POST(req: NextRequest) {
       used_proofs: result.pass.usedProofs,
       remaining: result.pass.totalProofs - result.pass.usedProofs,
     },
-    restored_links: result.restoredLinks,
   });
 }
