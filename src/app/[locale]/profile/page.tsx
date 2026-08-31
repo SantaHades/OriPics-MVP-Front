@@ -1460,39 +1460,61 @@ export default function ProfilePage() {
               </>
             )}
 
-            {previewProof.pdfIssued ? (
-              <>
+            {(() => {
+              // 폴링이 갱신하는 최신 상태 사용 — 모달이 열린 채로 자동 발급이 완료되면
+              // 버튼이 [다운로드]로 자연 전환 (previewProof는 열림 시점 스냅샷)
+              const lp = proofs.find((p) => p.linkId === previewProof.linkId) ?? previewProof;
+              if (lp.pdfIssued) {
+                return (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handlePdfAction(lp, "issue_or_download")}
+                      disabled={pdfBusy}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
+                    >
+                      {pdfBusy ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
+                      {t("proof_history.pdf_download")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePdfAction(lp, "reissue")}
+                      disabled={pdfBusy}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
+                      title={lp.passId ? (t("proof_history.pdf_reissue_free") as string) : (t("proof_history.pdf_reissue_tooltip", { cost: CREDIT_COSTS.CERTIFICATE_PDF }) as string)}
+                    >
+                      <RotateCw size={14} />
+                      {/* 패스 발행분은 재발급도 무료 (서버 isPassLink 분기) — "-10건" 표기는 오해 */}
+                      {lp.passId ? t("proof_history.pdf_reissue_free") : t("proof_history.pdf_reissue", { cost: CREDIT_COSTS.CERTIFICATE_PDF })}
+                    </button>
+                  </>
+                );
+              }
+              if (isPdfPending(lp)) {
+                // 자동 발급 진행 중 — 중복 발급 요청 대신 대기 (폴링이 완료 시 다운로드로 전환)
+                return (
+                  <button
+                    type="button"
+                    disabled
+                    className="flex items-center gap-1.5 px-4 py-2 bg-slate-500/80 text-white font-medium rounded-full text-sm shadow-lg cursor-wait"
+                  >
+                    <RefreshCw size={14} className="animate-spin" />
+                    {t("proof_history.pdf_preparing")}
+                  </button>
+                );
+              }
+              return (
                 <button
                   type="button"
-                  onClick={() => handlePdfAction(previewProof, "issue_or_download")}
+                  onClick={() => handlePdfAction(lp, "issue_or_download")}
                   disabled={pdfBusy}
                   className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
                 >
-                  {pdfBusy ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
-                  {t("proof_history.pdf_download")}
+                  {pdfBusy ? <RefreshCw size={14} className="animate-spin" /> : <FileText size={14} />}
+                  {lp.passId ? t("proof_history.pdf_issue_free") : t("proof_history.pdf_issue", { cost: CREDIT_COSTS.CERTIFICATE_PDF })}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handlePdfAction(previewProof, "reissue")}
-                  disabled={pdfBusy}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
-                  title={t("proof_history.pdf_reissue_tooltip", { cost: CREDIT_COSTS.CERTIFICATE_PDF }) as string}
-                >
-                  <RotateCw size={14} />
-                  {t("proof_history.pdf_reissue", { cost: CREDIT_COSTS.CERTIFICATE_PDF })}
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handlePdfAction(previewProof, "issue_or_download")}
-                disabled={pdfBusy}
-                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-full transition-colors text-sm shadow-lg disabled:opacity-60"
-              >
-                {pdfBusy ? <RefreshCw size={14} className="animate-spin" /> : <FileText size={14} />}
-                {t("proof_history.pdf_issue", { cost: CREDIT_COSTS.CERTIFICATE_PDF })}
-              </button>
-            )}
+              );
+            })()}
 
             <button
               type="button"
