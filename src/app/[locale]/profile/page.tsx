@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
-import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check, Info } from "lucide-react";
+import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check, Info, Ticket } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
@@ -32,6 +32,18 @@ interface ProofRecord {
   pdfIssued?: boolean;
   /** PDF 발급 시점 ISO (재발급 시점 표시용) */
   pdfIssuedAt?: string | null;
+  /** 원데이 패스로 발행 시 패스 id (A-60 — "패스" 태그 표시) */
+  passId?: string | null;
+}
+
+/** 활성 원데이 패스 (GET /api/pass/active 응답 shape) */
+interface ActivePassView {
+  code_masked: string;
+  redeemed_at: string;
+  expires_at: string;
+  total_proofs: number;
+  used_proofs: number;
+  remaining: number;
 }
 
 export default function ProfilePage() {
@@ -70,6 +82,50 @@ export default function ProfilePage() {
     return `${(b / 1024 ** 3).toFixed(2)} GB`;
   };
   const { data: credits, refresh: refreshCredits } = useCredits();
+
+  // 원데이 패스 (A-60, 2026-08-31) — 활성 패스 자동 조회 + 코드 등록
+  const [pass, setPass] = useState<ActivePassView | null>(null);
+  const [passCode, setPassCode] = useState("");
+  const [passBusy, setPassBusy] = useState(false);
+  const [passError, setPassError] = useState<string | null>(null);
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") return;
+    fetch("/api/pass/active")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setPass(d?.active ? d.pass : null))
+      .catch(() => {});
+  }, [sessionStatus]);
+  const handleRedeemPass = async () => {
+    if (passBusy || !passCode.trim()) return;
+    setPassBusy(true);
+    setPassError(null);
+    try {
+      const res = await fetch("/api/pass/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: passCode }),
+      });
+      const d = await res.json().catch(() => ({}) as any);
+      if (!res.ok) {
+        const KNOWN = ["invalid_code", "invalid_code_format", "code_already_used", "pass_already_active", "code_expired", "code_revoked"];
+        // 429는 서버가 사용자 문구(message)를 직접 내려줌, 그 외는 detail 키 매핑
+        setPassError(
+          typeof d?.message === "string" && d.message
+            ? d.message
+            : KNOWN.includes(d?.detail)
+              ? tCredits(`pass_err_${d.detail}` as any)
+              : tCredits("pass_err_generic"),
+        );
+        return;
+      }
+      setPass(d.pass);
+      setPassCode("");
+    } catch {
+      setPassError(tCredits("pass_err_generic"));
+    } finally {
+      setPassBusy(false);
+    }
+  };
 
   const [name, setName] = useState(session?.user?.name || "");
   const [password, setPassword] = useState("");
@@ -635,6 +691,58 @@ export default function ProfilePage() {
           </form>
         </div>
 
+        {/* 원데이 패스 (A-60, 2026-08-31) — 활성 패스 표시 + 코드 등록. ⚠️앱과 달리 웹은 판매 링크 허용이지만 판매 페이지는 Phase 3 */}
+        <div id="pass" className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Ticket size={18} className="text-blue-600" />
+            <h3 className="text-sm font-bold">{tCredits("pass_title")}</h3>
+            {pass && (
+              <span className="ml-auto px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold">
+                {tCredits("pass_remaining", { count: pass.remaining })}
+              </span>
+            )}
+          </div>
+          {pass ? (
+            <>
+              <p className="font-mono text-lg font-bold tracking-wide">{pass.code_masked}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {tCredits("pass_expires", {
+                  time: new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ko-KR", {
+                    timeZone: "Asia/Seoul", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit",
+                  }).format(new Date(pass.expires_at)),
+                })}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">{tCredits("pass_active_note")}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-slate-500 mb-3">{tCredits("pass_inactive_note")}</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={passCode}
+                  onChange={(e) => { setPassCode(e.target.value); setPassError(null); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleRedeemPass(); }}
+                  placeholder={tCredits("pass_code_placeholder")}
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  className="flex-1 min-w-0 bg-slate-100 border border-slate-100 rounded-xl py-2.5 px-4 font-mono text-sm uppercase tracking-wide outline-none focus:border-blue-300"
+                />
+                <button
+                  type="button"
+                  onClick={handleRedeemPass}
+                  disabled={passBusy || !passCode.trim()}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors disabled:opacity-60 whitespace-nowrap"
+                >
+                  {passBusy ? tCredits("pass_redeeming") : tCredits("pass_redeem")}
+                </button>
+              </div>
+              {passError && <p className="mt-2 text-xs text-red-600">{passError}</p>}
+            </>
+          )}
+        </div>
+
         {/* 크레딧 섹션 (J-4) */}
         <div id="credits" className="mt-12 pt-8 border-t border-slate-100 scroll-mt-24">
           <div className="flex items-center gap-3 mb-6">
@@ -1086,6 +1194,11 @@ export default function ProfilePage() {
                       {proof.pdfIssued && (
                         <div className="absolute top-1 left-1 bg-blue-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title={t("proof_history.pdf_issued") as string}>
                           <FileText size={9} /> PDF
+                        </div>
+                      )}
+                      {proof.passId && (
+                        <div className="absolute bottom-1 left-1 bg-emerald-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Ticket size={9} /> {t("proof_history.pass_tag")}
                         </div>
                       )}
                     </div>

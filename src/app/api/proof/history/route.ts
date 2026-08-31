@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
         createdAt: true,
         pdfStoragePath: true,
         pdfIssuedAt: true,
+        passId: true, // A-60: "패스" 태그 표시용
       },
     });
 
