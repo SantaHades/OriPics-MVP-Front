@@ -605,7 +605,7 @@
       "certified_at": "Certified At",
       "resolution": "Resolution",
       "pdf_issued": "Certificate PDF issued",
-      "pass_tag": "PASS",
+      "pass_tag": "One-Day Pass",
       "pdf_issue": "Issue Certificate PDF (−{cost})",
       "pdf_download": "Download Certificate",
       "pdf_reissue": "Re-issue (−{cost})",

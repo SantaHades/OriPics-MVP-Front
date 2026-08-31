@@ -68,6 +68,8 @@ export interface CertificateData {
   lng?: number | null;
   /** 사용자 이름 또는 이메일 (발급 대상 표시용) */
   issuedTo: string;
+  /** 발급 대상 이메일 병기 (2026-08-31 대표 — 이름과 이메일이 다를 때만 옆에 표시) */
+  issuedToEmail?: string | null;
   /** 발급 시각 (보통 now) */
   issuedAt: Date;
   /** PDF 안에 인용할 검증 URL (예: https://www.ori.pics/{linkId}) */
@@ -123,8 +125,11 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     published: "공개링크 발행",
     source: "출처",
     source_F: "파일 업로드(웹)",
-    source_P: "모바일 카메라(Verified)",
+    // "(Verified)"는 tier가 실제 verified일 때만 접미로 붙인다 — P여도 attest 폴백이면
+    // Standard이므로 하드코딩 표기는 사실과 다른 보증 (2026-08-31 실측 수정)
+    source_P: "모바일 카메라",
     source_C: "복사·붙여넣기",
+    sourceVerifiedSuffix: "(Verified)",
     resolution: "해상도",
     location: "위치(GPS)",
     locationNone: "기록 없음",
@@ -185,8 +190,9 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     published: "Link published",
     source: "Source",
     source_F: "File upload (web)",
-    source_P: "Mobile camera (Verified)",
+    source_P: "Mobile camera",
     source_C: "Paste / clipboard",
+    sourceVerifiedSuffix: " (Verified)",
     resolution: "Resolution",
     location: "Location (GPS)",
     locationNone: "Not recorded",
@@ -434,11 +440,11 @@ export function CertificateDocument({
   const tz = data.timeZone ?? "Asia/Seoul";
 
   const sourceLabel =
-    data.sourceCode === "P"
+    (data.sourceCode === "P"
       ? t.source_P
       : data.sourceCode === "C"
         ? t.source_C
-        : t.source_F;
+        : t.source_F) + (data.tier === "verified" ? t.sourceVerifiedSuffix : "");
 
   const certShortId = `cert_${data.linkId}_${data.issuedAt.getTime().toString(36)}`;
 
@@ -475,6 +481,11 @@ export function CertificateDocument({
           <Text style={styles.sectionTitle}>{t.issuedTo}</Text>
           <Text style={{ fontSize: 13, fontWeight: "bold", color: "#0f172a" }}>
             {data.issuedTo}
+            {data.issuedToEmail && data.issuedToEmail !== data.issuedTo ? (
+              <Text style={{ fontSize: 10, fontWeight: "normal", color: "#64748b" }}>
+                {"   "}{data.issuedToEmail}
+              </Text>
+            ) : null}
           </Text>
         </View>
 

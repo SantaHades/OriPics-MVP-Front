@@ -359,6 +359,8 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     issuedTo: user.name || user.email || userId,
+    // 이메일 병기 (2026-08-31 대표) — 이름이 표시명일 때 계정 식별 가능하도록
+    issuedToEmail: user.email,
     issuedAt,
     verifyUrl,
     qrDataUrl,

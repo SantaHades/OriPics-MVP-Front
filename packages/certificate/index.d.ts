@@ -9,6 +9,8 @@ export interface CertificateData {
   lat?: number | null;
   lng?: number | null;
   issuedTo: string;
+  /** 발급 대상 이메일 병기 — issuedTo와 다를 때만 표시 */
+  issuedToEmail?: string | null;
   issuedAt: Date;
   verifyUrl: string;
   qrDataUrl: string;
