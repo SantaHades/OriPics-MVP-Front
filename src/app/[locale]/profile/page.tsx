@@ -292,6 +292,33 @@ export default function ProfilePage() {
     fetchProofs();
   }, []);
 
+  // 패스 발행분은 인증서 PDF가 백그라운드 자동 생성(수십 초) — 생성 대기 중인 항목 판정.
+  // 최근 10분 내 항목만 "준비 중"으로 취급 (오래된 워밍 실패 건에 스피너가 영구 표시되는 것 방지)
+  const isPdfPending = (p: ProofRecord) =>
+    !!p.passId && !p.pdfIssued && Date.now() - new Date(p.createdAt).getTime() < 10 * 60 * 1000;
+
+  // 준비 중 항목이 있으면 8초 간격 폴링 — 생성 완료 시 스핀 태그가 PDF 태그로 자연 전환 (2026-08-31 대표)
+  useEffect(() => {
+    if (!proofs.some(isPdfPending)) return;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/proof/history");
+        if (res.ok) {
+          const data = await res.json();
+          const fresh = new Map<string, ProofRecord>(
+            ((data.proofs || []) as ProofRecord[]).map((p) => [p.linkId, p]),
+          );
+          // 첫 페이지 범위만 갱신 — "더 보기"로 붙인 이전 항목은 유지
+          setProofs((prev) => prev.map((p) => fresh.get(p.linkId) ?? p));
+        }
+      } catch {
+        // 다음 주기에서 재시도
+      }
+    }, 8000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proofs]);
+
   // 모달 열린 동안 ESC + body scroll lock
   useEffect(() => {
     if (!previewProof) return;
@@ -1270,11 +1297,16 @@ export default function ProfilePage() {
                           {t("proof_history.expired")}
                         </div>
                       )}
-                      {proof.pdfIssued && (
+                      {proof.pdfIssued ? (
                         <div className="absolute top-1 left-1 bg-blue-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title={t("proof_history.pdf_issued") as string}>
                           <FileText size={9} /> PDF
                         </div>
-                      )}
+                      ) : isPdfPending(proof) ? (
+                        // 패스 자동 발급 진행 중 — 완료되면 폴링이 PDF 태그로 전환
+                        <div className="absolute top-1 left-1 bg-slate-500/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5" title={t("proof_history.pdf_pending") as string}>
+                          <RefreshCw size={9} className="animate-spin" /> PDF
+                        </div>
+                      ) : null}
                       {proof.passId && (
                         <div className="absolute bottom-1 left-1 bg-emerald-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                           <Ticket size={9} /> {t("proof_history.pass_tag")}

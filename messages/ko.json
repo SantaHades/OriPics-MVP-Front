@@ -605,6 +605,7 @@
       "certified_at": "인증 일시",
       "resolution": "해상도",
       "pdf_issued": "인증서 PDF 발급됨",
+      "pdf_pending": "인증서 PDF 준비 중",
       "pass_tag": "원데이 패스",
       "pdf_issue": "인증서 PDF 발급 (−{cost})",
       "pdf_download": "인증서 다운로드",
