@@ -6,11 +6,12 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams } from "next/navigation";
-import { X, RefreshCw, CheckCircle, Apple, Smartphone, MessageCircle } from "lucide-react";
+import { X, RefreshCw, CheckCircle, Apple, Smartphone, MessageCircle, Mail } from "lucide-react";
 import { IOS_APP_URL, ANDROID_STORE_URL } from "@/lib/appLinks";
 
 const TESTFLIGHT_APP_URL = "https://apps.apple.com/app/testflight/id899247664";
 const KAKAO_OPENCHAT_URL = "https://open.kakao.com/o/gwyKJqKi";
+const BETA_MAIL_TO = "hi@ori.pics";
 
 const T = {
   ko: {
@@ -21,6 +22,13 @@ const T = {
     emailHint: "Android는 Google 계정(Gmail), iPhone은 자주 쓰는 이메일을 적어주세요.",
     submit: "신청하기",
     submitting: "신청 중…",
+    mail: "메일보내기",
+    mailSubject: "OriPics 베타테스터 신청",
+    mailBody:
+      "안녕하세요, OriPics 베타테스터로 신청합니다.\n\n" +
+      "- 사용 기기: iPhone / Android (해당 기기를 남겨주세요)\n" +
+      "- Android는 Google 계정(Gmail) 주소로 보내주시면 바로 등록할 수 있어요.\n\n" +
+      "감사합니다.",
     done: "신청이 접수되었어요! 테스터 목록 등록 후 아래 링크로 참여하실 수 있어요.",
     errInvalid: "이메일 형식을 확인해 주세요.",
     errRate: "신청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.",
@@ -43,6 +51,13 @@ const T = {
     emailHint: "For Android, use your Google account (Gmail); for iPhone, any email you check often.",
     submit: "Apply",
     submitting: "Applying…",
+    mail: "Email us",
+    mailSubject: "OriPics beta tester application",
+    mailBody:
+      "Hello, I'd like to apply as an OriPics beta tester.\n\n" +
+      "- My device: iPhone / Android (please keep the one that applies)\n" +
+      "- For Android, sending from your Google account (Gmail) lets us register you right away.\n\n" +
+      "Thank you.",
     done: "Application received! Once you're added to the tester list, join via the links below.",
     errInvalid: "Please check the email format.",
     errRate: "Too many attempts. Please try again later.",
@@ -161,6 +176,16 @@ export default function BetaRecruit({ variant = "nav" }: { variant?: "nav" | "he
                   >
                     {busy ? <RefreshCw size={15} className="animate-spin" /> : t.submit}
                   </button>
+                  {/* 신청 폼 대신 메일 앱으로 바로 신청 — 제목·본문 프리필, 전송만 누르면 됨 */}
+                  <a
+                    href={`mailto:${BETA_MAIL_TO}?subject=${encodeURIComponent(t.mailSubject)}&body=${encodeURIComponent(t.mailBody)}`}
+                    aria-label={t.mail}
+                    title={t.mail}
+                    className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold transition-colors whitespace-nowrap"
+                  >
+                    {/* 좁은 화면(입력창+버튼 2개 한 줄)에서는 아이콘만 — 텍스트는 sm 이상 */}
+                    <Mail size={15} /> <span className="hidden sm:inline">{t.mail}</span>
+                  </a>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1.5">{t.emailHint}</p>
                 {error && <p className="text-xs text-red-600 mt-1.5">{error}</p>}
