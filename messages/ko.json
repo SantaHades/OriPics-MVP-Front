@@ -269,6 +269,7 @@
       "pass_err_pass_already_active": "이미 활성화된 패스가 있어요. 소진되면 새 코드를 등록할 수 있어요.",
       "pass_err_code_expired": "유효기간(1년)이 지난 코드예요.",
       "pass_err_code_revoked": "사용이 중지된 코드예요.",
+      "pass_err_not_owner": "구매한 패스는 구매 계정에서만 사용할 수 있어요.",
       "pass_err_generic": "등록에 실패했어요. 잠시 후 다시 시도해 주세요.",
       "pass_confirm_title": "패스를 지금 등록할까요?",
       "pass_confirm_1": "등록 즉시 24시간 사용 기간이 시작됩니다 (일시정지 불가).",

@@ -12,7 +12,7 @@ import {
   Check,
   CheckCircle2,
   Copy,
-  Gift,
+  Smartphone,
   Loader2,
   Ticket,
   XCircle,
@@ -24,19 +24,19 @@ const T = {
   ko: {
     confirmingTitle: "결제를 확인하고 있어요",
     confirmingDesc: "잠시만 기다려 주세요…",
-    successTitle: "원데이 패스가 발급됐어요!",
-    successDesc: "아래 코드를 등록하는 순간부터 24시간 · 촬영 인증 10회가 시작됩니다.",
-    codeLabel: "패스 코드",
+    successTitle: "원데이 패스가 내 계정에 담겼어요!",
+    successDesc: "아래 코드로 사용을 시작하는 순간부터 24시간 · 촬영 인증 10회가 시작됩니다. 시작 전에는 시간이 흐르지 않아요.",
+    codeLabel: "시작 코드 (구매 계정 전용)",
     copyCode: "코드 복사",
     copied: "복사됨!",
-    codeValidUntil: "코드 등록 유효기간",
-    redeemNow: "지금 내 계정에 등록하기",
-    redeemLater: "찍을 일이 있는 날 등록하세요 — 등록 전에는 시간이 흐르지 않아요.",
-    giftTitle: "선물하기",
-    giftDesc: "이 링크를 전달하면 받는 분이 직접 등록할 수 있어요 (카톡·문자 등).",
-    copyGiftLink: "선물 링크 복사",
+    codeValidUntil: "사용 시작 유효기간",
+    redeemNow: "지금 사용 시작하기",
+    redeemLater: "찍을 일이 있는 날 시작하세요 — 시작 전에는 시간이 흐르지 않아요.",
+    giftTitle: "휴대폰 앱에서 시작하기",
+    giftDesc: "앱 홈탭 → [원데이 패스 등록하기]에서 아래 QR을 스캔하거나 코드를 입력하면 앱에서 바로 시작할 수 있어요.",
+    copyGiftLink: "시작 링크 복사",
     qrHint: "앱 등록 화면의 [QR 스캔]으로 바로 읽을 수 있어요",
-    keepSafe: "⚠️ 코드를 아는 사람은 누구나 등록할 수 있어요 — 링크와 코드를 소중히 보관하세요. 이 화면을 벗어나도 프로필의 최근 내역에서 코드를 다시 볼 수 있습니다.",
+    keepSafe: "이 패스는 구매 계정 전용이라 다른 계정에서는 사용할 수 없어요. 이 화면을 벗어나도 프로필의 최근 내역에서 코드를 다시 볼 수 있습니다.",
     errorTitle: "결제 확인에 실패했어요",
     errorDesc: "결제가 완료됐다면 반복 시도하지 마시고 hi@ori.pics로 문의해 주세요.",
     retry: "다시 시도하기",
@@ -46,19 +46,19 @@ const T = {
   en: {
     confirmingTitle: "Confirming your payment",
     confirmingDesc: "One moment…",
-    successTitle: "Your One-Day Pass is ready!",
-    successDesc: "The 24-hour window and 10 capture proofs start the moment the code below is redeemed.",
-    codeLabel: "Pass code",
+    successTitle: "Your One-Day Pass is on your account!",
+    successDesc: "The 24-hour window and 10 capture proofs begin the moment you start the pass with the code below. The clock doesn't run until then.",
+    codeLabel: "Start code (purchasing account only)",
     copyCode: "Copy code",
     copied: "Copied!",
-    codeValidUntil: "Code valid until",
-    redeemNow: "Redeem on my account now",
-    redeemLater: "Save it for the day you need it — the clock doesn't start until redemption.",
-    giftTitle: "Gift it",
-    giftDesc: "Share this link and the recipient can redeem it themselves.",
-    copyGiftLink: "Copy gift link",
+    codeValidUntil: "Start by",
+    redeemNow: "Start using it now",
+    redeemLater: "Save it for the day you need it — the clock doesn't start until you do.",
+    giftTitle: "Start on your phone",
+    giftDesc: "In the app: Home tab → [Redeem a One-Day Pass] — scan the QR below or enter the code to start in the app.",
+    copyGiftLink: "Copy start link",
     qrHint: "Scan with [Scan QR] on the app's redeem screen",
-    keepSafe: "⚠️ Anyone with the code can redeem it — keep the link and code safe. You can find the code again under your profile's recent activity.",
+    keepSafe: "This pass is exclusive to the purchasing account — it cannot be used on any other account. You can find the code again under your profile's recent activity.",
     errorTitle: "Payment confirmation failed",
     errorDesc: "If you were charged, please don't retry repeatedly — contact hi@ori.pics.",
     retry: "Try again",
@@ -208,10 +208,10 @@ export default function PassSuccessPage() {
               <p className="text-xs text-slate-600 mt-3">{t.redeemLater}</p>
             </div>
 
-            {/* 선물 링크 + QR */}
+            {/* 휴대폰 앱에서 시작 (QR — 구매 계정으로 앱 로그인 필요) */}
             <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm text-center mb-6">
               <h2 className="text-sm font-bold mb-1 flex items-center justify-center gap-1.5">
-                <Gift size={15} className="text-blue-600" /> {t.giftTitle}
+                <Smartphone size={15} className="text-blue-600" /> {t.giftTitle}
               </h2>
               <p className="text-xs text-slate-500 mb-4">{t.giftDesc}</p>
               {giftUrl && (

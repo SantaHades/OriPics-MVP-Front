@@ -128,6 +128,7 @@ export type RedeemResult =
         | "code_already_used"   // 이미 등록/사용된 코드
         | "code_expired"        // 미등록 유효기간(1년) 경과
         | "code_revoked"        // 환불 등으로 무효화
+        | "not_owner"           // 판매분은 구매 계정 전용 (A안 변형 — 상품권 분류 회피, 2026-09-01)
         | "pass_already_active"; // 본인에게 이미 활성 패스 존재
     };
 
@@ -158,7 +159,11 @@ export async function redeemPass(code: string, userId: string): Promise<RedeemRe
       WHERE code = ${code}
         AND status = 'issued'
         AND code_expires_at > now()
+        AND (payment_id IS NULL OR purchaser_id = ${userId})
       RETURNING id, code, redeemed_at, expires_at, total_proofs, used_proofs`;
+      // payment_id 조건 = A안 변형(2026-09-01 포트원 회신): 결제로 발급된 패스는
+      // 구매 계정 전용(양도 불가 — 상품권 분류 회피). 어드민 발급분(payment_id NULL,
+      // 베타 테스터 선물 등)은 종전대로 누구나 등록 가능.
   } catch (e: any) {
     // 23505 = day_pass_one_active 위반 → 이미 활성 패스 보유
     const msg = String(e?.message ?? "");
@@ -172,11 +177,15 @@ export async function redeemPass(code: string, userId: string): Promise<RedeemRe
     // 실패 원인 구분 (등록은 이미 원자적으로 거부됨 — 여기는 안내용 조회)
     const existing = await prisma.dayPass.findUnique({
       where: { code },
-      select: { status: true, codeExpiresAt: true },
+      select: { status: true, codeExpiresAt: true, paymentId: true, purchaserId: true },
     });
     if (!existing) return { ok: false, reason: "invalid_code" };
     if (existing.status === "revoked") return { ok: false, reason: "code_revoked" };
     if (existing.status !== "issued") return { ok: false, reason: "code_already_used" };
+    if (existing.codeExpiresAt <= new Date()) return { ok: false, reason: "code_expired" };
+    if (existing.paymentId && existing.purchaserId !== userId) {
+      return { ok: false, reason: "not_owner" };
+    }
     return { ok: false, reason: "code_expired" };
   }
 

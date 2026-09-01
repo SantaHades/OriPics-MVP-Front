@@ -121,7 +121,7 @@ export default function ProfilePage() {
       });
       const d = await res.json().catch(() => ({}) as any);
       if (!res.ok) {
-        const KNOWN = ["invalid_code", "invalid_code_format", "code_already_used", "pass_already_active", "code_expired", "code_revoked"];
+        const KNOWN = ["invalid_code", "invalid_code_format", "code_already_used", "pass_already_active", "code_expired", "code_revoked", "not_owner"];
         // 429는 서버가 사용자 문구(message)를 직접 내려줌, 그 외는 detail 키 매핑
         setPassError(
           typeof d?.message === "string" && d.message

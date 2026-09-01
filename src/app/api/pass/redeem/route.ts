@@ -12,7 +12,8 @@ export const runtime = "nodejs";
  * 정책: 로그인만 하면 티어 무관 등록 가능. 계정당 활성 패스 1장(DB 강제).
  *       등록 시점부터 24시간 · 촬영 인증 10회.
  * 오류: 404 invalid_code · 409 code_already_used/pass_already_active ·
- *       410 code_expired/code_revoked · 429 rate_limited
+ *       410 code_expired/code_revoked · 403 not_owner(판매분 구매 계정 전용) ·
+ *       429 rate_limited
  */
 export async function POST(req: NextRequest) {
   const userId = await getSessionUserId();
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
   if (!result.ok) {
     const status =
       result.reason === "invalid_code" ? 404 :
+      result.reason === "not_owner" ? 403 :
       result.reason === "code_expired" || result.reason === "code_revoked" ? 410 : 409;
     return NextResponse.json({ detail: result.reason }, { status });
   }

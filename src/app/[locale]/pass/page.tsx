@@ -25,7 +25,7 @@ const FEATURES = {
     { icon: BadgeCheck, title: "기기 검증(Verified) 포함", body: "기기 검증을 통과한 촬영은 Verified 등급으로 인증됩니다 — Free 플랜이어도 적용됩니다." },
     { icon: CalendarCheck, title: "공개링크 1년 보관", body: "패스로 발행한 공개링크는 발행 시점부터 1년간 보관됩니다. 사고·분쟁 증거처럼 오래 남겨야 하는 기록에 알맞습니다." },
     { icon: FileText, title: "인증서 PDF 무료", body: "패스로 인증한 사진의 인증서 PDF 발급·재발급에 추가 차감이 없습니다." },
-    { icon: Gift, title: "선물할 수 있어요", body: "구매하면 등록 코드를 받습니다. 코드를 전달하면 다른 사람도 등록해 쓸 수 있습니다 — 가족·지인에게 필요한 날 선물하세요." },
+    { icon: Gift, title: "사놓고 필요한 날 시작", body: "구매하면 내 계정에 담아둘 수 있습니다. 사진 찍을 일이 생긴 날 사용을 시작하세요 — 시작 전에는 시간이 흐르지 않습니다." },
   ],
   en: [
     { icon: Clock, title: "24 hours · 10 capture proofs", body: "From the moment you redeem the code, you get 10 capture proofs for 24 hours — regardless of photo size." },
@@ -33,7 +33,7 @@ const FEATURES = {
     { icon: BadgeCheck, title: "Device verification (Verified) included", body: "Captures that pass device attestation are certified as Verified — even on the Free plan." },
     { icon: CalendarCheck, title: "Public links kept for 1 year", body: "Links published with a pass are kept for one year from publication — suited for records like accident evidence." },
     { icon: FileText, title: "Certificate PDF at no extra cost", body: "Issuing and reissuing the certificate PDF for pass proofs costs nothing extra." },
-    { icon: Gift, title: "Giftable", body: "You receive a redemption code at purchase. Pass it on and anyone can redeem it — gift it to family or friends for the day they need it." },
+    { icon: Gift, title: "Buy now, start when needed", body: "Your pass is kept on your account after purchase. Start it on the day you need it — the clock doesn't run until you do." },
   ],
 };
 
@@ -46,9 +46,9 @@ const RULES = {
     "공개링크는 발행 시점부터 1년 보관됩니다 (Pro 구독 전환 시 무기한).",
     "활성 패스는 계정당 1장 — 10회를 모두 쓰거나 24시간이 지나면 곧바로 새 패스를 등록할 수 있습니다.",
     "파일 업로드·붙여넣기 인증은 패스가 아닌 잔여 건수에서 차감됩니다.",
-    "미등록 코드의 유효기간은 발급일로부터 1년입니다.",
-    "미등록 코드는 환불할 수 있으나, 등록(사용 개시) 후에는 환불이 불가합니다.",
-    "본 패스는 OriPics 서비스 전용 이용권으로, 타 서비스 사용·현금 환급·재판매가 불가합니다.",
+    "사용을 시작하지 않은 패스의 유효기간은 구매일로부터 1년입니다.",
+    "사용 시작 전에는 환불할 수 있으나, 사용 시작 후에는 환불이 불가합니다.",
+    "구매한 패스는 구매 계정 전용으로 양도·재판매·현금 환급이 불가하며, OriPics 서비스에서만 사용할 수 있습니다.",
   ],
   en: [
     "Your 24-hour window starts immediately upon redemption (cannot be paused).",
@@ -58,9 +58,9 @@ const RULES = {
     "Public links are kept for 1 year from publication (unlimited if you subscribe to Pro).",
     "One active pass per account — once all 10 proofs are used or 24 hours pass, you can redeem a new pass right away.",
     "File-upload and paste proofs are deducted from your credits, not the pass.",
-    "Unredeemed codes are valid for 1 year from issuance.",
-    "Unredeemed codes are refundable; once redeemed, the pass is non-refundable.",
-    "This pass is valid only within OriPics — no use in other services, cash-out, or resale.",
+    "An unstarted pass is valid for 1 year from purchase.",
+    "Refundable before you start using it; non-refundable once started.",
+    "Purchased passes are exclusive to the purchasing account — no transfer, resale, or cash-out; valid only within OriPics.",
   ],
 };
 
@@ -101,7 +101,7 @@ export default function PassProductPage() {
               <span className="text-sm font-normal text-slate-500"> {ko ? "(부가세 포함)" : "(VAT included)"}</span>
             </p>
             <p className="text-xs text-slate-500 mt-2">
-              {ko ? "등록 후 24시간 이내 · 촬영 인증 10회 · 인증서 PDF · 공개링크 1년 보관 · 선물 가능" : "24h from redemption · 10 capture proofs · certificate PDF · 1-year links · giftable"}
+              {ko ? "시작 후 24시간 · 촬영 인증 10회 · 인증서 PDF · 공개링크 1년 보관 · 구매 계정 전용" : "24h from start · 10 capture proofs · certificate PDF · 1-year links · account-exclusive"}
             </p>
           </div>
           <div className="mt-6 sm:mt-0 shrink-0 text-center">
@@ -150,8 +150,8 @@ export default function PassProductPage() {
         <h2 className="text-2xl font-bold tracking-tight mb-6">{ko ? "이렇게 씁니다" : "How it works"}</h2>
         <ol className="grid sm:grid-cols-3 gap-4 mb-14">
           {(ko
-            ? ["구매하면 등록 코드를 받아요 (선물해도 돼요)", "찍을 일이 생긴 날, 앱 홈탭이나 웹 프로필에서 코드를 등록해요 — 이 순간부터 24시간", "촬영탭에서 평소처럼 찍기만 하면 인증·공개링크·인증서가 자동으로 완성돼요"]
-            : ["Buy and receive a redemption code (or gift it)", "On the day you need it, redeem the code in the app home tab or web profile — 24 hours start now", "Just shoot as usual — certification, public link and certificate are completed automatically"]
+            ? ["구매하면 패스가 내 계정에 담겨요 (아직 시작 전)", "찍을 일이 생긴 날, 앱 홈탭이나 웹 프로필에서 사용을 시작해요 — 이 순간부터 24시간", "촬영탭에서 평소처럼 찍기만 하면 인증·공개링크·인증서가 자동으로 완성돼요"]
+            : ["Buy — the pass is kept on your account (not started yet)", "On the day you need it, start the pass in the app home tab or web profile — 24 hours begin now", "Just shoot as usual — certification, public link and certificate are completed automatically"]
           ).map((step, i) => (
             <li key={step} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
               <p className="text-blue-600 font-extrabold text-lg mb-2">{i + 1}</p>

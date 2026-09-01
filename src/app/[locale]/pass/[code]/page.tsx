@@ -1,6 +1,8 @@
 "use client";
 
-// 원데이 패스 선물 랜딩 (A-60 Phase 3, 2026-08-31) — 코드 공유 링크의 목적지.
+// 원데이 패스 코드 랜딩 (A-60 Phase 3) — 코드 링크의 목적지. 2026-09-01 A안 변형:
+// 판매분은 구매 계정 전용(선물 프레이밍 제거 — 상품권 분류 회피). 어드민 발급분(베타
+// 테스터 배포)은 종전대로 누구나 등록 가능해 이 페이지가 계속 쓰인다.
 // 코드 유효성은 여기서 검증하지 않는다(공개 검증 API를 만들면 코드 열람 채널이 됨) —
 // 등록 시점에 서버가 판정. QR은 이 페이지 URL을 담아 앱 스캐너(코드 패턴 추출)와 호환.
 import { Link } from "@/navigation";
@@ -16,7 +18,7 @@ function formatCode(raw: string): string | null {
   return `OP-${body.slice(0, 4)}-${body.slice(4, 8)}-${body.slice(8, 12)}`;
 }
 
-export default function PassGiftLanding() {
+export default function PassCodeLanding() {
   const params = useParams();
   const ko = ((params?.locale as string) || "ko") !== "en";
   const code = formatCode((params?.code as string) || "");
@@ -65,9 +67,9 @@ export default function PassGiftLanding() {
         </Link>
 
         <div className="text-center mb-8">
-          <p className="text-4xl mb-3">🎁</p>
+          <p className="text-4xl mb-3">🎟️</p>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
-            {ko ? "원데이 패스가 도착했어요" : "A One-Day Pass has arrived"}
+            {ko ? "원데이 패스 시작하기" : "Start your One-Day Pass"}
           </h1>
           <p className="text-sm text-slate-600 leading-relaxed">
             {ko
@@ -133,8 +135,8 @@ export default function PassGiftLanding() {
         {/* 핵심 주의 */}
         <div className="p-4 rounded-2xl border border-amber-300 bg-amber-50 text-xs text-amber-900 leading-relaxed mb-10">
           {ko
-            ? "⚠️ 등록한 순간부터 24시간이 시작됩니다 — 사진 찍을 일이 있는 날 등록하세요. 등록 후에는 환불이 불가하며, 코드를 아는 사람은 누구나 등록할 수 있으니 링크를 소중히 보관하세요."
-            : "⚠️ The 24-hour window starts the moment you redeem — save it for the day you need it. Redeemed passes are non-refundable, and anyone with this link can redeem the code, so keep it safe."}
+            ? "⚠️ 등록(사용 시작)한 순간부터 24시간이 시작됩니다 — 사진 찍을 일이 있는 날 등록하세요. 사용 시작 후에는 환불이 불가하며, 구매한 패스는 구매 계정에서만 등록할 수 있습니다."
+            : "⚠️ The 24-hour window starts the moment you redeem — save it for the day you need it. Non-refundable once started; purchased passes can only be redeemed by the purchasing account."}
         </div>
 
         <p className="text-center">
