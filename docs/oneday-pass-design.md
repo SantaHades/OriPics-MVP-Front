@@ -108,4 +108,18 @@ model DayPass {
   어드민 발급 → sign/confirm/publish/certificate 분기. e2e는 어드민 발급 코드로.
 - **Phase 2** ✅(8/31 구현 완료): 웹=프로필 패스 카드·코드 등록·최근 내역 라벨·히스토리 태그(배포됨).
   모바일=홈 패스 카드·QR 등록 모달·셔터→자동 발행+PDF 워밍·목록 태그 — **빌드 10 탑승 대기**(실기기 검증 필요).
-- **Phase 3 (포트원 회신 후)**: 단건 결제 → 코드 발급 → 선물 링크. 약관·환불 문구.
+- **Phase 3** ✅(9/1 결제 연동 선작성 완료 — env 대기): 단건 결제 → 코드 발급 → 선물 링크.
+  - **판매 개시 스위치 = `NEXT_PUBLIC_PORTONE_CHANNEL_KEY_INICIS_ONETIME`** (일반결제 전용
+    채널키 — 정기결제 채널과 다름). KG 일반결제 MID 발급 → 키파일 "일반결제용" cs@portone.io
+    전송 → 포트원 콘솔 채널 등록 → 채널키를 Vercel env 설정 + 재배포하면 즉시 판매 개시.
+    env 미설정 상태에선 /pass 버튼 "출시 준비 중"·/pass/checkout "준비 중" 안내 유지.
+  - 구현: `/pass/checkout`(requestPayment 단건 CARD, 휴대폰 필수, 청약철회 고지) →
+    `/pass/success?paymentId=`(코드+복사·선물 링크·QR·등록 CTA, 멱등 재조회 안전) →
+    `POST /api/pass/purchase/complete`(레이트리밋 10/h) → `lib/pass/passPurchase.ts`
+    `verifyAndIssueDayPass`(PortOne 재질의: PAID·3,300원·customData {userId, product:"day_pass"}
+    소유권/상품 마커 검증 — H-1 정합, advisory lock 멱등, paymentId로 중복 발급 차단).
+  - webhook 통합: Transaction.Paid의 day_pass 결제는 안전망 발급(브라우저 미복귀 대비 —
+    코드는 CreditTransaction(day_pass_purchase).metadata.code로 본인 회수 가능),
+    Transaction.Cancelled는 미등록 코드 revoke(등록 후 환불은 로그만 — 수동 판단).
+  - 잔여: 실결제 e2e(MID 발급 후), 프로필 "구매한 패스" 목록 UI(선택 — 현재는 최근 내역
+    "원데이 패스 구매" 행), 1회 다매 구매(현재 1장 고정 — 상품권 리스크 완화 기본값).

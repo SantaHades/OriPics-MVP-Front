@@ -35,6 +35,8 @@ export const RATE_LIMITS = {
   sign: { name: "sign", windowSec: 3600, max: 120 },
   /** 원데이 패스 코드 등록(/api/pass/redeem) — 사용자별. 코드 무차별 대입 방어 (A-60) */
   passRedeem: { name: "passredeem", windowSec: 3600, max: 10 },
+  /** 원데이 패스 결제 완료(/api/pass/purchase/complete) — 사용자별. 타인 paymentId 대입 억제 (A-60 Phase 3) */
+  passPurchase: { name: "passpurchase", windowSec: 3600, max: 10 },
   /** 베타 테스터 신청(/api/beta/apply) — IP별. 공개 폼의 메일 발송 트리거라 스팸 방어 필수 */
   betaApply: { name: "betaapply", windowSec: 3600, max: 5 },
 } as const satisfies Record<string, RateLimitRule>;

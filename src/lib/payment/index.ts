@@ -100,5 +100,6 @@ export type CreditTransactionAction =
   | "pdf_issue"              // -10 증명서 PDF 발급
   | "day_pass_proof"         // 0 — 원데이 패스 촬영 인증 차감 기록 (A-60, 크레딧 미차감)
   | "day_pass_pdf"           // 0 — 원데이 패스 링크 PDF 발급 (A-60, Pro 월 5회 카운트와 분리)
+  | "day_pass_purchase"      // 0 — 원데이 패스 구매 기록 (A-60 Phase 3, 크레딧 미변동)
   | "subscription_grant"     // 구독 결제 시 추가 부여
   | "manual_adjust";         // 어드민 수동 조정

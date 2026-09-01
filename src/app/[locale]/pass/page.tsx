@@ -105,17 +105,33 @@ export default function PassProductPage() {
             </p>
           </div>
           <div className="mt-6 sm:mt-0 shrink-0 text-center">
-            {/* 판매 개시 시 이 버튼을 결제 플로우로 교체 (Phase 3 결제 연동) */}
-            <button
-              type="button"
-              disabled
-              className="px-8 py-4 rounded-2xl bg-slate-300 text-slate-600 font-bold cursor-not-allowed"
-            >
-              {ko ? "출시 준비 중" : "Coming soon"}
-            </button>
-            <p className="text-[11px] text-slate-400 mt-2">
-              {ko ? "결제 오픈을 준비하고 있어요" : "Payments are being prepared"}
-            </p>
+            {/* 판매 스위치 = 일반결제 채널키 env (Phase 3 완성 — MID 발급 후 env 설정+재배포로 개시) */}
+            {process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY_INICIS_ONETIME ? (
+              <>
+                <Link
+                  href="/pass/checkout"
+                  className="inline-block px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-colors"
+                >
+                  {ko ? "구매하기" : "Buy now"}
+                </Link>
+                <p className="text-[11px] text-slate-400 mt-2">
+                  {ko ? "카드 결제 · 코드 즉시 발급" : "Card payment · instant code"}
+                </p>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled
+                  className="px-8 py-4 rounded-2xl bg-slate-300 text-slate-600 font-bold cursor-not-allowed"
+                >
+                  {ko ? "출시 준비 중" : "Coming soon"}
+                </button>
+                <p className="text-[11px] text-slate-400 mt-2">
+                  {ko ? "결제 오픈을 준비하고 있어요" : "Payments are being prepared"}
+                </p>
+              </>
+            )}
           </div>
         </div>
 

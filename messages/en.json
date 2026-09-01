@@ -235,6 +235,7 @@
       "action_pdf_issue": "Certificate PDF issued",
       "action_day_pass_proof": "Day Pass capture proof",
       "action_day_pass_pdf": "Day Pass certificate PDF",
+      "action_day_pass_purchase": "One-Day Pass purchase",
       "action_manual_adjust": "Manual adjustment",
       "action_refund_cancel": "Subscription refund (balance restored)",
       "action_subscription_downgrade": "Subscription ended (moved to Free)",

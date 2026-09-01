@@ -235,6 +235,7 @@
       "action_pdf_issue": "인증서 PDF 발급",
       "action_day_pass_proof": "패스 촬영 인증",
       "action_day_pass_pdf": "패스 인증서 PDF",
+      "action_day_pass_purchase": "원데이 패스 구매",
       "action_manual_adjust": "수동 조정",
       "action_refund_cancel": "구독 환불 (이전 잔액 복원)",
       "action_subscription_downgrade": "구독 만료 (무료 전환)",

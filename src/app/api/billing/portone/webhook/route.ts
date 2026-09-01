@@ -8,6 +8,11 @@ import {
 } from "@/lib/payment/subscriptionGrant";
 import * as PortOne from "@portone/server-sdk";
 import { prisma } from "@/lib/prisma";
+import {
+  PASS_PRODUCT_MARKER,
+  verifyAndIssueDayPass,
+  revokeDayPassForPayment,
+} from "@/lib/pass/passPurchase";
 
 export const runtime = "nodejs";
 
@@ -45,6 +50,21 @@ export async function POST(req: NextRequest) {
 
   /** 콘솔/외부 취소 → 해당 결제로 활성화된 구독 회수 (멱등) */
   async function handleCancelled(paymentId: string, eventType: string) {
+    // 원데이 패스 결제의 환불이면 미등록 코드 무효화 (A-60 — 등록 후 상태는 수동 판단)
+    const passRevoke = await revokeDayPassForPayment(paymentId);
+    if (passRevoke === "revoked") {
+      console.warn("[portone/webhook] day pass code revoked on refund", { paymentId, eventType });
+      return NextResponse.json({ ok: true, pass_revoked: true });
+    }
+    if (passRevoke === "already_redeemed") {
+      // 정책상 등록 후 환불 불가 — 콘솔 강제 환불 등 예외는 로그만 남기고 수동 처리
+      console.error("[portone/webhook] refund for a REDEEMED day pass — manual review needed", {
+        paymentId,
+        eventType,
+      });
+      return NextResponse.json({ ok: true, pass_refund_needs_review: true });
+    }
+
     // 해당 결제의 grant TX로 사용자 식별
     const grant = await prisma.creditTransaction.findFirst({
       where: { action: "subscription_grant", metadata: { path: ["paymentId"], equals: paymentId } },
@@ -154,14 +174,35 @@ export async function POST(req: NextRequest) {
 
   let userId: string | undefined;
   let plan: PlanId | undefined;
+  let product: string | undefined;
   try {
     if (payment.customData) {
       const parsed = JSON.parse(payment.customData);
       if (typeof parsed?.userId === "string") userId = parsed.userId;
       if (isPlanId(parsed?.plan)) plan = parsed.plan;
+      if (typeof parsed?.product === "string") product = parsed.product;
     }
   } catch {
     /* customData 파싱 실패는 아래 누락 처리로 흡수 */
+  }
+
+  // 원데이 패스 단건 결제 (A-60 Phase 3) — 구독 경로와 분리 처리.
+  // 사용자가 success 페이지로 못 돌아온 경우(모바일 브라우저 종료 등)에도
+  // 코드가 발급되도록 보장. 코드 전달은 프로필 최근 내역/재방문 complete가 담당.
+  if (product === PASS_PRODUCT_MARKER) {
+    if (!userId) {
+      console.warn("[portone/webhook] day pass payment without userId; deferring to complete path", { paymentId });
+      return NextResponse.json({ ok: true, deferred: true });
+    }
+    const passResult = await verifyAndIssueDayPass({ paymentId, userId, secret: PORTONE_API_SECRET });
+    if (!passResult.ok) {
+      if (passResult.code === "portone_lookup_failed" || passResult.code === "db_update_failed") {
+        return NextResponse.json({ detail: passResult.code }, { status: 500 });
+      }
+      console.warn("[portone/webhook] day pass permanent rejection", { paymentId, code: passResult.code });
+      return NextResponse.json({ ok: true, rejected: passResult.code });
+    }
+    return NextResponse.json({ ok: true, pass_issued: true, alreadyProcessed: passResult.alreadyProcessed });
   }
 
   // plan 폴백: customData에 없으면 결제 금액으로 역추론
