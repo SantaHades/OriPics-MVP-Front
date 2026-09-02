@@ -486,6 +486,9 @@
   "Signup": {
     "title": "Create New Account",
     "subtitle": "Become a member of OriPics original proof service.",
+    "from_app_notice": "Coming from the app? Finish signing up here, then return to the app and sign in the same way (email or social button).",
+    "from_app_done_title": "You're all signed up!",
+    "from_app_done_body": "Now return to the OriPics app and sign in with the email and password you just created. You can close this window.",
     "google": "Start with Google",
     "naver": "Start with Naver",
     "kakao": "Start with Kakao",

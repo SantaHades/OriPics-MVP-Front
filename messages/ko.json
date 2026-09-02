@@ -486,6 +486,9 @@
   "Signup": {
     "title": "새로운 계정 만들기",
     "subtitle": "원본 인증 서비스 OriPics의 회원이 되어보세요.",
+    "from_app_notice": "앱에서 오셨네요! 여기서 가입을 마친 뒤, 앱으로 돌아가 같은 방법(이메일 또는 소셜 버튼)으로 로그인해 주세요.",
+    "from_app_done_title": "가입이 완료됐어요!",
+    "from_app_done_body": "이제 OriPics 앱으로 돌아가, 방금 만든 이메일과 비밀번호로 로그인해 주세요. 이 창은 닫으셔도 됩니다.",
     "google": "Google로 시작하기",
     "naver": "네이버로 시작하기",
     "kakao": "카카오로 시작하기",

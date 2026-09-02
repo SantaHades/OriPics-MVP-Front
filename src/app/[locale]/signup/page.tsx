@@ -33,7 +33,11 @@ export default function SignupPage() {
   };
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+  // 앱에서 연 경우(?from=app) — 웹 자동 로그인·홈 이동 대신 "앱으로 돌아가 로그인" 완료
+  // 화면을 표시 (forgot-password의 from=app 패턴, 2026-09-02. 앱 로그인 화면 링크 연동)
+  const fromApp = searchParams?.get("from") === "app";
+  const [appDone, setAppDone] = useState(false);
+
   const t = useTranslations("Signup");
   const tL = useTranslations("Login");
 
@@ -139,6 +143,12 @@ export default function SignupPage() {
         throw new Error(errorMsg);
       }
 
+      // 앱 유입 가입은 웹 세션을 만들지 않고 완료 화면으로 — 앱 복귀 후 로그인 유도
+      if (fromApp) {
+        setAppDone(true);
+        return;
+      }
+
       // 2. 가입 성공 시 즉시 로그인 처리
       const loginRes = await signIn("credentials", {
         email: formData.email,
@@ -161,6 +171,19 @@ export default function SignupPage() {
     }
   };
 
+  // 앱 유입 가입 완료 화면 — 폼 대신 앱 복귀 안내만 표시
+  if (appDone) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6">
+        <div className="w-full max-w-md text-center bg-white border border-slate-200 rounded-3xl p-10 shadow-sm animate-in fade-in duration-300">
+          <CheckCircle size={56} className="text-emerald-500 mx-auto mb-5" />
+          <h1 className="text-xl font-bold mb-2">{t("from_app_done_title")}</h1>
+          <p className="text-sm text-slate-600 leading-relaxed">{t("from_app_done_body")}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-50 via-white to-purple-50">
       <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
@@ -174,6 +197,12 @@ export default function SignupPage() {
         </div>
 
         <div className="auth-card">
+          {/* 앱 유입 안내 — 가입 후 앱으로 돌아가 로그인해야 함을 사전 고지 */}
+          {fromApp && (
+            <div className="mb-6 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-800 text-xs leading-relaxed">
+              {t("from_app_notice")}
+            </div>
+          )}
           {/* 소셜 가입 버튼 */}
           {/* 소셜 가입 버튼 — 순서: Apple·Google·Kakao·Naver (2026-08-26 대표 지정) */}
           <div className="flex justify-center gap-6 mb-8 group">
