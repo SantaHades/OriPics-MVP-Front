@@ -331,7 +331,7 @@ Adobe·Microsoft·Sony가 주도하는 국제 표준 **C2PA 적합성 인증(Con
 | nougi@hanmail.net | 허노욱 | 2026-08-31 | free / 4 | 7호, Android — 실가입=한메일 (Play 옵트인은 nougi6701@gmail.com) |
 | beetle486@gmail.com | 박성탁(탁이) | 2026-08-31 | free / 4 | 8호, iPhone — 실가입=gmail (전달=naver) |
 | sjharu@naver.com | 윤승주 | 2026-08-31 | free / 12 | 9호, iPhone |
-| joowonjudy@gmail.com | Judith Lee | 2026-09-03 | free / 12 | 10호 — 대표 지시 등업 (플랫폼 미확인) |
+| joowonjudy@gmail.com | Judith Lee | 2026-09-03 | free / 12 | 10호, Android — Play internal 등록됨 |
 
 ### 원데이 패스 선물 코드 (테스터 배포분)
 
@@ -339,6 +339,12 @@ Adobe·Microsoft·Sony가 주도하는 국제 표준 **C2PA 적합성 인증(Con
 - 코드↔테스터 매핑은 미기록 — 등록 시 `day_passes.redeemer_id`로 사후 확인 가능
   (어드민 발급분이라 `payment_id IS NULL`, 조회: `SELECT code, status, redeemer_id, redeemed_at FROM day_passes WHERE payment_id IS NULL`).
 - 등록 현황 점검 시 위 쿼리로 미사용 코드·등록자 확인.
+
+### Play 비공개 테스트 12명×14일 카운트 (프로덕션 게이트)
+
+- **2026-09-03: internal 테스터 명단 13명 등록 완료** (대표). ⚠️카운트 기준은 등록이 아니라 **옵트인 12명 연속 유지** — 확인=Play Console → 테스트 및 출시 → 프로덕션의 요구사항 체크리스트(실시간 옵트인 수 표시, API 미노출).
+- **옵트인 12명 도달 확인일 = 카운트 시작일로 여기에 기록** → +14일이 프로덕션 신청 가능일. 중간에 12명 미만으로 떨어지면 지연.
+- 14일 충족 후 프로덕션 신청 시 테스트 결과 설문 답변 필요.
 
 ### 승급 대기 (가입 확인 시 Pro 부여)
 | 이메일 | 이름 | 플랫폼 | 비고 |
