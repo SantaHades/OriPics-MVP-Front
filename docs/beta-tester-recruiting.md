@@ -331,6 +331,7 @@ Adobe·Microsoft·Sony가 주도하는 국제 표준 **C2PA 적합성 인증(Con
 | nougi@hanmail.net | 허노욱 | 2026-08-31 | free / 4 | 7호, Android — 실가입=한메일 (Play 옵트인은 nougi6701@gmail.com) |
 | beetle486@gmail.com | 박성탁(탁이) | 2026-08-31 | free / 4 | 8호, iPhone — 실가입=gmail (전달=naver) |
 | sjharu@naver.com | 윤승주 | 2026-08-31 | free / 12 | 9호, iPhone |
+| joowonjudy@gmail.com | Judith Lee | 2026-09-03 | free / 12 | 10호 — 대표 지시 등업 (플랫폼 미확인) |
 
 ### 원데이 패스 선물 코드 (테스터 배포분)
 
