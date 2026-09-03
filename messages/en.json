@@ -23,7 +23,9 @@
       "description": "By embedding an invisible digital fingerprint,\nyou can verify the authenticity anytime.",
       "link_how": "What is a digital fingerprint?",
       "link_cases": "Where is it used?",
-      "floating": "Is this photo real?",
+      "floating_1": "Is this photo real?",
+      "floating_2": "Wasn't it taken afterwards?",
+      "floating_3": "Is it AI?",
       "eyebrow": "Photo originality certification\nConformant to the international C2PA standard"
     },
     "upload": {

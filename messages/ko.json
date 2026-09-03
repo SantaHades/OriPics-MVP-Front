@@ -23,7 +23,9 @@
       "description": "이미지에 보이지 않는 디지털 지문을 새겨\n언제든 원본 여부를 검증할 수 있습니다.",
       "link_how": "디지털 지문이 뭔가요?",
       "link_cases": "어디에 쓰나요?",
-      "floating": "이 사진, 진짜예요?",
+      "floating_1": "이 사진 진짜예요?",
+      "floating_2": "나중에 찍은 거 아니죠?",
+      "floating_3": "AI인가?",
       "eyebrow": "사진 원본 인증\n국제 표준 C2PA 적합성 인증 서비스"
     },
     "upload": {
