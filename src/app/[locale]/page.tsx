@@ -1136,9 +1136,9 @@ export default function Home() {
         <section className="relative w-full text-center mb-16 pt-8 flex flex-col items-center">
           {/* 떠다니는 말풍선 3종("이 사진 진짜예요?"·"나중에 찍은 거 아니죠?"·"AI인가?") — 장식용(pointer-events 없음), 모바일 1개·sm+ 2개·md+ 3개 (2026-09-03 대표 아이디어) */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-56 sm:h-64 md:h-72 z-0 overflow-hidden">
-            <span className="inline-block rounded-full bg-white/85 border border-blue-100 shadow-sm text-blue-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-a absolute top-2 left-[4%]">{t("hero.floating_1")}</span>
-            <span className="inline-block rounded-full bg-white/85 border border-blue-100 shadow-sm text-blue-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-b absolute top-[42%] right-[6%] hidden sm:inline-block">{t("hero.floating_2")}</span>
-            <span className="inline-block rounded-full bg-white/85 border border-blue-100 shadow-sm text-blue-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-c absolute bottom-3 left-[22%] hidden md:inline-block">{t("hero.floating_3")}</span>
+            <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-a absolute top-2 left-[4%]">{t("hero.floating_1")}</span>
+            <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-b absolute top-[42%] right-[6%] hidden sm:inline-block">{t("hero.floating_2")}</span>
+            <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-c absolute bottom-3 left-[22%] hidden md:inline-block">{t("hero.floating_3")}</span>
           </div>
           {/* 베타 모집 배지 — 모바일 전용 (네비 배지는 xs+ 전용, 2026-08-31 대표: 히어로 문구 바로 위 좌측정렬) */}
           <div className="relative z-10 w-full text-left xs:hidden mb-3">
