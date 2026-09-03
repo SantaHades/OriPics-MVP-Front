@@ -26,7 +26,9 @@
       "floating_1": "이 사진 진짜예요?",
       "floating_2": "나중에 찍은 거 아니죠?",
       "floating_3": "AI 같은데?",
-      "eyebrow": "사진 원본 인증\n국제 표준 C2PA 적합성 인증 서비스"
+      "eyebrow": "사진 원본 인증\n국제 표준 C2PA 적합성 인증 서비스",
+      "eyebrow_link": "바로보기",
+      "eyebrow_link_title": "C2PA 공식 적합 제품 목록에서 OriPics 보기 (새 창)"
     },
     "upload": {
       "idle": "☁️ 이미지를 선택하거나 붙여넣으세요",

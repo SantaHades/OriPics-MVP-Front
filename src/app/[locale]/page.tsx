@@ -1145,8 +1145,35 @@ export default function Home() {
             <BetaRecruit variant="hero" />
           </div>
           {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
-          <p className="relative z-10 text-sm md:text-base text-slate-600 mb-4 whitespace-pre-line leading-relaxed">
-            {t("hero.eyebrow")}
+          <p className="relative z-10 text-sm md:text-base text-slate-600 mb-4 leading-relaxed">
+            {(() => {
+              // 2줄째(C2PA 적합성) 오른쪽에 '바로보기' — C2PA Conformance Explorer를 OriPics로 필터한 URL(?q=)로 열어
+              // 공식 적합 제품 목록에 OriPics 카드만 보이게 함 (2026-09-04 대표 요청)
+              const [first, ...rest] = t("hero.eyebrow").split("\n");
+              return (
+                <>
+                  {first}
+                  {rest.length > 0 && (
+                    <>
+                      <br />
+                      <span>
+                        {rest.join(" ")}
+                        <a
+                          href="https://spec.c2pa.org/conformance-explorer/?q=OriPics"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 whitespace-nowrap text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300 text-xs md:text-sm align-baseline"
+                          title={t("hero.eyebrow_link_title")}
+                        >
+                          {t("hero.eyebrow_link")}
+                          <span aria-hidden="true"> ↗</span>
+                        </a>
+                      </span>
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </p>
           {/* 모바일=3줄(1|2|3), 데스크톱=2줄(1+2|3) — 대표 시안 반응형 줄바꿈 (2026-08-29) */}
           <h1 className="relative z-10 text-3xl md:text-4xl font-extrabold mb-5 leading-snug max-w-2xl mx-auto">
