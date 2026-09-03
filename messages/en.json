@@ -411,7 +411,7 @@
         },
         {
           "q": "Can I share a certified image with others?",
-          "a": "Yes! By creating a Quick Link, anyone can verify the original certification status in their web browser. Quick Links remain valid for 7 days on the Free plan, and for as long as you subscribe with Pro's Storage Box. Note: Sending the image file directly through social media (KakaoTalk, Instagram, WhatsApp, etc.) may break the certification, as these platforms automatically compress and resize images. To preserve the certification, we recommend sharing via Quick Link."
+          "a": "Yes! By creating a Quick Link, anyone can verify the original certification status in their web browser. Quick Links remain valid for 7 days on the Free plan, and for as long as you subscribe with Pro's Storage Box. Note: Sending the image file directly through social media (KakaoTalk, Instagram, WhatsApp, etc.) may break the certification, as these platforms automatically compress and resize images. To preserve the certification, we recommend sharing via Quick Link. When you share a public link in a messenger (KakaoTalk, LINE, Slack, iMessage, etc.), a small photo thumbnail appears in the chat; that thumbnail is briefly cached by the messenger service and does not affect the certified original."
         },
         {
           "q": "Are my images stored on the server?",
