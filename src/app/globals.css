@@ -58,9 +58,9 @@
   80%  { transform: translate(-20px, 30px) rotate(-1deg); opacity: .85; }
   100% { transform: translate(0, 0) rotate(0deg); opacity: .4; }
 }
-.hero-float-a { animation: hero-float-a 19s ease-in-out infinite; }
-.hero-float-b { animation: hero-float-b 24s ease-in-out infinite 3s; }
-.hero-float-c { animation: hero-float-c 29s ease-in-out infinite 7s; }
+.hero-float-a { animation: hero-float-a 28s ease-in-out infinite; }
+.hero-float-b { animation: hero-float-b 36s ease-in-out infinite 3s; }
+.hero-float-c { animation: hero-float-c 44s ease-in-out infinite 7s; }
 @media (prefers-reduced-motion: reduce) {
   .hero-float-a, .hero-float-b, .hero-float-c { animation: none; opacity: .5; }
 }
