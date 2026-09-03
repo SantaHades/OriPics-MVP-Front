@@ -194,7 +194,7 @@
       "eyebrow": "표준 호환",
       "title": "국제 표준 인증 적용",
       "body": "공개링크를 생성한 모든 인증 이미지에는 C2PA 표준 매니페스트가 자동 첨부됩니다.\nOriPics 사이트가 아니더라도 표준을 지원하는 어떤 도구로도 출처를 검증할 수 있습니다.",
-      "point_c2pa": "Adobe·Microsoft·Sony·BBC·Intel이 만든 콘텐츠 출처·무결성 표준. 모든 인증 이미지에 자동 첨부됩니다.",
+      "point_c2pa": "Adobe·Microsoft·Sony·BBC·Intel이 만든 콘텐츠 출처·무결성 표준. 공개링크로 발행한 모든 인증 이미지에 자동 첨부됩니다.",
       "point_jpeg_trust": "ISO/IEC 21617 (JPEG Trust) 호환. 검증 응답이 Trust Report 구조를 따라 신뢰 등급을 함께 반환합니다.",
       "point_open_label": "OPEN",
       "point_open": "벤더 락인 없이 contentcredentials.org · Adobe Photoshop · Verify by Truepic 등 어떤 C2PA 도구에서도 검증 가능."

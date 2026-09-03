@@ -194,7 +194,7 @@
       "eyebrow": "Open standard",
       "title": "We follow open international standards, not a walled garden",
       "body": "Every proof image with a public link automatically carries a C2PA standard manifest.\nEven if our site disappears, provenance is independently verifiable in any C2PA-aware tool.",
-      "point_c2pa": "The content provenance and authenticity standard built by Adobe, Microsoft, Sony, BBC, and Intel — auto-attached to every proof image.",
+      "point_c2pa": "The content provenance and authenticity standard built by Adobe, Microsoft, Sony, BBC, and Intel — auto-attached to every proof image published with a public link.",
       "point_jpeg_trust": "ISO/IEC 21617 (JPEG Trust) compatible. Verification responds in the Trust Report shape with an overall trust level.",
       "point_open_label": "OPEN",
       "point_open": "No vendor lock-in — verifiable on contentcredentials.org, Adobe Photoshop, Verify by Truepic, and any other C2PA-aware tool."

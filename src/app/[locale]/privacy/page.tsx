@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-05-10";
+const LAST_UPDATED = "2026-09-03";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const COMPANY_ADDRESS_EN =
@@ -144,7 +144,7 @@ function PrivacyKo() {
           </tr>
           <tr>
             <td>SSL.com</td>
-            <td>C2PA 콘텐츠 자격증명 서명 키 보관·서명 서비스(eSigner Cloud HSM)</td>
+            <td>C2PA 콘텐츠 자격증명 서명 인증서 발급 및 타임스탬프(TSA) 서비스</td>
             <td>미국</td>
           </tr>
           <tr>
@@ -316,7 +316,7 @@ function PrivacyEn() {
           <tr><td>Google LLC</td><td>OAuth login (with user consent)</td><td>United States</td></tr>
           <tr><td>NAVER Corp.</td><td>OAuth login (with user consent)</td><td>Republic of Korea</td></tr>
           <tr><td>Kakao Corp.</td><td>OAuth login (with user consent)</td><td>Republic of Korea</td></tr>
-          <tr><td>SSL.com</td><td>C2PA content credentials signing key custody (eSigner Cloud HSM)</td><td>United States</td></tr>
+          <tr><td>SSL.com</td><td>C2PA content credentials signing certificate issuance and timestamping (TSA) service</td><td>United States</td></tr>
           <tr><td>PortOne</td><td>Subscription payment processing (after J-7)</td><td>Republic of Korea</td></tr>
         </tbody>
       </table>
