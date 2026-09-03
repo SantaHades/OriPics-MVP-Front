@@ -5,7 +5,7 @@
 // 버튼만 결제 플로우로 교체한다. KG이니시스 MID 심사의 "사이트 상품 노출" 요건 겸용.
 // 문구는 verified-trust-model.md 가이드 준수 — Verified는 "기기 검증 통과 시"로만 표기.
 import { Link } from "@/navigation";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Ticket,
@@ -67,6 +67,8 @@ const RULES = {
 export default function PassProductPage() {
   const params = useParams();
   const ko = ((params?.locale as string) || "ko") !== "en";
+  // 앱 설정탭 ⓘ에서 열린 경우(from=app): iOS 3.1.1(외부 결제 유도) 회피 — 가격·구매 카드 숨김, 안내만 (2026-09-03)
+  const fromApp = useSearchParams()?.get("from") === "app";
   const features = FEATURES[ko ? "ko" : "en"];
   const rules = RULES[ko ? "ko" : "en"];
 
@@ -92,7 +94,8 @@ export default function PassProductPage() {
           </p>
         </div>
 
-        {/* 가격 카드 + 구매(준비 중) */}
+        {/* 가격 카드 + 구매(준비 중) — 앱 유입(from=app)에서는 미표시 */}
+        {!fromApp && (
         <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-sm mb-14 sm:flex items-center justify-between gap-8">
           <div>
             <p className="text-sm text-slate-500 mb-1">{ko ? "1장" : "One pass"}</p>
@@ -134,6 +137,7 @@ export default function PassProductPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* 기능 카드 */}
         <div className="grid sm:grid-cols-3 gap-4 mb-14">

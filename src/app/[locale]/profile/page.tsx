@@ -981,16 +981,21 @@ export default function ProfilePage() {
             </summary>
             <div className="px-5 pb-4 text-sm text-slate-700">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">{tCredits("rules_costs_title")}</p>
+              {/* 각 항목 아래 희미한 작은 설명문 — 앱 시트와 동일 6항목 (2026-09-03 대표 요청) */}
               {([
-                ["rules_verify_label", "rules_verify_cost"],
-                ["rules_standard_label", "rules_standard_cost"],
-                ["rules_verified_label", "rules_verified_cost"],
-                ["rules_link_label", "rules_link_cost"],
-                ["rules_pdf_label", "rules_pdf_cost"],
-              ] as const).map(([labelKey, costKey]) => (
-                <div key={labelKey} className="flex justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-500">{tCredits(labelKey)}</span>
-                  <span className="font-semibold">{tCredits(costKey)}</span>
+                ["rules_local_label", "rules_local_cost", "rules_local_desc"],
+                ["rules_verify_label", "rules_verify_cost", "rules_verify_desc"],
+                ["rules_standard_label", "rules_standard_cost", "rules_standard_desc"],
+                ["rules_verified_label", "rules_verified_cost", "rules_verified_desc"],
+                ["rules_link_label", "rules_link_cost", "rules_link_desc"],
+                ["rules_pdf_label", "rules_pdf_cost", "rules_pdf_desc"],
+              ] as const).map(([labelKey, costKey, descKey]) => (
+                <div key={labelKey} className="flex justify-between gap-4 py-2 border-b border-slate-100">
+                  <div className="min-w-0">
+                    <span className="text-slate-600">{tCredits(labelKey)}</span>
+                    <p className="text-[11px] leading-snug text-slate-400 mt-0.5">{tCredits(descKey)}</p>
+                  </div>
+                  <span className="font-semibold shrink-0">{tCredits(costKey)}</span>
                 </div>
               ))}
               <p className="text-xs text-slate-500 mt-2">{tCredits("rules_multiplier")}</p>
