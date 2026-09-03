@@ -89,7 +89,7 @@ JPEG Trust 채택) 표준의 적합성 인증(Conformant) 제품입니다. 발�
 있습니다.
 
 ▣ 요금제
-• Free — 월 5회 사진 인증(표준 크기 기준), 공개링크 7일 보관
+• Free — 월 6회 사진 인증(표준 크기 기준), 공개링크 7일 보관
 • Pro — 월 9,900원: 월 1,000건 이용(표준 크기 사진 인증 기준 약 330회),
   보관함 계속 보관, 촬영 검증(Verified), 인증서 PDF
 ※ 사용하지 않은 이용 건수는 다음 달로 이월되지 않습니다.
@@ -138,7 +138,7 @@ trust list — verifiable in any standards-aware tool, independent of
 OriPics.
 
 ▣ Pricing
-• Free — 5 photo proofs per month (standard size), 7-day public links
+• Free — 6 photo proofs per month (standard size), 7-day public links
 • Pro — ₩9,900/month: 1,000 usage credits per month (≈330 standard-size
   photo proofs), continuous storage, Verified capture, certificate PDFs
 ※ Unused credits do not roll over to the next month.
@@ -174,7 +174,7 @@ Operated by SantaHades Co., Ltd.
 ## 2. Google Play Store — **게시 완료(2026-08-24), 프로덕션 전환 시 §1.4 신판으로 갱신**
 
 - 스토어 등록정보·데이터 보안·IARC 등급 제출 완료(8/24 심사 통과분).
-- 8/24 게시본에는 "C2PA 자동첨부 — 인증서 적용 후 제공 예정" 문구 있음 → **운영 cert 라이브(9/2)로 원복 필요** (프로덕션 전환 작업에 포함).
+- ~~8/24 게시본 "인증서 적용 후 제공 예정" 문구~~ → **✅ 2026-09-03 Play Developer API로 ko-KR 등록정보 교체 완료**(전체 설명=§1.4 한국어판 Play 적응본: 문단 줄바꿈 해제·"기기 무결성 검증(Google Play Integrity)" 표기 / 짧은 설명=아래 신판). Google 등록정보 검토 대기. 이후 갱신도 같은 API 경로로 가능.
 - Full description은 §1.4 한국어판과 동일 사용. Short description(80자): "촬영하는 순간 원본임을 인증하세요. 사고·분쟁·거래의 증거 사진에. C2PA 표준." (~44자)
 
 ---
@@ -223,7 +223,7 @@ Operated by SantaHades Co., Ltd.
 | 8 | 배포 국가 결정 | ✅ **한국만** (9/3 대표 확정 — Play와 동일. 글로벌 USD 요금·해외 결제 A-59 확정 후 국가 추가, 재심사 불요) |
 | 9 | 출시 방식 | ✅ **수동 출시** (9/3 대표 확정 — ASC "Manually release this version", Android 프로덕션 승인과 같은 날 동시 오픈) |
 | 10 | 제출 빌드 | ⬜ 빌드 11 (가입 링크 등 대기분 탑승) |
-| 11 | 정식 전환 스위치 | ⬜ appLinks.ts 베타→정식 링크, BetaNotice 해제(EXPO_PUBLIC_BETA=false), Play 설명 "제공 예정" 원복 |
+| 11 | 정식 전환 스위치 | ⬜ appLinks.ts 베타→정식 링크, BetaNotice 해제(EXPO_PUBLIC_BETA=false). ~~Play 설명 원복~~ ✅9/3 API로 완료 |
 
 ---
 
@@ -261,3 +261,4 @@ OriPics certifies photo authenticity at the moment of capture.
 | 2026-05-10 | 최초 작성 — Apple/Google 카피, Privacy Label 표, 키워드 리서치 |
 | 2026-09-03 | **정식 출시용 전면 현행화** — 인앱결제 No(결정 B)·'인증' 용어 통일·요금 표기 현행화(월 1,000건·이월 불가)·신기능 반영(제보 탭·인증서 PDF·Verified 상세·C2PA 신뢰 목록 서명)·EN 키워드 96자(U-15 해소)·연령 4+ 확정안·심사 노트(§6)·체크리스트 갱신. 가정한 결정 3가지는 문서 상단 |
 - 2026-09-03: 대표 검토 완료 — 가정 3가지(4+·패스 앱 설명 제외·결제정보 미수집) 승인, 배포 국가 한국만, 수동 출시 확정. 문서 상태 초안→확정.
+- 2026-09-03: Free 표기 5회→6회 정정(웹 요금제와 통일, 대표 지시). Play ko-KR 등록정보를 §1.4 신판(Play 적응본)+신 짧은 설명으로 API 교체·검증.
