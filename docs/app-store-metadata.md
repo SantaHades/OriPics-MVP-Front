@@ -156,11 +156,11 @@ Operated by SantaHades Co., Ltd.
 
 | 언어 | 카피 | 글자수 |
 |---|---|---|
-| 한국어 | 원본인증,사진인증,원본증명,교통사고,사고증거,중고거래,위변조방지,사진출처,C2PA,디지털지문 | ~64 |
-| English | photo proof,image authenticity,c2pa,content credentials,provenance,jpeg trust,evidence,deepfake | 96 ✓ |
+| 한국어 | 원본인증,사진인증,원본증명,교통사고,사고증거,중고거래,위변조방지,사진출처,C2PA,디지털지문 | 51 |
+| English | photo proof,image authenticity,c2pa,content credentials,provenance,jpeg trust,evidence,deepfake | 95 ✓ (한도 100) |
 
 - KO: 검색어로는 "증명"도 여전히 쓰이므로 `원본증명` 유지(검색 키워드는 UI 용어 통일 대상 아님).
-- EN: 구 초안 107자 → `no blockchain`·`real photo` 제거, 96자로 조정 (U-15 해소).
+- EN: 구 초안 107자 → `no blockchain`·`real photo` 제거, 95자로 조정 (U-15 해소 — 9/3 실측 재계산).
 
 ### 1.6 What's New — v1.0.0 (출시 버전)
 

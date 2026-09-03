@@ -70,7 +70,7 @@
 | ID | 항목 | 시점 | P |
 |---|---|---|---|
 | U-14 | 연령 등급 결정 — **Google 완료(2026-08-24)**: 타겟 18+·IARC 설문 제출(UGC 아니요·위치공유 아니요·전연령 콘텐츠). **잔여: Apple만** (4+ 권장, store-privacy-forms.md §4) | 앱 심사 직전 | P1 |
-| U-15 | English keywords 길이 조정 (107 → 100자) | 앱 심사 직전 | P1 |
+| ~~U-15~~ | **✅ 2026-09-03 완료** — English keywords 107자 → **95자**(`no blockchain`·`real photo` 제거). 확정본=app-store-metadata.md §1.5 | 완료 | ✅ |
 | U-16 | ~~앱 아이콘 디자인~~ → **완료 (2026-08-18, 발주 불필요)** — 기존 브랜드 마크(`image/투명로고-1024x1024.png`, 육각+체크)에서 전 슬롯 생성: iOS 1024(무알파)·adaptive 3종(safe zone 58%)·splash·favicon·Play 512(`image/oripics-playstore-icon-512.png`). 홈 히어로 AnimatedIcon도 Expo 로고→OriPics 마크 교체. 잔여(선택): 정식 출시 전 마크 벡터화(현 PNG 1024 기반으로 충분히 선명) | 완료 | P0 |
 | U-17 | ~~Feature graphic 디자인~~ → **완료 (2026-08-18)** — `image/oripics-feature-graphic-1024x500.png`: 브랜드 마크(좌) + OriPics 워드마크(Avenir Next Condensed) + "사진 원본 증명 · The Original Proof" 태그라인, 연한 블루 그라데이션 배경, 중앙 정렬(양쪽 여백 110px). Play 콘솔 스토어 등록정보에 업로드 | 완료 | P0 |
 | U-18 | ~~스크린샷 캡처~~ → **완료 (2026-08-19)** — `image/screenshots/` 4장(로그인·홈 Pro·인증/검증·**촬영 실기기컷**, 전부 1320×2868 = App Store 6.9"·Play 겸용). 재캡처: 시뮬 3장=`scripts/capture-screenshots.sh`, 촬영컷=실기기. 데모 계정 demo-screenshots@ori.pics = App Review 심사 계정 겸용 | 완료 | P0 |
