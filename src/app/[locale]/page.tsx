@@ -1133,17 +1133,23 @@ export default function Home() {
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-12 flex flex-col items-center">
-        <section className="w-full text-center mb-16 pt-8 flex flex-col items-center">
+        <section className="relative w-full text-center mb-16 pt-8 flex flex-col items-center">
+          {/* 떠다니는 말풍선 "이 사진, 진짜예요?" — 장식용(pointer-events 없음), 모바일 1개·sm+ 2개·md+ 3개 (2026-09-03 대표 아이디어) */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-56 sm:h-64 md:h-72 z-0 overflow-hidden">
+            <span className="inline-block rounded-full bg-white/85 border border-blue-100 shadow-sm text-blue-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-a absolute top-2 left-[4%]">{t("hero.floating")}</span>
+            <span className="inline-block rounded-full bg-white/85 border border-blue-100 shadow-sm text-blue-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-b absolute top-[42%] right-[6%] hidden sm:inline-block">{t("hero.floating")}</span>
+            <span className="inline-block rounded-full bg-white/85 border border-blue-100 shadow-sm text-blue-600 text-xs sm:text-sm font-semibold px-3 py-1 whitespace-nowrap select-none hero-float-c absolute bottom-3 left-[22%] hidden md:inline-block">{t("hero.floating")}</span>
+          </div>
           {/* 베타 모집 배지 — 모바일 전용 (네비 배지는 xs+ 전용, 2026-08-31 대표: 히어로 문구 바로 위 좌측정렬) */}
-          <div className="w-full text-left xs:hidden mb-3">
+          <div className="relative z-10 w-full text-left xs:hidden mb-3">
             <BetaRecruit variant="hero" />
           </div>
           {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
-          <p className="text-sm md:text-base text-slate-600 mb-4 whitespace-pre-line leading-relaxed">
+          <p className="relative z-10 text-sm md:text-base text-slate-600 mb-4 whitespace-pre-line leading-relaxed">
             {t("hero.eyebrow")}
           </p>
           {/* 모바일=3줄(1|2|3), 데스크톱=2줄(1+2|3) — 대표 시안 반응형 줄바꿈 (2026-08-29) */}
-          <h1 className="text-3xl md:text-4xl font-extrabold mb-5 leading-snug max-w-2xl mx-auto">
+          <h1 className="relative z-10 text-3xl md:text-4xl font-extrabold mb-5 leading-snug max-w-2xl mx-auto">
             {(() => {
               const lines = t("hero.title").split("\n");
               if (lines.length !== 3) return t("hero.title");
@@ -1162,7 +1168,7 @@ export default function Home() {
 
           {/* 인증 방식·사용 사례 진입 링크 (2026-08-29 대표 기획) — 신뢰(이중 인증)와
               효용(직군별 시나리오)으로 이어지는 통로 */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-16">
+          <div className="relative z-10 flex flex-wrap items-center justify-center gap-3 mb-16">
             <Link
               href="/how-it-works"
               className="text-sm text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300"
