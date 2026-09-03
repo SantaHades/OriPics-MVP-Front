@@ -1529,6 +1529,15 @@ export default function Home() {
                 {t("result.save_for_later_hint")}
               </p>
             )}
+            {/* A-57: 발행 후에도 이 버튼은 브라우저 생성본(C2PA 미포함) — 발행본은 뷰어에서 (2026-09-03) */}
+            {generatedLink && (
+              <p className="mt-4 text-xs text-slate-500 text-center max-w-md mx-auto">
+                {t("result.c2pa_download_note")}{" "}
+                <a href={generatedLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline whitespace-nowrap">
+                  {t("result.c2pa_download_link")}
+                </a>
+              </p>
+            )}
 
             {sessionID && !generatedLink && (
               <div className="mt-8 flex flex-col items-center animate-in fade-in zoom-in duration-300 w-full">
@@ -1771,6 +1780,14 @@ export default function Home() {
                   >
                     <Download size={16} /> {t("result.download_stamped")}
                   </button>
+                  {item.phase === "published" && item.link && (
+                    <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
+                      {t("result.c2pa_download_note")}{" "}
+                      <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline whitespace-nowrap">
+                        {t("result.c2pa_download_link")}
+                      </a>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

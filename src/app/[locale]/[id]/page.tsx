@@ -492,6 +492,12 @@ export default function LinkViewer() {
               >
                 <Download size={20} /> {t("download")}
               </button>
+              {/* A-57: 이 다운로드는 서버 발행본(C2PA 포함) — 결과 화면 로컬 저장본과 구분 안내 (2026-09-03) */}
+              {c2pa?.present && (
+                <p className="text-[11px] text-slate-500 text-center leading-relaxed">
+                  {t("download_c2pa_note")}
+                </p>
+              )}
               {canDownloadCertificate && (
                 <>
                   <button
