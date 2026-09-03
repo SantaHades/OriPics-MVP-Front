@@ -1134,7 +1134,7 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-6 py-12 flex flex-col items-center">
         <section className="relative w-full text-center mb-16 pt-8 flex flex-col items-center">
-          {/* 떠다니는 말풍선 3종("이 사진 진짜예요?"·"나중에 찍은 거 아니죠?"·"AI인가?") — 장식용(pointer-events 없음), 모바일 1개·sm+ 2개·md+ 3개 (2026-09-03 대표 아이디어) */}
+          {/* 떠다니는 말풍선 3종("이 사진 진짜예요?"·"나중에 찍은 거 아니죠?"·"AI 같은데?") — 장식용(pointer-events 없음), 모바일 1개·sm+ 2개·md+ 3개 (2026-09-03 대표 아이디어) */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-56 sm:h-64 md:h-72 z-0 overflow-hidden">
             <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-a absolute top-2 left-[4%]">{t("hero.floating_1")}</span>
             <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-b absolute top-[42%] right-[6%] hidden sm:inline-block">{t("hero.floating_2")}</span>
