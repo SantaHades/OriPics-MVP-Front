@@ -83,7 +83,7 @@ export default function BillingSuccessPage() {
 
         {phase === "success" && (
           <>
-            <CheckCircle2 size={56} className="text-emerald-500 mx-auto mb-4" />
+            <CheckCircle2 size={56} className="text-[#34C759] mx-auto mb-4" />
             <h1 className="text-xl font-bold mb-1">{t("success_title")}</h1>
             <p className="text-sm text-slate-600 mb-1">{t("success_desc")}</p>
             {granted != null && (

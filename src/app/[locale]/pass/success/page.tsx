@@ -171,7 +171,7 @@ export default function PassSuccessPage() {
         {phase === "success" && passCode && (
           <>
             <div className="text-center mb-8">
-              <CheckCircle2 size={56} className="text-emerald-500 mx-auto mb-4" />
+              <CheckCircle2 size={56} className="text-[#34C759] mx-auto mb-4" />
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">{t.successTitle}</h1>
               <p className="text-sm text-slate-600 leading-relaxed">{t.successDesc}</p>
             </div>

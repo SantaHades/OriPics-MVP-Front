@@ -176,7 +176,7 @@ export default function SignupPage() {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6">
         <div className="w-full max-w-md text-center bg-white border border-slate-200 rounded-3xl p-10 shadow-sm animate-in fade-in duration-300">
-          <CheckCircle size={56} className="text-emerald-500 mx-auto mb-5" />
+          <CheckCircle size={56} className="text-[#34C759] mx-auto mb-5" />
           <h1 className="text-xl font-bold mb-2">{t("from_app_done_title")}</h1>
           <p className="text-sm text-slate-600 leading-relaxed">{t("from_app_done_body")}</p>
         </div>
