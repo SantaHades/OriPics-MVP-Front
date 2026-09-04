@@ -566,7 +566,7 @@ export default function LinkViewer() {
               )}
               {data?.signed_url && (
                 <a
-                  href={`https://contentcredentials.org/verify?source=${encodeURIComponent(data.signed_url)}`}
+                  href={`https://verify.contentauthenticity.org/inspect?source=${encodeURIComponent(data.signed_url)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:underline"
