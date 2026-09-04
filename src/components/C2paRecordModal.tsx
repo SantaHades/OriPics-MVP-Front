@@ -67,7 +67,6 @@ const T = {
     conformant: "Conformant · 적합",
     recordId: "레코드 ID",
     infoUrl: "제품 정보 URL",
-    none: "미등록 (등록 요청 중)",
     specTitle: "규격 · 프로그램",
     spec: "지원 C2PA 규격",
     program: "적합성 프로그램 버전",
@@ -100,7 +99,6 @@ const T = {
     conformant: "Conformant",
     recordId: "Record ID",
     infoUrl: "Product Info URL",
-    none: "None provided (update requested)",
     specTitle: "Specification & Program",
     spec: "Supported C2PA spec(s)",
     program: "Conformance program version",
@@ -249,16 +247,14 @@ export default function C2paRecordModal({
                     </span>
                   </div>
 
-                  {/* 제품 정보 URL */}
-                  <div className="rounded-xl bg-white border border-slate-200 px-4 py-3 flex items-center gap-2 text-sm flex-wrap">
-                    <LinkIcon size={14} className="text-slate-400 shrink-0" />
-                    <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t.infoUrl}</span>
-                    {rec.product.infoURL ? (
+                  {/* 제품 정보 URL — 레코드에 infoURL이 있을 때만 표시 (미등록 문구 노출 안 함, 2026-09-04 대표) */}
+                  {rec.product.infoURL && (
+                    <div className="rounded-xl bg-white border border-slate-200 px-4 py-3 flex items-center gap-2 text-sm flex-wrap">
+                      <LinkIcon size={14} className="text-slate-400 shrink-0" />
+                      <span className="text-[11px] font-bold tracking-wider text-slate-500 uppercase">{t.infoUrl}</span>
                       <a href={rec.product.infoURL} target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold hover:underline break-all">{rec.product.infoURL}</a>
-                    ) : (
-                      <span className="text-slate-400 italic">{t.none}</span>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   <div className="grid sm:grid-cols-2 gap-3">
                     {/* 규격·프로그램 */}
