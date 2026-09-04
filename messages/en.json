@@ -728,7 +728,7 @@
     "c2pa_invalid_desc": "A C2PA manifest is attached, but validation flagged warnings.",
     "c2pa_generator": "Generator",
     "c2pa_issuer": "Signer",
-    "c2pa_inspect": "Verify C2PA signature with Adobe Verify",
+    "c2pa_inspect": "Verify C2PA signature with Adobe Inspect",
     "privacy_link": "Privacy Policy",
     "terms_link": "Terms of Service",
     "refund_link": "Refund Policy",

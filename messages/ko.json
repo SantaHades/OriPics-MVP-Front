@@ -728,7 +728,7 @@
     "c2pa_invalid_desc": "C2PA 매니페스트는 첨부되어 있으나 검증 단계에서 경고가 감지되었습니다.",
     "c2pa_generator": "생성기",
     "c2pa_issuer": "서명자",
-    "c2pa_inspect": "Adobe Verify에서 C2PA 서명 검증하기",
+    "c2pa_inspect": "Adobe Inspect에서 C2PA 서명 검증하기",
     "privacy_link": "개인정보 처리방침",
     "terms_link": "이용약관",
     "refund_link": "환불 정책",
