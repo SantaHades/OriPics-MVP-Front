@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import BetaRecruit from "@/components/BetaRecruit";
+import C2paRecordModal from "@/components/C2paRecordModal";
 import {
   signAndStampFromPixels,
   confirmStamped,
@@ -1147,8 +1148,9 @@ export default function Home() {
           {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
           <p className="relative z-10 text-sm md:text-base text-slate-600 mb-4 leading-relaxed">
             {(() => {
-              // 2줄째(C2PA 적합성) 오른쪽에 '바로보기' — C2PA Conformance Explorer를 OriPics로 필터한 URL(?q=)로 열어
-              // 공식 적합 제품 목록에 OriPics 카드만 보이게 함 (2026-09-04 대표 요청)
+              // 2줄째(C2PA 적합성) 오른쪽에 '자세히 보기' — 우리 팝업에서 공식 CPL 레코드를 실시간 표시하고
+              // "C2PA 홈페이지 공식 목록에서 확인" 버튼으로 Explorer(?q=OriPics)를 연다 (2026-09-04 대표 요청;
+              // Explorer는 상세 딥링크 미지원이라 팝업을 우리 쪽에서 먼저 보여줌)
               const [first, ...rest] = t("hero.eyebrow").split("\n");
               return (
                 <>
@@ -1158,16 +1160,11 @@ export default function Home() {
                       <br />
                       <span>
                         {rest.join(" ")}
-                        <a
-                          href="https://spec.c2pa.org/conformance-explorer/?q=OriPics"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 whitespace-nowrap text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300 text-xs md:text-sm align-baseline"
+                        <C2paRecordModal
+                          label={t("hero.eyebrow_link")}
                           title={t("hero.eyebrow_link_title")}
-                        >
-                          {t("hero.eyebrow_link")}
-                          <span aria-hidden="true"> ↗</span>
-                        </a>
+                          className="ml-2 whitespace-nowrap text-blue-600 hover:text-blue-500 font-semibold underline underline-offset-4 decoration-blue-300 text-xs md:text-sm align-baseline"
+                        />
                       </span>
                     </>
                   )}
