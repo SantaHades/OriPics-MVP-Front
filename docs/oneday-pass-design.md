@@ -69,7 +69,7 @@ model DayPass {
 - 어드민 발급 스크립트 `scripts/admin-issue-daypass.ts` (Phase 1 테스트·베타 선물용).
 
 ### 3.2 기존 라우트 분기
-- **sign**: upload_type P/C + 활성 패스 → ①크레딧 잔액 검사 생략 ②verified의
+- **sign**: upload_type P(앱 촬영; C=웹 클립보드는 미적용 — 2026-09-05 정정) + 활성 패스 → ①크레딧 잔액 검사 생략 ②verified의
   Pro 티어 요구 우회(패스=Pro 동급) ③sign JWT에 pass_id 포함.
 - **confirm**: pass_id 있으면 consumeCredits 대신 패스 원자 차감
   (`UPDATE ... SET usedProofs=usedProofs+1 WHERE id=? AND usedProofs<totalProofs AND expiresAt>now()`),

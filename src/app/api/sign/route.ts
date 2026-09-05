@@ -145,11 +145,12 @@ export async function POST(req: NextRequest) {
     capturedAtStr = formatCapturedAtUtc(captured_at_ms);
   }
 
-  // A-60: 원데이 패스 — 촬영(P/C) 경로는 활성 패스가 있으면 무조건 패스 차감
-  // (크레딧 보유·티어 불문 패스 우선). 웹 업로드(F)는 패스 미적용(기존 크레딧).
+  // A-60: 원데이 패스 — 앱 촬영(P) 경로만 활성 패스가 있으면 무조건 패스 차감
+  // (크레딧 보유·티어 불문 패스 우선). 웹 파일 업로드(F)·클립보드 붙여넣기(C)는 패스 미적용(기존 크레딧).
+  // ⚠️ 2026-09-05 정정: 종전 코드는 C(클립보드)도 패스 적용 — 설계·안내문구("붙여넣기는 잔여 건수 차감")와 불일치라 P만으로 좁힘.
   const uploadType = ["F", "P", "C"].includes(upload_type) ? upload_type : "F";
   const activePass =
-    uploadType === "P" || uploadType === "C"
+    uploadType === "P"
       ? await t.span("pass_check", () => getActivePass(userId))
       : null;
 
