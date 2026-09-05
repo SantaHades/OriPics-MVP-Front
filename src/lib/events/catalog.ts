@@ -18,6 +18,8 @@ const RULES_KO = (what: string) => [
   "심사: 출품작이 받은 좋아요 순",
   "상품: 좋아요 상위 참여자에게 소정의 상품",
   "명예의 전당: 이 페이지에 수상작을 사진·검증 링크와 함께 소개",
+  "출품 후에는 취소할 수 없습니다 (출품 전 사진을 확인해 주세요)",
+  "좋아요: 로그인한 사용자만 가능, 같은 작품에는 1회 (작품 수 제한 없음)",
   "출품작은 홈페이지·SNS 소개에 활용될 수 있습니다",
 ];
 const RULES_EN = (what: string) => [
@@ -25,6 +27,8 @@ const RULES_EN = (what: string) => [
   "Judging: number of likes on entries",
   "Prize: a small prize for the top-liked entrants",
   "Hall of Fame: winners are featured on this page with photo and verification link",
+  "Entries cannot be withdrawn once submitted (please review your photos first)",
+  "Likes: signed-in users only, one like per entry (no limit on how many entries you like)",
   "Entries may be used in website and social media features",
 ];
 
