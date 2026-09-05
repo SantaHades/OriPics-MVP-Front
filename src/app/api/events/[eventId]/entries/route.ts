@@ -5,15 +5,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
-import { getEvent, isEventOpen } from "@/lib/events/catalog";
+import { resolveEvent } from "@/lib/channels/server";
 import { eventsDb, isMissingTable, newEntryId, toDtos, type EntryRow } from "@/lib/events/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await props.params;
-  const event = getEvent(eventId);
-  if (!event) return NextResponse.json({ detail: "event_not_found" }, { status: 404 });
   const db = eventsDb();
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
 
@@ -23,6 +21,10 @@ export async function GET(req: NextRequest, props: { params: Promise<{ eventId: 
   const offset = Math.max(Number(sp.get("offset") ?? 0), 0);
   const locale = sp.get("locale") ?? "ko";
   const viewer = await getSessionUserId().catch(() => null);
+  // 코드 카탈로그(공개 2개) 또는 사설 이벤트 — 사설은 추가한 사용자만
+  const event = await resolveEvent(db, eventId, viewer, locale === "en" ? "en" : "ko");
+  if (event === null) return NextResponse.json({ detail: "event_not_found" }, { status: 404 });
+  if (event === "forbidden") return NextResponse.json({ detail: "forbidden" }, { status: 403 });
 
   let q = db
     .from("event_entries")
@@ -36,24 +38,26 @@ export async function GET(req: NextRequest, props: { params: Promise<{ eventId: 
   if (error) {
     if (isMissingTable(error)) {
       // 마이그레이션 전 — 빈 목록 + 안내 플래그 (UI는 "아직 출품작이 없습니다"로 표시)
-      return NextResponse.json({ entries: [], total: 0, open: isEventOpen(event), setup_required: true });
+      return NextResponse.json({ entries: [], total: 0, open: event.open, setup_required: true });
     }
     console.error("[events] list failed:", error.message);
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
   }
   const entries = await toDtos(db, (data ?? []) as EntryRow[], viewer, locale);
-  return NextResponse.json({ entries, total: count ?? entries.length, open: isEventOpen(event), ends_at: event.endsAt });
+  return NextResponse.json({ entries, total: count ?? entries.length, open: event.open, ends_at: event.ends_at });
 }
 
 export async function POST(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await props.params;
-  const event = getEvent(eventId);
-  if (!event) return NextResponse.json({ detail: "event_not_found" }, { status: 404 });
-  if (!isEventOpen(event)) return NextResponse.json({ detail: "event_closed" }, { status: 403 });
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   const db = eventsDb();
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
+  const lang0 = req.nextUrl.searchParams.get("locale") === "en" ? "en" : "ko";
+  const event = await resolveEvent(db, eventId, userId, lang0);
+  if (event === null) return NextResponse.json({ detail: "event_not_found" }, { status: 404 });
+  if (event === "forbidden") return NextResponse.json({ detail: "forbidden" }, { status: 403 });
+  if (!event.open) return NextResponse.json({ detail: "event_closed" }, { status: 403 });
 
   let body: { link_ids?: unknown; caption?: unknown };
   try {

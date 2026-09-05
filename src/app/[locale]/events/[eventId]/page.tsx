@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, ExternalLink, Heart, Smartphone, Trophy } from "lucide-react";
 
+import type { EventDefDto } from "@/lib/channels/server";
 import { getEvent } from "@/lib/events/catalog";
 import type { EntryDto } from "@/lib/events/server";
 import { ANDROID_STORE_URL, IOS_APP_URL } from "@/lib/appLinks";
@@ -20,7 +21,20 @@ export default function EventDetailPage() {
   const lang = ((params?.locale as string) || "ko") === "en" ? "en" : "ko";
   const ko = lang === "ko";
   const eventId = params?.eventId as string;
-  const event = getEvent(eventId);
+  const catalog = getEvent(eventId);
+  // 사설 이벤트(코드 카탈로그에 없음)는 API로 정의 조회 — 비공개는 추가한 사용자만(403→없음 표시)
+  const [remote, setRemote] = useState<EventDefDto | null | "loading">(catalog ? null : "loading");
+  useEffect(() => {
+    if (catalog || !eventId) return;
+    fetch(`/api/events/${encodeURIComponent(eventId)}?locale=${lang}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setRemote(d?.event ?? null))
+      .catch(() => setRemote(null));
+  }, [catalog, eventId, lang]);
+  const event: EventDefDto | null =
+    catalog
+      ? { id: catalog.id, name: catalog.name[lang], summary: catalog.summary[lang], details: catalog.details[lang], rules: catalog.rules[lang], period: catalog.period[lang], ends_at: catalog.endsAt, open: new Date(catalog.endsAt).getTime() > Date.now(), private: false }
+      : remote === "loading" ? null : remote;
   const { status: sessionStatus } = useSession();
   const signedIn = sessionStatus === "authenticated";
 
@@ -76,7 +90,7 @@ export default function EventDetailPage() {
       <div className="min-h-screen bg-slate-50 text-slate-900">
         <div className="max-w-4xl mx-auto px-6 py-12">
           <Link href="/events" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 mb-10"><ArrowLeft size={16} /> {ko ? "이벤트 목록" : "All events"}</Link>
-          <p className="text-slate-600">{ko ? "이벤트를 찾을 수 없습니다." : "Event not found."}</p>
+          <p className="text-slate-600">{remote === "loading" ? (ko ? "불러오는 중…" : "Loading…") : (ko ? "이벤트를 찾을 수 없거나 접근 권한이 없습니다. 비공개 이벤트는 앱에서 추가한 사용자만 볼 수 있습니다." : "Event not found or not accessible. Private events are visible only to users who added them in the app.")}</p>
         </div>
       </div>
     );
@@ -105,14 +119,14 @@ export default function EventDetailPage() {
         {/* 소개 */}
         <div className="mb-10">
           <p className="text-xs font-bold text-amber-600 uppercase tracking-[0.25em] mb-3">{ko ? "출시기념 이벤트" : "Launch event"}</p>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-snug mb-4">{event.name[lang]}</h1>
-          <p className="text-slate-600 leading-relaxed whitespace-pre-line mb-5">{event.details[lang]}</p>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-snug mb-4">{event.name}</h1>
+          <p className="text-slate-600 leading-relaxed whitespace-pre-line mb-5">{event.details}</p>
           <div className="p-5 rounded-2xl bg-white border border-slate-200">
             <p className="text-sm font-bold mb-2">{ko ? "참여 방법 · 심사 · 상품" : "How to enter · Judging · Prizes"}</p>
             <ul className="text-sm text-slate-700 leading-relaxed list-disc pl-5 space-y-1">
-              {event.rules[lang].map((r) => <li key={r}>{r}</li>)}
+              {event.rules.map((r) => <li key={r}>{r}</li>)}
             </ul>
-            <p className="inline-flex items-center gap-1.5 text-xs text-slate-500 mt-3"><CalendarDays size={14} /> {event.period[lang]}{!open ? (ko ? " · 접수 마감" : " · Closed") : ""}</p>
+            <p className="inline-flex items-center gap-1.5 text-xs text-slate-500 mt-3"><CalendarDays size={14} /> {event.period}{!open ? (ko ? " · 접수 마감" : " · Closed") : ""}</p>
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
             <a href={IOS_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700"><Smartphone size={14} /> {ko ? "iPhone 앱에서 참여" : "Enter on iPhone"}</a>
