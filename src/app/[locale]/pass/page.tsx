@@ -41,7 +41,7 @@ const RULES = {
   ko: [
     "등록 즉시 24시간 사용 기간이 시작됩니다 (일시정지 불가).",
     "촬영 인증 10회 — 사진 크기와 무관하게 1회씩 차감됩니다.",
-    "패스가 활성인 동안 촬영 인증은 잔여 건수(크레딧) 대신 패스에서 우선 차감됩니다.",
+    "패스가 활성인 동안에는 등록 전에 찍어 둔 사진이든 이후에 찍은 사진이든, 촬영 사진을 인증하는 단계에서 잔여 건수(크레딧) 대신 패스가 우선 차감됩니다.",
     "기기 검증을 통과한 촬영은 Verified로 인증됩니다 (미통과 시 Standard로 인증).",
     "공개링크는 발행 시점부터 1년 보관됩니다 (Pro 구독 전환 시 무기한).",
     "활성 패스는 계정당 1장 — 10회를 모두 쓰거나 24시간이 지나면 곧바로 새 패스를 등록할 수 있습니다.",
@@ -53,7 +53,7 @@ const RULES = {
   en: [
     "Your 24-hour window starts immediately upon redemption (cannot be paused).",
     "10 capture proofs — 1 per photo regardless of size.",
-    "While active, capture proofs are deducted from the pass first, instead of your credits.",
+    "While active, any captured photo — taken before or after redeeming — is deducted from the pass first (instead of credits) at the moment it is certified.",
     "Captures that pass device attestation are certified as Verified (Standard otherwise).",
     "Public links are kept for 1 year from publication (unlimited if you subscribe to Pro).",
     "One active pass per account — once all 10 proofs are used or 24 hours pass, you can redeem a new pass right away.",
@@ -154,8 +154,8 @@ export default function PassProductPage() {
         <h2 className="text-2xl font-bold tracking-tight mb-6">{ko ? "이렇게 씁니다" : "How it works"}</h2>
         <ol className="grid sm:grid-cols-3 gap-4 mb-14">
           {(ko
-            ? ["구매하면 패스가 내 계정에 담겨요 (아직 시작 전)", "찍을 일이 생긴 날, 앱 홈탭이나 웹 프로필에서 사용을 시작해요 — 이 순간부터 24시간", "촬영탭에서 평소처럼 찍기만 하면 인증·공개링크·인증서가 자동으로 완성돼요"]
-            : ["Buy — the pass is kept on your account (not started yet)", "On the day you need it, start the pass in the app home tab or web profile — 24 hours begin now", "Just shoot as usual — certification, public link and certificate are completed automatically"]
+            ? ["구매하면 패스가 내 계정에 담겨요 (아직 시작 전)", "찍을 일이 생긴 날, 앱 설정 탭이나 웹 프로필에서 사용을 시작해요 — 이 순간부터 24시간", "촬영탭에서 평소처럼 찍기만 하면 인증·공개링크·인증서가 자동으로 완성돼요 (이미 찍어 둔 사진도 목록탭에서 인증하면 패스로 처리)"]
+            : ["Buy — the pass is kept on your account (not started yet)", "On the day you need it, start the pass in the app Settings tab or web profile — 24 hours begin now", "Just shoot as usual — certification, public link and certificate are completed automatically"]
           ).map((step, i) => (
             <li key={step} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-sm">
               <p className="text-blue-600 font-extrabold text-lg mb-2">{i + 1}</p>

@@ -273,7 +273,7 @@
       "pass_title": "One-Day Pass",
       "pass_remaining": "{count} left",
       "pass_expires": "Valid until {time}",
-      "pass_active_note": "While the pass is active, photos captured in the app are certified with the pass (Verified when device attestation passes, any size).",
+      "pass_active_note": "While the pass is active, photos captured in the app are certified with the pass (Verified when device attestation passes, any size). Photos taken before redeeming also use the pass when certified on the app's List tab.",
       "pass_app_refresh_hint": "In the app, tapping [Certify] on the List tab checks and applies your pass automatically. The pass badge on the Capture tab updates when you relaunch the app or pull down to refresh on the Settings tab.",
       "pass_inactive_note": "Have a pass code? Redeem it here — 24 hours and 10 capture proofs from redemption (Verified when device attestation passes). Public links are kept for 1 year.",
       "pass_code_placeholder": "OP-XXXX-XXXX-XXXX",
