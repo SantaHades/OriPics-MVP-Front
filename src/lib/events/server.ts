@@ -40,9 +40,11 @@ export interface EntryDto {
   tier: string | null;
 }
 
-/** 테이블 미생성(마이그레이션 전) 여부 — 42P01 undefined_table */
+/** 테이블/함수 미생성(마이그레이션 전) 여부 — PostgREST: PGRST205(table not in schema cache)·PGRST202(function), PG: 42P01·42883 */
 export function isMissingTable(err: { code?: string; message?: string } | null | undefined): boolean {
-  return !!err && (err.code === "42P01" || /does not exist/i.test(err.message ?? ""));
+  if (!err) return false;
+  if (err.code === "42P01" || err.code === "42883" || err.code === "PGRST205" || err.code === "PGRST202") return true;
+  return /does not exist|could not find the (table|function)/i.test(err.message ?? "");
 }
 
 export async function toDtos(
