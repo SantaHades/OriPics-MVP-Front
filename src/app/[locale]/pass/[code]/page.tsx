@@ -102,8 +102,8 @@ export default function PassCodeLanding() {
               <Smartphone size={18} className="shrink-0 text-blue-600 mt-0.5" />
               <p className="leading-relaxed">
                 {ko
-                  ? "OriPics 앱 → 홈탭 → [원데이 패스 등록하기] → 코드 입력 또는 QR 스캔"
-                  : "OriPics app → Home tab → [Redeem a One-Day Pass] → enter the code or scan the QR"}
+                  ? "OriPics 앱 → 설정 탭 → [원데이 패스 등록하기] → 코드 입력 또는 QR 스캔"
+                  : "OriPics app → Settings tab → [Redeem a One-Day Pass] → enter the code or scan the QR"}
               </p>
             </div>
             <div className="flex gap-3">

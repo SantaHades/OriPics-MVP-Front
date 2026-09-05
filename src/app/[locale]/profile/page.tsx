@@ -754,6 +754,8 @@ export default function ProfilePage() {
                 })}
               </p>
               <p className="text-xs text-slate-500 mt-1">{tCredits("pass_active_note")}</p>
+              {/* A-73: 웹 등록분은 앱이 포그라운드 복귀·촬영탭 진입 시 갱신(빌드 13+), 구버전 앱은 재실행/설정탭 당김 필요 */}
+              <p className="text-xs text-amber-700 mt-1">{tCredits("pass_app_refresh_hint")}</p>
               <button
                 type="button"
                 onClick={() => setPassDetailsOpen(true)}

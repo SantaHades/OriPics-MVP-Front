@@ -274,6 +274,7 @@
       "pass_remaining": "잔여 {count}회",
       "pass_expires": "{time}까지 사용 가능",
       "pass_active_note": "패스가 활성화된 동안 앱에서 촬영하는 사진은 패스로 인증됩니다 (기기 검증 통과 시 Verified, 사이즈 무관).",
+      "pass_app_refresh_hint": "앱을 켜 두셨다면 앱으로 돌아오거나 촬영 탭을 열면 패스가 반영됩니다. 반영이 안 보이면 설정 탭에서 아래로 당겨 새로 고침하거나 앱을 다시 열어 주세요.",
       "pass_inactive_note": "패스 코드가 있다면 등록하세요. 등록 시점부터 24시간 동안 촬영 인증 10회 (기기 검증 통과 시 Verified) — 공개링크는 1년 보관됩니다.",
       "pass_code_placeholder": "OP-XXXX-XXXX-XXXX",
       "pass_redeem": "원데이 패스 등록하기",
