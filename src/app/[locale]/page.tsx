@@ -7,7 +7,7 @@ import { Link, useRouter } from "@/navigation";
 import { useTranslations } from "next-intl";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import BetaRecruit from "@/components/BetaRecruit";
+import EventBadge from "@/components/EventBadge";
 import C2paRecordModal from "@/components/C2paRecordModal";
 import {
   signAndStampFromPixels,
@@ -1080,7 +1080,7 @@ export default function Home() {
           <img src="/logo.png" alt="OriPics Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
           <span className="font-bold text-base xs:text-lg sm:text-xl">OriPics</span>
           {/* 베타 모집 배지 (2026-08-31 대표 지시) — 클릭 시 신청 팝업 */}
-          <BetaRecruit />
+          <EventBadge />
         </div>
         <div className="flex items-center gap-2 sm:gap-6">
           <LanguageSwitcher />
@@ -1141,9 +1141,9 @@ export default function Home() {
             <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-b absolute top-[42%] right-[6%] hidden sm:inline-block">{t("hero.floating_2")}</span>
             <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-c absolute bottom-3 left-[22%] hidden md:inline-block">{t("hero.floating_3")}</span>
           </div>
-          {/* 베타 모집 배지 — 모바일 전용 (네비 배지는 xs+ 전용, 2026-08-31 대표: 히어로 문구 바로 위 좌측정렬) */}
+          {/* 출시기념 이벤트 배지 — 모바일 전용 (네비 배지는 xs+ 전용; 9/5 대표: 베타 배지→이벤트 배지, /events로 이동) */}
           <div className="relative z-10 w-full text-left xs:hidden mb-3">
-            <BetaRecruit variant="hero" />
+            <EventBadge variant="hero" />
           </div>
           {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
           <p className="relative z-10 text-sm md:text-base text-slate-600 mb-4 leading-relaxed">
