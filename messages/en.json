@@ -748,7 +748,10 @@
     "memo_placeholder": "One line about this photo (e.g. condition before pickup, scratch on front bumper)",
     "memo_public_notice": "Visible to everyone who opens the public link. Do not include personal data. Not part of the certification, and you can edit it anytime.",
     "memo_error": "Could not save the note. Please try again shortly.",
-    "memo_setup": "Notes are opening shortly. Please try again in a moment."
+    "memo_setup": "Notes are opening shortly. Please try again in a moment.",
+    "pnote_label": "Private note (only you)",
+    "pnote_placeholder": "Personal record (e.g. seller contact, where the documents are)",
+    "pnote_notice": "Visible only to you as the owner. Never included in the public link, previews or certificates."
   },
   "Billing": {
     "title": "Checkout",

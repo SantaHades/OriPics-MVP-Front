@@ -78,6 +78,44 @@ export default function LinkViewer() {
   const [memoBusy, setMemoBusy] = useState(false);
   const [memoErr, setMemoErr] = useState<string | null>(null);
   const memoLen = Array.from(memoDraft).length;
+  // A-77 비공개 메모 (소유자만) — GET/PUT /api/links/:id/private-note
+  const PRIVATE_MAX = 200;
+  const [pnote, setPnote] = useState<string | null>(null);
+  const [pnoteLoaded, setPnoteLoaded] = useState(false);
+  const [pnoteEditing, setPnoteEditing] = useState(false);
+  const [pnoteDraft, setPnoteDraft] = useState("");
+  const [pnoteBusy, setPnoteBusy] = useState(false);
+  const [pnoteErr, setPnoteErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isOwner || !data?.link_id || pnoteLoaded) return;
+    fetch(`/api/links/${encodeURIComponent(data.link_id)}/private-note`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { setPnote(d?.note ?? null); setPnoteLoaded(true); })
+      .catch(() => setPnoteLoaded(true));
+  }, [isOwner, data?.link_id, pnoteLoaded]);
+  const savePnote = async () => {
+    if (!data || pnoteBusy) return;
+    setPnoteBusy(true);
+    setPnoteErr(null);
+    try {
+      const r = await fetch(`/api/links/${encodeURIComponent(data.link_id)}/private-note`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: pnoteDraft.trim() ? pnoteDraft : null }),
+      });
+      if (!r.ok) {
+        setPnoteErr(r.status === 503 ? t("memo_setup") : t("memo_error"));
+        return;
+      }
+      const d = (await r.json()) as { note: string | null };
+      setPnote(d.note);
+      setPnoteEditing(false);
+    } catch {
+      setPnoteErr(t("memo_error"));
+    } finally {
+      setPnoteBusy(false);
+    }
+  };
   const saveMemo = async () => {
     if (!data || memoBusy) return;
     setMemoBusy(true);
@@ -471,6 +509,37 @@ export default function LinkViewer() {
                     <p className="text-xs text-slate-400">{t("memo_placeholder")}</p>
                   )}
                   <p className="text-[11px] text-slate-400 mt-2">{t("memo_unverified")}</p>
+                </div>
+              )}
+              {/* A-77 비공개 메모 — 소유자에게만 렌더 (서버도 본인 세션에만 응답) */}
+              {isOwner && pnoteLoaded && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-100/70 p-4">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="text-xs text-slate-500">🔒 {t("pnote_label")}</p>
+                    {!pnoteEditing ? (
+                      <button type="button" onClick={() => { setPnoteDraft(pnote ?? ""); setPnoteErr(null); setPnoteEditing(true); }} className="text-xs font-semibold text-blue-600 hover:text-blue-500">
+                        {pnote ? t("memo_edit") : t("memo_add")}
+                      </button>
+                    ) : null}
+                  </div>
+                  {pnoteEditing ? (
+                    <div>
+                      <textarea value={pnoteDraft} onChange={(e) => setPnoteDraft(Array.from(e.target.value).slice(0, PRIVATE_MAX).join(""))} rows={3} placeholder={t("pnote_placeholder")} className="w-full text-sm rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-blue-400" />
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[11px] text-slate-400">{Array.from(pnoteDraft).length}/{PRIVATE_MAX}</span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setPnoteEditing(false)} disabled={pnoteBusy} className="text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-200">{t("memo_cancel")}</button>
+                          <button type="button" onClick={() => void savePnote()} disabled={pnoteBusy} className="text-xs px-3 py-1.5 rounded-lg bg-slate-700 text-white font-semibold hover:bg-slate-600 disabled:opacity-50">{pnoteBusy ? t("memo_saving") : t("memo_save")}</button>
+                        </div>
+                      </div>
+                      {pnoteErr ? <p className="text-[11px] text-rose-600 mt-1">{pnoteErr}</p> : null}
+                    </div>
+                  ) : pnote ? (
+                    <p className="text-sm text-slate-800 whitespace-pre-line break-words">{pnote}</p>
+                  ) : (
+                    <p className="text-xs text-slate-400">{t("pnote_placeholder")}</p>
+                  )}
+                  <p className="text-[11px] text-slate-400 mt-2">{t("pnote_notice")}</p>
                 </div>
               )}
               {data!.captured_at && (
