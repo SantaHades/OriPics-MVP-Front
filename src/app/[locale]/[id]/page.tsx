@@ -471,7 +471,6 @@ export default function LinkViewer() {
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <p className="text-xs text-slate-500">
                       {t("memo_label")}
-                      {data!.memo_edited ? <span className="ml-1 text-slate-400">({t("memo_edited")})</span> : null}
                     </p>
                     {isOwner && !memoEditing ? (
                       <button
