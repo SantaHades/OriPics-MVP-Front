@@ -1190,7 +1190,7 @@ export default function Home() {
             })()}
           </h1>
           {/* 히어로 설명문 (2026-09-07 대표): 제목은 컨셉(그 시각·그곳·실제 촬영), 설명문이 범위(앱 촬영=셔터 순간부터 / 파일 업로드=인증 시점부터)와 메커니즘을 정확히 서술 */}
-          <p className="relative z-10 text-sm md:text-base text-slate-600 mb-6 max-w-2xl mx-auto leading-relaxed">
+          <p className="relative z-10 text-sm md:text-base text-slate-600 mb-6 max-w-2xl mx-auto leading-relaxed break-keep">
             {t("hero.description")}
           </p>
 
