@@ -82,15 +82,23 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
   );
   if (owned.length === 0) return NextResponse.json({ detail: "no_eligible_links" }, { status: 403 });
 
-  const rows = owned.map((l) => ({
-    id: newEntryId(),
-    event_id: eventId,
-    link_id: l.link_id as string,
-    user_id: userId,
-    caption,
-  }));
-  // 중복(UNIQUE event_id+link_id)은 무시 — 이미 출품된 링크는 기존 행 유지
-  const { error: insErr } = await db.from("event_entries").upsert(rows, { onConflict: "event_id,link_id", ignoreDuplicates: true });
+  // 이미 출품된 링크(중복) 집계 — UNIQUE(event_id, link_id)로 DB가 막지만, 앱 안내용으로 새로 추가된 수와 구분해 돌려준다 (2026-09-06)
+  const ownedIds = owned.map((l) => l.link_id as string);
+  const { data: existingRows } = await db.from("event_entries").select("link_id").eq("event_id", eventId).in("link_id", ownedIds);
+  const existing = new Set((existingRows ?? []).map((r) => r.link_id as string));
+  const rows = owned
+    .filter((l) => !existing.has(l.link_id as string))
+    .map((l) => ({
+      id: newEntryId(),
+      event_id: eventId,
+      link_id: l.link_id as string,
+      user_id: userId,
+      caption,
+    }));
+  // 중복(UNIQUE event_id+link_id)은 무시 — 이미 출품된 링크는 기존 행 유지 (경합 시 DB 제약이 최종 방어)
+  const { error: insErr } = rows.length
+    ? await db.from("event_entries").upsert(rows, { onConflict: "event_id,link_id", ignoreDuplicates: true })
+    : { error: null as null };
   if (insErr) {
     if (isMissingTable(insErr)) return NextResponse.json({ detail: "setup_required" }, { status: 503 });
     console.error("[events] insert failed:", insErr.message);
@@ -103,6 +111,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
     .in("link_id", owned.map((l) => l.link_id as string));
   const locale = req.nextUrl.searchParams.get("locale") ?? "ko";
   const entries = await toDtos(db, (mine ?? []) as EntryRow[], userId, locale);
-  console.log(`[events] entries added event=${eventId} user=${userId} n=${owned.length}`);
-  return NextResponse.json({ entries, skipped: linkIds.length - owned.length });
+  const added = rows.length;
+  const duplicates = existing.size;
+  const ineligible = linkIds.length - owned.length;
+  console.log(`[events] entries added event=${eventId} user=${userId} added=${added} dup=${duplicates} ineligible=${ineligible}`);
+  // skipped = 미출품 사유 전체(중복+부적격) — 구 앱(빌드 13) 호환. added/duplicates/ineligible은 세부.
+  return NextResponse.json({ entries, added, duplicates, ineligible, skipped: duplicates + ineligible });
 }
