@@ -1,6 +1,6 @@
 "use client";
 // 출시기념 이벤트 소개 (A-72, 2026-09-05) — 메인 배지 '출시기념 이벤트 진행 중'의 목적지.
-// 두 이벤트(이 사진 진짜예요? 콘테스트 · 인증샷 콘테스트) 카드 + [자세히 보기]→/events/[id] 갤러리.
+// 두 이벤트(이 사진 진짜예요? 콘테스트 · 들꽃사진 콘테스트) 카드 + [자세히 보기]→/events/[id] 갤러리.
 import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";

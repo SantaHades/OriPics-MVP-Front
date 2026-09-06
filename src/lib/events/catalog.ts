@@ -49,17 +49,17 @@ export const EVENTS: EventDef[] = [
     endsAt: "2026-10-31T23:59:59+09:00",
   },
   {
-    id: "proof-shot-contest",
-    name: { ko: "인증샷 콘테스트", en: "Proof Shot Contest" },
+    id: "proof-shot-contest", // ⚠️ id는 유지 — '인증샷 콘테스트'에서 '들꽃사진 콘테스트'로 주제 변경(2026-09-06 대표), 빌드 13 앱·URL 호환
+    name: { ko: "들꽃사진 콘테스트", en: "Wildflower Photo Contest" },
     summary: {
-      ko: "멋진 인증샷을 오리픽스 앱으로 찍어 보내 주세요. 좋아요 순으로 소정의 상품과 명예의 전당 등재.",
-      en: "Take a great proof shot with the OriPics app. Top-liked entries win a small prize and a Hall of Fame spot.",
+      ko: "길가·산·들에서 만난 들꽃을 오리픽스 앱으로 찍어 보내 주세요. 좋아요 순으로 소정의 상품과 명예의 전당 등재.",
+      en: "Shoot wildflowers you meet on roadsides, hills and fields with the OriPics app. Top-liked entries win a small prize and a Hall of Fame spot.",
     },
     details: {
-      ko: "여행지 도착 인증, 완주 인증, 오늘의 도전 인증 — 멋진 인증샷을 오리픽스 앱으로 찍어 보내 주세요.\n\n오리픽스로 찍은 인증샷은 “그 시각, 그 장소에서, 원본 그대로”임을 공개링크로 증명하기 때문에 진짜 인증샷이 됩니다.\n\n좋아요를 많이 받은 순으로 소정의 상품을 드리고, 이 페이지 명예의 전당에 사진과 함께 올려 드립니다.",
-      en: "Arrival at a destination, finishing a race, today's challenge done — take a great proof shot with the OriPics app and send it in.\n\nA proof shot taken with OriPics proves “that time, that place, unaltered” through its public verification link, making it a real proof shot.\n\nThe most-liked entries receive a small prize and are featured in the Hall of Fame on this page.",
+      ko: "이름 모를 길가의 꽃, 산길에서 만난 작은 군락, 비 온 뒤 물방울을 머금은 들꽃 — 들꽃 사진을 오리픽스 앱으로 찍어 보내 주세요.\n\n오리픽스로 찍은 사진은 촬영 시각·위치가 공개링크로 검증되기 때문에, 언제 어디서 핀 꽃인지 사진 스스로 증명합니다.\n\n좋아요를 많이 받은 순으로 소정의 상품을 드리고, 이 페이지 명예의 전당에 사진과 함께 올려 드립니다.",
+      en: "A nameless flower by the road, a small colony on a hillside trail, wildflowers holding raindrops after the rain — shoot wildflowers with the OriPics app and send them in.\n\nPhotos taken with OriPics carry a public verification link for capture time and location, so the photo itself proves when and where the flower bloomed.\n\nThe most-liked entries receive a small prize and are featured in the Hall of Fame on this page.",
     },
-    rules: { ko: RULES_KO("인증샷"), en: RULES_EN("proof shots") },
+    rules: { ko: RULES_KO("들꽃 사진"), en: RULES_EN("wildflower photos") },
     period: { ko: "접수 기간: 2026년 10월 31일까지", en: "Entry period: through October 31, 2026" },
     endsAt: "2026-10-31T23:59:59+09:00",
   },
