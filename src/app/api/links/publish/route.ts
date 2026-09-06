@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
 import { decodePngPixels, extractFinalHashFromPixels, computeInnerHashFromPixels, hexToBytes } from "@/lib/oripics-stamp/server";
 import { StepTimer } from "@/lib/timing";
+import { normalizeMemo, isMissingColumn } from "@/lib/links/memo";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -77,7 +78,9 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ detail: "invalid_json" }, { status: 400 });
   }
-  const { receipt, thumbnail, preview } = body || {};
+  const { receipt, thumbnail, preview, memo: memoRaw } = body || {};
+  // A-76 공개 메모(선택, 100자) — 앱 목록 탭에서 입력한 값이 발행 시 함께 저장됨
+  const memo = normalizeMemo(memoRaw);
   if (typeof receipt !== "string" || !receipt) {
     return NextResponse.json({ detail: "missing_receipt" }, { status: 400 });
   }
@@ -360,6 +363,10 @@ export async function POST(req: NextRequest) {
     // 패스 발행 태그 (A-60) — 뷰어/목록 표시 + 재등록 시 유예 복원 대상 식별
     row.pass_id = passId;
   }
+  if (typeof memo === "string") {
+    row.memo = memo;
+    row.memo_updated_at = new Date().toISOString();
+  }
   if (tier === "verified") {
     // 검증 등급(attest 통과) — 뷰어 배지 표시용. null=standard (구 행 하위호환)
     row.tier = "verified";
@@ -371,9 +378,15 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const { error: dbErr } = await t.span("links_upsert", () =>
+  let { error: dbErr } = await t.span("links_upsert", () =>
     supabase.from("links").upsert(row, { onConflict: "link_id" }),
   );
+  if (dbErr && isMissingColumn(dbErr) && "memo" in row) {
+    // A-76 마이그레이션 전 — 메모 없이 발행은 계속 (메모는 뷰어에서 나중에 추가 가능)
+    const { memo: _m, memo_updated_at: _u, ...rowNoMemo } = row;
+    void _m; void _u;
+    ({ error: dbErr } = await supabase.from("links").upsert(rowNoMemo, { onConflict: "link_id" }));
+  }
   if (dbErr) {
     console.error(`[publish] db upsert failed link_id=${link_id}:`, dbErr.message);
     await refund(`db_error:${dbErr.message}`);

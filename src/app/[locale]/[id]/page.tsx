@@ -33,6 +33,10 @@ interface LinkData {
   expires_at?: string | null;
   /** 원데이 패스 발행 여부 (A-60) — 소유자 PDF 버튼이 티어 무관 허용됨 */
   is_pass?: boolean;
+  /** 공개 메모 (A-76, ≤100자, 작성자 주장 — 검증 대상 아님) */
+  memo?: string | null;
+  /** 최초 입력 후 변경된 적 있음 → '수정됨' 표기 */
+  memo_edited?: boolean;
 }
 
 interface C2paStatus {
@@ -67,6 +71,36 @@ export default function LinkViewer() {
   const [certError, setCertError] = useState<string | null>(null);
 
   const isOwner = !!data?.is_owner;
+  // A-76 공개 메모 편집 (소유자) — PATCH /api/links/:id/memo, 100자
+  const MEMO_MAX = 100;
+  const [memoEditing, setMemoEditing] = useState(false);
+  const [memoDraft, setMemoDraft] = useState("");
+  const [memoBusy, setMemoBusy] = useState(false);
+  const [memoErr, setMemoErr] = useState<string | null>(null);
+  const memoLen = Array.from(memoDraft).length;
+  const saveMemo = async () => {
+    if (!data || memoBusy) return;
+    setMemoBusy(true);
+    setMemoErr(null);
+    try {
+      const r = await fetch(`/api/links/${encodeURIComponent(data.link_id)}/memo`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memo: memoDraft.trim() ? memoDraft : null }),
+      });
+      if (!r.ok) {
+        setMemoErr(r.status === 503 ? t("memo_setup") : t("memo_error"));
+        return;
+      }
+      const d = (await r.json()) as { memo: string | null; memo_edited: boolean };
+      setData((prev) => (prev ? { ...prev, memo: d.memo, memo_edited: d.memo_edited } : prev));
+      setMemoEditing(false);
+    } catch {
+      setMemoErr(t("memo_error"));
+    } finally {
+      setMemoBusy(false);
+    }
+  };
   const isPaidTier = credits?.tier === "pro" || credits?.tier === "business";
   // A-60: 패스 발행 링크는 PDF가 패스에 포함 — 소유자면 티어 무관 발급 가능 (서버 certificate 게이트와 동일)
   const canDownloadCertificate = isOwner && (isPaidTier || !!data?.is_pass);
@@ -391,6 +425,52 @@ export default function LinkViewer() {
                       );
                     })()}
                   </div>
+                </div>
+              )}
+              {/* A-76 공개 메모 — 검증 항목과 시각적으로 분리(점선 카드), 라벨에 '검증 대상 아님' 명시. 소유자는 인라인 편집 */}
+              {(data!.memo || isOwner) && (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-4">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <p className="text-xs text-slate-500">
+                      {t("memo_label")}
+                      {data!.memo_edited ? <span className="ml-1 text-slate-400">({t("memo_edited")})</span> : null}
+                    </p>
+                    {isOwner && !memoEditing ? (
+                      <button
+                        type="button"
+                        onClick={() => { setMemoDraft(data!.memo ?? ""); setMemoErr(null); setMemoEditing(true); }}
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-500"
+                      >
+                        {data!.memo ? t("memo_edit") : t("memo_add")}
+                      </button>
+                    ) : null}
+                  </div>
+                  {memoEditing ? (
+                    <div>
+                      <textarea
+                        value={memoDraft}
+                        onChange={(e) => setMemoDraft(Array.from(e.target.value).slice(0, MEMO_MAX).join(""))}
+                        rows={2}
+                        maxLength={MEMO_MAX * 2}
+                        placeholder={t("memo_placeholder")}
+                        className="w-full text-sm rounded-xl border border-slate-300 bg-white px-3 py-2 outline-none focus:border-blue-400"
+                      />
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className={`text-[11px] ${memoLen >= MEMO_MAX ? "text-rose-600" : "text-slate-400"}`}>{memoLen}/{MEMO_MAX}</span>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setMemoEditing(false)} disabled={memoBusy} className="text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100">{t("memo_cancel")}</button>
+                          <button type="button" onClick={() => void saveMemo()} disabled={memoBusy} className="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-500 disabled:opacity-50">{memoBusy ? t("memo_saving") : t("memo_save")}</button>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-amber-700 mt-1.5">{t("memo_public_notice")}</p>
+                      {memoErr ? <p className="text-[11px] text-rose-600 mt-1">{memoErr}</p> : null}
+                    </div>
+                  ) : data!.memo ? (
+                    <p className="text-sm text-slate-800 whitespace-pre-line break-words">{data!.memo}</p>
+                  ) : (
+                    <p className="text-xs text-slate-400">{t("memo_placeholder")}</p>
+                  )}
+                  <p className="text-[11px] text-slate-400 mt-2">{t("memo_unverified")}</p>
                 </div>
               )}
               {data!.captured_at && (

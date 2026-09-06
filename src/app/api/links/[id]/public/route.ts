@@ -11,6 +11,7 @@ import { getServerSession } from "next-auth";
 import { createClient } from "@supabase/supabase-js";
 import { authOptions } from "@/lib/authOptions";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
+import { isMissingColumn } from "@/lib/links/memo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,13 +30,17 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ id: stri
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  const { data: row, error } = await supabase
+  const BASE_COLS =
+    "link_id, timestamp, width, height, lat, lng, captured_at, tier, verified_info, storage_path, signed_url, preview_path, expires_at, user_id, pass_id";
+  // A-76 공개 메모 — 마이그레이션(2026_09_06_links_memo) 전에는 컬럼이 없어 실패하므로 기본 컬럼으로 재시도
+  let { data: row, error } = await supabase
     .from("links")
-    .select(
-      "link_id, timestamp, width, height, lat, lng, captured_at, tier, verified_info, storage_path, signed_url, preview_path, expires_at, user_id, pass_id",
-    )
+    .select(`${BASE_COLS}, memo, memo_edited`)
     .eq("link_id", linkId)
     .single();
+  if (error && isMissingColumn(error)) {
+    ({ data: row, error } = await supabase.from("links").select(BASE_COLS).eq("link_id", linkId).single());
+  }
 
   if (error || !row) {
     return NextResponse.json({ detail: "not_found" }, { status: 404 });

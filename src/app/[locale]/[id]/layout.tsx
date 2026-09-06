@@ -25,11 +25,16 @@ async function loadLinkMeta(linkId: string): Promise<LinkMeta | null> {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !verifyLinkId(linkId)) return null;
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    const { data: row, error } = await supabase
+    const COLS = 'width, height, tier, captured_at, signed_url, preview_path, expires_at';
+    // A-76: og:description에 공개 메모 — 컬럼 부재(마이그레이션 전)면 기본 컬럼으로 재시도
+    let { data: row, error } = await supabase
       .from('links')
-      .select('width, height, tier, captured_at, signed_url, preview_path, expires_at')
+      .select(`${COLS}, memo`)
       .eq('link_id', linkId)
       .single();
+    if (error && /column|PGRST204/i.test(`${(error as { code?: string }).code ?? ''} ${error.message ?? ''}`)) {
+      ({ data: row, error } = await supabase.from('links').select(COLS).eq('link_id', linkId).maybeSingle());
+    }
     if (error || !row) return null;
     if (row.expires_at && new Date(row.expires_at) <= new Date()) return null;
     const w = Number(row.width) || 0;
@@ -42,10 +47,11 @@ async function loadLinkMeta(linkId: string): Promise<LinkMeta | null> {
         height: h ? Math.round(h * scale) : undefined,
         tier: row.tier,
         capturedAt: row.captured_at,
+        memo: (row as { memo?: string | null }).memo ?? null,
       };
     }
     if (row.signed_url && w * h > 0 && w * h <= ORIGINAL_FALLBACK_MAX_PIXELS) {
-      return { imageUrl: row.signed_url, width: w, height: h, tier: row.tier, capturedAt: row.captured_at };
+      return { imageUrl: row.signed_url, width: w, height: h, tier: row.tier, capturedAt: row.captured_at, memo: (row as { memo?: string | null }).memo ?? null };
     }
     return null;
   } catch {
@@ -70,7 +76,8 @@ export async function generateMetadata(
   const meta = await loadLinkMeta(id);
   const tierSuffix = meta?.tier === 'verified' ? ' · Verified' : '';
   const title = `${t('og_title')}${tierSuffix}`;
-  const description = `${t('og_description')}\n${url}`;
+  // A-76: 공개 메모가 있으면 미리보기 설명 첫 줄로 (메신저 카드에 사진 설명이 바로 보임)
+  const description = meta?.memo ? `${meta.memo}\n${t('og_description')}\n${url}` : `${t('og_description')}\n${url}`;
   const image = meta
     ? { url: meta.imageUrl, width: meta.width, height: meta.height, alt: title }
     : { url: '/og-image.png', width: 1200, height: 630, alt: 'OriPics — the original proof' };
