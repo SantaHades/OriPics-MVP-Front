@@ -1173,7 +1173,7 @@ export default function Home() {
             })()}
           </p>
           {/* 모바일=3줄(1|2|3), 데스크톱=2줄(1+2|3) — 대표 시안 반응형 줄바꿈 (2026-08-29) */}
-          <h1 className="relative z-10 text-3xl md:text-4xl font-extrabold mb-5 leading-snug max-w-2xl mx-auto">
+          <h1 className="relative z-10 text-3xl md:text-4xl font-extrabold mb-4 leading-snug max-w-2xl mx-auto">
             {(() => {
               const lines = t("hero.title").split("\n");
               if (lines.length !== 3) return t("hero.title");
@@ -1189,6 +1189,10 @@ export default function Home() {
               );
             })()}
           </h1>
+          {/* 히어로 설명문 (2026-09-07 대표): 제목은 컨셉(그 시각·그곳·실제 촬영), 설명문이 범위(앱 촬영=셔터 순간부터 / 파일 업로드=인증 시점부터)와 메커니즘을 정확히 서술 */}
+          <p className="relative z-10 text-sm md:text-base text-slate-600 mb-6 max-w-2xl mx-auto leading-relaxed">
+            {t("hero.description")}
+          </p>
 
           {/* 인증 방식·사용 사례 진입 링크 (2026-08-29 대표 기획) — 신뢰(이중 인증)와
               효용(직군별 시나리오)으로 이어지는 통로 */}
