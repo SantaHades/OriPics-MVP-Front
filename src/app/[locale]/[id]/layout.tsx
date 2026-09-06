@@ -19,6 +19,8 @@ type LinkMeta = {
   height?: number;
   tier?: string | null;
   capturedAt?: string | null;
+  /** A-76 공개 메모 — og:description 첫 줄 */
+  memo?: string | null;
 };
 
 async function loadLinkMeta(linkId: string): Promise<LinkMeta | null> {
