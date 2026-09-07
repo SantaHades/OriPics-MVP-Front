@@ -2221,7 +2221,7 @@ export default function Home() {
         </div>
 
         <div className="space-y-3">
-          {Array.from({ length: 15 }, (_, i) => i).map((i) => (
+          {Array.from({ length: 16 }, (_, i) => i).map((i) => (
             <div
               key={i}
               className={`border rounded-2xl transition-all duration-300 overflow-hidden ${openFaq === i

@@ -463,6 +463,10 @@
         {
           "q": "Can I certify a large batch of photos at once?",
           "a": "The web and app are designed for certifying photos individually or in small batches. If you need to certify hundreds of photos at once (asset audits, bulk field records, archive provenance, etc.), we support batch processing and API integration — email hi@ori.pics with your volume and use case and we'll suggest an approach and pricing."
+        },
+        {
+          "q": "What happens when I use up my Pro certifications? Do leftovers carry over?",
+          "a": "Open Subscription in your profile and tap 'Renew now'. The card you registered when subscribing is charged one month (₩9,900) immediately, your certifications reset to the plan amount, and your next billing date restarts from that day. No payment window opens. When your remaining count drops to 10% of the plan or less, a banner appears in your profile so you can renew before heading to a site. Remaining certifications do not carry over; they expire when you renew, and the confirmation dialog shows how many will expire. If you only need 10 more app captures urgently, a One-Day Pass (coming soon) is an option. Renewal payments follow the same refund rules in Article 11 of the Terms."
         }
       ]
     }
@@ -604,7 +608,22 @@
       "refund_modal_desc": "Confirming ends your subscription immediately and partially cancels the payment for the amount above. Your plan reverts to Free and credits are restored to the pre-subscription balance.",
       "refund_confirm_button": "Refund & cancel now",
       "refund_not_available": "The calculated refund is ₩0, so a mid-term refund is not available. Please use the regular cancellation (keep access until period end).",
-      "refund_done": "Refund processed — ₩{amount} was cancelled to your payment method (reflected within 3 business days). Your subscription has ended immediately."
+      "refund_done": "Refund processed — ₩{amount} was cancelled to your payment method (reflected within 3 business days). Your subscription has ended immediately.",
+      "renew_link": "Renew now",
+      "renew_button": "Renew now",
+      "renew_low_banner": "Only {count} certifications left this month. Renew before your next site visit.",
+      "renew_zero_banner": "You've used all certifications for this month. Renew now to keep certifying right away.",
+      "renew_modal_title": "Renew now?",
+      "renew_modal_desc": "Your saved card will be charged ₩{price} now and your certifications reset to {grant}. Your next billing date becomes {date}.",
+      "renew_modal_forfeit": "The remaining {count} certifications will expire and do not roll over.",
+      "renew_modal_hint": "No payment window opens; the card saved when you subscribed is charged directly. Refunds follow Article 11 of the Terms (full refund within 7 days if unused; ₩1,000 deducted per certification used).",
+      "renew_modal_ack": "I understand the remaining {count} certifications will expire.",
+      "renew_modal_confirm": "Pay ₩{price} and renew",
+      "renew_modal_cancel": "Close",
+      "renew_done": "Renewed. {credits} certifications available; next billing date {date}.",
+      "renew_error_card": "The card charge was declined. Check your card limit or expiry, or register the card again.",
+      "renew_error_card_link": "Register card again",
+      "renew_not_available": "This subscription can't be renewed from the web. App Store subscriptions are managed in the store."
     },
     "delete_account": {
       "title": "Delete Account",

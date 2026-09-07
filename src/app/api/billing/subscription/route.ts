@@ -5,7 +5,14 @@ import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { sendGraceDowngradeNotice } from "@/lib/notifications/graceMailer";
 import { computeRefundQuote, countProofUsage, PROOF_UNIT_PRICE } from "@/lib/payment/refund";
-import { PLAN_PRICES, isPlanId } from "@/lib/payment/subscriptionGrant";
+import { PLAN_GRANTS } from "@/lib/payment";
+import {
+  PLAN_PERIOD_DAYS,
+  PLAN_PRICES,
+  chargeWithBillingKeyAndGrant,
+  isPlanId,
+  type PlanId,
+} from "@/lib/payment/subscriptionGrant";
 
 export const runtime = "nodejs";
 
@@ -22,6 +29,11 @@ const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET ?? "";
  *        { action: "refund_cancel" }   중도해지 자동 환불 (A-34):
  *          제11조 산식(사용횟수=사진인증당 ₩1,000, 2026-08-22 확정) →
  *          PortOne 부분취소 → 즉시 종료·free 다운그레이드·크레딧 previous_credits 원복.
+ *        { action: "renew_now" }       조기 갱신 (A-79, 2026-09-07): 저장된 빌링키로 지금
+ *          한 달치를 즉시 청구 → 주기가 오늘부터 30일로 재설정되고 건수는 정액으로 리셋
+ *          (남은 건수는 이월 없이 소멸 — previous_credits 메타에만 기록되어 환불 시 원복 기준).
+ *          결제창 없음. paymentId를 (userId, 오늘 날짜)로 고정해 같은 날 중복 청구를 막는다.
+ *          해지 예약 상태였다면 갱신과 함께 예약을 해제한다(새 달을 결제한 의사 표시).
  */
 
 /** 현재 기간 결제(grant TX)와 환불 견적 산출 — preview/cancel 공용 */
@@ -79,10 +91,24 @@ export async function GET() {
       currentPeriodEnd: true,
       cancelAtPeriodEnd: true,
       canceledAt: true,
+      gateway: true,
+      billingKey: true,
     },
   });
 
-  return NextResponse.json({ subscription: sub });
+  if (!sub) return NextResponse.json({ subscription: null });
+  const plan: PlanId | null = isPlanId(sub.plan) ? sub.plan : null;
+  const { billingKey, ...rest } = sub;
+  return NextResponse.json({
+    subscription: {
+      ...rest,
+      // 조기 갱신(renew_now) 가능 여부 — PortOne 빌링키 구독만. Apple IAP는 스토어가 갱신을 관리.
+      canRenewNow: sub.gateway === "portone" && !!billingKey && sub.status === "active",
+      planGrant: plan ? PLAN_GRANTS[plan] : null,
+      planPrice: plan ? PLAN_PRICES[plan] : null,
+      planPeriodDays: plan ? PLAN_PERIOD_DAYS[plan] : null,
+    },
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -99,8 +125,70 @@ export async function POST(req: NextRequest) {
   } catch {
     /* fallthrough */
   }
-  if (!["cancel", "resume", "refund_preview", "refund_cancel"].includes(action ?? "")) {
+  if (!["cancel", "resume", "refund_preview", "refund_cancel", "renew_now"].includes(action ?? "")) {
     return NextResponse.json({ detail: "invalid_action" }, { status: 400 });
+  }
+
+  if (action === "renew_now") {
+    if (!PORTONE_API_SECRET) {
+      return NextResponse.json({ detail: "portone_not_configured" }, { status: 503 });
+    }
+    const sub = await prisma.subscription.findUnique({
+      where: { userId },
+      include: { user: { select: { name: true, email: true } } },
+    });
+    if (!sub || sub.status !== "active") {
+      return NextResponse.json({ detail: "no_active_subscription" }, { status: 404 });
+    }
+    if (sub.gateway !== "portone" || !sub.billingKey) {
+      return NextResponse.json({ detail: "renew_not_available" }, { status: 409 });
+    }
+    const plan: PlanId = isPlanId(sub.plan) ? sub.plan : "pro_monthly";
+    // 오늘 날짜(UTC)로 결정적 paymentId — 같은 날 두 번 눌러도 한 번만 청구된다.
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const paymentId = `bk-early-${String(userId).slice(-8)}-${today}`;
+    const before = await prisma.user.findUnique({ where: { id: userId }, select: { credits: true } });
+    let result: Awaited<ReturnType<typeof chargeWithBillingKeyAndGrant>>;
+    try {
+      result = await chargeWithBillingKeyAndGrant({
+        billingKey: sub.billingKey,
+        userId,
+        plan,
+        secret: PORTONE_API_SECRET,
+        paymentId,
+        customer: { fullName: sub.user?.name, email: sub.user?.email },
+      });
+    } catch (e: any) {
+      console.error("[subscription] renew_now charge threw", { userId, paymentId, error: e?.message ?? e });
+      return NextResponse.json({ detail: "charge_failed" }, { status: 502 });
+    }
+    if (!result.ok) {
+      console.error("[subscription] renew_now failed", { userId, paymentId, code: result.code });
+      // payment_not_paid/amount_mismatch 계열은 카드 승인 실패로 안내(빌링키 재등록 유도)
+      return NextResponse.json(
+        { detail: "charge_failed", code: result.code },
+        { status: result.httpStatus >= 500 ? 502 : 409 },
+      );
+    }
+    if (!result.alreadyProcessed && sub.cancelAtPeriodEnd) {
+      await prisma.subscription.update({
+        where: { userId },
+        data: { cancelAtPeriodEnd: false, canceledAt: null },
+      });
+    }
+    const after = await prisma.subscription.findUnique({
+      where: { userId },
+      select: { currentPeriodStart: true, currentPeriodEnd: true },
+    });
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { credits: true } });
+    return NextResponse.json({
+      ok: true,
+      alreadyProcessed: !!result.alreadyProcessed,
+      credits: user?.credits ?? null,
+      forfeited: result.alreadyProcessed ? 0 : (before?.credits ?? 0),
+      periodStart: after?.currentPeriodStart ?? null,
+      periodEnd: after?.currentPeriodEnd ?? null,
+    });
   }
 
   if (action === "refund_preview") {

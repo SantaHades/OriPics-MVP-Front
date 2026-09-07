@@ -18,6 +18,11 @@ interface SubscriptionInfo {
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;
   canceledAt: string | null;
+  /** A-79 조기 갱신 가능(PortOne 빌링키 구독) */
+  canRenewNow?: boolean;
+  planGrant?: number | null;
+  planPrice?: number | null;
+  planPeriodDays?: number | null;
 }
 
 interface ProofRecord {
@@ -168,6 +173,56 @@ export default function ProfilePage() {
       .then((d) => setSubscription(d?.subscription ?? null))
       .catch(() => {});
   }, []);
+
+  // A-79 조기 갱신 — 남은 건수가 적을 때(정액 10% 이하) 배너로 강조, 링크는 항상 노출.
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewAck, setRenewAck] = useState(false);
+  const [renewDone, setRenewDone] = useState<{ credits: number; periodEnd: string | null } | null>(null);
+  const [renewError, setRenewError] = useState<string | null>(null);
+  const planGrant = subscription?.planGrant ?? 0;
+  const remainingCredits = credits?.credits ?? 0;
+  const lowCredits = !!subscription?.canRenewNow && planGrant > 0 && remainingCredits <= Math.floor(planGrant * 0.1);
+  const zeroCredits = !!subscription?.canRenewNow && remainingCredits <= 0;
+  const highRemaining = planGrant > 0 && remainingCredits >= Math.ceil(planGrant * 0.5);
+  const projectedPeriodEnd = new Date(Date.now() + (subscription?.planPeriodDays ?? 30) * 86400000);
+  const formatWon = (n: number) => new Intl.NumberFormat(locale === "en" ? "en-US" : "ko-KR").format(n);
+
+  const refreshSubscription = () =>
+    fetch("/api/billing/subscription")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setSubscription(d?.subscription ?? null))
+      .catch(() => {});
+
+  const handleRenewNow = async () => {
+    setSubBusy(true);
+    setRenewError(null);
+    try {
+      const res = await fetch("/api/billing/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "renew_now" }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRenewError(
+          d?.detail === "charge_failed"
+            ? t("subscription.renew_error_card")
+            : d?.detail === "renew_not_available"
+              ? t("subscription.renew_not_available")
+              : t("subscription.error_generic"),
+        );
+        return;
+      }
+      setRenewDone({ credits: typeof d?.credits === "number" ? d.credits : planGrant, periodEnd: d?.periodEnd ?? null });
+      setShowRenewModal(false);
+      setRenewAck(false);
+      await Promise.all([refreshCredits(), refreshSubscription()]);
+    } catch {
+      setRenewError(t("subscription.error_generic"));
+    } finally {
+      setSubBusy(false);
+    }
+  };
 
   const handleSubscriptionAction = async (action: "cancel" | "resume") => {
     setSubBusy(true);
@@ -1097,6 +1152,38 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {/* A-79 조기 갱신 배너 — 남은 건수 0 / 정액 10% 이하에서만 강조 */}
+              {renewDone ? (
+                <p className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+                  {t("subscription.renew_done", {
+                    credits: renewDone.credits,
+                    date: renewDone.periodEnd ? new Date(renewDone.periodEnd).toLocaleDateString() : "—",
+                  })}
+                </p>
+              ) : zeroCredits ? (
+                <div className="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex flex-wrap items-center justify-between gap-2">
+                  <span>{t("subscription.renew_zero_banner")}</span>
+                  <button
+                    onClick={() => { setRenewError(null); setShowRenewModal(true); }}
+                    disabled={subBusy}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:bg-slate-300 transition-colors"
+                  >
+                    {t("subscription.renew_button")}
+                  </button>
+                </div>
+              ) : lowCredits ? (
+                <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-wrap items-center justify-between gap-2">
+                  <span>{t("subscription.renew_low_banner", { count: remainingCredits })}</span>
+                  <button
+                    onClick={() => { setRenewError(null); setShowRenewModal(true); }}
+                    disabled={subBusy}
+                    className="px-3 py-1.5 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 disabled:bg-slate-300 transition-colors"
+                  >
+                    {t("subscription.renew_button")}
+                  </button>
+                </div>
+              ) : null}
+
               {subscription.cancelAtPeriodEnd && (
                 <p className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
                   {t("subscription.canceled_notice", {
@@ -1127,6 +1214,15 @@ export default function ProfilePage() {
                     className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
                   >
                     {t("subscription.cancel_button")}
+                  </button>
+                )}
+                {subscription.canRenewNow && !lowCredits && !zeroCredits && (
+                  <button
+                    onClick={() => { setRenewError(null); setShowRenewModal(true); }}
+                    disabled={subBusy}
+                    className="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50"
+                  >
+                    {t("subscription.renew_link")}
                   </button>
                 )}
               </div>
@@ -1255,6 +1351,65 @@ export default function ProfilePage() {
                   className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
                 >
                   {subBusy ? "…" : t("subscription.cancel_modal_confirm")}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* A-79 조기 갱신 확인 모달 — 결제창 없음(빌링키 즉시 청구), 남은 건수 소멸 명시 */}
+        {showRenewModal && subscription && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
+              <h3 className="text-xl font-bold text-slate-900 mb-3">{t("subscription.renew_modal_title")}</h3>
+              <p className="text-sm text-slate-600 mb-2">
+                {t("subscription.renew_modal_desc", {
+                  price: formatWon(subscription.planPrice ?? 9900),
+                  grant: planGrant,
+                  date: projectedPeriodEnd.toLocaleDateString(),
+                })}
+              </p>
+              {remainingCredits > 0 && (
+                <p className="text-sm font-semibold text-amber-700 mb-2">
+                  {t("subscription.renew_modal_forfeit", { count: remainingCredits })}
+                </p>
+              )}
+              <p className="text-xs text-slate-500 mb-4">{t("subscription.renew_modal_hint")}</p>
+              {highRemaining && (
+                <label className="flex items-start gap-2 text-xs text-slate-700 mb-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={renewAck}
+                    onChange={(e) => setRenewAck(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>{t("subscription.renew_modal_ack", { count: remainingCredits })}</span>
+                </label>
+              )}
+              {renewError && (
+                <p className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+                  {renewError}{" "}
+                  {renewError === t("subscription.renew_error_card") && (
+                    <Link href="/billing/checkout" className="underline font-semibold">
+                      {t("subscription.renew_error_card_link")}
+                    </Link>
+                  )}
+                </p>
+              )}
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => { setShowRenewModal(false); setRenewAck(false); }}
+                  disabled={subBusy}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                >
+                  {t("subscription.renew_modal_cancel")}
+                </button>
+                <button
+                  onClick={handleRenewNow}
+                  disabled={subBusy || (highRemaining && !renewAck)}
+                  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:bg-slate-300 transition-colors"
+                >
+                  {subBusy ? "…" : t("subscription.renew_modal_confirm", { price: formatWon(subscription.planPrice ?? 9900) })}
                 </button>
               </div>
             </div>
