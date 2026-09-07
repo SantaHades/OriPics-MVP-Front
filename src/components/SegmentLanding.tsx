@@ -1,6 +1,7 @@
 "use client";
 // 직군별 랜딩 공용 컴포넌트 (GTM, 2026-09-07) — /for/[segment]. 데이터=lib/segments/catalog.ts
 // 구조: 히어로 → 문제 3카드 → 3단계 → 신뢰 근거 3카드 → 요금 → FAQ → CTA. how-it-works 페이지 톤과 동일.
+// ⚠️ /billing 은 page.tsx 없음(checkout·success·fail만) — 링크하면 [id] 뷰어가 받아 오류. 요금제는 홈 #pricing 앵커로.
 import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, BadgeCheck, CheckCircle2, Fingerprint, ShieldCheck, Smartphone } from "lucide-react";
@@ -83,7 +84,7 @@ export default function SegmentLanding({ slug }: { slug: string }) {
           <h2 className="text-xl font-bold mb-2">{ko ? "요금" : "Pricing"}</h2>
           <p className="text-sm text-slate-700 leading-relaxed break-keep">{seg.pricing[lang]}</p>
           <div className="flex flex-wrap gap-2 mt-4">
-            <Link href="/billing" className="text-sm font-semibold text-blue-600 hover:text-blue-500 underline underline-offset-4">{ko ? "요금제 자세히" : "Plan details"}</Link>
+            <Link href="/#pricing" className="text-sm font-semibold text-blue-600 hover:text-blue-500 underline underline-offset-4">{ko ? "요금제 자세히" : "Plan details"}</Link>
           </div>
         </div>
 
