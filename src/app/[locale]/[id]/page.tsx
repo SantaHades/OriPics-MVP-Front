@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { useSession } from "next-auth/react";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
 import { VerifiedDetailLines, type VerifiedAssertionData } from "@/components/VerifiedDetailLines";
+import ZoomableImage from "@/components/ZoomableImage";
 import { useCredits } from "@/lib/credits/useCredits";
 
 interface LinkData {
@@ -768,26 +769,16 @@ export default function LinkViewer() {
       </footer>
 
       {isFullscreen && imageObjectUrl && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
-          onClick={() => setIsFullscreen(false)}
-        >
+        <div className="fixed inset-0 z-50 bg-black/90">
+          {/* A-80: 휠·핀치 확대, 드래그 이동, 더블탭 토글. 1배에서 탭하면 닫힘 */}
+          <ZoomableImage src={imageObjectUrl} alt="Full Resolution" onClose={() => setIsFullscreen(false)} />
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsFullscreen(false);
-            }}
-            className="absolute top-4 right-4 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+            onClick={() => setIsFullscreen(false)}
+            className="absolute z-10 top-4 right-4 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
             aria-label="Close"
           >
             <X size={24} />
           </button>
-          <img
-            src={imageObjectUrl}
-            alt="Full Resolution"
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-full max-h-full object-contain cursor-default"
-          />
         </div>
       )}
     </div>

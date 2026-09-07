@@ -6,7 +6,8 @@ import { Link } from "@/navigation";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, ExternalLink, Heart, Smartphone, Trophy } from "lucide-react";
+import { ArrowLeft, CalendarDays, ExternalLink, Heart, Smartphone, Trophy, X } from "lucide-react";
+import ZoomableImage from "@/components/ZoomableImage";
 
 import type { EventDefDto } from "@/lib/channels/server";
 import { getEvent } from "@/lib/events/catalog";
@@ -24,6 +25,7 @@ export default function EventDetailPage() {
   const catalog = getEvent(eventId);
   // 사설 이벤트(코드 카탈로그에 없음)는 API로 정의 조회 — 비공개는 추가한 사용자만(403→없음 표시)
   const [remote, setRemote] = useState<EventDefDto | null | "loading">(catalog ? null : "loading");
+  const [lightbox, setLightbox] = useState<EntryDto | null>(null); // A-80 갤러리 라이트박스(확대·이동)
   useEffect(() => {
     if (catalog || !eventId) return;
     fetch(`/api/events/${encodeURIComponent(eventId)}?locale=${lang}`, { cache: "no-store" })
@@ -148,14 +150,19 @@ export default function EventDetailPage() {
           ) : (
             <div className="grid sm:grid-cols-3 gap-4">
               {hall.map((e, i) => (
-                <a key={e.id} href={e.link_url} target="_blank" rel="noopener noreferrer" className="group rounded-3xl overflow-hidden bg-white border border-amber-200 shadow-sm">
+                <div key={e.id} className="group rounded-3xl overflow-hidden bg-white border border-amber-200 shadow-sm">
                   <div className="relative aspect-[4/3] bg-slate-100">
-                    {e.image_url ? <img src={e.image_url} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" /> : null}
+                    {e.image_url ? (
+                      <button type="button" onClick={() => setLightbox(e)} className="block w-full h-full cursor-zoom-in" aria-label="View photo">
+                        <img src={e.image_url} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
+                      </button>
+                    ) : null}
                     <span className="absolute top-2 left-2 rounded-full bg-amber-500 text-white text-xs font-bold px-2 py-0.5">#{i + 1}</span>
+                    <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
                     <span className="absolute bottom-2 right-2"><LikeButton entry={e} /></span>
                   </div>
                   {e.caption ? <p className="px-4 py-3 text-sm text-slate-700 line-clamp-2">{e.caption}</p> : null}
-                </a>
+                </div>
               ))}
             </div>
           )}
@@ -184,19 +191,43 @@ export default function EventDetailPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {entries.map((e) => (
-              <a key={e.id} href={e.link_url} target="_blank" rel="noopener noreferrer" className="group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm">
+              <div key={e.id} className="group relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm">
                 <div className="aspect-square bg-slate-100">
-                  {e.image_url ? <img src={e.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" /> : null}
+                  {e.image_url ? (
+                    <button type="button" onClick={() => setLightbox(e)} className="block w-full h-full cursor-zoom-in" aria-label="View photo">
+                      <img src={e.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
+                    </button>
+                  ) : null}
                 </div>
                 <span className="absolute bottom-2 right-2"><LikeButton entry={e} /></span>
                 {e.mine ? <span className="absolute top-2 left-2 rounded-full bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5">{ko ? "내 출품" : "Mine"}</span> : null}
-                <span className="absolute top-2 right-2 rounded-full bg-white/90 text-slate-600 p-1"><ExternalLink size={12} /></span>
-              </a>
+                <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
+              </div>
             ))}
           </div>
         )}
-        <p className="text-xs text-slate-400 mt-6">{ko ? "사진을 누르면 공개링크가 열려 촬영 시각·원본 여부를 확인할 수 있습니다." : "Tap a photo to open its public link and verify capture time and originality."}</p>
+        <p className="text-xs text-slate-400 mt-6">{ko ? "사진을 누르면 크게 볼 수 있고(확대·이동), 오른쪽 위 링크 아이콘을 누르면 공개링크에서 촬영 시각·원본 여부를 확인할 수 있습니다." : "Tap a photo to view it large (zoom and pan); the link icon in the corner opens its public link to verify capture time and originality."}</p>
       </div>
+
+      {/* A-80 라이트박스: 휠·핀치 확대, 드래그 이동, 더블탭 토글, 1배 탭/ESC 닫기 */}
+      {lightbox?.image_url && (
+        <div className="fixed inset-0 z-50 bg-black/90">
+          <ZoomableImage src={lightbox.image_url} alt={lightbox.caption ?? ""} onClose={() => setLightbox(null)} />
+          <button
+            onClick={() => setLightbox(null)}
+            className="absolute z-10 top-4 right-4 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+            aria-label="Close"
+          >
+            <X size={24} />
+          </button>
+          <div className="absolute z-10 bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 max-w-[95vw]">
+            <a href={lightbox.link_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-slate-800 text-sm font-semibold">
+              <ExternalLink size={14} /> {ko ? "공개링크에서 검증" : "Verify on public link"}
+            </a>
+            <span className="text-white/80 text-sm">♥ {lightbox.like_count}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

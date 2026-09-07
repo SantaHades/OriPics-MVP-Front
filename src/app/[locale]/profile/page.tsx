@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "@/navigation";
 import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check, Info, Ticket } from "lucide-react";
 import { Link } from "@/navigation";
+import ZoomableImage from "@/components/ZoomableImage";
 import { useTranslations, useLocale } from "next-intl";
 import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
@@ -1582,30 +1583,23 @@ export default function ProfilePage() {
 
       {/* 인증 이미지 미리보기 모달 */}
       {previewProof && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
-          onClick={() => setPreviewProof(null)}
-        >
+        <div className="fixed inset-0 z-50 bg-black/90">
+          {/* A-80: 휠·핀치 확대, 드래그 이동, 더블탭 토글. 1배에서 탭하면 닫힘 */}
+          {(() => {
+            const url = proofImageUrl(previewProof.linkId);
+            return url ? (
+              <ZoomableImage src={url} alt="Proof original" onClose={() => setPreviewProof(null)} />
+            ) : null;
+          })()}
           <button
-            onClick={(e) => { e.stopPropagation(); setPreviewProof(null); }}
-            className="absolute top-4 right-4 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+            onClick={() => setPreviewProof(null)}
+            className="absolute z-10 top-4 right-4 w-11 h-11 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
             aria-label="Close"
           >
             <X size={24} />
           </button>
-          {(() => {
-            const url = proofImageUrl(previewProof.linkId);
-            return url ? (
-              <img
-                src={url}
-                alt="Proof original"
-                onClick={(e) => e.stopPropagation()}
-                className="max-w-full max-h-[85vh] object-contain cursor-default rounded-xl"
-              />
-            ) : null;
-          })()}
           <div
-            className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center flex-wrap gap-2 max-w-[95vw] justify-center"
+            className="absolute z-10 bottom-6 left-1/2 -translate-x-1/2 flex items-center flex-wrap gap-2 max-w-[95vw] justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             {!isExpired(previewProof.createdAt) && (
