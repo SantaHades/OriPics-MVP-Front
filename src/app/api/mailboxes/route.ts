@@ -84,28 +84,41 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
   if (dup) return NextResponse.json({ detail: "name_taken" }, { status: 409 });
 
-  const { data: idData, error: idErr } = await db.rpc("next_mailbox_id");
-  if (idErr || typeof idData !== "string") {
-    if (isMissingTable(idErr)) return NextResponse.json({ detail: "setup_required" }, { status: 503 });
-    console.error("[mailboxes] id rpc failed:", idErr?.message);
+  // 번호 발급 — 시퀀스(MB-1001~)가 A-72 때 운영자가 수동 등재한 번호(예: MB-1001)와 겹칠 수 있어(9/9 실기기 실측 duplicate key),
+  // 충돌(23505)이면 다음 번호를 다시 받아 재시도한다.
+  const passwordHash = password ? await hashPassword(password) : null;
+  let id = "";
+  let inserted = false;
+  for (let attempt = 0; attempt < 30 && !inserted; attempt++) {
+    const { data: idData, error: idErr } = await db.rpc("next_mailbox_id");
+    if (idErr || typeof idData !== "string") {
+      if (isMissingTable(idErr)) return NextResponse.json({ detail: "setup_required" }, { status: 503 });
+      console.error("[mailboxes] id rpc failed:", idErr?.message);
+      return NextResponse.json({ detail: "db_error" }, { status: 500 });
+    }
+    id = idData;
+    const { error: insErr } = await db.from("mailboxes").insert({
+      id,
+      name,
+      description,
+      memo,
+      email: null,
+      password_hash: passwordHash,
+      visibility: "private",
+      invite_status: inviteStatus,
+      status: "active",
+      owner_user_id: userId,
+    });
+    if (!insErr) {
+      inserted = true;
+      break;
+    }
+    if (insErr.code === "23505" || /duplicate key/i.test(insErr.message)) continue;
+    console.error("[mailboxes] create failed:", insErr.message);
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
   }
-  const id = idData;
-  const row = {
-    id,
-    name,
-    description,
-    memo,
-    email: null,
-    password_hash: password ? await hashPassword(password) : null,
-    visibility: "private",
-    invite_status: inviteStatus,
-    status: "active",
-    owner_user_id: userId,
-  };
-  const { error: insErr } = await db.from("mailboxes").insert(row);
-  if (insErr) {
-    console.error("[mailboxes] create failed:", insErr.message);
+  if (!inserted) {
+    console.error("[mailboxes] create failed: id collision persists");
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
   }
   const ownerName = await userDisplayName(userId);
