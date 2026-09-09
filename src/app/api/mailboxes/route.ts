@@ -1,5 +1,5 @@
 // 사서함 v2 (A-81, 2026-09-09) — GET /api/mailboxes: 내가 개설한 사서함 + 초대받은 사서함 (사진 수·미열람 수 포함)
-//                               POST /api/mailboxes: 개설 { name, description?, memo?, invite_status?, password? }
+//                               POST /api/mailboxes: 개설 { name, description?, memo?, invite_status?, password?, owner_name? } — owner_name=이 사서함에서 쓸 개설자 표시 이름(사서함마다 다르게 가능, 9/9 대표)
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
   const memo = typeof body.memo === "string" ? body.memo.trim().slice(0, 500) || null : null;
   const inviteStatus = body.invite_status === "closed" ? "closed" : "open";
   const password = typeof body.password === "string" ? body.password.trim().slice(0, 80) : "";
+  const ownerNameInput = typeof body.owner_name === "string" ? body.owner_name.trim().slice(0, 40) : "";
 
   // 한도: 무료 1개 / Pro 무제한 (활성 사서함만 계산)
   const limits = await limitsFor(userId);
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
     console.error("[mailboxes] create failed: id collision persists");
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
   }
-  const ownerName = await userDisplayName(userId);
+  const ownerName = ownerNameInput || (await userDisplayName(userId));
   const member = { mailbox_id: id, user_id: userId, display_name: ownerName, kind: "owner", capture_billing: "owner" };
   await db.from("mailbox_members").insert(member);
   const { data: mb } = await db.from("mailboxes").select(MAILBOX_COLS).eq("id", id).single();
