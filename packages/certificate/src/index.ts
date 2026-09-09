@@ -13,3 +13,11 @@ export async function renderCertificatePdf(opts: {
   const element = React.createElement(CertificateDocument as any, opts as any);
   return renderToBuffer(element as any);
 }
+
+// A-81 사서함 확인서 PDF (2026-09-09)
+import { MailboxReportDocument, type MailboxReportData, type MailboxReportMember, type MailboxReportPhoto } from "./mailboxReport";
+export type { MailboxReportData, MailboxReportMember, MailboxReportPhoto };
+export async function renderMailboxReportPdf(opts: { data: MailboxReportData; locale: "ko" | "en" }): Promise<Buffer> {
+  const element = React.createElement(MailboxReportDocument as any, opts as any);
+  return renderToBuffer(element as any);
+}

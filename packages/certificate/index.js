@@ -134317,10 +134317,11 @@ var require_object_assign = __commonJS({
 // src/index.ts
 var index_exports = {};
 __export(index_exports, {
-  renderCertificatePdf: () => renderCertificatePdf
+  renderCertificatePdf: () => renderCertificatePdf,
+  renderMailboxReportPdf: () => renderMailboxReportPdf
 });
 module.exports = __toCommonJS(index_exports);
-var import_react6 = __toESM(require("react"));
+var import_react7 = __toESM(require("react"));
 
 // ../../node_modules/@react-pdf/primitives/lib/index.js
 var lib_exports = {};
@@ -197432,7 +197433,7 @@ var loadYoga = (() => {
     function Ja(a4) {
       a4 = Ka(a4);
       var b3 = N(a4);
-      S3(a4);
+      S4(a4);
       return b3;
     }
     function La(a4, b3) {
@@ -198189,7 +198190,7 @@ var loadYoga = (() => {
             for (k3 = 0; k3 < e4; ++k3) l4[k3] = String.fromCharCode(A[f4 + k3]);
             l4 = l4.join("");
           }
-          S3(d3);
+          S4(d3);
           return l4;
         }, toWireType: function(d3, e4) {
           e4 instanceof ArrayBuffer && (e4 = new Uint8Array(e4));
@@ -198238,12 +198239,12 @@ var loadYoga = (() => {
               }
               f4[g3] = 0;
             }
-          } else if (g3) for (g3 = 0; g3 < f4; ++g3) l4 = e4.charCodeAt(g3), 255 < l4 && (S3(m3), L("String has UTF-16 code units that do not fit in 8 bits")), A[m3 + g3] = l4;
+          } else if (g3) for (g3 = 0; g3 < f4; ++g3) l4 = e4.charCodeAt(g3), 255 < l4 && (S4(m3), L("String has UTF-16 code units that do not fit in 8 bits")), A[m3 + g3] = l4;
           else for (g3 = 0; g3 < f4; ++g3) A[m3 + g3] = e4[g3];
-          null !== d3 && d3.push(S3, k3);
+          null !== d3 && d3.push(S4, k3);
           return k3;
         }, argPackAdvance: 8, readValueFromPointer: Xa, V: function(d3) {
-          S3(d3);
+          S4(d3);
         } });
       },
       i: function(a4, b3, c4) {
@@ -198260,17 +198261,17 @@ var loadYoga = (() => {
             var t4 = m3 + 4 + u4 * b3;
             if (u4 == l4 || 0 == n5[t4 >> k3]) r4 = d3(r4, t4 - r4), void 0 === p3 ? p3 = r4 : (p3 += String.fromCharCode(0), p3 += r4), r4 = t4 + b3;
           }
-          S3(m3);
+          S4(m3);
           return p3;
         }, toWireType: function(m3, l4) {
           "string" != typeof l4 && L("Cannot pass non-string to C++ string type " + c4);
           var n5 = f4(l4), p3 = Ib(4 + n5 + b3);
           E[p3 >> 2] = n5 >> k3;
           e4(l4, p3 + 4, n5 + b3);
-          null !== m3 && m3.push(S3, p3);
+          null !== m3 && m3.push(S4, p3);
           return p3;
         }, argPackAdvance: 8, readValueFromPointer: Xa, V: function(m3) {
-          S3(m3);
+          S4(m3);
         } });
       },
       k: function(a4, b3, c4, d3, e4, f4) {
@@ -198440,8 +198441,8 @@ var loadYoga = (() => {
     };
     var Ib = h3._malloc = function() {
       return (Ib = h3._malloc = h3.asm.I).apply(null, arguments);
-    }, S3 = h3._free = function() {
-      return (S3 = h3._free = h3.asm.K).apply(null, arguments);
+    }, S4 = h3._free = function() {
+      return (S4 = h3._free = h3.asm.K).apply(null, arguments);
     };
     h3.dynCall_jiji = function() {
       return (h3.dynCall_jiji = h3.asm.L).apply(null, arguments);
@@ -201795,7 +201796,7 @@ var c = { exports: {} };
     for (var n6 = [], t5 = 0; 31 > t5; t5++) n6.push(e4);
     return n6;
   }
-  function S3(e4, n6) {
+  function S4(e4, n6) {
     e4.pendingLanes |= n6, 268435456 !== n6 && (e4.suspendedLanes = 0, e4.pingedLanes = 0, e4.warmLanes = 0);
   }
   function k3(e4, n6, t5) {
@@ -203093,7 +203094,7 @@ var c = { exports: {} };
       if (!ot(e4, t5) && 0 == (128 & n6.flags)) return lu = false, (function(e5, n7, t6) {
         switch (n7.tag) {
           case 3:
-            P(n7, n7.stateNode.containerInfo), st(0, pu, e5.memoizedState.cache);
+            P(n7, n7.stateNode.containerInfo), st2(0, pu, e5.memoizedState.cache);
             break;
           case 27:
           case 5:
@@ -203103,7 +203104,7 @@ var c = { exports: {} };
             P(n7, n7.stateNode.containerInfo);
             break;
           case 10:
-            st(0, n7.type, n7.memoizedProps.value);
+            st2(0, n7.type, n7.memoizedProps.value);
             break;
           case 13:
             var r5 = n7.memoizedState;
@@ -203122,7 +203123,7 @@ var c = { exports: {} };
           case 23:
             return n7.lanes = 0, Bn(e5, n7, t6);
           case 24:
-            st(0, pu, e5.memoizedState.cache);
+            st2(0, pu, e5.memoizedState.cache);
         }
         return at(e5, n7, t6);
       })(e4, n6, t5);
@@ -203159,7 +203160,7 @@ var c = { exports: {} };
         var u4 = n6.pendingProps;
         l5 = (o5 = n6.memoizedState).element, $(e4, n6), X(n6, u4, null, t5);
         var i5 = n6.memoizedState;
-        return u4 = i5.cache, st(0, pu, u4), u4 !== o5.cache && dt(n6, [pu], t5, true), K(), (u4 = i5.element) !== l5 ? (jn(e4, n6, u4, t5), n6 = n6.child) : n6 = at(e4, n6, t5), n6;
+        return u4 = i5.cache, st2(0, pu, u4), u4 !== o5.cache && dt(n6, [pu], t5, true), K(), (u4 = i5.element) !== l5 ? (jn(e4, n6, u4, t5), n6 = n6.child) : n6 = at(e4, n6, t5), n6;
       case 26:
       case 27:
       case 5:
@@ -203178,7 +203179,7 @@ var c = { exports: {} };
       case 12:
         return jn(e4, n6, n6.pendingProps.children, t5), n6.child;
       case 10:
-        return l5 = n6.pendingProps, st(0, n6.type, l5.value), jn(e4, n6, l5.children, t5), n6.child;
+        return l5 = n6.pendingProps, st2(0, n6.type, l5.value), jn(e4, n6, l5.children, t5), n6.child;
       case 9:
         return o5 = n6.type._context, l5 = n6.pendingProps.children, ht(n6), l5 = l5(o5 = gt(o5)), n6.flags |= 1, jn(e4, n6, l5, t5), n6.child;
       case 14:
@@ -203190,7 +203191,7 @@ var c = { exports: {} };
       case 22:
         return Bn(e4, n6, t5);
       case 24:
-        return ht(n6), l5 = gt(pu), null === e4 ? (null === (o5 = kt()) && (o5 = Tu, u4 = vt(), o5.pooledCache = u4, u4.refCount++, null !== u4 && (o5.pooledCacheLanes |= t5), o5 = u4), n6.memoizedState = { parent: l5, cache: o5 }, V(n6), st(0, pu, o5)) : (0 != (e4.lanes & t5) && ($(e4, n6), X(n6, null, null, t5), K()), o5 = e4.memoizedState, u4 = n6.memoizedState, o5.parent !== l5 ? (o5 = { parent: l5, cache: l5 }, n6.memoizedState = o5, 0 === n6.lanes && (n6.memoizedState = n6.updateQueue.baseState = o5), st(0, pu, l5)) : (l5 = u4.cache, st(0, pu, l5), l5 !== o5.cache && dt(n6, [pu], t5, true))), jn(e4, n6, n6.pendingProps.children, t5), n6.child;
+        return ht(n6), l5 = gt(pu), null === e4 ? (null === (o5 = kt()) && (o5 = Tu, u4 = vt(), o5.pooledCache = u4, u4.refCount++, null !== u4 && (o5.pooledCacheLanes |= t5), o5 = u4), n6.memoizedState = { parent: l5, cache: o5 }, V(n6), st2(0, pu, o5)) : (0 != (e4.lanes & t5) && ($(e4, n6), X(n6, null, null, t5), K()), o5 = e4.memoizedState, u4 = n6.memoizedState, o5.parent !== l5 ? (o5 = { parent: l5, cache: l5 }, n6.memoizedState = o5, 0 === n6.lanes && (n6.memoizedState = n6.updateQueue.baseState = o5), st2(0, pu, l5)) : (l5 = u4.cache, st2(0, pu, l5), l5 !== o5.cache && dt(n6, [pu], t5, true))), jn(e4, n6, n6.pendingProps.children, t5), n6.child;
       case 29:
         throw n6.pendingProps;
     }
@@ -203199,7 +203200,7 @@ var c = { exports: {} };
   function it() {
     su = iu = uu = null;
   }
-  function st(e4, n6, t5) {
+  function st2(e4, n6, t5) {
     p3(ou, n6._currentValue2), n6._currentValue2 = t5;
   }
   function ct(e4) {
@@ -204225,7 +204226,7 @@ var c = { exports: {} };
     return null !== e4 && (e4.flags |= 32), Qu;
   }
   function hr(e4, n6, t5) {
-    (e4 === Tu && 2 === Uu || null !== e4.cancelPendingCommit) && (wr(e4, 0), Sr(e4, Lu, Qu)), S3(e4, t5), 0 != (2 & Ru) && e4 === Tu || (e4 === Tu && (0 == (2 & Ru) && (ju |= t5), 4 === Wu && Sr(e4, Lu, Qu)), M(e4));
+    (e4 === Tu && 2 === Uu || null !== e4.cancelPendingCommit) && (wr(e4, 0), Sr(e4, Lu, Qu)), S4(e4, t5), 0 != (2 & Ru) && e4 === Tu || (e4 === Tu && (0 == (2 & Ru) && (ju |= t5), 4 === Wu && Sr(e4, Lu, Qu)), M(e4));
   }
   function gr(e4, n6, t5) {
     if (0 != (6 & Ru)) throw Error(r4(327));
@@ -204657,7 +204658,7 @@ var c = { exports: {} };
     return false;
   }
   function Hr(e4, n6, t5) {
-    n6 = C(t5, n6), null !== (e4 = Y(e4, n6 = Mn(e4.stateNode, n6, 2), 2)) && (S3(e4, 2), M(e4));
+    n6 = C(t5, n6), null !== (e4 = Y(e4, n6 = Mn(e4.stateNode, n6, 2), 2)) && (S4(e4, 2), M(e4));
   }
   function jr(e4, n6, t5) {
     if (3 === e4.tag) Hr(e4, e4, t5);
@@ -204669,7 +204670,7 @@ var c = { exports: {} };
       if (1 === n6.tag) {
         var r5 = n6.stateNode;
         if ("function" == typeof n6.type.getDerivedStateFromError || "function" == typeof r5.componentDidCatch && (null === Ju || !Ju.has(r5))) {
-          e4 = C(t5, e4), null !== (r5 = Y(n6, t5 = Wn(2), 2)) && (Hn(t5, r5, n6, e4), S3(r5, 2), M(r5));
+          e4 = C(t5, e4), null !== (r5 = Y(n6, t5 = Wn(2), 2)) && (Hn(t5, r5, n6, e4), S4(r5, 2), M(r5));
           break;
         }
       }
@@ -204690,7 +204691,7 @@ var c = { exports: {} };
     null !== r5 && r5.delete(n6), e4.pingedLanes |= e4.suspendedLanes & t5, e4.warmLanes &= ~t5, Tu === e4 && (Lu & t5) === t5 && (4 === Wu || 3 === Wu && (62914560 & Lu) === Lu && 300 > Qa() - qu ? 0 == (2 & Ru) && wr(e4, 0) : Au |= t5, Ou === Lu && (Ou = 0)), M(e4);
   }
   function Or(e4, n6) {
-    0 === n6 && (n6 = b3()), null !== (e4 = D(e4, n6)) && (S3(e4, n6), M(e4));
+    0 === n6 && (n6 = b3()), null !== (e4 = D(e4, n6)) && (S4(e4, n6), M(e4));
   }
   function Br(e4) {
     var n6 = e4.memoizedState, t5 = 0;
@@ -205244,7 +205245,7 @@ var c = { exports: {} };
     function v3(e4, n7) {
       0 > iu ? console.error("Unexpected pop.") : (n7 !== uu[iu] && console.error("Unexpected Fiber popped."), e4.current = ou[iu], ou[iu] = null, uu[iu] = null, iu--);
     }
-    function S3(e4, n7, t5) {
+    function S4(e4, n7, t5) {
       iu++, ou[iu] = e4.current, uu[iu] = t5, e4.current = n7;
     }
     function k3(e4) {
@@ -205414,7 +205415,7 @@ var c = { exports: {} };
       return null === e4 && console.error("Expected host context to exist. This error is likely caused by a bug in React. Please file an issue."), e4;
     }
     function W(e4, n7) {
-      S3(Qu, n7, e4), S3(Au, e4, e4), S3(ju, null, e4), n7 = oo(n7), v3(ju, e4), S3(ju, n7, e4);
+      S4(Qu, n7, e4), S4(Au, e4, e4), S4(ju, null, e4), n7 = oo(n7), v3(ju, e4), S4(ju, n7, e4);
     }
     function H(e4) {
       v3(ju, e4), v3(Au, e4), v3(Qu, e4);
@@ -205423,9 +205424,9 @@ var c = { exports: {} };
       return M(ju.current);
     }
     function A(e4) {
-      null !== e4.memoizedState && S3(Ou, e4, e4);
+      null !== e4.memoizedState && S4(Ou, e4, e4);
       var n7 = M(ju.current), t5 = uo(n7, e4.type);
-      n7 !== t5 && (S3(Au, e4, e4), S3(ju, t5, e4));
+      n7 !== t5 && (S4(Au, e4, e4), S4(ju, t5, e4));
     }
     function Q(e4) {
       Au.current === e4 && (v3(ju, e4), v3(Au, e4)), Ou.current === e4 && (v3(Ou, e4), Uo._currentValue2 = Lo);
@@ -206000,12 +206001,12 @@ var c = { exports: {} };
               if (null == o6) throw Error("An iterable object provided no iterator.");
               for (var s6 = null, c7 = null, f7 = a6, d6 = a6 = 0, p6 = null, y5 = null, v5 = o6.next(); null !== f7 && !v5.done; d6++, v5 = o6.next()) {
                 f7.index > d6 ? (p6 = f7, f7 = null) : p6 = f7.sibling;
-                var S4 = h4(t6, f7, v5.value, i5);
-                if (null === S4) {
+                var S5 = h4(t6, f7, v5.value, i5);
+                if (null === S5) {
                   null === f7 && (f7 = p6);
                   break;
                 }
-                y5 = b4(t6, S4, v5.value, y5), e4 && f7 && null === S4.alternate && n7(t6, f7), a6 = u4(S4, a6, d6), null === c7 ? s6 = S4 : c7.sibling = S4, c7 = S4, f7 = p6;
+                y5 = b4(t6, S5, v5.value, y5), e4 && f7 && null === S5.alternate && n7(t6, f7), a6 = u4(S5, a6, d6), null === c7 ? s6 = S5 : c7.sibling = S5, c7 = S5, f7 = p6;
               }
               if (v5.done) return r5(t6, f7), s6;
               if (null === f7) {
@@ -206050,28 +206051,28 @@ var c = { exports: {} };
     }
     function He(e4, n7) {
       var t5 = Ef;
-      S3(ms, t5, e4), S3(ps, n7, e4), Ef = t5 | n7.baseLanes;
+      S4(ms, t5, e4), S4(ps, n7, e4), Ef = t5 | n7.baseLanes;
     }
     function je(e4) {
-      S3(ms, Ef, e4), S3(ps, ps.current, e4);
+      S4(ms, Ef, e4), S4(ps, ps.current, e4);
     }
     function Ae(e4) {
       Ef = ms.current, v3(ps, e4), v3(ms, e4);
     }
     function Qe(e4) {
       var n7 = e4.alternate;
-      S3(vs, vs.current & ys, e4), S3(hs, e4, e4), null === gs && (null === n7 || null !== ps.current || null !== n7.memoizedState) && (gs = e4);
+      S4(vs, vs.current & ys, e4), S4(hs, e4, e4), null === gs && (null === n7 || null !== ps.current || null !== n7.memoizedState) && (gs = e4);
     }
     function Oe(e4) {
       if (22 === e4.tag) {
-        if (S3(vs, vs.current, e4), S3(hs, e4, e4), null === gs) {
+        if (S4(vs, vs.current, e4), S4(hs, e4, e4), null === gs) {
           var n7 = e4.alternate;
           null !== n7 && null !== n7.memoizedState && (gs = e4);
         }
       } else Be(e4);
     }
     function Be(e4) {
-      S3(vs, vs.current, e4), S3(hs, hs.current, e4);
+      S4(vs, vs.current, e4), S4(hs, hs.current, e4);
     }
     function Ve(e4) {
       v3(hs, e4), gs === e4 && (gs = null), v3(vs, e4);
@@ -206584,7 +206585,7 @@ var c = { exports: {} };
       var e4 = mn(dn)[0], n7 = un().memoizedState;
       return ["boolean" == typeof e4 ? e4 : sn(e4), n7];
     }
-    function st() {
+    function st2() {
       var e4 = gn(dn)[0], n7 = un().memoizedState;
       return ["boolean" == typeof e4 ? e4 : sn(e4), n7];
     }
@@ -206987,7 +206988,7 @@ var c = { exports: {} };
         }
         r5 &= ys;
       }
-      switch (S3(vs, r5, n7), l5) {
+      switch (S4(vs, r5, n7), l5) {
         case "forwards":
           for (t5 = n7.child, l5 = null; null !== t5; ) null !== (e4 = t5.alternate) && null === $e(e4) && (l5 = t5), t5 = t5.sibling;
           null === (t5 = l5) ? (l5 = n7.child, n7.child = null) : (l5 = t5.sibling, t5.sibling = null), Jt(n7, false, l5, t5, a5);
@@ -207071,7 +207072,7 @@ var c = { exports: {} };
                 if (r6) return Kt(e5, n8, t6);
                 n8.flags |= 128;
               }
-              if (null !== (l6 = n8.memoizedState) && (l6.rendering = null, l6.tail = null, l6.lastEffect = null), S3(vs, vs.current, n8), r6) break;
+              if (null !== (l6 = n8.memoizedState) && (l6.rendering = null, l6.tail = null, l6.lastEffect = null), S4(vs, vs.current, n8), r6) break;
               return null;
             case 22:
             case 23:
@@ -207165,7 +207166,7 @@ var c = { exports: {} };
       _c = Pc = Ec = null, Rc = false;
     }
     function tr(e4, n7, t5) {
-      S3(xc, n7._currentValue2, e4), n7._currentValue2 = t5, S3(zc, n7._currentRenderer2, e4), void 0 !== n7._currentRenderer2 && null !== n7._currentRenderer2 && n7._currentRenderer2 !== Cc && console.error("Detected multiple renderers concurrently rendering the same context provider. This is currently unsupported."), n7._currentRenderer2 = Cc;
+      S4(xc, n7._currentValue2, e4), n7._currentValue2 = t5, S4(zc, n7._currentRenderer2, e4), void 0 !== n7._currentRenderer2 && null !== n7._currentRenderer2 && n7._currentRenderer2 !== Cc && console.error("Detected multiple renderers concurrently rendering the same context provider. This is currently unsupported."), n7._currentRenderer2 = Cc;
     }
     function rr(e4, n7) {
       var t5 = xc.current;
@@ -207277,7 +207278,7 @@ var c = { exports: {} };
       return null !== e4 ? e4 : cf.pooledCache;
     }
     function gr(e4, n7) {
-      S3(Ic, null === n7 ? Ic.current : n7.pool, e4);
+      S4(Ic, null === n7 ? Ic.current : n7.pool, e4);
     }
     function yr() {
       var e4 = hr();
@@ -207398,7 +207399,7 @@ var c = { exports: {} };
             if (Pf !== nf || null !== e4 && 0 != (128 & e4.flags)) for (e4 = n7.child; null !== e4; ) {
               if (null !== (a5 = $e(e4))) {
                 for (n7.flags |= 128, Sr(l5, false), e4 = a5.updateQueue, n7.updateQueue = e4, vr(n7, e4), n7.subtreeFlags = 0, e4 = t5, t5 = n7.child; null !== t5; ) da(t5, e4), t5 = t5.sibling;
-                return S3(vs, vs.current & ys | bs, n7), n7.child;
+                return S4(vs, vs.current & ys | bs, n7), n7.child;
               }
               e4 = e4.sibling;
             }
@@ -207410,7 +207411,7 @@ var c = { exports: {} };
             } else 2 * vu() - l5.renderingStartTime > Wf && 536870912 !== t5 && (n7.flags |= 128, r5 = true, Sr(l5, false), n7.lanes = 4194304);
             l5.isBackwards ? (a5.sibling = n7.child, n7.child = a5) : (null !== (e4 = l5.last) ? e4.sibling = a5 : n7.child = a5, l5.last = a5);
           }
-          return null !== l5.tail ? (e4 = l5.tail, l5.rendering = e4, l5.tail = e4.sibling, l5.renderingStartTime = vu(), e4.sibling = null, t5 = vs.current, S3(vs, t5 = r5 ? t5 & ys | bs : t5 & ys, n7), e4) : (kr(n7), null);
+          return null !== l5.tail ? (e4 = l5.tail, l5.rendering = e4, l5.tail = e4.sibling, l5.renderingStartTime = vu(), e4.sibling = null, t5 = vs.current, S4(vs, t5 = r5 ? t5 & ys | bs : t5 & ys, n7), e4) : (kr(n7), null);
         case 22:
         case 23:
           return Ve(n7), Ae(n7), r5 = null !== n7.memoizedState, null !== e4 ? null !== e4.memoizedState !== r5 && (n7.flags |= 8192) : r5 && (n7.flags |= 8192), r5 ? 0 != (536870912 & t5) && 0 == (128 & n7.flags) && (kr(n7), 6 & n7.subtreeFlags && (n7.flags |= 8192)) : kr(n7), null !== (t5 = n7.updateQueue) && vr(n7, t5.retryQueue), t5 = null, null !== e4 && null !== e4.memoizedState && null !== e4.memoizedState.cachePool && (t5 = e4.memoizedState.cachePool.pool), r5 = null, null !== n7.memoizedState && null !== n7.memoizedState.cachePool && (r5 = n7.memoizedState.cachePool.pool), r5 !== t5 && (n7.flags |= 2048), null !== e4 && v3(Ic, n7), null;
@@ -209300,7 +209301,7 @@ var c = { exports: {} };
     }, useDeferredValue: function(e4, n7) {
       return As = "useDeferredValue", Ye(), rt(e4, n7);
     }, useTransition: function() {
-      return As = "useTransition", Ye(), st();
+      return As = "useTransition", Ye(), st2();
     }, useSyncExternalStore: function(e4, n7, t5) {
       return As = "useSyncExternalStore", Ye(), bn(e4, n7, t5);
     }, useId: function() {
@@ -209493,7 +209494,7 @@ var c = { exports: {} };
     }, useDeferredValue: function(e4, n7) {
       return As = "useDeferredValue", r4(), Ye(), rt(e4, n7);
     }, useTransition: function() {
-      return As = "useTransition", r4(), Ye(), st();
+      return As = "useTransition", r4(), Ye(), st2();
     }, useSyncExternalStore: function(e4, n7, t5) {
       return As = "useSyncExternalStore", r4(), Ye(), bn(e4, n7, t5);
     }, useId: function() {
@@ -209887,7 +209888,7 @@ var c2 = { exports: {} };
       return e5;
     })(t5)) & (e4.suspendedLanes | n6)) ? 0 : t5;
   }
-  function S3(e4) {
+  function S4(e4) {
     return 2 < (e4 &= -e4) ? 8 < e4 ? 0 != (134217727 & e4) ? 32 : 268435456 : 8 : 2;
   }
   function k3(e4) {
@@ -210183,7 +210184,7 @@ var c2 = { exports: {} };
     if (t5 = Bu, t5 = d3(e4, e4 === (n6 = Wu) ? t5 : 0, null !== e4.cancelPendingCommit || e4.timeoutHandle !== ql), r5 = e4.callbackNode, 0 === t5 || e4 === n6 && (2 === $u || 9 === $u) || null !== e4.cancelPendingCommit) return null !== r5 && null !== r5 && Ja(r5), e4.callbackNode = null, e4.callbackPriority = 0;
     if (0 == (3 & t5) || f4(e4, t5)) {
       if ((n6 = t5 & -t5) === e4.callbackPriority) return n6;
-      switch (null !== r5 && Ja(r5), S3(t5)) {
+      switch (null !== r5 && Ja(r5), S4(t5)) {
         case 2:
         case 8:
           t5 = no;
@@ -211219,7 +211220,7 @@ var c2 = { exports: {} };
   function it(e4, n6, t5, r5, l5) {
     if (null === e4) {
       var a5 = t5.type;
-      return "function" != typeof a5 || rl(a5) || void 0 !== a5.defaultProps || null !== t5.compare ? ((e4 = ol(t5.type, null, r5, n6, n6.mode, l5)).ref = n6.ref, e4.return = n6, n6.child = e4) : (n6.tag = 15, n6.type = a5, st(e4, n6, a5, r5, l5));
+      return "function" != typeof a5 || rl(a5) || void 0 !== a5.defaultProps || null !== t5.compare ? ((e4 = ol(t5.type, null, r5, n6, n6.mode, l5)).ref = n6.ref, e4.return = n6, n6.child = e4) : (n6.tag = 15, n6.type = a5, st2(e4, n6, a5, r5, l5));
     }
     if (a5 = e4.child, !Tt(e4, l5)) {
       var o5 = a5.memoizedProps;
@@ -211227,7 +211228,7 @@ var c2 = { exports: {} };
     }
     return n6.flags |= 1, (e4 = ll(a5, r5)).ref = n6.ref, e4.return = n6, n6.child = e4;
   }
-  function st(e4, n6, t5, r5, l5) {
+  function st2(e4, n6, t5, r5, l5) {
     if (null !== e4) {
       var a5 = e4.memoizedProps;
       if (re(a5, r5) && e4.ref === n6.ref) {
@@ -211498,7 +211499,7 @@ var c2 = { exports: {} };
       case 14:
         return it(e4, n6, n6.type, n6.pendingProps, t5);
       case 15:
-        return st(e4, n6, n6.type, n6.pendingProps, t5);
+        return st2(e4, n6, n6.type, n6.pendingProps, t5);
       case 19:
         return Pt(e4, n6, t5);
       case 31:
@@ -212947,7 +212948,7 @@ var c2 = { exports: {} };
       var e4 = fi, n6 = pi, t5 = mi, r5 = yi;
       0 != (10256 & n6.subtreeFlags) || 0 != (10256 & n6.flags) ? di = 5 : (di = 0, pi = fi = null, Vr(e4, e4.pendingLanes));
       var l5 = e4.pendingLanes;
-      if (0 === l5 && (ci = null), S3(t5), n6 = n6.stateNode, null !== r5) {
+      if (0 === l5 && (ci = null), S4(t5), n6 = n6.stateNode, null !== r5) {
         n6 = Dl.T, l5 = Xl(), Kl(2), Dl.T = null;
         try {
           for (var a5 = e4.onRecoverableError, o5 = 0; o5 < r5.length; o5++) {
@@ -212971,7 +212972,7 @@ var c2 = { exports: {} };
     if (5 !== di) return false;
     var e4 = fi, n6 = hi;
     hi = 0;
-    var t5 = S3(mi), l5 = 32 > t5 ? 32 : t5;
+    var t5 = S4(mi), l5 = 32 > t5 ? 32 : t5;
     t5 = Dl.T;
     var a5 = Xl();
     try {
@@ -213519,7 +213520,7 @@ var c2 = { exports: {} };
       for (var n7 = [], t5 = 0; 31 > t5; t5++) n7.push(e4);
       return n7;
     }
-    function S3(e4, n7) {
+    function S4(e4, n7) {
       e4.pendingLanes |= n7, 268435456 !== n7 && (e4.suspendedLanes = 0, e4.pingedLanes = 0, e4.warmLanes = 0);
     }
     function k3(e4, n7, t5) {
@@ -214624,12 +214625,12 @@ var c2 = { exports: {} };
               if (null == o6) throw Error("An iterable object provided no iterator.");
               for (var s6 = null, c7 = null, d6 = a6, f7 = a6 = 0, p6 = null, b5 = null, v5 = o6.next(); null !== d6 && !v5.done; f7++, v5 = o6.next()) {
                 d6.index > f7 ? (p6 = d6, d6 = null) : p6 = d6.sibling;
-                var S4 = h4(t6, d6, v5.value, i5);
-                if (null === S4) {
+                var S5 = h4(t6, d6, v5.value, i5);
+                if (null === S5) {
                   null === d6 && (d6 = p6);
                   break;
                 }
-                b5 = y4(t6, S4, v5.value, b5), e4 && d6 && null === S4.alternate && n7(t6, d6), a6 = u4(S4, a6, f7), null === c7 ? s6 = S4 : c7.sibling = S4, c7 = S4, d6 = p6;
+                b5 = y4(t6, S5, v5.value, b5), e4 && d6 && null === S5.alternate && n7(t6, d6), a6 = u4(S5, a6, f7), null === c7 ? s6 = S5 : c7.sibling = S5, c7 = S5, d6 = p6;
               }
               if (v5.done) return r5(t6, d6), s6;
               if (null === d6) {
@@ -215004,7 +215005,7 @@ var c2 = { exports: {} };
       }
       throw Error("An unsupported type was passed to use(): " + String(e4));
     }
-    function st(e4) {
+    function st2(e4) {
       var n7 = null, t5 = Ud.updateQueue;
       if (null !== t5 && (n7 = t5.memoCache), null == n7) {
         var r5 = Ud.alternate;
@@ -217042,7 +217043,7 @@ var c2 = { exports: {} };
       return null !== (e4 = bd.current) && (e4.flags |= 32), wp;
     }
     function pa(e4, n7, t5) {
-      if (cm && console.error("useInsertionEffect must not schedule updates."), am && (om = true), (e4 !== Zf || fp !== lp && fp !== dp) && null === e4.cancelPendingCommit || (Sa(e4, 0), ya(e4, np, wp, false)), S3(e4, t5), (Xf & Qf) !== Wf && e4 === Zf) {
+      if (cm && console.error("useInsertionEffect must not schedule updates."), am && (om = true), (e4 !== Zf || fp !== lp && fp !== dp) && null === e4.cancelPendingCommit || (Sa(e4, 0), ya(e4, np, wp, false)), S4(e4, t5), (Xf & Qf) !== Wf && e4 === Zf) {
         if (Zi) switch (n7.tag) {
           case 0:
           case 11:
@@ -217487,7 +217488,7 @@ var c2 = { exports: {} };
           0 !== r6 && k3(e5, r6, 0), 0 !== a6 && 0 === l6 && 0 !== e5.tag && (e5.suspendedLanes |= a6 & ~(o6 & ~n8));
         })(e4, t5, a5 |= ud, o5, u4, i5), e4 === Zf && (ep = Zf = null, np = 0), qp = n7, Vp = e4, Yp = t5, Gp = a5, Kp = l5, Xp = r5, Jp = p4, Zp = d4, em = Ip, nm = null, 0 !== n7.actualDuration || 0 != (10256 & n7.subtreeFlags) || 0 != (10256 & n7.flags) ? (e4.callbackNode = null, e4.callbackPriority = 0, b4 = ui, v4 = function() {
           return eu(), em === Ip && (em = jp), Ma(), null;
-        }, null !== (S4 = Do.actQueue) ? S4.push(v4) : ei(b4, v4)) : (e4.callbackNode = null, e4.callbackPriority = 0), bs = null, gs = ps(), null !== d4 && (m4 = p4, h4 = gs, g4 = d4, y4 = Up, !Ci || h4 <= m4 || (y4 ? y4.run(console.timeStamp.bind(console, g4, m4, h4, Pi, "Scheduler \u269B", "secondary-light")) : console.timeStamp(g4, m4, h4, Pi, "Scheduler \u269B", "secondary-light"))), r5 = 0 != (13878 & n7.flags), 0 != (13878 & n7.subtreeFlags) || r5) {
+        }, null !== (S5 = Do.actQueue) ? S5.push(v4) : ei(b4, v4)) : (e4.callbackNode = null, e4.callbackPriority = 0), bs = null, gs = ps(), null !== d4 && (m4 = p4, h4 = gs, g4 = d4, y4 = Up, !Ci || h4 <= m4 || (y4 ? y4.run(console.timeStamp.bind(console, g4, m4, h4, Pi, "Scheduler \u269B", "secondary-light")) : console.timeStamp(g4, m4, h4, Pi, "Scheduler \u269B", "secondary-light"))), r5 = 0 != (13878 & n7.flags), 0 != (13878 & n7.subtreeFlags) || r5) {
           r5 = Do.T, Do.T = null, l5 = Xo(), Ko(2), o5 = Xf, Xf |= Bf;
           try {
             !(function(e5, n8) {
@@ -217529,7 +217530,7 @@ var c2 = { exports: {} };
         }
         $p = Op, Fa(), ja(), Aa();
       }
-      var m4, h4, g4, y4, b4, v4, S4;
+      var m4, h4, g4, y4, b4, v4, S5;
     }
     function Fa() {
       if ($p === Op) {
@@ -217647,7 +217648,7 @@ var c2 = { exports: {} };
       }
     }
     function Wa(e4, n7, t5) {
-      Fe(n7 = Y(t5, n7)), null !== (e4 = Tn(e4, n7 = Tr(e4.stateNode, n7, 2), 2)) && (S3(e4, 2), Oe(e4));
+      Fe(n7 = Y(t5, n7)), null !== (e4 = Tn(e4, n7 = Tr(e4.stateNode, n7, 2), 2)) && (S4(e4, 2), Oe(e4));
     }
     function Qa(e4, n7, t5) {
       if (cm = false, 3 === e4.tag) Wa(e4, e4, t5);
@@ -217656,7 +217657,7 @@ var c2 = { exports: {} };
           if (3 === n7.tag) return void Wa(n7, e4, t5);
           if (1 === n7.tag) {
             var r5 = n7.stateNode;
-            if ("function" == typeof n7.type.getDerivedStateFromError || "function" == typeof r5.componentDidCatch && (null === Dp || !Dp.has(r5))) return Fe(e4 = Y(t5, e4)), void (null !== (r5 = Tn(n7, t5 = Rr(2), 2)) && (Nr(t5, r5, n7, e4), S3(r5, 2), Oe(r5)));
+            if ("function" == typeof n7.type.getDerivedStateFromError || "function" == typeof r5.componentDidCatch && (null === Dp || !Dp.has(r5))) return Fe(e4 = Y(t5, e4)), void (null !== (r5 = Tn(n7, t5 = Rr(2), 2)) && (Nr(t5, r5, n7, e4), S4(r5, 2), Oe(r5)));
           }
           n7 = n7.return;
         }
@@ -217677,7 +217678,7 @@ var c2 = { exports: {} };
       null !== r5 && r5.delete(n7), e4.pingedLanes |= e4.suspendedLanes & t5, e4.warmLanes &= ~t5, 0 != (127 & t5) ? 0 > Ps && (Cs = Ps = ps(), _s = ms("Promise Resolved"), Ts = 2) : 0 != (4194048 & t5) && 0 > As && (Fs = As = ps(), Os = ms("Promise Resolved"), Hs = 2), ca() && null === Do.actQueue && console.error("A suspended resource finished loading inside a test, but the event was not wrapped in act(...).\n\nWhen testing, code that resolves suspended data should be wrapped into act(...):\n\nact(() => {\n  /* finish loading suspended data */\n});\n/* assert on the output */\n\nThis ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act"), Zf === e4 && (np & t5) === t5 && (bp === Gf || bp === Yf && (62914560 & np) === np && li() - Pp < Tp ? (Xf & Qf) === Wf && Sa(e4, 0) : kp |= t5, zp === np && (zp = 0)), Oe(e4);
     }
     function Va(e4, n7) {
-      0 === n7 && (n7 = b3()), null !== (e4 = zn(e4, n7)) && (S3(e4, n7), Oe(e4));
+      0 === n7 && (n7 = b3()), null !== (e4 = zn(e4, n7)) && (S4(e4, n7), Oe(e4));
     }
     function qa(e4) {
       var n7 = e4.memoizedState, t5 = 0;
@@ -218062,7 +218063,7 @@ var c2 = { exports: {} };
       return Bd = "useActionState", Vn(), It(e4, n7);
     }, useOptimistic: function(e4) {
       return Bd = "useOptimistic", Vn(), xt(e4);
-    }, useHostTransitionStatus: dr, useMemoCache: st, useCacheRefresh: function() {
+    }, useHostTransitionStatus: dr, useMemoCache: st2, useCacheRefresh: function() {
       return Bd = "useCacheRefresh", Vn(), pr();
     }, useEffectEvent: function(e4) {
       return Bd = "useEffectEvent", Vn(), $t(e4);
@@ -218125,7 +218126,7 @@ var c2 = { exports: {} };
       return Bd = "useFormState", qn(), Gn(), It(e4, n7);
     }, useOptimistic: function(e4) {
       return Bd = "useOptimistic", qn(), xt(e4);
-    }, useHostTransitionStatus: dr, useMemoCache: st, useCacheRefresh: function() {
+    }, useHostTransitionStatus: dr, useMemoCache: st2, useCacheRefresh: function() {
       return Bd = "useCacheRefresh", qn(), pr();
     }, useEffectEvent: function(e4) {
       return Bd = "useEffectEvent", qn(), $t(e4);
@@ -218188,7 +218189,7 @@ var c2 = { exports: {} };
       return Bd = "useActionState", qn(), Ft(e4);
     }, useOptimistic: function(e4, n7) {
       return Bd = "useOptimistic", qn(), Et(e4, n7);
-    }, useHostTransitionStatus: dr, useMemoCache: st, useCacheRefresh: function() {
+    }, useHostTransitionStatus: dr, useMemoCache: st2, useCacheRefresh: function() {
       return Bd = "useCacheRefresh", qn(), ot().memoizedState;
     }, useEffectEvent: function(e4) {
       return Bd = "useEffectEvent", qn(), Vt(e4);
@@ -218251,7 +218252,7 @@ var c2 = { exports: {} };
       return Bd = "useActionState", qn(), Ht(e4);
     }, useOptimistic: function(e4, n7) {
       return Bd = "useOptimistic", qn(), Pt(e4, n7);
-    }, useHostTransitionStatus: dr, useMemoCache: st, useCacheRefresh: function() {
+    }, useHostTransitionStatus: dr, useMemoCache: st2, useCacheRefresh: function() {
       return Bd = "useCacheRefresh", qn(), ot().memoizedState;
     }, useEffectEvent: function(e4) {
       return Bd = "useEffectEvent", qn(), Vt(e4);
@@ -218317,7 +218318,7 @@ var c2 = { exports: {} };
     }, useOptimistic: function(e4) {
       return Bd = "useOptimistic", r4(), Vn(), xt(e4);
     }, useMemoCache: function(e4) {
-      return r4(), st(e4);
+      return r4(), st2(e4);
     }, useHostTransitionStatus: dr, useCacheRefresh: function() {
       return Bd = "useCacheRefresh", Vn(), pr();
     }, useEffectEvent: function(e4) {
@@ -218384,7 +218385,7 @@ var c2 = { exports: {} };
     }, useOptimistic: function(e4, n7) {
       return Bd = "useOptimistic", r4(), qn(), Et(e4, n7);
     }, useMemoCache: function(e4) {
-      return r4(), st(e4);
+      return r4(), st2(e4);
     }, useHostTransitionStatus: dr, useCacheRefresh: function() {
       return Bd = "useCacheRefresh", qn(), ot().memoizedState;
     }, useEffectEvent: function(e4) {
@@ -218451,7 +218452,7 @@ var c2 = { exports: {} };
     }, useOptimistic: function(e4, n7) {
       return Bd = "useOptimistic", r4(), qn(), Pt(e4, n7);
     }, useMemoCache: function(e4) {
-      return r4(), st(e4);
+      return r4(), st2(e4);
     }, useHostTransitionStatus: dr, useCacheRefresh: function() {
       return Bd = "useCacheRefresh", qn(), ot().memoizedState;
     }, useEffectEvent: function(e4) {
@@ -218590,7 +218591,7 @@ var u3 = l3(n3);
   }
   var c4 = a4.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
   c4.hasOwnProperty("ReactCurrentDispatcher") || (c4.ReactCurrentDispatcher = { current: null }), c4.hasOwnProperty("ReactCurrentBatchConfig") || (c4.ReactCurrentBatchConfig = { suspense: null });
-  var s4 = "function" == typeof Symbol && Symbol.for, d3 = s4 ? /* @__PURE__ */ Symbol.for("react.element") : 60103, p3 = s4 ? /* @__PURE__ */ Symbol.for("react.portal") : 60106, m3 = s4 ? /* @__PURE__ */ Symbol.for("react.fragment") : 60107, h3 = s4 ? /* @__PURE__ */ Symbol.for("react.strict_mode") : 60108, g3 = s4 ? /* @__PURE__ */ Symbol.for("react.profiler") : 60114, b3 = s4 ? /* @__PURE__ */ Symbol.for("react.provider") : 60109, y3 = s4 ? /* @__PURE__ */ Symbol.for("react.context") : 60110, v3 = s4 ? /* @__PURE__ */ Symbol.for("react.concurrent_mode") : 60111, T = s4 ? /* @__PURE__ */ Symbol.for("react.forward_ref") : 60112, x = s4 ? /* @__PURE__ */ Symbol.for("react.suspense") : 60113, E = s4 ? /* @__PURE__ */ Symbol.for("react.suspense_list") : 60120, k3 = s4 ? /* @__PURE__ */ Symbol.for("react.memo") : 60115, S3 = s4 ? /* @__PURE__ */ Symbol.for("react.lazy") : 60116, C = "function" == typeof Symbol && Symbol.iterator;
+  var s4 = "function" == typeof Symbol && Symbol.for, d3 = s4 ? /* @__PURE__ */ Symbol.for("react.element") : 60103, p3 = s4 ? /* @__PURE__ */ Symbol.for("react.portal") : 60106, m3 = s4 ? /* @__PURE__ */ Symbol.for("react.fragment") : 60107, h3 = s4 ? /* @__PURE__ */ Symbol.for("react.strict_mode") : 60108, g3 = s4 ? /* @__PURE__ */ Symbol.for("react.profiler") : 60114, b3 = s4 ? /* @__PURE__ */ Symbol.for("react.provider") : 60109, y3 = s4 ? /* @__PURE__ */ Symbol.for("react.context") : 60110, v3 = s4 ? /* @__PURE__ */ Symbol.for("react.concurrent_mode") : 60111, T = s4 ? /* @__PURE__ */ Symbol.for("react.forward_ref") : 60112, x = s4 ? /* @__PURE__ */ Symbol.for("react.suspense") : 60113, E = s4 ? /* @__PURE__ */ Symbol.for("react.suspense_list") : 60120, k3 = s4 ? /* @__PURE__ */ Symbol.for("react.memo") : 60115, S4 = s4 ? /* @__PURE__ */ Symbol.for("react.lazy") : 60116, C = "function" == typeof Symbol && Symbol.iterator;
   function w(e4) {
     return null === e4 || "object" != typeof e4 ? null : "function" == typeof (e4 = C && e4[C] || e4["@@iterator"]) ? e4 : null;
   }
@@ -218622,7 +218623,7 @@ var u3 = l3(n3);
         return t4 = t4.displayName || t4.name || "", e4.displayName || ("" !== t4 ? "ForwardRef(" + t4 + ")" : "ForwardRef");
       case k3:
         return z(e4.type);
-      case S3:
+      case S4:
         if (e4 = 1 === e4._status ? e4._result : null) return z(e4);
     }
     return null;
@@ -218877,7 +218878,7 @@ var u3 = l3(n3);
   function ct() {
     ft = ot = ut = null;
   }
-  function st(e4, t4) {
+  function st2(e4, t4) {
     var n5 = e4.type._context;
     he(at, n5._currentValue2), n5._currentValue2 = t4;
   }
@@ -220614,7 +220615,7 @@ var u3 = l3(n3);
               Vt(t4, t4.stateNode.containerInfo);
               break;
             case 10:
-              st(t4, t4.memoizedProps.value);
+              st2(t4, t4.memoizedProps.value);
               break;
             case 13:
               if (null !== t4.memoizedState) return 0 !== (r5 = t4.child.childExpirationTime) && r5 >= n5 ? tr(e4, t4, n5) : (he(Jt, 1 & Jt.current), null !== (t4 = ir(e4, t4, n5)) ? t4.sibling : null);
@@ -220710,7 +220711,7 @@ var u3 = l3(n3);
         return Bn(e4, t4, t4.pendingProps.children, n5), t4.child;
       case 10:
         e: {
-          if (r5 = t4.type._context, l5 = t4.pendingProps, a5 = t4.memoizedProps, st(t4, i4 = l5.value), null !== a5) {
+          if (r5 = t4.type._context, l5 = t4.pendingProps, a5 = t4.memoizedProps, st2(t4, i4 = l5.value), null !== a5) {
             var u4 = a5.value;
             if (0 == (i4 = nt(u4, i4) ? 0 : 0 | ("function" == typeof r5._calculateChangedBits ? r5._calculateChangedBits(u4, i4) : 1073741823))) {
               if (a5.children === l5.children && !ye.current) {
@@ -220807,7 +220808,7 @@ var u3 = l3(n3);
           case k3:
             a5 = 14;
             break e;
-          case S3:
+          case S4:
             a5 = 16, r5 = null;
             break e;
         }
@@ -221786,14 +221787,197 @@ function CertificateDocument({
   })() : null, /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.verification), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.qrBlock }, /* @__PURE__ */ import_react5.default.createElement(Image, { src: data2.qrDataUrl, style: styles.qrImage }), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.qrTextBlock }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.qrUrl }, data2.verifyUrl), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.qrHint }, t4.verifyScan)))), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.c2pa), data2.c2pa?.present ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.c2paBlock }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.c2paStatus, { color: data2.c2pa.valid ? "#15803d" : "#b45309" }] }, t4.c2paPresent, " \u2014 ", data2.c2pa.valid ? t4.c2paValid : t4.c2paInvalid), data2.c2pa.claimGenerator ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.c2paGenerator), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, data2.c2pa.claimGenerator)) : null, data2.c2pa.issuer ? /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.row }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.label }, t4.c2paIssuer), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.monoValue }, data2.c2pa.issuer)) : null) : /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.c2paBlockMissing }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: { fontSize: 10, color: "#64748b" } }, t4.c2paAbsent))), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.section }, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.sectionTitle }, t4.disclaimerTitle), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.disclaimer }, t4.disclaimer)), /* @__PURE__ */ import_react5.default.createElement(View, { style: styles.footer, fixed: true }, /* @__PURE__ */ import_react5.default.createElement(View, null, /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.footerText }, t4.issued, ": ", formatTimestamp(data2.issuedAt, locale, tz)), /* @__PURE__ */ import_react5.default.createElement(Text, { style: styles.footerText }, t4.issuer, ": ", t4.issuerName)), /* @__PURE__ */ import_react5.default.createElement(View, null, /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.footerText, { textAlign: "right" }] }, t4.certId, ":"), /* @__PURE__ */ import_react5.default.createElement(Text, { style: [styles.footerText, { fontFamily: "Courier", textAlign: "right" }] }, certShortId)))));
 }
 
+// src/mailboxReport.tsx
+var import_react6 = __toESM(require("react"));
+function resolveKrFont2(weight) {
+  const path2 = require("path");
+  return path2.join(process.cwd(), "node_modules/@fontsource/noto-sans-kr/files", `noto-sans-kr-korean-${weight}-normal.woff`);
+}
+var fontRegistered2 = false;
+function ensureFontRegistered2() {
+  if (fontRegistered2) return;
+  try {
+    Font.register({
+      family: "NotoSansKR",
+      fonts: [
+        { src: resolveKrFont2("400"), fontWeight: "normal" },
+        { src: resolveKrFont2("700"), fontWeight: "bold" }
+      ]
+    });
+    Font.registerHyphenationCallback((word) => [word]);
+    fontRegistered2 = true;
+  } catch (e4) {
+    console.error("[mailbox-report] Korean font register failed", e4?.message);
+  }
+}
+var S3 = {
+  ko: {
+    title: "\uC0AC\uC11C\uD568 \uD655\uC778\uC11C",
+    subtitle: "OriPics Photo Mailbox Report",
+    issued: "\uBC1C\uD589",
+    basisLive: "\uAE30\uC900: \uBC1C\uD589 \uC2DC\uC810\uC758 \uD604\uC7AC \uC0C1\uD0DC",
+    basisBackup: "\uAE30\uC900: \uBC31\uC5C5\uBCF8",
+    mailbox: "\uC0AC\uC11C\uD568",
+    number: "\uBC88\uD638",
+    created: "\uAC1C\uC124",
+    owner: "\uAC1C\uC124\uC790",
+    status: "\uC0C1\uD0DC",
+    status_active: "\uC9C4\uD589 \uC911",
+    status_locked: "\uC7A0\uAE08(\uC77D\uAE30 \uC804\uC6A9)",
+    status_delete_scheduled: "\uC0AD\uC81C \uC608\uACE0",
+    description: "\uC124\uBA85\uBB38",
+    issuedTo: "\uBC1C\uD589 \uC694\uCCAD",
+    members: "\uCC38\uC5EC\uC790",
+    mName: "\uC774\uB984",
+    mRole: "\uC5ED\uD560",
+    mJoined: "\uC218\uB77D \uC2DC\uAC01",
+    mState: "\uC0C1\uD0DC",
+    mState_active: "\uCC38\uC5EC \uC911",
+    mState_kicked: "\uB0B4\uBCF4\uB0C4",
+    mState_left: "\uB098\uAC10",
+    mCount: "\uC62C\uB9B0 \uC0AC\uC9C4",
+    ownerTag: "\uAC1C\uC124\uC790",
+    photos: "\uC0AC\uC9C4",
+    pNo: "No",
+    pThumb: "\uC0AC\uC9C4",
+    pInfo: "\uCD2C\uC601\uC2DC\uAC01 \xB7 \uC88C\uD45C \xB7 \uB4F1\uAE09",
+    pLink: "\uACF5\uAC1C\uB9C1\uD06C",
+    pUploader: "\uC62C\uB9B0 \uC0AC\uB78C",
+    pRead: "\uBBF8\uC5F4\uB78C",
+    capturedAt: "\uCD2C\uC601",
+    publishedAt: "\uBC1C\uD589",
+    noCoords: "\uC88C\uD45C \uC5C6\uC74C",
+    sourceCapture: "\uC0AC\uC11C\uD568 \uCD2C\uC601",
+    sourceSubmit: "\uC81C\uCD9C",
+    memo: "\uACF5\uAC1C\uBA54\uBAA8",
+    noPhotos: "\uC0AC\uC9C4\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.",
+    unreadFmt: "{u} / {n}\uBA85 \uBBF8\uC5F4\uB78C",
+    noticeTitle: "\uACE0\uC9C0",
+    notice1: "\uC774 \uD655\uC778\uC11C\uB294 \uD45C\uAE30\uB41C \uAE30\uC900 \uC2DC\uC810\uC758 \uC0AC\uC11C\uD568 \uC0C1\uD0DC(\uCC38\uC5EC\uC790\xB7\uC0AC\uC9C4 \uC18D\uC131\xB7\uC5F4\uB78C \uD604\uD669)\uB97C OriPics \uC11C\uBC84 \uAE30\uB85D\uC5D0 \uB530\uB77C \uADF8\uB300\uB85C \uCD9C\uB825\uD55C \uAC83\uC785\uB2C8\uB2E4.",
+    notice2: "\uAC01 \uC0AC\uC9C4\uC758 \uC6D0\uBCF8 \uBB34\uACB0\uC131\xB7\uCD2C\uC601\uC2DC\uAC01\xB7\uC88C\uD45C\uB294 \uD574\uB2F9 \uACF5\uAC1C\uB9C1\uD06C(QR)\uC5D0\uC11C \uB204\uAD6C\uB098 \uC628\uB77C\uC778\uC73C\uB85C \uAC80\uC99D\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uACF5\uAC1C\uBA54\uBAA8\uB294 \uC62C\uB9B0 \uC0AC\uB78C\uC774 \uC801\uC740 \uB0B4\uC6A9\uC73C\uB85C \uAC80\uC99D \uB300\uC0C1\uC774 \uC544\uB2D9\uB2C8\uB2E4.",
+    notice3: "\uBCF8 \uBB38\uC11C\uB294 \uC0AC\uC2E4\uAD00\uACC4 \uAE30\uB85D\uC744 \uB3D5\uAE30 \uC704\uD55C \uAC83\uC73C\uB85C, \uBC95\uC801 \uC99D\uAC70\uB2A5\uB825\uC774\uB098 \uCF58\uD150\uCE20\uC758 \uC9C4\uC2E4\uC131\uC744 \uB2E8\uC815\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.",
+    issuer: "\uBC1C\uD589\uC790",
+    issuerName: "\uC8FC\uC2DD\uD68C\uC0AC \uC0B0\uD0C0\uD558\uB370\uC2A4 (SantaHades Co., Ltd.) \xB7 www.ori.pics",
+    signature: "\uD655\uC778\uC790 \uC11C\uBA85",
+    page: "\uD398\uC774\uC9C0",
+    footer: "OriPics \u2014 \uADF8 \uC2DC\uAC01\xB7\uADF8\uACF3\xB7\uC2E4\uC81C \uAE30\uAE30 \uCD2C\uC601\uC744 \uC99D\uBA85\uD569\uB2C8\uB2E4."
+  },
+  en: {
+    title: "Photo Mailbox Report",
+    subtitle: "OriPics \uC0AC\uC11C\uD568 \uD655\uC778\uC11C",
+    issued: "Issued",
+    basisLive: "Basis: current state at issuance",
+    basisBackup: "Basis: backup snapshot",
+    mailbox: "Mailbox",
+    number: "Number",
+    created: "Created",
+    owner: "Owner",
+    status: "Status",
+    status_active: "Active",
+    status_locked: "Locked (read-only)",
+    status_delete_scheduled: "Deletion scheduled",
+    description: "Description",
+    issuedTo: "Requested by",
+    members: "Participants",
+    mName: "Name",
+    mRole: "Role",
+    mJoined: "Joined",
+    mState: "State",
+    mState_active: "Active",
+    mState_kicked: "Removed",
+    mState_left: "Left",
+    mCount: "Photos",
+    ownerTag: "owner",
+    photos: "Photos",
+    pNo: "No",
+    pThumb: "Photo",
+    pInfo: "Captured \xB7 location \xB7 tier",
+    pLink: "Public link",
+    pUploader: "Uploaded by",
+    pRead: "Unseen",
+    capturedAt: "Captured",
+    publishedAt: "Published",
+    noCoords: "No location",
+    sourceCapture: "captured in mailbox",
+    sourceSubmit: "submitted",
+    memo: "Public memo",
+    noPhotos: "No photos.",
+    unreadFmt: "{u} of {n} unseen",
+    noticeTitle: "Notice",
+    notice1: "This report reproduces the mailbox state (participants, photo attributes, read status) as recorded on OriPics servers at the stated basis time.",
+    notice2: "The originality, capture time and location of each photo can be verified online by anyone via its public link (QR). Public memos are written by the uploader and are not verified.",
+    notice3: "This document supports factual record-keeping; it does not assert legal evidentiary value or the truth of the content.",
+    issuer: "Issuer",
+    issuerName: "SantaHades Co., Ltd. \xB7 www.ori.pics",
+    signature: "Signature",
+    page: "Page",
+    footer: "OriPics \u2014 proof of when, where and on which device a photo was taken."
+  }
+};
+var st = StyleSheet.create({
+  page: { fontFamily: "NotoSansKR", fontSize: 9, color: "#0f172a", paddingTop: 40, paddingBottom: 56, paddingHorizontal: 40 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#e2e8f0", paddingBottom: 6, marginBottom: 8 },
+  brandRow: { flexDirection: "row", alignItems: "center" },
+  brandText: { fontSize: 13, fontWeight: "bold", marginLeft: 6 },
+  title: { fontSize: 20, fontWeight: "bold", marginBottom: 1 },
+  subtitle: { fontSize: 10, color: "#64748b", marginBottom: 6 },
+  basis: { fontSize: 9, color: "#1d4ed8", fontWeight: "bold", marginBottom: 8 },
+  section: { marginBottom: 8 },
+  sectionTitle: { fontSize: 9, color: "#475569", letterSpacing: 1, marginBottom: 4, fontWeight: "bold", textTransform: "uppercase" },
+  row: { flexDirection: "row", marginBottom: 1.5 },
+  label: { width: 70, color: "#64748b" },
+  value: { flex: 1 },
+  table: { borderWidth: 0.6, borderColor: "#cbd5e1", borderRadius: 3 },
+  th: { flexDirection: "row", backgroundColor: "#f1f5f9", borderBottomWidth: 0.6, borderBottomColor: "#cbd5e1", paddingVertical: 3, paddingHorizontal: 4 },
+  tr: { flexDirection: "row", borderBottomWidth: 0.4, borderBottomColor: "#e2e8f0", paddingVertical: 3, paddingHorizontal: 4, alignItems: "center" },
+  thText: { fontSize: 8, fontWeight: "bold", color: "#334155" },
+  td: { fontSize: 8.5 },
+  small: { fontSize: 7.5, color: "#64748b" },
+  thumb: { width: 52, height: 52, borderRadius: 3, backgroundColor: "#f8fafc" },
+  qr: { width: 40, height: 40 },
+  link: { fontSize: 7.5, color: "#1d4ed8" },
+  notice: { fontSize: 7.5, color: "#475569", lineHeight: 1.4, marginBottom: 2 },
+  footer: { position: "absolute", bottom: 28, left: 40, right: 40, paddingTop: 6, borderTopWidth: 1, borderTopColor: "#e2e8f0", flexDirection: "row", justifyContent: "space-between" },
+  footerText: { fontSize: 7.5, color: "#64748b" },
+  signBox: { marginTop: 10, flexDirection: "row", justifyContent: "flex-end", alignItems: "flex-end" },
+  signLine: { width: 180, borderBottomWidth: 0.8, borderBottomColor: "#0f172a", marginLeft: 8, height: 18 }
+});
+function fmt(d3, locale, tz, withSeconds = false) {
+  if (!d3 || isNaN(d3.getTime())) return "-";
+  return new Intl.DateTimeFormat(locale === "ko" ? "ko-KR" : "en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    ...withSeconds ? { second: "2-digit" } : {},
+    timeZone: tz
+  }).format(d3);
+}
+function MailboxReportDocument({ data: data2, locale }) {
+  ensureFontRegistered2();
+  const t4 = S3[locale];
+  const tz = data2.timeZone ?? "Asia/Seoul";
+  const statusText = t4[`status_${data2.status}`] + (data2.status === "delete_scheduled" && data2.deleteAfter ? ` (${fmt(data2.deleteAfter, locale, tz)})` : "");
+  const basisText = data2.basis === "backup" ? `${t4.basisBackup} \xB7 ${fmt(data2.basisAt, locale, tz, true)}` : `${t4.basisLive} \xB7 ${fmt(data2.basisAt, locale, tz, true)}`;
+  const shortId = `mbr_${data2.mailboxId}_${data2.issuedAt.getTime().toString(36)}`;
+  return /* @__PURE__ */ import_react6.default.createElement(Document, { title: `${t4.title} \u2014 ${data2.mailboxName}`, author: "OriPics" }, /* @__PURE__ */ import_react6.default.createElement(Page, { size: "A4", style: st.page, wrap: true }, /* @__PURE__ */ import_react6.default.createElement(View, { style: st.header, fixed: true }, /* @__PURE__ */ import_react6.default.createElement(View, { style: st.brandRow }, /* @__PURE__ */ import_react6.default.createElement(Image, { src: LOGO_DATA_URL, style: { width: 22, height: 22 } }), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.brandText }, "OriPics")), /* @__PURE__ */ import_react6.default.createElement(Text, { style: { fontSize: 8, color: "#64748b" } }, `${t4.issued} ${fmt(data2.issuedAt, locale, tz, true)} \xB7 ${shortId}`)), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.title }, t4.title), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.subtitle }, t4.subtitle), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.basis }, basisText), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.section }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.sectionTitle }, t4.mailbox), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.mailbox), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.value, { fontWeight: "bold", fontSize: 11 }] }, data2.mailboxName)), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.number), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.value }, data2.mailboxId)), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.created), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.value }, fmt(data2.createdAt, locale, tz))), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.owner), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.value }, data2.ownerName)), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.status), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.value }, statusText)), data2.description ? /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.description), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.value }, data2.description)) : null, /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.issuedTo), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.value }, data2.issuedTo, data2.issuedToEmail && data2.issuedToEmail !== data2.issuedTo ? ` (${data2.issuedToEmail})` : ""))), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.section }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.sectionTitle }, `${t4.members} (${data2.members.filter((m3) => m3.state === "active").length})`), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.table }, /* @__PURE__ */ import_react6.default.createElement(View, { style: st.th }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 2.2 }] }, t4.mName), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 1.4 }] }, t4.mRole), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 1.8 }] }, t4.mJoined), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 1 }] }, t4.mState), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 0.8, textAlign: "right" }] }, t4.mCount)), data2.members.map((m3, i4) => /* @__PURE__ */ import_react6.default.createElement(View, { key: i4, style: st.tr, wrap: false }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { flex: 2.2 }] }, m3.name, m3.kind === "owner" ? ` (${t4.ownerTag})` : ""), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { flex: 1.4 }] }, m3.role ?? "-"), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { flex: 1.8 }] }, fmt(m3.acceptedAt, locale, tz)), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { flex: 1 }] }, t4[`mState_${m3.state}`]), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { flex: 0.8, textAlign: "right" }] }, String(m3.photoCount)))))), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.section }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.sectionTitle }, `${t4.photos} (${data2.photos.length})`), data2.photos.length === 0 ? /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.small }, t4.noPhotos) : /* @__PURE__ */ import_react6.default.createElement(View, { style: st.table }, /* @__PURE__ */ import_react6.default.createElement(View, { style: st.th, fixed: true }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { width: 22 }] }, t4.pNo), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { width: 58 }] }, t4.pThumb), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 2.4 }] }, t4.pInfo), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 1.9 }] }, t4.pLink), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { flex: 1.3 }] }, t4.pUploader), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.thText, { width: 52, textAlign: "right" }] }, t4.pRead)), data2.photos.map((p3) => /* @__PURE__ */ import_react6.default.createElement(View, { key: p3.no, style: st.tr, wrap: false }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { width: 22 }] }, String(p3.no)), /* @__PURE__ */ import_react6.default.createElement(View, { style: { width: 58 } }, p3.thumbDataUrl ? /* @__PURE__ */ import_react6.default.createElement(Image, { src: p3.thumbDataUrl, style: st.thumb }) : /* @__PURE__ */ import_react6.default.createElement(View, { style: st.thumb })), /* @__PURE__ */ import_react6.default.createElement(View, { style: { flex: 2.4, paddingRight: 4 } }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.td }, `${t4.capturedAt} ${fmt(p3.capturedAt ?? p3.publishedAt, locale, tz, true)}`), p3.capturedAt && p3.publishedAt ? /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.small }, `${t4.publishedAt} ${fmt(p3.publishedAt, locale, tz)}`) : null, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.small }, p3.lat != null && p3.lng != null ? `${p3.lat.toFixed(5)}, ${p3.lng.toFixed(5)}` : t4.noCoords), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.small }, `${p3.tier === "verified" ? "Verified" : "Standard"} \xB7 ${p3.source === "capture" ? t4.sourceCapture : t4.sourceSubmit}`), p3.memo ? /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.small }, `${t4.memo}: ${p3.memo}`) : null), /* @__PURE__ */ import_react6.default.createElement(View, { style: { flex: 1.9, flexDirection: "row", alignItems: "center" } }, p3.qrDataUrl ? /* @__PURE__ */ import_react6.default.createElement(Image, { src: p3.qrDataUrl, style: st.qr }) : null, /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.link, { flex: 1, marginLeft: 4 }] }, p3.linkUrl.replace(/^https?:\/\//, ""))), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { flex: 1.3 }] }, p3.uploader, p3.uploaderRole ? `
+(${p3.uploaderRole})` : ""), /* @__PURE__ */ import_react6.default.createElement(Text, { style: [st.td, { width: 52, textAlign: "right" }] }, t4.unreadFmt.replace("{u}", String(p3.unread)).replace("{n}", String(p3.total))))))), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.section, wrap: false }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.sectionTitle }, t4.noticeTitle), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.notice }, `\xB7 ${t4.notice1}`), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.notice }, `\xB7 ${t4.notice2}`), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.notice }, `\xB7 ${t4.notice3}`), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.row }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.label }, t4.issuer), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.value }, t4.issuerName)), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.signBox }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.small }, t4.signature), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.signLine }))), /* @__PURE__ */ import_react6.default.createElement(View, { style: st.footer, fixed: true }, /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.footerText }, t4.footer), /* @__PURE__ */ import_react6.default.createElement(Text, { style: st.footerText, render: ({ pageNumber, totalPages }) => `${t4.page} ${pageNumber} / ${totalPages}` }))));
+}
+
 // src/index.ts
 async function renderCertificatePdf(opts2) {
-  const element = import_react6.default.createElement(CertificateDocument, opts2);
+  const element = import_react7.default.createElement(CertificateDocument, opts2);
+  return renderToBuffer(element);
+}
+async function renderMailboxReportPdf(opts2) {
+  const element = import_react7.default.createElement(MailboxReportDocument, opts2);
   return renderToBuffer(element);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  renderCertificatePdf
+  renderCertificatePdf,
+  renderMailboxReportPdf
 });
 /*! Bundled license information:
 

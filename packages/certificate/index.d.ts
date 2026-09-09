@@ -39,3 +39,48 @@ export declare function renderCertificatePdf(opts: {
   locale: "ko" | "en";
   logoDataUrl?: string;
 }): Promise<Buffer>;
+
+// A-81 사서함 확인서 PDF (2026-09-09)
+export interface MailboxReportMember {
+  name: string;
+  role?: string | null;
+  kind: "owner" | "member";
+  acceptedAt: Date;
+  state: "active" | "kicked" | "left";
+  photoCount: number;
+}
+export interface MailboxReportPhoto {
+  no: number;
+  thumbDataUrl?: string | null;
+  capturedAt?: Date | null;
+  publishedAt?: Date | null;
+  lat?: number | null;
+  lng?: number | null;
+  tier: "standard" | "verified";
+  linkUrl: string;
+  qrDataUrl?: string | null;
+  uploader: string;
+  uploaderRole?: string | null;
+  unread: number;
+  total: number;
+  memo?: string | null;
+  source: "capture" | "submit";
+}
+export interface MailboxReportData {
+  mailboxId: string;
+  mailboxName: string;
+  description?: string | null;
+  ownerName: string;
+  createdAt: Date;
+  status: "active" | "locked" | "delete_scheduled";
+  deleteAfter?: Date | null;
+  basis: "live" | "backup";
+  basisAt: Date;
+  issuedAt: Date;
+  issuedTo: string;
+  issuedToEmail?: string | null;
+  timeZone?: string;
+  members: MailboxReportMember[];
+  photos: MailboxReportPhoto[];
+}
+export declare function renderMailboxReportPdf(opts: { data: MailboxReportData; locale: "ko" | "en" }): Promise<Buffer>;

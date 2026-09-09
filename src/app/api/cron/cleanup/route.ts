@@ -81,7 +81,8 @@ export async function GET(req: NextRequest) {
     for (const folder of folders || []) {
       const folderName = folder.name;
       // certificates 폴더는 만료 링크 정리(1)에서만 다룸 — 유효 링크의 PDF 캐시 보호
-      if (!folderName || folderName === "certificates") continue;
+      // mailbox-backups 폴더(A-81 2차 백업 복사본)는 links 행이 없어 고아로 보이지만 백업 영구삭제 때만 지운다
+      if (!folderName || folderName === "certificates" || folderName === "mailbox-backups") continue;
 
       const { data: files, error: listFilesErr } = await supabase.storage
         .from(BUCKET_NAME)

@@ -1,4 +1,5 @@
-// 사서함 상태 동작 (A-81) — POST /api/mailboxes/:id/actions { action: 'lock' | 'unlock' | 'cancel_delete' | 'leave' }
+// 사서함 상태 동작 (A-81) — POST /api/mailboxes/:id/actions { action: 'lock' | 'unlock' | 'cancel_delete' | 'leave' | 'transfer_owner', user_id? }
+//   transfer_owner(2차): 개설자 권한을 참여 중인 다른 참여자에게 이전 — 이후 참여자 촬영의 기본 부담·설정 권한이 새 개설자에게
 //   lock/unlock/cancel_delete = 개설자, leave = 참여자(개설자 불가). 각 동작은 해당자에게 인앱 알림.
 import { NextRequest, NextResponse } from "next/server";
 
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   const mb = await loadMailbox(db, id);
   if (!mb || mb.status !== "active") return NextResponse.json({ detail: "not_found" }, { status: 404 });
-  let body: { action?: unknown };
+  let body: { action?: unknown; user_id?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -38,6 +39,19 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   }
 
   if (mb.owner_user_id !== userId) return NextResponse.json({ detail: "forbidden" }, { status: 403 });
+  if (action === "transfer_owner") {
+    const targetId = typeof body.user_id === "string" ? body.user_id : "";
+    const target = members.find((m) => m.user_id === targetId);
+    if (!target || !isActiveMember(target) || target.kind === "owner") return NextResponse.json({ detail: "member_not_found" }, { status: 404 });
+    const meRow = members.find((m) => m.user_id === userId);
+    const r1 = await db.from("mailboxes").update({ owner_user_id: targetId, updated_at: now }).eq("id", id);
+    if (r1.error) return NextResponse.json({ detail: "db_error" }, { status: 500 });
+    await db.from("mailbox_members").update({ kind: "owner", capture_billing: "owner", can_capture: true }).eq("mailbox_id", id).eq("user_id", targetId);
+    await db.from("mailbox_members").update({ kind: "member", capture_billing: "self" }).eq("mailbox_id", id).eq("user_id", userId);
+    await notify(db, [targetId], id, "owner_transferred", { mailbox_name: mb.name, actor_name: meRow?.display_name ?? "" });
+    console.log(`[mailboxes] owner transferred ${id}: ${userId} -> ${targetId}`);
+    return NextResponse.json({ ok: true, owner_user_id: targetId });
+  }
   if (action === "lock" || action === "unlock") {
     const { error } = await db.from("mailboxes").update({ locked_at: action === "lock" ? now : null, updated_at: now }).eq("id", id);
     if (error) return NextResponse.json({ detail: "db_error" }, { status: 500 });

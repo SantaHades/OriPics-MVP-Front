@@ -45,6 +45,9 @@ export async function GET() {
             WHERE mp.billing_user_id = ${userId} AND l.user_id <> ${userId} AND l.preview_path IS NOT NULL
           UNION
           SELECT "pdfStoragePath" FROM public."ProofHistory" WHERE "userId" = ${userId} AND "pdfStoragePath" IS NOT NULL
+          UNION
+          SELECT o2.name FROM storage.objects o2 JOIN public.mailbox_backups b ON o2.name LIKE 'mailbox-backups/' || b.id || '/%'
+            WHERE o2.bucket_id = 'oripics-proofs' AND b.owner_user_id = ${userId}
         )`;
     const legacy = async () => prisma.$queryRaw<Array<{ bytes: bigint | null; files: bigint | null }>>`
       SELECT COALESCE(SUM((o.metadata->>'size')::bigint), 0) AS bytes, COUNT(*) AS files

@@ -212,8 +212,9 @@ export function inviteMessage(
 // ── 알림 ─────────────────────────────────────────────────────────────────
 export type NoticeKind =
   | "invite_accepted" | "new_photos" | "delete_scheduled" | "delete_cancelled" | "locked" | "unlocked"
-  | "kicked" | "unkicked" | "left" | "owner_credits_low" | "billing_changed";
+  | "kicked" | "unkicked" | "left" | "owner_credits_low" | "billing_changed" | "owner_transferred";
 
+/** 인앱 알림 + (행동이 필요한 종류는) 이메일 병행 — 2차(2026-09-09). 이메일은 best-effort, emailed_at 기록 */
 export async function notify(
   db: SupabaseClient,
   userIds: string[],
@@ -224,8 +225,21 @@ export async function notify(
   const ids = Array.from(new Set(userIds.filter(Boolean)));
   if (ids.length === 0) return;
   const rows = ids.map((user_id) => ({ user_id, mailbox_id: mailboxId, kind, payload }));
-  const { error } = await db.from("mailbox_notices").insert(rows);
+  const { data: inserted, error } = await db.from("mailbox_notices").insert(rows).select("id, user_id");
   if (error && !isMissingTable(error)) console.error("[mailboxes] notify failed:", error.message);
+  try {
+    const { EMAIL_KINDS, sendNoticeEmail } = await import("./mailer");
+    if (!EMAIL_KINDS.has(kind)) return;
+    const users = await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, email: true } });
+    for (const u of users) {
+      if (!u.email) continue;
+      const ok = await sendNoticeEmail(u.email, kind, payload);
+      const row = (inserted ?? []).find((r) => r.user_id === u.id);
+      if (ok && row) await db.from("mailbox_notices").update({ emailed_at: new Date().toISOString() }).eq("id", row.id);
+    }
+  } catch (e: any) {
+    console.warn("[mailboxes] notify email skipped:", e?.message || e);
+  }
 }
 
 // ── DTO ─────────────────────────────────────────────────────────────────
@@ -468,4 +482,57 @@ export async function lockedLinkIds(db: SupabaseClient, linkIds: string[]): Prom
   const { data, error } = await db.from("mailbox_photos").select("link_id").in("link_id", linkIds);
   if (error) return new Set();
   return new Set((data ?? []).map((r) => r.link_id as string));
+}
+
+
+// ── 2차: 백업 스냅샷 · 확인서 데이터 ─────────────────────────────────────
+export interface BackupRow {
+  id: string;
+  mailbox_id: string;
+  mailbox_name: string;
+  owner_user_id: string;
+  taken_at: string;
+  snapshot: MailboxSnapshot;
+  copied_files: boolean;
+  photo_count: number;
+  member_count: number;
+  bytes: number;
+}
+export const BACKUP_COLS = "id, mailbox_id, mailbox_name, owner_user_id, taken_at, snapshot, copied_files, photo_count, member_count, bytes";
+
+export interface MailboxSnapshot {
+  mailbox: {
+    id: string; name: string; description: string | null; owner_name: string; created_at: string;
+    invite_status: string; locked: boolean; delete_after: string | null;
+  };
+  members: { user_id: string; display_name: string; role_text: string | null; kind: string; accepted_at: string; state: "active" | "kicked" | "left" }[];
+  photos: (PhotoDto & { storage_path?: string | null; preview_path?: string | null; backup_preview_path?: string | null; backup_storage_path?: string | null })[];
+}
+
+export function newBackupId(): string {
+  return `MBK${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** 현재 상태 스냅샷 (백업·확인서 공용). readers 포함 */
+export async function buildSnapshot(db: SupabaseClient, mb: MailboxRow, members: MemberRow[], viewerId: string, lang: Lang): Promise<MailboxSnapshot> {
+  const { data: photoRows } = await db.from("mailbox_photos").select(PHOTO_COLS).eq("mailbox_id", mb.id).order("created_at", { ascending: true }).limit(500);
+  const photos = await photoDtos(db, (photoRows ?? []) as PhotoRow[], members, viewerId, lang, true);
+  const linkIds = photos.map((p) => p.link_id);
+  const paths = new Map<string, { storage_path: string | null; preview_path: string | null }>();
+  if (linkIds.length > 0) {
+    const { data } = await db.from("links").select("link_id, storage_path, preview_path").in("link_id", linkIds);
+    for (const l of (data ?? []) as { link_id: string; storage_path: string | null; preview_path: string | null }[]) paths.set(l.link_id, l);
+  }
+  const owner = members.find((m) => m.kind === "owner");
+  return {
+    mailbox: {
+      id: mb.id, name: mb.name, description: mb.description, owner_name: owner?.display_name ?? "", created_at: mb.created_at,
+      invite_status: mb.invite_status, locked: !!mb.locked_at, delete_after: mb.delete_after,
+    },
+    members: members.filter((m) => !m.left_at || true).map((m) => ({
+      user_id: m.user_id, display_name: m.display_name, role_text: m.role_text, kind: m.kind, accepted_at: m.accepted_at,
+      state: m.kicked_at ? "kicked" : m.left_at ? "left" : "active",
+    })),
+    photos: photos.map((p) => ({ ...p, storage_path: paths.get(p.link_id)?.storage_path ?? null, preview_path: paths.get(p.link_id)?.preview_path ?? null })),
+  };
 }

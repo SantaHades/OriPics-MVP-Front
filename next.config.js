@@ -17,6 +17,23 @@ const nextConfig = {
   // Next 15: experimental.outputFileTracingIncludes → 최상위 outputFileTracingIncludes 로 이동.
   // 증명서 PDF 한글 폰트(woff)를 서버리스 함수 번들에 강제 포함 — 런타임 CDN 의존 제거.
   outputFileTracingIncludes: {
+    // A-81 사서함 확인서 PDF(현재 상태·백업본)도 같은 폰트·패키지 필요
+    '/api/mailboxes/[id]/report': [
+      './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-400-normal.woff',
+      './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-700-normal.woff',
+      './node_modules/@oripics/certificate/**',
+      './node_modules/react/**',
+      './node_modules/loose-envify/**',
+      './node_modules/js-tokens/**',
+    ],
+    '/api/mailboxes/backups/[backupId]/report': [
+      './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-400-normal.woff',
+      './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-700-normal.woff',
+      './node_modules/@oripics/certificate/**',
+      './node_modules/react/**',
+      './node_modules/loose-envify/**',
+      './node_modules/js-tokens/**',
+    ],
     '/api/links/[id]/certificate': [
       './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-400-normal.woff',
       './node_modules/@fontsource/noto-sans-kr/files/noto-sans-kr-korean-700-normal.woff',

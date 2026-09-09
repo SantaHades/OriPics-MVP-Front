@@ -1436,6 +1436,10 @@ export default function ProfilePage() {
             <History size={20} className="text-blue-600" />
             <h2 className="text-lg font-bold">{t("proof_history.title")}</h2>
             <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{proofs.length}</span>
+            {/* A-81 2차: 사서함(참여 중·백업) 페이지 진입 */}
+            <Link href="/mailboxes" className="ml-auto text-sm font-semibold text-blue-600 hover:underline">
+              {locale === "en" ? "Mailboxes →" : "사서함 →"}
+            </Link>
           </div>
 
           {loadingProofs ? (
