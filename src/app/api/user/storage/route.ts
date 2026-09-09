@@ -25,7 +25,28 @@ export async function GET() {
   }
 
   try {
-    const rows = await prisma.$queryRaw<Array<{ bytes: bigint | null; files: bigint | null }>>`
+    // A-81 용량 귀속(대표 확정 9/9): 사서함 촬영분은 차감 주체(billing_user_id)의 보관함에 계산 —
+    // 내 링크 중 남이 부담한 것은 제외, 남의 링크 중 내가 부담한 것은 포함. 마이그레이션 전이면 기존 쿼리로 폴백.
+    const attributed = async () => prisma.$queryRaw<Array<{ bytes: bigint | null; files: bigint | null }>>`
+      SELECT COALESCE(SUM((o.metadata->>'size')::bigint), 0) AS bytes, COUNT(*) AS files
+      FROM storage.objects o
+      WHERE o.bucket_id = 'oripics-proofs'
+        AND o.name IN (
+          SELECT l.storage_path FROM public.links l WHERE l.user_id = ${userId} AND l.storage_path IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM public.mailbox_photos mp WHERE mp.link_id = l.link_id AND mp.billing_user_id IS NOT NULL AND mp.billing_user_id <> ${userId})
+          UNION
+          SELECT l.preview_path FROM public.links l WHERE l.user_id = ${userId} AND l.preview_path IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM public.mailbox_photos mp WHERE mp.link_id = l.link_id AND mp.billing_user_id IS NOT NULL AND mp.billing_user_id <> ${userId})
+          UNION
+          SELECT l.storage_path FROM public.links l JOIN public.mailbox_photos mp ON mp.link_id = l.link_id
+            WHERE mp.billing_user_id = ${userId} AND l.user_id <> ${userId} AND l.storage_path IS NOT NULL
+          UNION
+          SELECT l.preview_path FROM public.links l JOIN public.mailbox_photos mp ON mp.link_id = l.link_id
+            WHERE mp.billing_user_id = ${userId} AND l.user_id <> ${userId} AND l.preview_path IS NOT NULL
+          UNION
+          SELECT "pdfStoragePath" FROM public."ProofHistory" WHERE "userId" = ${userId} AND "pdfStoragePath" IS NOT NULL
+        )`;
+    const legacy = async () => prisma.$queryRaw<Array<{ bytes: bigint | null; files: bigint | null }>>`
       SELECT COALESCE(SUM((o.metadata->>'size')::bigint), 0) AS bytes, COUNT(*) AS files
       FROM storage.objects o
       WHERE o.bucket_id = 'oripics-proofs'
@@ -36,6 +57,13 @@ export async function GET() {
           UNION
           SELECT "pdfStoragePath" FROM public."ProofHistory" WHERE "userId" = ${userId} AND "pdfStoragePath" IS NOT NULL
         )`;
+    let rows: Array<{ bytes: bigint | null; files: bigint | null }>;
+    try {
+      rows = await attributed();
+    } catch (e: any) {
+      if (!/does not exist/i.test(String(e?.message || e))) throw e;
+      rows = await legacy();
+    }
     const bytes = Number(rows?.[0]?.bytes ?? 0);
     const files = Number(rows?.[0]?.files ?? 0);
 

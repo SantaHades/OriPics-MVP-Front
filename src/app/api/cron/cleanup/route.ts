@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
 import { assertCron } from "@/lib/security/cron";
 import { purgeExpiredRefreshTokens } from "@/lib/auth/refreshStore";
+import { lockedLinkIds } from "@/lib/mailboxes/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -47,9 +48,12 @@ export async function GET(req: NextRequest) {
       .limit(BATCH);
     if (qErr) throw qErr;
 
-    if (expired && expired.length > 0) {
+    // A-81: 사서함 소속 링크는 만료 정리에서 제외 (삭제 잠금). 사서함 삭제 시 함께 정리된다.
+    const locked = await lockedLinkIds(supabase, (expired ?? []).map((l) => l.link_id as string));
+    const expiredFree = (expired ?? []).filter((l) => !locked.has(l.link_id as string));
+    if (expiredFree.length > 0) {
       const paths: string[] = [];
-      for (const l of expired) {
+      for (const l of expiredFree) {
         if (l.storage_path) paths.push(l.storage_path);
         if (l.preview_path) paths.push(l.preview_path);
         paths.push(`certificates/${l.link_id}.pdf`); // PDF 캐시 (없으면 무시됨)
@@ -57,7 +61,7 @@ export async function GET(req: NextRequest) {
       const { error: rmErr } = await supabase.storage.from(BUCKET_NAME).remove(paths);
       if (rmErr) errors.push(`expired remove: ${rmErr.message}`);
 
-      const ids = expired.map((l) => l.link_id);
+      const ids = expiredFree.map((l) => l.link_id);
       const { error: delErr } = await supabase.from("links").delete().in("link_id", ids);
       if (delErr) errors.push(`expired db: ${delErr.message}`);
       else expiredRemoved = ids.length;
@@ -131,6 +135,54 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // A-81: 삭제 예고 유예(7일) 지난 사서함 정리 — 사서함 촬영분(source=capture) 링크·파일은 삭제,
+  // 제출분(source=submit)은 mailbox_photos 행만 사라져 올린 사람의 일반 링크로 복귀. 사서함 행 삭제 시 참여자·초대·열람은 CASCADE.
+  let mailboxesDeleted = 0;
+  try {
+    const { data: due, error: dueErr } = await supabase
+      .from("mailboxes")
+      .select("id, name")
+      .lte("delete_after", new Date().toISOString())
+      .limit(20);
+    if (dueErr) throw dueErr;
+    for (const mb of due ?? []) {
+      const { data: photos } = await supabase.from("mailbox_photos").select("link_id, source").eq("mailbox_id", mb.id);
+      const captureLinks = (photos ?? []).filter((p) => p.source === "capture").map((p) => p.link_id as string);
+      if (captureLinks.length > 0) {
+        // 다른 사서함에도 들어간 링크는 남긴다
+        const { data: elsewhere } = await supabase.from("mailbox_photos").select("link_id").in("link_id", captureLinks).neq("mailbox_id", mb.id);
+        const keep = new Set((elsewhere ?? []).map((r) => r.link_id as string));
+        const toDelete = captureLinks.filter((id) => !keep.has(id));
+        if (toDelete.length > 0) {
+          const { data: rows } = await supabase.from("links").select("link_id, storage_path, preview_path").in("link_id", toDelete);
+          const paths: string[] = [];
+          for (const l of rows ?? []) {
+            if (l.storage_path) paths.push(l.storage_path);
+            if (l.preview_path) paths.push(l.preview_path);
+            paths.push(`certificates/${l.link_id}.pdf`);
+          }
+          if (paths.length > 0) {
+            const { error: rmErr } = await supabase.storage.from(BUCKET_NAME).remove(paths);
+            if (rmErr) errors.push(`mailbox ${mb.id} remove: ${rmErr.message}`);
+          }
+          const { error: lErr } = await supabase.from("links").delete().in("link_id", toDelete);
+          if (lErr) errors.push(`mailbox ${mb.id} links: ${lErr.message}`);
+          try {
+            await prisma.proofHistory.deleteMany({ where: { linkId: { in: toDelete } } });
+          } catch (e: any) {
+            errors.push(`mailbox ${mb.id} history: ${e?.message || e}`);
+          }
+        }
+      }
+      const { error: mbErr } = await supabase.from("mailboxes").delete().eq("id", mb.id);
+      if (mbErr) errors.push(`mailbox ${mb.id} delete: ${mbErr.message}`);
+      else mailboxesDeleted++;
+    }
+  } catch (e: any) {
+    // 마이그레이션 전(테이블 없음)은 조용히 건너뜀
+    if (!/does not exist|schema cache/i.test(String(e?.message || e))) errors.push(`mailboxes pass: ${e?.message || e}`);
+  }
+
   // 레이트리밋 카운터 정리 (2026-08-22) — 윈도가 지난 행은 불필요. 최장 윈도(1h)+여유 24h 기준.
   let rateLimitsPurged = 0;
   try {
@@ -149,5 +201,5 @@ export async function GET(req: NextRequest) {
     errors.push(`refresh_tokens purge: ${e?.message || e}`);
   }
 
-  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, rateLimitsPurged, refreshTokensPurged, errors });
+  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, rateLimitsPurged, refreshTokensPurged, errors });
 }

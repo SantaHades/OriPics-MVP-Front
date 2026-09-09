@@ -605,10 +605,23 @@ export default function ProfilePage() {
       const res = await fetch(`/api/links/${deleteTarget.linkId}`, { method: "DELETE" });
       if (!res.ok) {
         let detail = `${res.status}`;
+        let mailboxNames: string[] = [];
         try {
           const j = await res.json();
           detail = j.detail || detail;
+          if (Array.isArray(j.mailboxes)) mailboxNames = j.mailboxes.map((m: { name: string }) => m.name);
         } catch { /* ignore */ }
+        if (res.status === 409 && detail === "in_mailbox") {
+          // A-81 삭제 잠금 — 사서함에 포함된 사진은 사서함을 먼저 삭제해야 함 (대표 확정 문구)
+          const names = mailboxNames.join(", ");
+          alert(
+            locale === "en"
+              ? `This photo belongs to the mailbox "${names}" and cannot be deleted. Delete the mailbox first.`
+              : `사서함 '${names}'에 포함된 사진이라 삭제할 수 없습니다. 사서함을 먼저 삭제해야 합니다.`,
+          );
+          setDeleteTarget(null);
+          return;
+        }
         throw new Error(detail);
       }
       setProofs((prev) => prev.filter((p) => p.linkId !== deleteTarget.linkId));

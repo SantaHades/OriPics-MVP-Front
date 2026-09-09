@@ -89,7 +89,10 @@ export async function POST(req: NextRequest) {
     stamp_version,
     captured_at,
     pass_id, // A-60: sign이 활성 패스를 확인한 경우에만 존재
+    mailbox_id, // A-81: 사서함 촬영 — billing_user_id(개설자 또는 촬영자)에서 차감
+    billing_user_id,
   } = claims;
+  const billingUserId: string = typeof billing_user_id === "string" && billing_user_id ? billing_user_id : user_id;
 
   if (!user_id) {
     return NextResponse.json({ detail: "jwt_missing_user_id" }, { status: 400 });
@@ -115,7 +118,7 @@ export async function POST(req: NextRequest) {
   let passRemaining: number | null = null;
   if (typeof pass_id === "string" && pass_id) {
     // A-60: 패스 1회 차감 (사이즈 무관, 크레딧 미차감). 소유자 검증 포함 원자 UPDATE.
-    const passResult = await t.span("consume_pass", () => consumePassProof(pass_id, user_id));
+    const passResult = await t.span("consume_pass", () => consumePassProof(pass_id, billingUserId));
     if (!passResult.ok) {
       // sign~confirm 사이 만료/소진 (드묾) — 클라이언트는 sign부터 재시도(크레딧 폴백)
       return NextResponse.json({ detail: "pass_not_active", tier }, { status: 402 });
@@ -124,12 +127,12 @@ export async function POST(req: NextRequest) {
     // 웹 프로필 최근 내역 표시용 기록 (delta 0 — 크레딧 무변동, best-effort)
     try {
       const balance = await prisma.user.findUnique({
-        where: { id: user_id },
+        where: { id: billingUserId },
         select: { credits: true },
       });
       await prisma.creditTransaction.create({
         data: {
-          userId: user_id,
+          userId: billingUserId,
           delta: 0,
           action: "day_pass_proof",
           balanceAfter: balance?.credits ?? 0,
@@ -137,6 +140,7 @@ export async function POST(req: NextRequest) {
             link_id, tier, pass_id,
             pass_used: passResult.usedProofs,
             pass_total: passResult.totalProofs,
+            ...(mailbox_id ? { mailbox_id, captured_by: user_id } : {}),
           } as any,
         },
       });
@@ -147,10 +151,11 @@ export async function POST(req: NextRequest) {
     // proof 비용 차감 (race-safe atomic)
     const consume = await t.span("consume_credits", () =>
       consumeCredits({
-        userId: user_id,
+        userId: billingUserId,
         amount: proofCost,
         action: creditAction,
-        metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier },
+        // A-81: 사서함 촬영은 차감 주체≠촬영자일 수 있어 메타에 사서함·촬영자를 남긴다 (웹 크레딧 내역에서 개설자 확인)
+        metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier, ...(mailbox_id ? { mailbox_id, captured_by: user_id } : {}) },
       }),
     );
     if (!consume.ok) {
@@ -203,6 +208,10 @@ export async function POST(req: NextRequest) {
   if (typeof pass_id === "string" && pass_id) {
     // A-60: publish가 LINK_CREATE 차감 생략 + links.pass_id 기록에 사용
     receiptPayload.pass_id = pass_id;
+  }
+  if (typeof mailbox_id === "string" && mailbox_id) {
+    receiptPayload.mailbox_id = mailbox_id;
+    receiptPayload.billing_user_id = billingUserId;
   }
   const receipt = issueReceiptJwt(receiptPayload);
 

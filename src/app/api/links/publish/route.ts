@@ -9,6 +9,7 @@ import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/
 import { decodePngPixels, extractFinalHashFromPixels, computeInnerHashFromPixels, hexToBytes } from "@/lib/oripics-stamp/server";
 import { StepTimer } from "@/lib/timing";
 import { normalizeMemo, isMissingColumn } from "@/lib/links/memo";
+import { isActiveMember, listMembers, loadMailbox, loadMember, newPhotoId, notify } from "@/lib/mailboxes/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -105,6 +106,9 @@ export async function POST(req: NextRequest) {
   // LINK_CREATE 차감 생략 + Pro와 동일한 보관 규칙 + links.pass_id 태그.
   const passId: string | null =
     typeof claims.pass_id === "string" && claims.pass_id ? claims.pass_id : null;
+  // A-81: 사서함 촬영 — 차감·용량 귀속 주체는 billing_user_id(개설자 또는 촬영자), links.user_id는 촬영자
+  const mailboxId: string | null = typeof claims.mailbox_id === "string" && claims.mailbox_id ? claims.mailbox_id : null;
+  const billingUserId: string = typeof claims.billing_user_id === "string" && claims.billing_user_id ? claims.billing_user_id : user_id;
   // stamp_version 없는 구 receipt(V5 배포 전 발급)는 V4 (하위호환)
   const stampVersion: 4 | 5 = claims.stamp_version === 5 ? 5 : 4;
 
@@ -117,7 +121,7 @@ export async function POST(req: NextRequest) {
   const [owner, existing] = await t.span("preflight_db", () =>
     Promise.all([
       prisma.user.findUnique({
-        where: { id: user_id },
+        where: { id: billingUserId },
         select: { tier: true },
       }),
       supabase
@@ -145,7 +149,8 @@ export async function POST(req: NextRequest) {
   // A-60: 패스 발행 링크 = 발행 시점부터 1년 고정 보관 (2026-08-31 대표 —
   // 사고 증거 등 용도라 확정적 보관 기간 고지. 유예/복원 없이 cleanup cron이 자연 처리).
   // 이후 Pro 구독 시 기존 재구독 복원 규칙대로 무기한 전환.
-  const expiresAt = isPaidTier
+  // A-81: 사서함 사진은 사서함이 삭제될 때까지 보존(만료 없음) — 삭제 잠금·열람 확인의 전제
+  const expiresAt = isPaidTier || mailboxId
     ? null
     : passId
       ? new Date(Date.now() + PASS_LINK_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString()
@@ -159,7 +164,7 @@ export async function POST(req: NextRequest) {
         SELECT COALESCE(sum((o.metadata->>'size')::bigint), 0)::bigint AS bytes
         FROM storage.objects o
         JOIN public.links l ON o.name = l.storage_path
-        WHERE l.user_id = ${user_id} AND o.bucket_id = ${BUCKET_NAME}`);
+        WHERE l.user_id = ${billingUserId} AND o.bucket_id = ${BUCKET_NAME}`);
       const usedBytes = Number(usage?.bytes ?? 0);
       if (usedBytes >= STORAGE_QUOTA_BYTES) {
         return NextResponse.json(
@@ -176,10 +181,10 @@ export async function POST(req: NextRequest) {
   // 1. LINK_CREATE(-2) 차감 — 패스 발행은 링크 비용이 패스 1회에 포함되므로 생략(A-60)
   if (!passId) {
     const consume = await t.span("consume_credits", () => consumeCredits({
-      userId: user_id,
+      userId: billingUserId,
       amount: CREDIT_COSTS.LINK_CREATE,
       action: "link_create",
-      metadata: { link_id, storage_path },
+      metadata: { link_id, storage_path, ...(mailboxId ? { mailbox_id: mailboxId, captured_by: user_id } : {}) },
     }));
     if (!consume.ok) {
       return NextResponse.json(
@@ -197,7 +202,7 @@ export async function POST(req: NextRequest) {
     if (passId) return; // 패스 발행은 publish에서 차감한 크레딧이 없음
     try {
       await refundCredits({
-        userId: user_id,
+        userId: billingUserId,
         amount: CREDIT_COSTS.LINK_CREATE,
         action: "link_create",
         metadata: { link_id, reason },
@@ -391,6 +396,35 @@ export async function POST(req: NextRequest) {
     console.error(`[publish] db upsert failed link_id=${link_id}:`, dbErr.message);
     await refund(`db_error:${dbErr.message}`);
     return NextResponse.json({ detail: `db_error:${dbErr.message}` }, { status: 500 });
+  }
+
+  // 4.5. A-81 사서함 등록 (best-effort — 실패해도 링크는 발행됨, 앱이 재시도 가능하도록 로그)
+  if (mailboxId) {
+    try {
+      const mb = await loadMailbox(supabase, mailboxId);
+      const me = await loadMember(supabase, mailboxId, user_id);
+      if (mb && isActiveMember(me)) {
+        const photoId = newPhotoId();
+        const { error: mpErr } = await supabase
+          .from("mailbox_photos")
+          .upsert(
+            { id: photoId, mailbox_id: mailboxId, link_id, uploaded_by: user_id, billing_user_id: billingUserId, source: "capture" },
+            { onConflict: "mailbox_id,link_id", ignoreDuplicates: true },
+          );
+        if (mpErr) throw new Error(mpErr.message);
+        await supabase.from("mailbox_reads").upsert({ photo_id: photoId, user_id }, { onConflict: "photo_id,user_id", ignoreDuplicates: true });
+        const members = await listMembers(supabase, mailboxId);
+        await notify(
+          supabase,
+          members.filter(isActiveMember).filter((m) => m.user_id !== user_id).map((m) => m.user_id),
+          mailboxId,
+          "new_photos",
+          { mailbox_name: mb.name, actor_name: me.display_name, count: 1 },
+        );
+      }
+    } catch (e: any) {
+      console.error(`[publish] mailbox register failed link_id=${link_id} mailbox=${mailboxId}:`, e?.message || e);
+    }
   }
 
   // 5. ProofHistory 생성 (best-effort — publish 자체는 성공으로 응답)

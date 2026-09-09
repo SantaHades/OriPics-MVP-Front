@@ -13,6 +13,8 @@ import {
   AttestVerifierNotImplementedError,
 } from "@/lib/attest/verifyToken";
 import { StepTimer } from "@/lib/timing";
+import { eventsDb } from "@/lib/events/server";
+import { isActiveMember, isLocked, loadMailbox, loadMember, notify } from "@/lib/mailboxes/server";
 import {
   getSalt,
   makeTimestamp,
@@ -110,6 +112,8 @@ export async function POST(req: NextRequest) {
     exposure_time,
     f_number,
     focal_length,
+    // A-81 사서함 촬영 — 참여자 권한·좌표 필수·차감 주체(개설자/본인) 판정
+    mailbox_id,
   } = body || {};
   if (typeof inner_hash !== "string" || !HEX64.test(inner_hash)) {
     return NextResponse.json({ detail: "invalid_inner_hash" }, { status: 400 });
@@ -149,9 +153,40 @@ export async function POST(req: NextRequest) {
   // (크레딧 보유·티어 불문 패스 우선). 웹 파일 업로드(F)·클립보드 붙여넣기(C)는 패스 미적용(기존 크레딧).
   // ⚠️ 2026-09-05 정정: 종전 코드는 C(클립보드)도 패스 적용 — 설계·안내문구("붙여넣기는 잔여 건수 차감")와 불일치라 P만으로 좁힘.
   const uploadType = ["F", "P", "C"].includes(upload_type) ? upload_type : "F";
+
+  // A-81 사서함 촬영 컨텍스트 — 차감 주체(billingUserId)가 세션 사용자와 다를 수 있다(개설자 부담).
+  // 이후 잔액·티어·패스 판정은 모두 billingUser 기준. links.user_id(사진 소유 표시)는 촬영자(세션 사용자) 유지.
+  let billingUserId = userId;
+  let billingUser = user;
+  let mailboxCtx: { mailbox_id: string; billing: "owner" | "self" } | null = null;
+  if (typeof mailbox_id === "string" && mailbox_id) {
+    if (uploadType !== "P") return NextResponse.json({ detail: "mailbox_requires_capture" }, { status: 400 });
+    const mdb = eventsDb();
+    if (!mdb) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
+    const mb = await loadMailbox(mdb, mailbox_id);
+    if (!mb || mb.status !== "active") return NextResponse.json({ detail: "mailbox_not_found" }, { status: 404 });
+    if (isLocked(mb)) return NextResponse.json({ detail: "mailbox_locked" }, { status: 403 });
+    const me = await loadMember(mdb, mailbox_id, userId);
+    if (!isActiveMember(me)) return NextResponse.json({ detail: "mailbox_forbidden" }, { status: 403 });
+    if (!me.can_capture) return NextResponse.json({ detail: "mailbox_capture_disabled" }, { status: 403 });
+    if (!(Number.isInteger(lat_e6) && Number.isInteger(lng_e6))) {
+      return NextResponse.json({ detail: "mailbox_gps_required" }, { status: 400 });
+    }
+    const billing: "owner" | "self" = me.kind === "owner" || me.capture_billing !== "self" ? "owner" : "self";
+    const bId = billing === "owner" ? mb.owner_user_id : userId;
+    if (!bId) return NextResponse.json({ detail: "mailbox_owner_missing" }, { status: 409 });
+    if (bId !== userId) {
+      const bu = await prisma.user.findUnique({ where: { id: bId }, select: { credits: true, tier: true } });
+      if (!bu) return NextResponse.json({ detail: "mailbox_owner_missing" }, { status: 409 });
+      billingUser = bu;
+    }
+    billingUserId = bId;
+    mailboxCtx = { mailbox_id, billing };
+  }
+
   const activePass =
     uploadType === "P"
-      ? await t.span("pass_check", () => getActivePass(userId))
+      ? await t.span("pass_check", () => getActivePass(billingUserId))
       : null;
 
   // D-pre-3: tier 결정 + verified attestation 검증
@@ -164,9 +199,9 @@ export async function POST(req: NextRequest) {
 
   if (isVerifiedRequest) {
     // Verified 티어 = Pro 이상 (pricing-policy §2). 활성 원데이 패스는 Pro 동급(A-60).
-    if (user.tier === "free" && !activePass) {
+    if (billingUser.tier === "free" && !activePass) {
       return NextResponse.json(
-        { detail: "verified_requires_pro", tier: user.tier },
+        { detail: "verified_requires_pro", tier: billingUser.tier },
         { status: 403 },
       );
     }
@@ -252,14 +287,23 @@ export async function POST(req: NextRequest) {
   const sizeMultiplier = getProofMultiplier(width, height);
   const baseProofCost = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
   const proofCost = baseProofCost * sizeMultiplier;
-  if (!activePass && user.credits < proofCost) {
+  if (!activePass && billingUser.credits < proofCost) {
+    if (mailboxCtx?.billing === "owner" && billingUserId !== userId) {
+      // 개설자 부담인데 개설자 건수 부족 — 개설자에게 인앱 알림 (참여자에게는 402 + billing='owner')
+      const mdb = eventsDb();
+      if (mdb) {
+        const mb = await loadMailbox(mdb, mailboxCtx.mailbox_id);
+        await notify(mdb, [billingUserId], mailboxCtx.mailbox_id, "owner_credits_low", { mailbox_name: mb?.name ?? "", required: proofCost, balance: billingUser.credits });
+      }
+    }
     return NextResponse.json(
       {
         detail: "insufficient_credits",
-        balance: user.credits,
+        balance: billingUser.credits,
         required: proofCost,
         tier,
         size_multiplier: sizeMultiplier,
+        ...(mailboxCtx ? { billing: mailboxCtx.billing } : {}),
       },
       { status: 402 },
     );
@@ -374,6 +418,11 @@ export async function POST(req: NextRequest) {
   if (activePass) {
     // A-60: confirm이 크레딧 대신 이 패스에서 1회 차감
     jwtPayload.pass_id = activePass.id;
+  }
+  if (mailboxCtx) {
+    // A-81: confirm·publish가 이 주체에서 차감하고, publish가 mailbox_photos에 등록
+    jwtPayload.mailbox_id = mailboxCtx.mailbox_id;
+    jwtPayload.billing_user_id = billingUserId;
   }
   const jwt = issueJwt(jwtPayload);
 

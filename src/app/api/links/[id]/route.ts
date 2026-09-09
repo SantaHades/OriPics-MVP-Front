@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
+import { mailboxesHoldingLink } from "@/lib/mailboxes/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -52,6 +53,12 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
   }
   if (row.user_id !== userId) {
     return NextResponse.json({ detail: "not_owner" }, { status: 403 });
+  }
+
+  // A-81 삭제 잠금: 사서함에 포함된 사진은 사서함이 삭제되기 전까지 삭제 불가 (대표 확정 2026-09-09)
+  const holders = await mailboxesHoldingLink(supabase, linkId);
+  if (holders.length > 0) {
+    return NextResponse.json({ detail: "in_mailbox", mailboxes: holders }, { status: 409 });
   }
 
   // 2. ProofHistory에서 pdfStoragePath 조회 (PDF 캐시 삭제용)
