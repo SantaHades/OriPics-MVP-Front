@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { isMissingTable } from "@/lib/events/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SITE_URL = "https://ori.pics";
+const SITE_URL = "https://www.ori.pics"; // ori.pics는 www로 301 — 앱 목록 탭 공개링크와 동일 표기 (9/9 대표)
 export const INVITE_TTL_DAYS = 7;
 export const DELETE_GRACE_DAYS = 7;
 
@@ -425,7 +425,7 @@ export async function photoDtos(
       uploader_name: uploader?.display_name ?? "",
       uploader_role: uploader?.role_text ?? null,
       image_url,
-      link_url: `${SITE_URL}/${lang}/${p.link_id}`,
+      link_url: `${SITE_URL}/${p.link_id}`, // 앱 목록 탭 공개링크(API_URL/link_id)와 같은 형식 — 뷰어가 언어를 자동 판별
       width: (l?.width as number | null) ?? null,
       height: (l?.height as number | null) ?? null,
       captured_at: (l?.captured_at as string | null) ?? null,
