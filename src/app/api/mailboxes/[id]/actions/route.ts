@@ -17,7 +17,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   const mb = await loadMailbox(db, id);
   if (!mb || mb.status !== "active") return NextResponse.json({ detail: "not_found" }, { status: 404 });
-  let body: { action?: unknown; user_id?: unknown };
+  let body: { action?: unknown; user_id?: unknown; keep_memo?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -51,7 +51,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       return NextResponse.json({ detail: "recipient_mailbox_limit", limit: recipientLimits.mailboxes }, { status: 403 });
     }
     const ownerBilled = members.filter(isActiveMember).filter((m) => m.user_id !== targetId && m.kind !== "owner" && m.can_capture && m.capture_billing !== "self").length + 1; // +1 = 이전 개설자(본인 부담으로 바뀌지만 알림 시점 표기) 제외 → 아래에서 조정
-    const r1 = await db.from("mailboxes").update({ owner_user_id: targetId, updated_at: now }).eq("id", id);
+    // 나만 보는 사서함 메모: 기본은 삭제(개인 기록), 개설자가 넘기기를 선택하면 유지 (9/10 대표)
+    const keepMemo = body.keep_memo === true;
+    const r1 = await db.from("mailboxes").update({ owner_user_id: targetId, updated_at: now, ...(keepMemo ? {} : { memo: null }) }).eq("id", id);
     if (r1.error) return NextResponse.json({ detail: "db_error" }, { status: 500 });
     await db.from("mailbox_members").update({ kind: "owner", capture_billing: "owner", can_capture: true }).eq("mailbox_id", id).eq("user_id", targetId);
     await db.from("mailbox_members").update({ kind: "member", capture_billing: "self" }).eq("mailbox_id", id).eq("user_id", userId);
