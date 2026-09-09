@@ -3,7 +3,7 @@
 // 사서함 정보 · 참여자 표 · 사진별(썸네일·촬영시각·좌표·등급·공개링크 QR·올린 사람·미열람 수) · 고지문.
 // 기준(basis) = 현재 상태 또는 백업본(백업 시각) — 머리말에 명시. 증거능력을 단정하지 않는다(기록서 PDF 고지와 동일).
 import React from "react";
-import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
+import { Document, Page, Text, View, Image, Link, StyleSheet, Font } from "@react-pdf/renderer";
 
 import { LOGO_DATA_URL } from "./logoData";
 
@@ -308,9 +308,16 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
                     {p.memo ? <Text style={st.small}>{`${t.memo}: ${p.memo}`}</Text> : null}
                   </View>
                   {/* QR 위·주소 아래 세로 배치 — 주소가 옆 칸으로 넘치지 않게 고정 폭 (2026-09-10 대표) */}
+                  {/* 실제 PDF 링크(annotation)로 — 글자만 두면 Android 뷰어에서 탭해도 열리지 않음 (2026-09-10 갤럭시) */}
                   <View style={{ width: 92, alignItems: "center", paddingHorizontal: 2 }}>
-                    {p.qrDataUrl ? <Image src={p.qrDataUrl} style={st.qr} /> : null}
-                    <Text style={[st.link, { textAlign: "center", marginTop: 2 }]}>{p.linkUrl.replace(/^https?:\/\//, "")}</Text>
+                    {p.qrDataUrl ? (
+                      <Link src={p.linkUrl}>
+                        <Image src={p.qrDataUrl} style={st.qr} />
+                      </Link>
+                    ) : null}
+                    <Link src={p.linkUrl} style={[st.link, { textAlign: "center", marginTop: 2, textDecoration: "none" }]}>
+                      {p.linkUrl.replace(/^https?:\/\//, "")}
+                    </Link>
                   </View>
                   <Text style={[st.td, { flex: 1.3, paddingLeft: 4 }]}>{p.uploader}{p.uploaderRole ? `\n(${p.uploaderRole})` : ""}</Text>
                   <Text style={[st.td, { width: 52, textAlign: "right" }]}>{t.unreadFmt.replace("{u}", String(p.unread)).replace("{n}", String(p.total))}</Text>
