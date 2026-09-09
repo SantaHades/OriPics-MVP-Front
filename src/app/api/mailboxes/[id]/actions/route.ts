@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb } from "@/lib/events/server";
-import { isActiveMember, listMembers, loadMailbox, loadMember, notify } from "@/lib/mailboxes/server";
+import { isActiveMember, limitsFor, listMembers, loadMailbox, loadMember, notify } from "@/lib/mailboxes/server";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +44,23 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     const target = members.find((m) => m.user_id === targetId);
     if (!target || !isActiveMember(target) || target.kind === "owner") return NextResponse.json({ detail: "member_not_found" }, { status: 404 });
     const meRow = members.find((m) => m.user_id === userId);
+    // 받는 사람의 개설 한도(무료 1개) 검사 — 초과면 거절. 참여자 한도(무료 20)는 기존 인원 유지, 새 초대만 막힘(초대 생성 시 검사)
+    const recipientLimits = await limitsFor(targetId);
+    const { count: owned } = await db.from("mailboxes").select("id", { count: "exact", head: true }).eq("owner_user_id", targetId).eq("status", "active");
+    if ((owned ?? 0) >= recipientLimits.mailboxes) {
+      return NextResponse.json({ detail: "recipient_mailbox_limit", limit: recipientLimits.mailboxes }, { status: 403 });
+    }
+    const ownerBilled = members.filter(isActiveMember).filter((m) => m.user_id !== targetId && m.kind !== "owner" && m.can_capture && m.capture_billing !== "self").length + 1; // +1 = 이전 개설자(본인 부담으로 바뀌지만 알림 시점 표기) 제외 → 아래에서 조정
     const r1 = await db.from("mailboxes").update({ owner_user_id: targetId, updated_at: now }).eq("id", id);
     if (r1.error) return NextResponse.json({ detail: "db_error" }, { status: 500 });
     await db.from("mailbox_members").update({ kind: "owner", capture_billing: "owner", can_capture: true }).eq("mailbox_id", id).eq("user_id", targetId);
     await db.from("mailbox_members").update({ kind: "member", capture_billing: "self" }).eq("mailbox_id", id).eq("user_id", userId);
-    await notify(db, [targetId], id, "owner_transferred", { mailbox_name: mb.name, actor_name: meRow?.display_name ?? "" });
+    await notify(db, [targetId], id, "owner_transferred", {
+      mailbox_name: mb.name,
+      actor_name: meRow?.display_name ?? "",
+      owner_billed_count: Math.max(ownerBilled - 1, 0), // 이전 개설자는 본인 부담으로 전환되므로 제외
+      recipient_paid: recipientLimits.paid,
+    });
     console.log(`[mailboxes] owner transferred ${id}: ${userId} -> ${targetId}`);
     return NextResponse.json({ ok: true, owner_user_id: targetId });
   }

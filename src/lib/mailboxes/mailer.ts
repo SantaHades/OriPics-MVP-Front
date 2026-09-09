@@ -57,7 +57,9 @@ export function noticeMail(kind: NoticeKind, p: Record<string, unknown>): { subj
       return {
         subject: `[OriPics] 사서함 '${name}'의 개설자가 되었습니다`,
         title: "개설자 권한 이전",
-        body: `<p>${String(p.actor_name ?? "이전 개설자")}님이 사서함 <strong>'${name}'</strong>의 개설자 권한을 회원님에게 이전했습니다. 이후 참여자 촬영의 기본 건수 부담과 설정 권한이 회원님에게 있습니다.</p>`,
+        body: `<p>${String(p.actor_name ?? "이전 개설자")}님이 사서함 <strong>'${name}'</strong>의 개설자 권한을 회원님에게 이전했습니다.</p>
+               <p><strong>개설자 부담으로 설정된 참여자 ${String(p.owner_billed_count ?? 0)}명</strong>의 촬영이 이제 회원님의 잔여 건수에서 차감됩니다. 원치 않으면 설정 → 참여자 편집에서 '참여자 본인 부담'으로 바꾸거나 촬영을 끄세요.</p>
+               ${p.recipient_paid === false ? "<p>무료 플랜에서는 참여자 촬영이 Standard 등급으로 인증되고, 참여자 20명을 넘는 사서함은 새 초대가 막힙니다.</p>" : ""}`,
       };
     default:
       return null;
