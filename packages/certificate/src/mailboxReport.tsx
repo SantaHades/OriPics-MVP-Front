@@ -204,7 +204,7 @@ const st = StyleSheet.create({
   small: { fontSize: 7.5, color: "#64748b" },
   thumb: { width: 52, height: 52, borderRadius: 3, backgroundColor: "#f8fafc" },
   qr: { width: 40, height: 40 },
-  link: { fontSize: 7.5, color: "#1d4ed8" },
+  link: { fontSize: 6.5, color: "#1d4ed8", lineHeight: 1.25 },
   notice: { fontSize: 7.5, color: "#475569", lineHeight: 1.4, marginBottom: 2 },
   footer: { position: "absolute", bottom: 28, left: 40, right: 40, paddingTop: 6, borderTopWidth: 1, borderTopColor: "#e2e8f0", flexDirection: "row", justifyContent: "space-between" },
   footerText: { fontSize: 7.5, color: "#64748b" },
@@ -290,7 +290,7 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
                 <Text style={[st.thText, { width: 22 }]}>{t.pNo}</Text>
                 <Text style={[st.thText, { width: 58 }]}>{t.pThumb}</Text>
                 <Text style={[st.thText, { flex: 2.4 }]}>{t.pInfo}</Text>
-                <Text style={[st.thText, { flex: 1.9 }]}>{t.pLink}</Text>
+                <Text style={[st.thText, { width: 92, textAlign: "center" }]}>{t.pLink}</Text>
                 <Text style={[st.thText, { flex: 1.3 }]}>{t.pUploader}</Text>
                 <Text style={[st.thText, { width: 52, textAlign: "right" }]}>{t.pRead}</Text>
               </View>
@@ -307,11 +307,12 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
                     <Text style={st.small}>{`${p.tier === "verified" ? "Verified" : "Standard"} · ${p.source === "capture" ? t.sourceCapture : t.sourceSubmit}`}</Text>
                     {p.memo ? <Text style={st.small}>{`${t.memo}: ${p.memo}`}</Text> : null}
                   </View>
-                  <View style={{ flex: 1.9, flexDirection: "row", alignItems: "center" }}>
+                  {/* QR 위·주소 아래 세로 배치 — 주소가 옆 칸으로 넘치지 않게 고정 폭 (2026-09-10 대표) */}
+                  <View style={{ width: 92, alignItems: "center", paddingHorizontal: 2 }}>
                     {p.qrDataUrl ? <Image src={p.qrDataUrl} style={st.qr} /> : null}
-                    <Text style={[st.link, { flex: 1, marginLeft: 4 }]}>{p.linkUrl.replace(/^https?:\/\//, "")}</Text>
+                    <Text style={[st.link, { textAlign: "center", marginTop: 2 }]}>{p.linkUrl.replace(/^https?:\/\//, "")}</Text>
                   </View>
-                  <Text style={[st.td, { flex: 1.3 }]}>{p.uploader}{p.uploaderRole ? `\n(${p.uploaderRole})` : ""}</Text>
+                  <Text style={[st.td, { flex: 1.3, paddingLeft: 4 }]}>{p.uploader}{p.uploaderRole ? `\n(${p.uploaderRole})` : ""}</Text>
                   <Text style={[st.td, { width: 52, textAlign: "right" }]}>{t.unreadFmt.replace("{u}", String(p.unread)).replace("{n}", String(p.total))}</Text>
                 </View>
               ))}
