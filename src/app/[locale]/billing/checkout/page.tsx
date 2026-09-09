@@ -211,13 +211,18 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          <button
-            onClick={handlePay}
-            disabled={submitting || !phoneValid}
-            className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-          >
-            {submitting ? t("processing") : t("pay_button")}
-          </button>
+          {/* 결제창(이니시스)이 열린 동안에는 큰 회색 버튼을 숨기고 안내문만 — 결제창의 [확인] 버튼과 시각적으로 경합하던 문제 (2026-09-10 대표) */}
+          {submitting ? (
+            <p className="w-full py-3 text-center text-sm text-slate-500 leading-relaxed">{t("processing_hint")}</p>
+          ) : (
+            <button
+              onClick={handlePay}
+              disabled={!phoneValid}
+              className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {t("pay_button")}
+            </button>
+          )}
 
           <p className="mt-4 flex items-center justify-center gap-1 text-[11px] text-slate-400">
             <ShieldCheck size={12} /> {t("powered_by")}
