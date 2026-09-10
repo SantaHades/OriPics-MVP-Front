@@ -145,14 +145,56 @@ export async function POST(req: NextRequest) {
   }
 
   let action: string | undefined;
+  let body: any = null;
   try {
-    const body = await req.json();
+    body = await req.json();
     action = body?.action;
   } catch {
     /* fallthrough */
   }
-  if (!["cancel", "resume", "refund_preview", "refund_cancel", "renew_now"].includes(action ?? "")) {
+  if (!["cancel", "resume", "refund_preview", "refund_cancel", "renew_now", "change_card"].includes(action ?? "")) {
     return NextResponse.json({ detail: "invalid_action" }, { status: 400 });
+  }
+
+  if (action === "change_card") {
+    // 결제 카드 변경 (2026-09-10 대표): 체크아웃(mode=change_card)에서 새 빌링키만 발급(청구 없음) → 여기서 교체.
+    // 소유권: 새 빌링키의 customData.userId가 호출자와 같아야 함(H-1b와 동일 원칙). 옛 빌링키는 PortOne에서 삭제(best-effort).
+    if (!PORTONE_API_SECRET) return NextResponse.json({ detail: "portone_not_configured" }, { status: 503 });
+    const newKey = typeof (body as any)?.billingKey === "string" ? String((body as any).billingKey) : "";
+    if (!newKey) return NextResponse.json({ detail: "billing_key_required" }, { status: 400 });
+    const sub = await prisma.subscription.findUnique({ where: { userId } });
+    if (!sub || sub.status !== "active") return NextResponse.json({ detail: "no_active_subscription" }, { status: 404 });
+    if (sub.gateway !== "portone") return NextResponse.json({ detail: "gateway_not_supported" }, { status: 409 });
+    const bkClient = PortOne.BillingKeyClient({ secret: PORTONE_API_SECRET });
+    let info: any;
+    try {
+      info = await bkClient.getBillingKeyInfo({ billingKey: newKey });
+    } catch (e: any) {
+      console.error("[subscription] change_card: billing key lookup failed", { userId, error: e?.message ?? e });
+      return NextResponse.json({ detail: "billing_key_invalid" }, { status: 409 });
+    }
+    let bkUserId: string | undefined;
+    try {
+      const parsed = info?.customData ? JSON.parse(info.customData) : null;
+      if (typeof parsed?.userId === "string") bkUserId = parsed.userId;
+    } catch { /* 아래 거부 */ }
+    if (bkUserId !== userId) {
+      console.warn("[subscription] change_card: ownership mismatch", { userId });
+      return NextResponse.json({ detail: "billing_key_not_owned" }, { status: 403 });
+    }
+    const oldKey = sub.billingKey;
+    await prisma.subscription.update({ where: { userId }, data: { billingKey: newKey } });
+    if (oldKey && oldKey !== newKey) {
+      try {
+        await bkClient.deleteBillingKey({ billingKey: oldKey });
+      } catch (e: any) {
+        console.warn("[subscription] change_card: old billing key delete failed (ignored)", { userId, error: e?.message ?? e });
+      }
+    }
+    const cardMethod = (info?.methods ?? []).find((m: any) => m?.type === "BillingKeyPaymentMethodCard");
+    const card = cardMethod?.card;
+    console.log(`[subscription] change_card ok user=${userId}`);
+    return NextResponse.json({ ok: true, paymentMethod: card ? { card_name: card.name ?? card.publisher ?? card.issuer ?? null, card_number: card.number ?? null } : null });
   }
 
   if (action === "renew_now") {

@@ -22,6 +22,8 @@ export default function CheckoutPage() {
 
   const plan = searchParams?.get("plan") ?? "pro_monthly";
   const planInfo = PLAN_PRICES[plan];
+  // 결제 카드 변경 모드 (2026-09-10 대표): 빌링키만 새로 발급하고 청구는 하지 않는다 → 서버 change_card로 교체
+  const changeCard = searchParams?.get("mode") === "change_card";
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,9 +31,9 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.replace(`/login?redirect=${encodeURIComponent(`/billing/checkout?plan=${plan}`)}`);
+      router.replace(`/login?redirect=${encodeURIComponent(`/billing/checkout?plan=${plan}${changeCard ? "&mode=change_card" : ""}`)}`);
     }
-  }, [status, plan, router]);
+  }, [status, plan, router, changeCard]);
 
   if (!planInfo) {
     return (
@@ -91,21 +93,21 @@ export default function CheckoutPage() {
       // 매월 자동 청구한다 (KG이니시스 신용카드 정기결제창).
       const issueId = `bk-${String(userId).slice(-8)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const origin = window.location.origin;
-      const redirectUrl = `${origin}/${locale}/billing/success?plan=${plan}`;
+      const redirectUrl = `${origin}/${locale}/billing/success?plan=${plan}${changeCard ? "&mode=change_card" : ""}`;
 
       const response = await PortOne.requestIssueBillingKey({
         storeId,
         channelKey,
         billingKeyMethod: "CARD",
         issueId,
-        issueName: planInfo.orderName,
+        issueName: changeCard ? `${planInfo.orderName} — ${t("change_card_issue_name")}` : planInfo.orderName,
         customer: {
           fullName: session?.user?.name ?? undefined,
           email: session?.user?.email ?? undefined,
           phoneNumber: normalizedPhone,
         },
         // webhook/서버가 userId·plan을 복원하기 위해 주입.
-        customData: { userId, plan },
+        customData: { userId, plan, ...(changeCard ? { mode: "change_card" } : {}) },
         // 서비스 제공 주기(월간 구독). 미지정 시 SDK가 (null, null)을 전송해
         // "offerPeriod violates AT_LEAST_ONE_REQUIRED"로 발급창 호출이 거부됨
         // (2026-08-24 실측 — 7/24 e2e 후 PortOne측 검증 강화로 회귀)
@@ -127,6 +129,22 @@ export default function CheckoutPage() {
         setError(t("error_generic"));
         return;
       }
+      if (changeCard) {
+        // 청구 없이 카드만 교체
+        const r = await fetch("/api/billing/subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "change_card", billingKey }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setSubmitting(false);
+          setError(d?.detail === "billing_key_not_owned" ? t("change_card_not_owned") : t("error_generic"));
+          return;
+        }
+        window.location.href = `/${locale}/profile?card_changed=1#subscription`;
+        return;
+      }
       const successUrl = `/${locale}/billing/success?plan=${plan}&billingKey=${encodeURIComponent(billingKey)}`;
       window.location.href = successUrl;
     } catch (e: any) {
@@ -139,16 +157,21 @@ export default function CheckoutPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-slate-50">
       <div className="w-full max-w-md">
         <Link
-          href="/#pricing"
+          href={changeCard ? "/profile#subscription" : "/#pricing"}
           className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-sm mb-6"
         >
-          <ArrowLeft size={16} /> {t("back")}
+          <ArrowLeft size={16} /> {changeCard ? t("change_card_back") : t("back")}
         </Link>
 
         <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-          <h1 className="text-xl font-bold mb-1">{t("title")}</h1>
-          <p className="text-sm text-slate-500 mb-6">{t("subtitle")}</p>
+          <h1 className="text-xl font-bold mb-1">{changeCard ? t("change_card_title") : t("title")}</h1>
+          <p className="text-sm text-slate-500 mb-6">{changeCard ? t("change_card_subtitle") : t("subtitle")}</p>
 
+          {changeCard ? (
+            <div className="border border-emerald-200 rounded-2xl p-5 mb-6 bg-emerald-50/60 text-emerald-900 text-xs leading-relaxed">
+              {t("change_card_no_charge")}
+            </div>
+          ) : (
           <div className="border border-slate-200 rounded-2xl p-5 mb-6 bg-slate-50/50">
             <div className="flex items-baseline justify-between mb-1">
               <span className="font-bold">{planInfo.orderName}</span>
@@ -159,6 +182,7 @@ export default function CheckoutPage() {
             <p className="text-xs text-slate-500">{t("plan_period_monthly")}</p>
             <p className="text-xs text-slate-500">{t("plan_tax_note")}</p>
           </div>
+          )}
 
           {isTestMode && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
@@ -184,12 +208,15 @@ export default function CheckoutPage() {
             <p className="mt-1.5 text-[11px] text-slate-400">{t("phone_hint")}</p>
           </div>
 
-          {/* 크레딧 정액 SET 고지 — 잔여 무료분 대체(누적 아님) 기대치 정렬 (2026-08-24) */}
+          {/* 크레딧 정액 SET 고지 — 잔여 무료분 대체(누적 아님) 기대치 정렬 (2026-08-24). 카드 변경 모드에서는 생략 */}
+          {!changeCard && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100 text-blue-800 text-[11px] leading-relaxed">
             {t("grant_notice")}
           </div>
+          )}
 
           {/* 청약철회 제한 사전 고지 (전자상거래법 제17조 제6항 요건) */}
+          {!changeCard && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
             <p className="font-bold text-slate-700 mb-1">{t("withdrawal_notice_title")}</p>
             <p className="mb-1.5">{t("withdrawal_notice_body")}</p>
@@ -204,6 +231,7 @@ export default function CheckoutPage() {
               </Link>
             </p>
           </div>
+          )}
 
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
@@ -220,7 +248,7 @@ export default function CheckoutPage() {
               disabled={!phoneValid}
               className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
             >
-              {t("pay_button")}
+              {changeCard ? t("change_card_button") : t("pay_button")}
             </button>
           )}
 

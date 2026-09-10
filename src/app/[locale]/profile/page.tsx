@@ -178,6 +178,14 @@ export default function ProfilePage() {
       .then((d) => setSubscription(d?.subscription ?? null))
       .catch(() => {});
   }, []);
+  // 메인 요금제 '현재 플랜 · 구독 관리'(/profile#subscription)로 진입 시 — 구독 섹션은 비동기 로드 후 렌더되므로
+  // 해시 앵커가 처음엔 없어 상단에 머문다 → 로드 완료 후 직접 스크롤 (2026-09-10 대표)
+  useEffect(() => {
+    if (!subscription || typeof window === "undefined" || window.location.hash !== "#subscription") return;
+    const el = document.getElementById("subscription");
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }, [subscription]);
+  const cardChanged = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("card_changed") === "1";
 
   // A-79 조기 갱신 — 남은 건수가 적을 때(정액 10% 이하) 배너로 강조, 링크는 항상 노출.
   const [showRenewModal, setShowRenewModal] = useState(false);
@@ -1019,11 +1027,12 @@ export default function ProfilePage() {
               {/* A-79 후속 (2026-09-10 대표): 구독 액션(지금 갱신하기·구독 해지)을 아래 '구독 관리' 섹션까지 내려가지 않아도 되게 이 카드 안에도 노출 */}
               {subscription?.status === "active" && (
                 <div className="mt-3 flex flex-col gap-1.5 text-xs">
-                  {subscription.canRenewNow && (
+                  {(subscription.canRenewNow || subscription.renewBlockedReason) && (
+                    // 차단 상태(7일 이내·미사용 결제분)는 숨기지 않고 흐리게 비활성 (9/10 대표)
                     <button
                       onClick={() => { setRenewError(null); setShowRenewModal(true); }}
-                      disabled={subBusy}
-                      className="text-left font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50"
+                      disabled={subBusy || !subscription.canRenewNow}
+                      className="text-left font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                     >
                       {t("subscription.renew_link")}
                     </button>
@@ -1185,6 +1194,12 @@ export default function ProfilePage() {
                       ? `${subscription.paymentMethod.card_name ?? ""} ${subscription.paymentMethod.card_number ?? ""}`.trim() || t("subscription.card_unknown")
                       : t("subscription.card_unknown")}
                   </p>
+                  {subscription.canRenewNow !== undefined && (
+                    <Link href="/billing/checkout?plan=pro_monthly&mode=change_card" className="text-[11px] font-semibold text-blue-600 hover:underline">
+                      {t("subscription.change_card")}
+                    </Link>
+                  )}
+                  {cardChanged && <p className="text-[11px] text-emerald-700 mt-1">{t("subscription.card_changed")}</p>}
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">{t("subscription.status_label")}</p>
@@ -1267,11 +1282,11 @@ export default function ProfilePage() {
                     {t("subscription.cancel_button")}
                   </button>
                 )}
-                {subscription.canRenewNow && !lowCredits && !zeroCredits && (
+                {((subscription.canRenewNow && !lowCredits && !zeroCredits) || subscription.renewBlockedReason) && (
                   <button
                     onClick={() => { setRenewError(null); setShowRenewModal(true); }}
-                    disabled={subBusy}
-                    className="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50"
+                    disabled={subBusy || !subscription.canRenewNow}
+                    className="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-40 disabled:no-underline disabled:cursor-not-allowed"
                   >
                     {t("subscription.renew_link")}
                   </button>

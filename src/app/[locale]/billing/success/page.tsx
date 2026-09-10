@@ -30,6 +30,30 @@ export default function BillingSuccessPage() {
       return;
     }
 
+    // 카드 변경(2026-09-10): 청구 없이 서버 change_card로 빌링키 교체 후 프로필 구독 관리로
+    if (billingKey && searchParams?.get("mode") === "change_card") {
+      const locale = window.location.pathname.split("/")[1] || "ko";
+      fetch("/api/billing/subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "change_card", billingKey }),
+      })
+        .then(async (r) => {
+          if (r.ok) {
+            window.location.replace(`/${locale}/profile?card_changed=1#subscription`);
+            return;
+          }
+          const d = await r.json().catch(() => ({}));
+          setPhase("error");
+          setErrorDetail(d?.detail ?? `HTTP ${r.status}`);
+        })
+        .catch((e) => {
+          setPhase("error");
+          setErrorDetail(e?.message ?? "network_error");
+        });
+      return;
+    }
+
     // 정기결제(빌링키) 경로 우선. 구버전 1회성(paymentId) 경로도 호환 유지.
     if (!billingKey && !paymentId) {
       setPhase("error");
