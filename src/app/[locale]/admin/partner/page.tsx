@@ -157,7 +157,7 @@ export default function PartnerAdminPage() {
                 </div>
                 {!m.approvedAt && (
                   <>
-                    <button onClick={() => act({ action: "approve_milestone", userId: m.userId })} disabled={busy} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">승인 → 6개월 발급</button>
+                    <button onClick={() => act({ action: "approve_milestone", userId: m.userId })} disabled={busy} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">승인 → 1개월 무료 이용권 6장 발급</button>
                     <button
                       onClick={() => {
                         const reason = window.prompt("반려 사유");
@@ -186,7 +186,7 @@ export default function PartnerAdminPage() {
                   <tr key={b.id}>
                     <td className="px-3 py-2">{b.user?.email}</td>
                     <td className="px-3 py-2 font-mono">{b.user?.partnerCode}</td>
-                    <td className="px-3 py-2">{b.type === "pro_50" ? "50% 할인권" : "무료 1개월"}</td>
+                    <td className="px-3 py-2">{b.type === "pro_50" ? "50% 할인권" : "1개월 무료 이용권"}</td>
                     <td className="px-3 py-2">{b.source}</td>
                     <td className="px-3 py-2">{b.status}{b.revokedReason ? ` (${b.revokedReason})` : ""}</td>
                     <td className="px-3 py-2">{fmt(b.issuedAt)}</td>

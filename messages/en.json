@@ -472,7 +472,7 @@
         },
         {
           "q": "How do I join the Partner Relay Challenge?",
-          "a": "Every member automatically gets a numeric partner code. Enter a friend's code on the sign-up form (or within 7 days of signing up, in Profile or the app's Settings) and you both receive a 50% Pro coupon (₩4,950). When 12 people sign up with your code and complete their first proof, you get 6 months of Pro free. Coupons apply automatically to each Pro monthly charge (up to 2 on the first charge) and are valid for 24 months. Partner status (earning on referrals) is limited to the first 500 members, and accrual ends December 31, 2026. See the Partner page for details."
+          "a": "Every member automatically gets a numeric partner code. Enter a friend's code on the sign-up form (or within 7 days of signing up, in Profile or the app's Settings) and you both receive a 50% Pro coupon (₩4,950). When 12 people sign up with your code and complete their first proof, you get six 1-month Pro free vouchers (applied automatically to 6 consecutive charges after your coupons are used up). Coupons apply automatically to each Pro monthly charge (up to 2 on the first charge) and are valid for 24 months. Partner status (earning on referrals) is limited to the first 500 members, and accrual ends December 31, 2026. See the Partner page for details."
         }
       ]
     }
@@ -648,7 +648,7 @@
       "next_charge_free": "Next charge ₩0 ({kind} applied)",
       "next_charge_discount": "Next charge ₩{amount} ({count} coupon(s) applied)",
       "next_charge_list": "Next charge ₩{amount}",
-      "kind_free_month": "1 free month",
+      "kind_free_month": "one 1-month free voucher",
       "kind_coupons": "{count} coupon(s)"
     },
     "delete_account": {
@@ -845,7 +845,7 @@
     "fail_desc": "The payment was canceled or did not complete.",
     "partner_zero_notice": "{kind} applied — nothing is charged today. Only your card is registered; from next month you'll be charged {next} or the list price depending on your remaining benefits.",
     "partner_discount_notice": "{count} partner coupon(s) applied — ₩{amount} will be charged.",
-    "partner_kind_free_month": "1 free month",
+    "partner_kind_free_month": "one 1-month free voucher",
     "partner_kind_coupons": "{count} partner 50% coupon(s)",
     "success_title_free": "Pro has started (₩0 charged today)",
     "success_free_notice": "A partner benefit was applied, so nothing was charged today. Your registered card will be charged on the next billing date with any remaining benefits applied. See Profile > Subscription for the expected amount.",
@@ -882,9 +882,9 @@
     },
     "referrals_title": "Referrals",
     "referrals_count": "{valid} valid / {total} signed up",
-    "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {months} months of Pro free (valid = completed first proof)",
-    "milestone_pending": "{goal} reached! Your 6-month voucher is under review (issued within 24h, reached {date}).",
-    "milestone_approved": "Your 6-month free voucher was issued ({date}).",
+    "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {months} one-month free vouchers (valid = completed first proof)",
+    "milestone_pending": "{goal} reached! Your six 1-month free vouchers are under review (issued within 24h, reached {date}).",
+    "milestone_approved": "Six 1-month free vouchers were issued ({date}). They apply to 6 consecutive charges after your coupons are used up.",
     "milestone_rejected": "The voucher was withheld after review. Contact hi@ori.pics",
     "referrals_empty": "No one has signed up with your code yet. Share it!",
     "ref_valid": "valid",
@@ -895,7 +895,7 @@
     "coupons_label": "50% coupons (₩{amount})",
     "coupons_value": "{count}",
     "nearest_expiry": "Earliest expiry {date}",
-    "free_months_label": "Free months",
+    "free_months_label": "1-month free vouchers",
     "free_months_value": "{count}",
     "next_charge_free": "Next charge ({date}) ₩0 — {kind} applied",
     "next_charge_discount": "Next charge ({date}) ₩{amount} — {count} coupon(s) applied, {left} left after",
@@ -903,10 +903,10 @@
     "first_charge_free": "{count} coupons apply to your first Pro charge — first month ₩0 (card registration required)",
     "first_charge_discount": "{count} coupon(s) apply to your first Pro charge → ₩{amount}",
     "first_charge_none": "No benefit to apply to a Pro charge.",
-    "kind_free_month": "1 free month",
+    "kind_free_month": "one 1-month free voucher",
     "kind_coupons": "{count} coupon(s)",
     "type_pro_50": "50% coupon",
-    "type_pro_free_month": "Free month",
+    "type_pro_free_month": "1-month free voucher",
     "source_signup": "sign-up",
     "source_referral": "referral",
     "source_milestone_12": "12 reached",
@@ -921,10 +921,10 @@
     "show_all": "Show all ({count})",
     "show_less": "Show less",
     "usage_title": "Usage history",
-    "usage_free_month": "1 free month",
+    "usage_free_month": "one 1-month free voucher",
     "usage_coupons": "{count} coupon(s)",
     "usage_paid": "₩{list} → ₩{paid}",
-    "terms_note": "Coupons and vouchers apply automatically to Pro monthly charges only, are valid for {months} months from issuance, and cannot be refunded for cash or transferred. Unused benefits may be revoked if fraudulent participation is found.",
+    "terms_note": "Coupons and 1-month free vouchers apply automatically to Pro monthly charges only (vouchers are used one per consecutive charge), are valid for {months} months from issuance, and cannot be refunded for cash or transferred. Unused benefits may be revoked if fraudulent participation is found.",
     "errors": {
       "invalid_code": "A code is 3–8 digits.",
       "code_not_found": "That partner code doesn't exist.",
@@ -948,7 +948,7 @@
       "eyebrow": "Partner Relay Challenge",
       "headline": "Become an OriPics partner. Benefits stack up.",
       "sub1": "Every time a friend signs up with your partner code, you get a 50% Pro coupon (₩{amount}).",
-      "sub2": "When {goal} sign up, you also get {months} months of Pro free (worth ₩{value}).",
+      "sub2": "When {goal} sign up, you also get {months} one-month free vouchers (worth ₩{value}), applied to 6 consecutive charges.",
       "until": "Until {end}",
       "remaining": "First {cap} partners · {remaining} left",
       "full": "{cap} partners reached (coupons still issued)",
@@ -961,12 +961,12 @@
       "step1_b": "Enter a friend's partner code on the sign-up form (or within 7 days in Profile / app Settings) and get one 50% Pro coupon (₩{amount}) right away.",
       "step2_t": "2. Share your code",
       "step2_b": "You get your own partner code the moment you sign up. Each friend who joins with it earns you a 50% coupon (₩{amount}).",
-      "step3_t": "3. {goal} friends = {months} months free",
-      "step3_b": "When {goal} people sign up with your code and finish their first proof, you get {months} months of Pro free. Coupons apply automatically, one per charge (up to 2 on the first).",
+      "step3_t": "3. {goal} friends = {months} one-month free vouchers",
+      "step3_b": "When {goal} people sign up with your code and finish their first proof, you get {months} one-month free vouchers. Coupons apply one per charge (up to 2 on the first); vouchers apply one per charge for {months} consecutive months after coupons run out.",
       "example_title": "How it adds up",
       "ex1": "1 coupon for joining + 1 from your first friend = 2 → first Pro month ₩0 (card registration only)",
       "ex2": "Then 1 coupon per friend → ₩{amount} per month",
-      "ex3": "From the {goal}th friend, 6 free months → 1 free · 11 at 50% · {months} free = 18 months",
+      "ex3": "From the {goal}th friend, {months} one-month free vouchers → 1 free · 11 at 50% · then {months} consecutive free months = 18 months",
       "faq_title": "FAQ",
       "faq": [
         {
@@ -983,7 +983,7 @@
         },
         {
           "q": "How do I use coupons?",
-          "a": "No redemption needed — they apply automatically to Pro monthly charges. Up to 2 on the first charge (₩0), then 1 per charge (₩{amount}); once coupons run out, free-month vouchers apply one month at a time. Valid for {months24} months from issuance."
+          "a": "No redemption needed — they apply automatically to Pro monthly charges. Up to 2 on the first charge (₩0), then 1 per charge (₩{amount}); once coupons run out, 1-month free vouchers are used one per consecutive charge. Valid for {months24} months from issuance."
         },
         {
           "q": "What happens after the first 500 partners are filled?",
@@ -991,15 +991,15 @@
         },
         {
           "q": "How is reaching {goal} confirmed?",
-          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. At {goal}, the {months}-month voucher is issued within 24 hours after review and you're notified by email."
+          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. At {goal}, {months} one-month free vouchers are issued within 24 hours after review and you're notified by email. They apply one per charge for {months} consecutive months after your coupons are used up."
         }
       ],
       "notice_title": "Terms",
       "notice": [
         "Period: benefits are granted for sign-ups and joins until the challenge end date. Partner status (earning on referrals) is limited to the first {cap} members by join order; closure is shown on this page.",
-        "Coupons (₩{amount}) and free-month vouchers apply automatically to Pro monthly charges only — not to Day Passes, annual billing, or Business plans. Valid {months24} months from issuance; no cash refund, transfer, or resale; not a prepaid payment instrument.",
+        "Coupons (₩{amount}) and 1-month free vouchers apply automatically to Pro monthly charges only (vouchers are used one per consecutive charge) — not to Day Passes, annual billing, or Business plans. Valid {months24} months from issuance; no cash refund, transfer, or resale; not a prepaid payment instrument.",
         "A registered card is still required for a month reduced to ₩0. The 2-coupon first charge applies once per account.",
-        "The {goal}-friend bonus counts 'valid referrals' (first proof completed) and is issued after review. Once per account.",
+        "The {goal}-friend bonus ({months} one-month free vouchers) counts 'valid referrals' (first proof completed) and is issued after review. Once per account.",
         "Benefits obtained through fake accounts, self-referral, or other abuse may be revoked and participation voided (benefits already used are not clawed back).",
         "Refunds for charges with a benefit applied follow Terms §7 based on the amount actually paid; coupons are restored for a full refund within 7 days without use.",
         "Code owners' names are partially masked in lookups. Referral relationships are retained for one year after the challenge for benefit issuance and fraud prevention. We may change conditions or end early with prior notice."
