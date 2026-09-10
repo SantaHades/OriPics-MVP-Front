@@ -934,7 +934,8 @@
       "window_expired": "Codes can only be entered within 7 days of signing up.",
       "campaign_ended": "The challenge has ended.",
       "user_not_found": "Account not found.",
-      "unavailable": "Unavailable right now. Please try again later."
+      "unavailable": "Unavailable right now. Please try again later.",
+      "email_already_joined": "This email has already joined the challenge. Re-registering after deleting an account doesn't allow joining again."
     },
     "welcome_title": "Have a partner code?",
     "welcome_body": "Enter a friend's code and you both get a 50% Pro coupon. You can enter one code within 7 days of signing up.",
@@ -1002,7 +1003,8 @@
         "The {goal}-friend bonus ({months} one-month free vouchers) counts 'valid referrals' (first proof completed, accepted up to 30 days after the challenge ends) and is issued after review. Once per account.",
         "Benefits obtained through fake accounts, self-referral, or other abuse may be revoked and participation voided (benefits already used are not clawed back).",
         "Refunds for charges with a benefit applied follow Terms §7 based on the amount actually paid; coupons are restored for a full refund within 7 days without use.",
-        "Code owners' names are partially masked in lookups. Referral relationships are retained for one year after the challenge for benefit issuance and fraud prevention. We may change conditions or end early with prior notice."
+        "Code owners' names are partially masked in lookups. Referral relationships are retained for one year after the challenge for benefit issuance and fraud prevention. We may change conditions or end early with prior notice.",
+        "Participation is limited to one per email address. Deleting your account and signing up again with the same email (even with a different partner code) does not allow re-joining, and no coupons are issued to either side."
       ],
       "terms_link": "Terms §6",
       "privacy_link": "Privacy Policy"

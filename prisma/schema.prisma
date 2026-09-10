@@ -294,3 +294,16 @@ model PartnerMilestone {
 
   @@map("partner_milestones")
 }
+
+/// 참여 이력 원장 — 탈퇴·재가입 반복 적립 차단 (이메일당 평생 1회). FK 없음(User 삭제와 무관)
+model PartnerJoinLedger {
+  emailHash      String    @id @map("email_hash")
+  firstUserId    String?   @map("first_user_id")
+  referrerId     String?   @map("referrer_id")
+  referrerCode   String?   @map("referrer_code")
+  joinedAt       DateTime  @default(now()) @map("joined_at")
+  rejoinAttempts Int       @default(0) @map("rejoin_attempts")
+  lastAttemptAt  DateTime? @map("last_attempt_at")
+
+  @@map("partner_join_ledger")
+}

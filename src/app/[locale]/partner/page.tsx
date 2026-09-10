@@ -122,7 +122,7 @@ export default function PartnerLandingPage() {
         <section className="mt-10 text-xs text-slate-500 leading-relaxed">
           <h2 className="text-sm font-bold text-slate-700 mb-2">{t("notice_title")}</h2>
           <ul className="list-disc pl-5 space-y-1">
-            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
               <li key={i}>{t(`notice.${i}`, { amount: fmtWon(discount), goal, months, months24: stats?.benefitValidMonths ?? 24, cap: stats?.cap ?? 500 })}</li>
             ))}
           </ul>

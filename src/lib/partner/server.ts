@@ -79,6 +79,11 @@ export function hashIp(ip: string | null | undefined): string | null {
   return createHash("sha256").update(ip).digest("hex").slice(0, 16);
 }
 
+/** 참여 원장 키 — sha256(lower(trim(email))) hex. SQL 백필(encode(sha256(...),'hex'))과 동일 */
+export function hashEmail(email: string): string {
+  return createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("hex");
+}
+
 // ───────────────────────── 참여(코드 입력) ─────────────────────────
 
 export type JoinError =
@@ -89,6 +94,7 @@ export type JoinError =
   | "circular"
   | "window_expired"
   | "campaign_ended"
+  | "email_already_joined"
   | "user_not_found";
 
 export interface JoinResult {
@@ -119,10 +125,23 @@ export async function joinWithPartnerCode(opts: {
 
   const me = await prisma.user.findUnique({
     where: { id: opts.userId },
-    select: { id: true, referredById: true, partnerJoinedAt: true, partnerCode: true },
+    select: { id: true, email: true, referredById: true, partnerJoinedAt: true, partnerCode: true },
   });
   if (!me) return { ok: false, error: "user_not_found" };
   if (me.referredById || me.partnerJoinedAt) return { ok: false, error: "already_joined" };
+
+  // 탈퇴·재가입 반복 차단 (2026-09-10 대표 확정): 이메일당 평생 1회. 원장은 User 삭제와 무관하게 남는다.
+  // 어떤 코드를 넣든(다른 파트너 코드 포함) 거절 — 양쪽 모두 미지급. 시도 횟수는 어뷰즈 플래그로 기록.
+  const emailHash = me.email ? hashEmail(me.email) : null;
+  if (emailHash) {
+    const prior = await prisma.partnerJoinLedger.findUnique({ where: { emailHash } });
+    if (prior && prior.firstUserId !== opts.userId) {
+      await prisma.partnerJoinLedger
+        .update({ where: { emailHash }, data: { rejoinAttempts: { increment: 1 }, lastAttemptAt: new Date() } })
+        .catch(() => {});
+      return { ok: false, error: "email_already_joined" };
+    }
+  }
 
   const owner = await prisma.user.findUnique({
     where: { id: look.ownerId },
@@ -164,6 +183,14 @@ export async function joinWithPartnerCode(opts: {
       data: { referredById: owner.id, partnerJoinedAt: now, partnerRank: rank },
     });
     const myCode = await ensurePartnerCode(opts.userId, tx);
+
+    if (emailHash) {
+      await tx.partnerJoinLedger.upsert({
+        where: { emailHash },
+        create: { emailHash, firstUserId: opts.userId, referrerId: owner.id, referrerCode: look.code, joinedAt: now },
+        update: {},
+      });
+    }
 
     const referral = await tx.partnerReferral.create({
       data: {
