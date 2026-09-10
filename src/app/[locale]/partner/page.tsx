@@ -112,7 +112,7 @@ export default function PartnerLandingPage() {
           <dl className="space-y-4">
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="rounded-2xl bg-white border border-slate-200 p-5">
-                <dt className="font-semibold mb-1">{t(`faq.${i}.q`)}</dt>
+                <dt className="font-semibold mb-1">{t(`faq.${i}.q`, { goal, months })}</dt>
                 <dd className="text-sm text-slate-600 leading-relaxed">{t(`faq.${i}.a`, { amount: fmtWon(discount), goal, months, months24: stats?.benefitValidMonths ?? 24 })}</dd>
               </div>
             ))}
