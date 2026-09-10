@@ -244,6 +244,7 @@ SSL.com 회신 (U-1)
 
 | 일자 | 변경 |
 |---|---|
+| 2026-09-10 (18:31) | **🚀 빌드 17 (v1.0.1) EAS 제출** — iOS 04167bfa(빌드번호 17)·Android f49197d0(versionCode 19), auto-submit(ASC·Play alpha). 탑승분: 파트너 카드(코드·복사·공유·입력·줄바꿈·'웹 내 정보' 링크), 보관 유예 문구, 히어로 링크 '어떻게 증명하나요?', 이벤트 썸네일 가로 스크롤, 사서함 확인서 제목 입력란, 사서함 '내 사진' 라벨. 제출 링크: expo.dev/accounts/santahades/projects/oripics/submissions/aa24b829(iOS)·4b4ac1aa(Android). **훅 호환 래퍼 신설**: `apps/mobile/scripts/store-build.sh [all|ios|android]`(빌드+제출)·`store-status.sh`(상태 조회) — 이후 EAS 명령은 이 래퍼만 사용. 결과 확인 필요 |
 | 2026-09-10 (밤) | **사서함 상세 썸네일 '내 사진' 라벨(대표)** — 왼쪽 아래 파란 라벨, uploaded_by=내 id일 때만(촬영·제출 공통). 미열람 배지 색 변경 대안 대비 정보 분리·가독성으로 선택. 커밋 e145f9b, iPhone·Galaxy 설치. 빌드 17 탑승 대기 |
 | 2026-09-10 (밤) | **사서함 확인서 제목 설정(대표)** — `mailboxes.report_title`(SQL `2026_09_10_mailbox_report_title.sql` ✅대표 실행) · PATCH `report_title`(80자, 빈값=기본 문구) · DTO·스냅샷(백업본에도 저장) · `@oripics/certificate` 0.0.15 렌더러 제목 치환(문서 제목 속성 포함) · 앱 S8 '확인서 제목' 입력란(초기값=현재 문구 '사서함 확인서'/'Photo Mailbox Report'). 커밋 56cd50c, 웹 배포(front 379f08d), iPhone·Galaxy 설치. 같은 날 이벤트 탭 내 참여 썸네일 가로 스크롤(52f4c3f)·파트너 카드 값 줄바꿈(3b5c03d)·'웹 내 정보' 링크(eedeba0) |
 | 2026-09-10 (저녁~밤) | **앱 소수정 3건 + 실기기 설치** — 파트너 카드 '코드 복사'를 코드 값 오른쪽 버튼으로(7153efd), 보관 유예 안내 '서버 보관함에서 삭제됩니다.'(9cf9b5f), 설정탭 히어로 링크 '어떻게 증명하나요?'(b9388fe, 웹은 미변경). iPhone·Galaxy 최종 빌드 설치 완료. 빌드 17 탑승 대기 |
