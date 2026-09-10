@@ -37,9 +37,46 @@ export default function SignupPage() {
   // 화면을 표시 (forgot-password의 from=app 패턴, 2026-09-02. 앱 로그인 화면 링크 연동)
   const fromApp = searchParams?.get("from") === "app";
   const [appDone, setAppDone] = useState(false);
+  // 파트너 릴레이 챌린지 (A-82) — ?ref=코드 프리필·자동 확인, [확인] 후 주인 이름(마스킹) 표시·잠금
+  const refParam = searchParams?.get("ref") ?? "";
+  const [partnerCode, setPartnerCode] = useState(refParam.replace(/[^0-9]/g, "").slice(0, 8));
+  const [partnerName, setPartnerName] = useState<string | null>(null);
+  const [partnerBusy, setPartnerBusy] = useState(false);
+  const [partnerError, setPartnerError] = useState<string | null>(null);
+  const [appDonePartner, setAppDonePartner] = useState<{ code: string | null; joined: boolean } | null>(null);
 
   const t = useTranslations("Signup");
   const tL = useTranslations("Login");
+  const tP = useTranslations("Partner");
+
+  const checkPartnerCode = async (raw?: string) => {
+    const code = (raw ?? partnerCode).replace(/[^0-9]/g, "");
+    if (code.length < 3) return;
+    setPartnerBusy(true);
+    setPartnerError(null);
+    try {
+      const res = await fetch(`/api/partner/lookup?code=${code}`);
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) {
+        setPartnerName(null);
+        setPartnerError(tP(`errors.${d?.error ?? "code_not_found"}`));
+        return;
+      }
+      setPartnerName(d.ownerNameMasked);
+    } catch {
+      setPartnerError(tP("errors.unavailable"));
+    } finally {
+      setPartnerBusy(false);
+    }
+  };
+  // ?ref= 프리필은 자동 확인. 소셜 가입으로 이어질 때를 위해 세션 저장(환영 모달이 읽음)
+  useEffect(() => {
+    if (refParam) {
+      try { window.sessionStorage.setItem("oripics.partner.ref", refParam); } catch { /* ignore */ }
+      checkPartnerCode(refParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refParam]);
 
   // 재발송 쿨다운 타이머
   useEffect(() => {
@@ -133,7 +170,7 @@ export default function SignupPage() {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, verificationCode }),
+        body: JSON.stringify({ ...formData, verificationCode, ...(partnerName && partnerCode ? { partnerCode } : {}) }),
       });
 
       const data = await res.json();
@@ -142,9 +179,11 @@ export default function SignupPage() {
         const errorMsg = data.code ? t(`api_errors.${data.code}`) : data.message;
         throw new Error(errorMsg);
       }
+      const partnerResult = data?.partner as { code: string | null; joined: boolean } | undefined;
 
       // 앱 유입 가입은 웹 세션을 만들지 않고 완료 화면으로 — 앱 복귀 후 로그인 유도
       if (fromApp) {
+        setAppDonePartner(partnerResult ?? null);
         setAppDone(true);
         return;
       }
@@ -161,8 +200,12 @@ export default function SignupPage() {
         return;
       }
 
-      // 3. 로그인 성공 시 홈으로 이동
-      router.push("/");
+      // 3. 로그인 성공 시 — 파트너코드로 참여했으면 프로필 파트너 카드(내 코드·할인권 도착)로, 아니면 홈
+      if (partnerResult?.joined) {
+        router.push("/profile?welcome=partner#partner");
+      } else {
+        router.push("/");
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message);
@@ -179,6 +222,13 @@ export default function SignupPage() {
           <CheckCircle size={56} className="text-[#34C759] mx-auto mb-5" />
           <h1 className="text-xl font-bold mb-2">{t("from_app_done_title")}</h1>
           <p className="text-sm text-slate-600 leading-relaxed">{t("from_app_done_body")}</p>
+          {appDonePartner?.code && (
+            <div className="mt-5 rounded-2xl bg-blue-50 border border-blue-100 p-4 text-left">
+              <p className="text-xs text-blue-700 font-bold mb-1">{t("partner_my_code")}</p>
+              <p className="text-2xl font-extrabold tracking-[0.15em] tabular-nums">{appDonePartner.code}</p>
+              <p className="text-xs text-slate-600 mt-1">{appDonePartner.joined ? t("partner_coupon_arrived") : t("partner_code_only")}</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -352,6 +402,38 @@ export default function SignupPage() {
             </div>
 
             {/* 약관·개인정보 처리방침 동의 (필수) */}
+            {/* 파트너코드 (선택) — A-82. 확인 성공 시 주인 이름(마스킹) 표시 + 입력 잠금, [변경]으로 해제 */}
+            <div>
+              <label className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 block ml-1">{t("partner_code_label")}</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder={t("partner_code_placeholder")}
+                  className={`flex-1 bg-slate-100 border rounded-2xl py-4 px-4 text-sm outline-none transition-all focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600 tracking-[0.2em] tabular-nums ${partnerName ? "border-emerald-500/30 bg-emerald-500/5" : "border-slate-100 focus:border-blue-500/50"}`}
+                  value={partnerCode}
+                  onChange={(e) => { setPartnerCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 8)); setPartnerName(null); setPartnerError(null); }}
+                  disabled={!!partnerName}
+                />
+                {partnerName ? (
+                  <button type="button" onClick={() => { setPartnerName(null); }} className="px-4 py-4 text-slate-500 text-sm font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 whitespace-nowrap shrink-0">
+                    {t("partner_change")}
+                  </button>
+                ) : (
+                  <button type="button" onClick={() => checkPartnerCode()} disabled={partnerBusy || partnerCode.length < 3} className="px-4 py-4 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap shrink-0">
+                    {partnerBusy ? <RefreshCw className="animate-spin" size={16} /> : t("partner_check")}
+                  </button>
+                )}
+              </div>
+              {partnerName ? (
+                <p className="mt-2 ml-1 text-xs text-emerald-700">{t("partner_confirmed", { name: partnerName })}</p>
+              ) : partnerError ? (
+                <p className="mt-2 ml-1 text-xs text-red-600">{partnerError}</p>
+              ) : (
+                <p className="mt-2 ml-1 text-[11px] text-slate-500">{t("partner_hint")}</p>
+              )}
+            </div>
+
             <label className="flex items-start gap-2 cursor-pointer select-none px-1">
               <input
                 type="checkbox"

@@ -52,6 +52,13 @@ model User {
   // 크레딧 다음 갱신 시점 (가입일 기준 매월). null = 미초기화 (기존 사용자) → J-2 마이그레이션 시 보정
   creditsRenewAt    DateTime?
 
+  // 파트너 릴레이 챌린지 (A-82, 2026-09-10) — docs/partner-relay-challenge-plan.md
+  partnerCode            String?   @unique          // 숫자 코드. 대표 1234, 일반 1235~, 제휴사 100~999 수동
+  partnerJoinedAt        DateTime?                  // 코드 입력·참여 확정 시각 (500명 카운트 기준)
+  partnerRank            Int?                       // 1~500 파트너 순번. 501+ null(비파트너)
+  referredById           String?                    // 입력한 코드의 주인
+  firstChargeBonusUsedAt DateTime?                  // 첫 결제 2장 혜택 사용 시각(계정당 1회)
+
   accounts      Account[]
   sessions      Session[]
   proofs        ProofHistory[]
@@ -60,6 +67,16 @@ model User {
   mobileRefreshTokens MobileRefreshToken[]
   dayPassesPurchased DayPass[] @relation("DayPassPurchaser")
   dayPassesRedeemed  DayPass[] @relation("DayPassRedeemer")
+  referredBy         User?     @relation("PartnerReferredBy", fields: [referredById], references: [id], onDelete: SetNull)
+  referredUsers      User[]    @relation("PartnerReferredBy")
+  partnerReferralsMade     PartnerReferral[] @relation("ReferralReferrer")
+  partnerReferralReceived  PartnerReferral?  @relation("ReferralReferee")
+  partnerBenefits    PartnerBenefit[]
+  chargeIntents      ChargeIntent[]
+  partnerMilestone   PartnerMilestone?
+
+  @@index([referredById])
+  @@index([partnerRank])
 }
 
 // 모바일 refresh 토큰 서버측 상태 (A-38②, 2026-08-24)
@@ -196,4 +213,84 @@ model RateLimit {
   @@id([key, windowStart])
   @@index([windowStart])
   @@map("rate_limits")
+}
+
+// ─── 파트너 릴레이 챌린지 (A-82) — db_migrations/2026_09_10_partner_relay.sql ───
+
+model PartnerReferral {
+  id               String   @id @default(cuid())
+  referrerId       String   @map("referrer_id")
+  refereeId        String   @unique @map("referee_id")
+  status           String   @default("confirmed")            // confirmed | revoked
+  referrerRewarded Boolean  @default(false) @map("referrer_rewarded")
+  ipHash           String?  @map("ip_hash")
+  riskFlags        Json?    @map("risk_flags")
+  revokedReason    String?  @map("revoked_reason")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  referrer User @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referee  User @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Cascade)
+  benefits PartnerBenefit[]
+
+  @@index([referrerId, createdAt])
+  @@index([ipHash, createdAt])
+  @@map("partner_referrals")
+}
+
+model PartnerBenefit {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  type          String                                        // pro_50 | pro_free_month
+  source        String                                        // signup | referral | milestone_12 | admin
+  referralId    String?   @map("referral_id")
+  status        String    @default("available")               // available | reserved | used | expired | revoked
+  issuedAt      DateTime  @default(now()) @map("issued_at")
+  expiresAt     DateTime  @map("expires_at")
+  usedAt        DateTime? @map("used_at")
+  paymentId     String?   @map("payment_id")
+  revokedReason String?   @map("revoked_reason")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referral PartnerReferral? @relation(fields: [referralId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, expiresAt])
+  @@index([paymentId])
+  @@map("partner_benefits")
+}
+
+model ChargeIntent {
+  paymentId      String   @id @map("payment_id")
+  userId         String   @map("user_id")
+  plan           String
+  listAmount     Int      @map("list_amount")
+  discountAmount Int      @default(0) @map("discount_amount")
+  expectedAmount Int      @map("expected_amount")
+  benefitIds     Json     @default("[]") @map("benefit_ids")
+  status         String   @default("pending")                 // pending | paid | failed
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("charge_intents")
+}
+
+model PartnerMilestone {
+  userId       String    @id @map("user_id")
+  reachedAt    DateTime  @default(now()) @map("reached_at")
+  notifiedAt   DateTime? @map("notified_at")
+  approvedAt   DateTime? @map("approved_at")
+  approvedBy   String?   @map("approved_by")
+  rejectedAt   DateTime? @map("rejected_at")
+  rejectReason String?   @map("reject_reason")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("partner_milestones")
 }

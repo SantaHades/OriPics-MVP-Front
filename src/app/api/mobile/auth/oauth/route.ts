@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { issueMobileTokens } from "@/lib/auth/mobileTokens";
 import { persistRefreshToken } from "@/lib/auth/refreshStore";
 import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
+import { ensurePartnerCode } from "@/lib/partner/server";
 
 export const runtime = "nodejs";
 
@@ -202,6 +203,12 @@ export async function POST(req: NextRequest) {
       await grantSignupCredits(userId);
     } catch (e) {
       console.error("[mobile/auth/oauth] grantSignupCredits failed:", e);
+    }
+    // 파트너코드 발급 (A-82) — 코드 입력은 앱 설정 탭 '파트너'에서 7일 내
+    try {
+      await ensurePartnerCode(userId);
+    } catch (e) {
+      console.error("[mobile/auth/oauth] ensurePartnerCode failed:", e);
     }
   }
 

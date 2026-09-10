@@ -9,6 +9,7 @@ import AppleProvider from "next-auth/providers/apple";
 import * as bcrypt from "bcryptjs";
 import { appleClientSecret } from "@/lib/auth/appleClientSecret";
 import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
+import { ensurePartnerCode } from "@/lib/partner/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/security/rateLimit";
 
 export const authOptions: NextAuthOptions = {
@@ -218,6 +219,12 @@ export const authOptions: NextAuthOptions = {
         await grantSignupCredits(user.id);
       } catch (e) {
         console.error("[authOptions] grantSignupCredits failed:", e);
+      }
+      // 파트너코드 발급 (A-82) — 소셜 가입자는 코드 입력을 프로필/환영 모달에서 7일 내 진행
+      try {
+        await ensurePartnerCode(user.id);
+      } catch (e) {
+        console.error("[authOptions] ensurePartnerCode failed:", e);
       }
       // Apple 등 이름 미제공 provider — 이메일 앞부분을 기본 이름으로 (UI "님" 공백 방지, 2026-08-26)
       if (!user.name && user.email) {

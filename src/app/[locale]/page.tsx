@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
+import PartnerWelcomePrompt from "@/components/PartnerWelcomePrompt";
 import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink, ImageUp, Lock, Share2, BadgeCheck } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Link, useRouter } from "@/navigation";
@@ -2049,6 +2050,8 @@ export default function Home() {
         </section>
 
         {/* Pricing — 요금제 */}
+        {/* 소셜 가입 직후 파트너코드 환영 모달 (A-82) */}
+        <PartnerWelcomePrompt />
         <section id="pricing" className="w-full max-w-5xl mt-12 mb-20 scroll-mt-24">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-500/10 rounded-full text-orange-700 text-xs font-semibold tracking-wider uppercase mb-4">
@@ -2106,6 +2109,10 @@ export default function Home() {
                 ₩9,900<span className="text-sm font-normal text-slate-500"> / {t("pricing.month")}</span>
               </p>
               <p className="text-xs text-slate-500 mb-5">{t("pricing.price_tax_note")}</p>
+              {/* 파트너 릴레이 챌린지 한 줄 링크 (A-82) */}
+              <Link href="/partner" className="mb-4 -mt-2 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-1.5 hover:bg-blue-100">
+                {t("pricing.pro.partner_link")}
+              </Link>
               <ul className="text-sm text-slate-700 space-y-2 mb-6 flex-1">
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f1")}</li>
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f2")}</li>
@@ -2235,7 +2242,7 @@ export default function Home() {
         </div>
 
         <div className="space-y-3">
-          {Array.from({ length: 16 }, (_, i) => i).map((i) => (
+          {Array.from({ length: 17 }, (_, i) => i).map((i) => (
             <div
               key={i}
               className={`border rounded-2xl transition-all duration-300 overflow-hidden ${openFaq === i

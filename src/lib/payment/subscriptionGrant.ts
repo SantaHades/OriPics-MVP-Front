@@ -1,6 +1,13 @@
 import * as PortOne from "@portone/server-sdk";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { PLAN_GRANTS } from "@/lib/payment";
+import {
+  getChargeIntent,
+  releaseChargeBenefits,
+  reserveChargeBenefits,
+  settleChargeBenefits,
+} from "@/lib/partner/server";
 
 /**
  * PortOne 결제 검증 + 구독·크레딧 부여 공유 로직.
@@ -12,6 +19,10 @@ import { PLAN_GRANTS } from "@/lib/payment";
  * 두 경로가 동시에 같은 paymentId를 처리할 수 있으므로(사용자가 success로 돌아오는
  * 시점과 webhook 도착이 겹침), Postgres advisory lock으로 직렬화해 이중 지급을 막는다.
  * (CreditTransaction에 unique 제약이 없어 마이그레이션 없이 멱등성 확보.)
+ *
+ * 파트너 릴레이 챌린지 (A-82, 2026-09-10): 청구 금액은 정가 고정이 아니라
+ * charge_intents(paymentId → 기대 금액·적용 혜택)를 따른다. 할인권 2장/무료 이용권으로
+ * 기대 금액이 0원이면 PG 호출 없이 주기를 부여한다(카드=빌링키 등록은 필수).
  */
 
 export type PlanId = "pro_monthly";
@@ -28,14 +39,19 @@ export const PLAN_ORDER_NAMES: Record<PlanId, string> = {
   pro_monthly: "OriPics Pro (월간 구독)",
 };
 
+/** 파트너 할인 적용 시 나올 수 있는 결제 금액(정가·50% 할인) — 금액 역추론 폴백용 */
+const PLAN_AMOUNTS_ACCEPTED: Record<PlanId, number[]> = {
+  pro_monthly: [9900, 4950],
+};
+
 export function isPlanId(v: unknown): v is PlanId {
   return typeof v === "string" && v in PLAN_PRICES;
 }
 
-/** 금액으로 plan 역추론 (customData 누락 시 폴백). */
+/** 금액으로 plan 역추론 (customData 누락 시 폴백). 할인 금액(4,950)도 pro_monthly로 인식. */
 export function planFromAmount(amount: unknown): PlanId | null {
-  for (const [plan, price] of Object.entries(PLAN_PRICES)) {
-    if (price === amount) return plan as PlanId;
+  for (const [plan, amounts] of Object.entries(PLAN_AMOUNTS_ACCEPTED)) {
+    if (amounts.includes(amount as number)) return plan as PlanId;
   }
   return null;
 }
@@ -47,6 +63,11 @@ export type GrantResult =
       granted: number;
       plan: PlanId;
       pgProvider: string;
+      /** 실제 청구액 (0 = 혜택으로 무료 처리, PG 미호출) */
+      amountCharged?: number;
+      listAmount?: number;
+      discountAmount?: number;
+      benefitIds?: string[];
     }
   | {
       ok: false;
@@ -63,8 +84,109 @@ export type GrantResult =
     };
 
 /**
+ * 구독·크레딧 부여 트랜잭션 본체 — advisory lock·멱등 확인은 호출측(트랜잭션 안)에서 한다.
+ * 결제 검증 경로(verifyAndGrantSubscription)와 0원 부여 경로가 공유.
+ */
+async function grantSubscriptionTx(
+  tx: Prisma.TransactionClient,
+  opts: {
+    userId: string;
+    plan: PlanId;
+    paymentId: string;
+    billingKey?: string;
+    paidAmount: number;
+    pgProvider: string;
+    intent?: { listAmount: number; discountAmount: number; benefitIds: string[] } | null;
+  },
+): Promise<number> {
+  const { userId, plan, paymentId, billingKey, paidAmount, pgProvider, intent } = opts;
+  const grant = PLAN_GRANTS[plan] ?? 0;
+
+  const periodStart = new Date();
+  const periodEnd = new Date(periodStart);
+  periodEnd.setDate(periodEnd.getDate() + PLAN_PERIOD_DAYS[plan]);
+
+  await tx.subscription.upsert({
+    where: { userId },
+    create: {
+      userId,
+      gateway: "portone",
+      gatewayCustomerId: userId,
+      gatewaySubscriptionId: paymentId,
+      ...(billingKey ? { billingKey } : {}),
+      plan,
+      status: "active",
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+    },
+    update: {
+      gateway: "portone",
+      gatewaySubscriptionId: paymentId,
+      ...(billingKey ? { billingKey } : {}),
+      plan,
+      status: "active",
+      currentPeriodStart: periodStart,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd: false,
+      canceledAt: null,
+    },
+  });
+
+  // 크레딧은 가산이 아니라 플랜 정액으로 리셋(SET) — pricing-policy.md §5.1 이월 불가
+  // (cap 모델)과 정합. 매월 빌링키 자동청구가 돌 때마다 누적되는 것을 방지한다.
+  // creditsRenewAt도 결제 주기 종료일로 정렬해, 가입일 anchor 기반의
+  // renewCreditsIfDue(cron/lazy)가 결제 주기 중간에 이중 리셋하지 않게 한다.
+  const prev = await tx.user.findUnique({ where: { id: userId }, select: { credits: true } });
+  const previousCredits = prev?.credits ?? 0;
+
+  const updated = await tx.user.update({
+    where: { id: userId },
+    data: { tier: "pro", credits: grant, creditsRenewAt: periodEnd },
+    select: { credits: true },
+  });
+
+  await tx.creditTransaction.create({
+    data: {
+      userId,
+      delta: grant - previousCredits,
+      action: "subscription_grant",
+      balanceAfter: updated.credits,
+      metadata: {
+        plan,
+        paymentId,
+        amount: paidAmount,
+        gateway: "portone",
+        pgProvider,
+        previous_credits: previousCredits,
+        ...(intent
+          ? { list_amount: intent.listAmount, discount_amount: intent.discountAmount, benefit_ids: intent.benefitIds }
+          : {}),
+      },
+    },
+  });
+
+  // 보관함 활성화: 아직 살아있는 링크의 만료를 해제(무기한 보관 전환).
+  // 재구독 시 다운그레이드 grace 만료 복원 + 기존 free 링크도 보관함에 편입.
+  await tx.$executeRaw`
+    UPDATE public.links
+    SET expires_at = NULL
+    WHERE user_id = ${userId} AND expires_at > now()`;
+
+  // 파트너 혜택 정산(의도 없으면 무동작)
+  try {
+    await settleChargeBenefits(tx, paymentId, userId);
+  } catch (e: any) {
+    // 마이그레이션 전 환경 등 — 정산 실패가 부여를 막지 않도록 로그만
+    console.warn("[subscriptionGrant] settleChargeBenefits skipped", { paymentId, error: e?.message ?? e });
+  }
+
+  return grant;
+}
+
+/**
  * paymentId를 PortOne에 재질의해 PAID·금액을 검증한 뒤, 멱등적으로 구독·크레딧 부여.
  * 클라이언트가 보낸 금액은 신뢰하지 않고 PortOne 기록을 source of truth로 사용.
+ * 기대 금액은 charge_intents(할인 적용) → 없으면 정가.
  */
 export async function verifyAndGrantSubscription(opts: {
   paymentId: string;
@@ -75,7 +197,8 @@ export async function verifyAndGrantSubscription(opts: {
   billingKey?: string;
 }): Promise<GrantResult> {
   const { paymentId, userId, plan, secret, billingKey } = opts;
-  const expectedAmount = PLAN_PRICES[plan];
+  const intent = await getChargeIntent(paymentId);
+  const expectedAmount = intent && intent.userId === userId ? intent.expectedAmount : PLAN_PRICES[plan];
 
   // 1) PortOne 결제 조회 (네트워크 호출은 트랜잭션 밖에서)
   const client = PortOne.PaymentClient({ secret });
@@ -129,7 +252,9 @@ export async function verifyAndGrantSubscription(opts: {
   }
 
   const pgProvider = payment.channel?.pgProvider ?? "unknown";
-  const grant = PLAN_GRANTS[plan] ?? 0;
+  const intentMeta = intent
+    ? { listAmount: intent.listAmount, discountAmount: intent.discountAmount, benefitIds: Array.isArray(intent.benefitIds) ? (intent.benefitIds as string[]) : [] }
+    : null;
 
   // 2) 멱등 부여 — advisory lock으로 동일 paymentId 동시처리 직렬화
   try {
@@ -157,87 +282,33 @@ export async function verifyAndGrantSubscription(opts: {
           granted: 0,
           plan,
           pgProvider,
+          amountCharged: paidAmount,
+          listAmount: intentMeta?.listAmount ?? PLAN_PRICES[plan],
+          discountAmount: intentMeta?.discountAmount ?? 0,
+          benefitIds: intentMeta?.benefitIds ?? [],
         };
       }
 
-      const periodStart = new Date();
-      const periodEnd = new Date(periodStart);
-      periodEnd.setDate(periodEnd.getDate() + PLAN_PERIOD_DAYS[plan]);
-
-      await tx.subscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          gateway: "portone",
-          gatewayCustomerId: userId,
-          gatewaySubscriptionId: paymentId,
-          ...(billingKey ? { billingKey } : {}),
-          plan,
-          status: "active",
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: periodEnd,
-        },
-        update: {
-          gateway: "portone",
-          gatewaySubscriptionId: paymentId,
-          ...(billingKey ? { billingKey } : {}),
-          plan,
-          status: "active",
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: periodEnd,
-          cancelAtPeriodEnd: false,
-          canceledAt: null,
-        },
+      const granted = await grantSubscriptionTx(tx, {
+        userId,
+        plan,
+        paymentId,
+        billingKey,
+        paidAmount,
+        pgProvider,
+        intent: intentMeta,
       });
-
-      // 크레딧은 가산이 아니라 플랜 정액으로 리셋(SET) — pricing-policy.md §5.1 이월 불가
-      // (cap 모델)과 정합. 매월 빌링키 자동청구가 돌 때마다 누적되는 것을 방지한다.
-      // creditsRenewAt도 결제 주기 종료일로 정렬해, 가입일 anchor 기반의
-      // renewCreditsIfDue(cron/lazy)가 결제 주기 중간에 이중 리셋하지 않게 한다.
-      // (청구 실패 dunning 중에는 renewCreditsIfDue가 grace 리필을 제공하고,
-      //  7일 후 다운그레이드되면 free 정액으로 회귀 — 의도된 동작.)
-      const prev = await tx.user.findUnique({
-        where: { id: userId },
-        select: { credits: true },
-      });
-      const previousCredits = prev?.credits ?? 0;
-
-      const updated = await tx.user.update({
-        where: { id: userId },
-        data: { tier: "pro", credits: grant, creditsRenewAt: periodEnd },
-        select: { credits: true },
-      });
-
-      await tx.creditTransaction.create({
-        data: {
-          userId,
-          delta: grant - previousCredits,
-          action: "subscription_grant",
-          balanceAfter: updated.credits,
-          metadata: {
-            plan,
-            paymentId,
-            amount: paidAmount,
-            gateway: "portone",
-            pgProvider,
-            previous_credits: previousCredits,
-          },
-        },
-      });
-
-      // 보관함 활성화: 아직 살아있는 링크의 만료를 해제(무기한 보관 전환).
-      // 재구독 시 다운그레이드 grace 만료 복원 + 기존 free 링크도 보관함에 편입.
-      await tx.$executeRaw`
-        UPDATE public.links
-        SET expires_at = NULL
-        WHERE user_id = ${userId} AND expires_at > now()`;
 
       return {
         ok: true as const,
         alreadyProcessed: false,
-        granted: grant,
+        granted,
         plan,
         pgProvider,
+        amountCharged: paidAmount,
+        listAmount: intentMeta?.listAmount ?? PLAN_PRICES[plan],
+        discountAmount: intentMeta?.discountAmount ?? 0,
+        benefitIds: intentMeta?.benefitIds ?? [],
       };
     });
   } catch (e: any) {
@@ -251,6 +322,65 @@ export async function verifyAndGrantSubscription(opts: {
 }
 
 /**
+ * 혜택으로 기대 금액이 0원인 주기 — PG 호출 없이 멱등 부여. 빌링키는 반드시 저장(다음 달 청구).
+ */
+async function grantWithoutCharge(opts: {
+  paymentId: string;
+  userId: string;
+  plan: PlanId;
+  billingKey: string;
+  intent: { listAmount: number; discountAmount: number; benefitIds: string[] };
+}): Promise<GrantResult> {
+  const { paymentId, userId, plan, billingKey, intent } = opts;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`portone:grant:${paymentId}`}))`;
+      const existing = await tx.creditTransaction.findFirst({
+        where: { userId, action: "subscription_grant", metadata: { path: ["paymentId"], equals: paymentId } },
+        select: { id: true },
+      });
+      if (existing) {
+        await tx.subscription.updateMany({ where: { userId }, data: { billingKey } });
+        return {
+          ok: true as const,
+          alreadyProcessed: true,
+          granted: 0,
+          plan,
+          pgProvider: "partner_benefit",
+          amountCharged: 0,
+          listAmount: intent.listAmount,
+          discountAmount: intent.discountAmount,
+          benefitIds: intent.benefitIds,
+        };
+      }
+      const granted = await grantSubscriptionTx(tx, {
+        userId,
+        plan,
+        paymentId,
+        billingKey,
+        paidAmount: 0,
+        pgProvider: "partner_benefit",
+        intent,
+      });
+      return {
+        ok: true as const,
+        alreadyProcessed: false,
+        granted,
+        plan,
+        pgProvider: "partner_benefit",
+        amountCharged: 0,
+        listAmount: intent.listAmount,
+        discountAmount: intent.discountAmount,
+        benefitIds: intent.benefitIds,
+      };
+    });
+  } catch (e: any) {
+    console.error("[subscriptionGrant] zero-amount grant failed", { userId, paymentId, error: e?.message });
+    return { ok: false, code: "db_update_failed", httpStatus: 500, detail: paymentId };
+  }
+}
+
+/**
  * 정기결제(빌링키)로 한 주기 즉시 청구 후 구독·크레딧을 멱등 부여한다.
  *
  *   - 최초 구독: checkout에서 발급한 billingKey로 첫 달을 즉시 청구 (billing-key 라우트).
@@ -258,6 +388,9 @@ export async function verifyAndGrantSubscription(opts: {
  *
  * payWithBillingKey는 즉시 승인되며, 그 paymentId로 verifyAndGrantSubscription을
  * 재사용해 PAID·금액 검증 + 멱등 부여 + billingKey 저장을 한다.
+ *
+ * 파트너 혜택: 청구 직전 reserveChargeBenefits로 할인권/무료 이용권을 예약해 기대 금액을
+ * 정하고(최초 구독은 최대 2장, 갱신은 1장), 0원이면 PG 호출을 생략한다. 카드 거절 시 예약 해제.
  */
 export async function chargeWithBillingKeyAndGrant(opts: {
   billingKey: string;
@@ -276,7 +409,7 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   verifyOwnership?: boolean;
 }): Promise<GrantResult> {
   const { billingKey, userId, plan, secret, customer, verifyOwnership } = opts;
-  const amount = PLAN_PRICES[plan];
+  const listAmount = PLAN_PRICES[plan];
   const paymentId =
     opts.paymentId ??
     `bk-${String(userId).slice(-8)}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -330,6 +463,43 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   const custEmail = bkCustomer.email || customer?.email || undefined;
   const custPhone = bkCustomer.phoneNumber || customer?.phoneNumber || undefined;
 
+  // 파트너 혜택 예약 → 기대 금액. 테이블 미존재(마이그레이션 전) 등 실패 시 정가로 진행.
+  let amount = listAmount;
+  let reserved: Awaited<ReturnType<typeof reserveChargeBenefits>> | null = null;
+  try {
+    reserved = await reserveChargeBenefits({
+      userId,
+      plan,
+      paymentId,
+      listAmount,
+      initialSubscription: !!verifyOwnership,
+    });
+    amount = reserved.expectedAmount;
+  } catch (e: any) {
+    console.warn("[subscriptionGrant] benefit reservation skipped (list price)", { userId, paymentId, error: e?.message ?? e });
+  }
+
+  if (reserved && !reserved.alreadyPaid && amount === 0) {
+    // 0원 주기 — PG 호출 없이 부여 (빌링키 저장 포함)
+    return grantWithoutCharge({
+      paymentId,
+      userId,
+      plan,
+      billingKey,
+      intent: { listAmount: reserved.listAmount, discountAmount: reserved.discountAmount, benefitIds: reserved.benefitIds },
+    });
+  }
+  if (reserved?.alreadyPaid && reserved.expectedAmount === 0) {
+    // 같은 paymentId로 이미 0원 처리됨(멱등 재호출)
+    return grantWithoutCharge({
+      paymentId,
+      userId,
+      plan,
+      billingKey,
+      intent: { listAmount: reserved.listAmount, discountAmount: reserved.discountAmount, benefitIds: reserved.benefitIds },
+    });
+  }
+
   try {
     await client.payWithBillingKey({
       paymentId,
@@ -342,7 +512,7 @@ export async function chargeWithBillingKeyAndGrant(opts: {
         ...(custEmail ? { email: custEmail } : {}),
         ...(custPhone ? { phoneNumber: custPhone } : {}),
       },
-      customData: JSON.stringify({ userId, plan }),
+      customData: JSON.stringify({ userId, plan, expectedAmount: amount }),
     });
   } catch (e: any) {
     // 이미 같은 paymentId로 청구된 경우(PaymentAlreadyPaid 등)는 검증·부여 단계에서
@@ -353,6 +523,13 @@ export async function chargeWithBillingKeyAndGrant(opts: {
     const alreadyPaid = /already.?paid|이미.*결제|AlreadyPaid/i.test(msg);
     if (!alreadyPaid) {
       console.error("[billing-key charge failed]", { userId, paymentId, plan, errorName: e?.name, error: msg });
+      if (reserved && !reserved.alreadyPaid) {
+        try {
+          await releaseChargeBenefits(paymentId);
+        } catch (re: any) {
+          console.warn("[subscriptionGrant] benefit release failed", { paymentId, error: re?.message ?? re });
+        }
+      }
       return { ok: false, code: "billing_key_charge_failed", httpStatus: 402, detail: msg };
     }
   }

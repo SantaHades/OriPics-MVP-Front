@@ -14,6 +14,8 @@ export default function BillingSuccessPage() {
 
   const [phase, setPhase] = useState<Phase>("confirming");
   const [granted, setGranted] = useState<number | null>(null);
+  // 파트너 혜택으로 0원 처리된 첫 달 (A-82) — "오늘은 결제되지 않았습니다" 안내
+  const [amountCharged, setAmountCharged] = useState<number | null>(null);
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -81,6 +83,7 @@ export default function BillingSuccessPage() {
           return;
         }
         setGranted(payload?.granted ?? null);
+        setAmountCharged(typeof payload?.amountCharged === "number" ? payload.amountCharged : null);
         setPhase("success");
       } catch (e: any) {
         if (cancelled) return;
@@ -108,8 +111,14 @@ export default function BillingSuccessPage() {
         {phase === "success" && (
           <>
             <CheckCircle2 size={56} className="text-[#34C759] mx-auto mb-4" />
-            <h1 className="text-xl font-bold mb-1">{t("success_title")}</h1>
+            <h1 className="text-xl font-bold mb-1">{amountCharged === 0 ? t("success_title_free") : t("success_title")}</h1>
             <p className="text-sm text-slate-600 mb-1">{t("success_desc")}</p>
+            {amountCharged === 0 && (
+              <p className="text-xs text-blue-800 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-2 text-left">{t("success_free_notice")}</p>
+            )}
+            {amountCharged != null && amountCharged > 0 && amountCharged < 9900 && (
+              <p className="text-xs text-blue-800 mb-2">{t("success_discount_notice", { amount: amountCharged.toLocaleString() })}</p>
+            )}
             {granted != null && (
               <p className="text-sm text-blue-700 font-bold mb-6">
                 {t("granted_credits", { count: granted })}

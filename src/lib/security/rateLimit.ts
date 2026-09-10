@@ -39,6 +39,11 @@ export const RATE_LIMITS = {
   passPurchase: { name: "passpurchase", windowSec: 3600, max: 10 },
   /** 베타 테스터 신청(/api/beta/apply) — IP별. 공개 폼의 메일 발송 트리거라 스팸 방어 필수 */
   betaApply: { name: "betaapply", windowSec: 3600, max: 5 },
+  /** 파트너코드 조회(/api/partner/lookup) — IP별 분당 5회·일 20회. 순번 코드 열람으로 회원 이름 수집 억제 (A-82) */
+  partnerLookup: { name: "partnerlookup", windowSec: 60, max: 5 },
+  partnerLookupDaily: { name: "partnerlookupd", windowSec: 86400, max: 20 },
+  /** 파트너코드 참여(/api/partner/join) — 사용자별 시간당 10회(실패 포함) */
+  partnerJoin: { name: "partnerjoin", windowSec: 3600, max: 10 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export interface RateLimitResult {

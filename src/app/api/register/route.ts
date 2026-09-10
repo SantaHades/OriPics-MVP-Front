@@ -3,13 +3,15 @@ import * as bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { grantSignupCredits } from "@/lib/credits/grantSignupCredits";
 import { checkRateLimit, clientIp, tooManyRequests, RATE_LIMITS } from "@/lib/security/rateLimit";
+import { ensurePartnerCode, joinWithPartnerCode } from "@/lib/partner/server";
+import { notifyReferralJoined } from "@/lib/partner/notify";
 
 export async function POST(req: Request) {
   try {
     // 레이트리밋 (2026-08-22 보안 점검)
     const rl = await checkRateLimit(RATE_LIMITS.register, clientIp(req));
     if (!rl.allowed) return tooManyRequests(rl, "가입 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.");
-    const { email, password, name, verificationCode } = await req.json();
+    const { email, password, name, verificationCode, partnerCode } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -100,8 +102,26 @@ export async function POST(req: Request) {
       console.error("[register] grantSignupCredits failed:", e);
     }
 
+    // 5. 파트너 릴레이 챌린지 (A-82) — 내 코드 발급 + 입력한 파트너코드로 참여(양쪽 할인권).
+    //    실패해도 가입은 성공(프로필에서 7일 내 재입력 가능).
+    let partner: { code: string | null; joined: boolean; referrerNameMasked?: string; error?: string } = { code: null, joined: false };
+    try {
+      partner.code = await ensurePartnerCode(user.id);
+      if (partnerCode) {
+        const joined = await joinWithPartnerCode({ userId: user.id, code: partnerCode, ip: clientIp(req) });
+        if (joined.ok) {
+          partner = { code: joined.myCode ?? partner.code, joined: true, referrerNameMasked: joined.referrerNameMasked };
+          notifyReferralJoined(user.id).catch(() => {});
+        } else {
+          partner.error = joined.error;
+        }
+      }
+    } catch (e) {
+      console.error("[register] partner code/join failed:", e);
+    }
+
     return NextResponse.json(
-      { code: "success", message: "Registration complete.", user: { email: user.email, name: user.name } },
+      { code: "success", message: "Registration complete.", user: { email: user.email, name: user.name }, partner },
       { status: 201 }
     );
   } catch (error: any) {

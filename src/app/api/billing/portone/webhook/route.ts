@@ -8,6 +8,7 @@ import {
 } from "@/lib/payment/subscriptionGrant";
 import * as PortOne from "@portone/server-sdk";
 import { prisma } from "@/lib/prisma";
+import { restoreBenefitsForRefund } from "@/lib/partner/server";
 import {
   PASS_PRODUCT_MARKER,
   verifyAndIssueDayPass,
@@ -120,6 +121,8 @@ export async function POST(req: NextRequest) {
         SET expires_at = now() + interval '37 days'
         WHERE user_id = ${userId} AND expires_at IS NULL`;
     });
+    // 외부 전액 취소 → 그 결제에 쓴 파트너 혜택 복원 (부분 취소는 미복원, A-82 §3.4)
+    if (eventType === "Transaction.Cancelled") restoreBenefitsForRefund(paymentId).catch(() => {});
     console.warn("[portone/webhook] external cancellation processed — subscription revoked", { paymentId, userId, eventType });
     return NextResponse.json({ ok: true, revoked: true });
   }

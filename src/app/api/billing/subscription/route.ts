@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { sendGraceDowngradeNotice } from "@/lib/notifications/graceMailer";
 import { computeRefundQuote, countProofUsage, PROOF_UNIT_PRICE } from "@/lib/payment/refund";
 import { PLAN_GRANTS } from "@/lib/payment";
+import { previewCharge, restoreBenefitsForRefund } from "@/lib/partner/server";
 import {
   PLAN_PERIOD_DAYS,
   PLAN_PRICES,
@@ -69,9 +70,10 @@ async function buildRefundContext(userId: string) {
       : isPlanId(sub.plan)
         ? PLAN_PRICES[sub.plan]
         : 0;
-  if (amount <= 0) {
+  if (amount < 0 || (amount === 0 && typeof meta.amount !== "number")) {
     return { error: NextResponse.json({ detail: "amount_unresolved" }, { status: 409 }) };
   }
+  // amount === 0 (파트너 혜택으로 무료 처리된 주기, A-82) → 환불액 0 견적으로 진행(refund_not_available)
   const usedProofs = await countProofUsage(userId, sub.currentPeriodStart);
   const quote = computeRefundQuote({
     amount,
@@ -123,10 +125,19 @@ export async function GET() {
       console.warn("[subscription] billing key info failed:", e?.message ?? e);
     }
   }
+  // 파트너 혜택 적용 시 다음 결제 예상액 (A-82) — best-effort
+  let nextCharge: { amount: number; listAmount: number; discountAmount: number; couponsApplied: number; freeMonthApplied: boolean; couponsAvailable: number; freeMonthsAvailable: number } | null = null;
+  if (plan) {
+    try {
+      const p = await previewCharge({ userId, listAmount: PLAN_PRICES[plan], initialSubscription: false });
+      nextCharge = { amount: p.expectedAmount, listAmount: p.listAmount, discountAmount: p.discountAmount, couponsApplied: p.couponsApplied, freeMonthApplied: p.freeMonthApplied, couponsAvailable: p.couponsAvailable, freeMonthsAvailable: p.freeMonthsAvailable };
+    } catch { /* 마이그레이션 전 */ }
+  }
   return NextResponse.json({
     subscription: {
       ...rest,
       paymentMethod,
+      nextCharge,
       // 조기 갱신(renew_now) 가능 여부 — PortOne 빌링키 구독만. Apple IAP는 스토어가 갱신을 관리.
       canRenewNow: renewEligible && !renewBlockedReason,
       renewBlockedReason,
@@ -368,6 +379,11 @@ export async function POST(req: NextRequest) {
         SET expires_at = now() + interval '37 days'
         WHERE user_id = ${userId} AND expires_at IS NULL`;
     });
+
+    // 전액 환불(청약철회)이면 그 결제에 쓴 파트너 혜택 복원 (A-82 §3.4) — best-effort
+    if (quote.basis === "full") {
+      restoreBenefitsForRefund(paymentId).catch(() => {});
+    }
 
     // §5.3 즉시 알림 (A-58) — 환불 성공에 무영향(best-effort)
     try {

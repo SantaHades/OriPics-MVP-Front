@@ -338,7 +338,8 @@
         "f5": "API access (10 req/min)",
         "coming_soon": "Coming soon",
         "cta_pay": "Upgrade",
-        "current_plan": "Current plan · Manage"
+        "current_plan": "Current plan · Manage",
+        "partner_link": "🎁 Partner Relay Challenge — a 50% coupon for every friend"
       },
       "business": {
         "name": "Business",
@@ -468,6 +469,10 @@
         {
           "q": "What happens when I use up my Pro certifications? Do leftovers carry over?",
           "a": "Open Subscription in your profile and tap 'Renew now'. The card you registered when subscribing is charged one month (₩9,900) immediately, your certifications reset to the plan amount, and your next billing date restarts from that day. No payment window opens. When your remaining count drops to 10% of the plan or less, a banner appears in your profile so you can renew before heading to a site. Remaining certifications do not carry over; they expire when you renew, and the confirmation dialog shows how many will expire. If you only need 10 more app captures urgently, a One-Day Pass (coming soon) is an option. Renewal payments follow the same refund rules in Article 11 of the Terms."
+        },
+        {
+          "q": "How do I join the Partner Relay Challenge?",
+          "a": "Every member automatically gets a numeric partner code. Enter a friend's code on the sign-up form (or within 7 days of signing up, in Profile or the app's Settings) and you both receive a 50% Pro coupon (₩4,950). When 12 people sign up with your code and complete their first proof, you get 6 months of Pro free. Coupons apply automatically to each Pro monthly charge (up to 2 on the first charge) and are valid for 24 months. Partner status (earning on referrals) is limited to the first 500 members, and accrual ends December 31, 2026. See the Partner page for details."
         }
       ]
     }
@@ -550,7 +555,16 @@
       "missing_email": "Please enter your email address.",
       "send_failed": "Failed to send verification code. Please try again later.",
       "server_error": "An error occurred during registration."
-    }
+    },
+    "partner_code_label": "Partner code (optional)",
+    "partner_code_placeholder": "A friend's partner code (digits)",
+    "partner_check": "Check",
+    "partner_change": "Change",
+    "partner_confirmed": "This is {name}'s partner code. Sign up and you both get a 50% Pro coupon.",
+    "partner_hint": "Enter a friend's partner code and confirm to receive a 50% Pro coupon (₩4,950) on sign-up. Without a code you won't get one.",
+    "partner_my_code": "My partner code",
+    "partner_coupon_arrived": "A 50% Pro coupon has arrived. Share this code with friends.",
+    "partner_code_only": "Share this code with friends; benefits accrue when they sign up."
   },
   "Profile": {
     "title": "Profile Management",
@@ -630,7 +644,12 @@
       "renew_already": "Already renewed today — no additional charge was made.",
       "renew_error_card": "The card charge was declined. Check your card limit or expiry, or register the card again.",
       "renew_error_card_link": "Register card again",
-      "renew_not_available": "This subscription can't be renewed from the web. App Store subscriptions are managed in the store."
+      "renew_not_available": "This subscription can't be renewed from the web. App Store subscriptions are managed in the store.",
+      "next_charge_free": "Next charge ₩0 ({kind} applied)",
+      "next_charge_discount": "Next charge ₩{amount} ({count} coupon(s) applied)",
+      "next_charge_list": "Next charge ₩{amount}",
+      "kind_free_month": "1 free month",
+      "kind_coupons": "{count} coupon(s)"
     },
     "delete_account": {
       "title": "Delete Account",
@@ -823,6 +842,170 @@
     "error_desc": "The payment went through but confirmation failed. Please try again shortly.",
     "retry": "Try again",
     "fail_title": "Payment failed",
-    "fail_desc": "The payment was canceled or did not complete."
+    "fail_desc": "The payment was canceled or did not complete.",
+    "partner_zero_notice": "{kind} applied — nothing is charged today. Only your card is registered; from next month you'll be charged {next} or the list price depending on your remaining benefits.",
+    "partner_discount_notice": "{count} partner coupon(s) applied — ₩{amount} will be charged.",
+    "partner_kind_free_month": "1 free month",
+    "partner_kind_coupons": "{count} partner 50% coupon(s)",
+    "success_title_free": "Pro has started (₩0 charged today)",
+    "success_free_notice": "A partner benefit was applied, so nothing was charged today. Your registered card will be charged on the next billing date with any remaining benefits applied. See Profile > Subscription for the expected amount.",
+    "success_discount_notice": "A partner coupon was applied — ₩{amount} was charged."
+  },
+  "Partner": {
+    "title": "Partner Relay Challenge",
+    "loading": "Loading partner info…",
+    "unavailable": "Partner info is unavailable right now. Please try again later.",
+    "about_link": "About the challenge →",
+    "rank_badge": "Partner #{rank}",
+    "partner_badge": "Partner",
+    "campaign_line": "Until {end} · {remaining} of {cap} partner spots left",
+    "campaign_ended": "The challenge has ended. Coupons and vouchers you already have remain valid until they expire.",
+    "welcome_banner": "Welcome! Your partner code is {code} and a 50% Pro coupon has arrived. Share your code with friends.",
+    "join_done": "You joined with {name}'s code. A 50% Pro coupon has arrived.",
+    "my_code": "My partner code",
+    "copy_code": "Copy code",
+    "share": "Share",
+    "copied": "Copied",
+    "share_text": "Join OriPics with my partner code {code} — it proves a photo is the original → {url}",
+    "not_partner_notice": "Partner recruitment (first 500) has closed, so referrals no longer earn coupons. Coupons you already have still work.",
+    "join_title": "Have a partner code?",
+    "join_desc": "Enter a friend's code and confirm to get one 50% Pro coupon (₩{amount}). Once per account.",
+    "code_placeholder": "Partner code (digits)",
+    "check_button": "Check",
+    "join_button": "Join",
+    "lookup_ok": "This is {name}'s partner code.",
+    "joined_line": "Joined on {date} with {name}'s code ({code}).",
+    "blocked": {
+      "already_joined": "Already joined.",
+      "campaign_ended": "The challenge has ended; codes can no longer be entered.",
+      "window_expired": "Codes can only be entered within 7 days of signing up."
+    },
+    "referrals_title": "Referrals",
+    "referrals_count": "{valid} valid / {total} signed up",
+    "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {months} months of Pro free (valid = completed first proof)",
+    "milestone_pending": "{goal} reached! Your 6-month voucher is under review (issued within 24h, reached {date}).",
+    "milestone_approved": "Your 6-month free voucher was issued ({date}).",
+    "milestone_rejected": "The voucher was withheld after review. Contact hi@ori.pics",
+    "referrals_empty": "No one has signed up with your code yet. Share it!",
+    "ref_valid": "valid",
+    "ref_pending": "signed up",
+    "ref_revoked": "revoked",
+    "ref_unrewarded": "not credited",
+    "benefits_title": "My benefits",
+    "coupons_label": "50% coupons (₩{amount})",
+    "coupons_value": "{count}",
+    "nearest_expiry": "Earliest expiry {date}",
+    "free_months_label": "Free months",
+    "free_months_value": "{count}",
+    "next_charge_free": "Next charge ({date}) ₩0 — {kind} applied",
+    "next_charge_discount": "Next charge ({date}) ₩{amount} — {count} coupon(s) applied, {left} left after",
+    "next_charge_list": "Next charge ({date}) ₩{amount} — no benefit to apply",
+    "first_charge_free": "{count} coupons apply to your first Pro charge — first month ₩0 (card registration required)",
+    "first_charge_discount": "{count} coupon(s) apply to your first Pro charge → ₩{amount}",
+    "first_charge_none": "No benefit to apply to a Pro charge.",
+    "kind_free_month": "1 free month",
+    "kind_coupons": "{count} coupon(s)",
+    "type_pro_50": "50% coupon",
+    "type_pro_free_month": "Free month",
+    "source_signup": "sign-up",
+    "source_referral": "referral",
+    "source_milestone_12": "12 reached",
+    "source_admin": "admin",
+    "used_on": "used {date}",
+    "expires_on": "until {date}",
+    "status_reserved": "charging",
+    "status_expired": "expired",
+    "status_revoked": "revoked",
+    "status_used": "used",
+    "status_available": "available",
+    "show_all": "Show all ({count})",
+    "show_less": "Show less",
+    "usage_title": "Usage history",
+    "usage_free_month": "1 free month",
+    "usage_coupons": "{count} coupon(s)",
+    "usage_paid": "₩{list} → ₩{paid}",
+    "terms_note": "Coupons and vouchers apply automatically to Pro monthly charges only, are valid for {months} months from issuance, and cannot be refunded for cash or transferred. Unused benefits may be revoked if fraudulent participation is found.",
+    "errors": {
+      "invalid_code": "A code is 3–8 digits.",
+      "code_not_found": "That partner code doesn't exist.",
+      "self_code": "You can't enter your own code.",
+      "already_joined": "Already joined.",
+      "circular": "You can't enter each other's codes.",
+      "window_expired": "Codes can only be entered within 7 days of signing up.",
+      "campaign_ended": "The challenge has ended.",
+      "user_not_found": "Account not found.",
+      "unavailable": "Unavailable right now. Please try again later."
+    },
+    "welcome_title": "Have a partner code?",
+    "welcome_body": "Enter a friend's code and you both get a 50% Pro coupon. You can enter one code within 7 days of signing up.",
+    "welcome_skip": "No code",
+    "welcome_later": "Enter later in Profile",
+    "welcome_done_title": "Joined!",
+    "welcome_done_body": "You joined with {name}'s code. Your partner code is {code} — share it to earn benefits.",
+    "welcome_go_profile": "See my partner card",
+    "landing": {
+      "back": "Home",
+      "eyebrow": "Partner Relay Challenge",
+      "headline": "Become an OriPics partner. Benefits stack up.",
+      "sub1": "Every time a friend signs up with your partner code, you get a 50% Pro coupon (₩{amount}).",
+      "sub2": "When {goal} sign up, you also get {months} months of Pro free (worth ₩{value}).",
+      "until": "Until {end}",
+      "remaining": "First {cap} partners · {remaining} left",
+      "full": "{cap} partners reached (coupons still issued)",
+      "ended": "Challenge ended",
+      "cta_my_code": "See my partner code",
+      "cta_signup": "Sign up with a code",
+      "cta_login": "Log in",
+      "how_title": "How it works",
+      "step1_t": "1. Enter a code at sign-up",
+      "step1_b": "Enter a friend's partner code on the sign-up form (or within 7 days in Profile / app Settings) and get one 50% Pro coupon (₩{amount}) right away.",
+      "step2_t": "2. Share your code",
+      "step2_b": "You get your own partner code the moment you sign up. Each friend who joins with it earns you a 50% coupon (₩{amount}).",
+      "step3_t": "3. {goal} friends = {months} months free",
+      "step3_b": "When {goal} people sign up with your code and finish their first proof, you get {months} months of Pro free. Coupons apply automatically, one per charge (up to 2 on the first).",
+      "example_title": "How it adds up",
+      "ex1": "1 coupon for joining + 1 from your first friend = 2 → first Pro month ₩0 (card registration only)",
+      "ex2": "Then 1 coupon per friend → ₩{amount} per month",
+      "ex3": "From the {goal}th friend, 6 free months → 1 free · 11 at 50% · {months} free = 18 months",
+      "faq_title": "FAQ",
+      "faq": [
+        {
+          "q": "Where do I find my partner code?",
+          "a": "It's assigned automatically at sign-up. On the web: Profile > Partner Relay Challenge; in the app: Settings tab > Partner. You can copy and share it there."
+        },
+        {
+          "q": "I signed up with Google/Apple/Kakao/Naver. Where do I enter a code?",
+          "a": "In the prompt right after your first login, in the Profile partner card, or in the app's Settings tab — once, within 7 days of signing up."
+        },
+        {
+          "q": "I'm already a member. Can I join?",
+          "a": "Yes. Members who signed up before the challenge was announced can enter a code once at any time during the challenge."
+        },
+        {
+          "q": "How do I use coupons?",
+          "a": "No redemption needed — they apply automatically to Pro monthly charges. Up to 2 on the first charge (₩0), then 1 per charge (₩{amount}); once coupons run out, free-month vouchers apply one month at a time. Valid for {months24} months from issuance."
+        },
+        {
+          "q": "What happens after the first 500 partners are filled?",
+          "a": "You still get your own coupon when you sign up with a code. Only partners (within the 500) earn coupons when others use their code and qualify for the {goal}-friend bonus. Partners keep earning after the cap is filled, until the challenge ends."
+        },
+        {
+          "q": "How is reaching {goal} confirmed?",
+          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. At {goal}, the {months}-month voucher is issued within 24 hours after review and you're notified by email."
+        }
+      ],
+      "notice_title": "Terms",
+      "notice": [
+        "Period: benefits are granted for sign-ups and joins until the challenge end date. Partner status (earning on referrals) is limited to the first {cap} members by join order; closure is shown on this page.",
+        "Coupons (₩{amount}) and free-month vouchers apply automatically to Pro monthly charges only — not to Day Passes, annual billing, or Business plans. Valid {months24} months from issuance; no cash refund, transfer, or resale; not a prepaid payment instrument.",
+        "A registered card is still required for a month reduced to ₩0. The 2-coupon first charge applies once per account.",
+        "The {goal}-friend bonus counts 'valid referrals' (first proof completed) and is issued after review. Once per account.",
+        "Benefits obtained through fake accounts, self-referral, or other abuse may be revoked and participation voided (benefits already used are not clawed back).",
+        "Refunds for charges with a benefit applied follow Terms §7 based on the amount actually paid; coupons are restored for a full refund within 7 days without use.",
+        "Code owners' names are partially masked in lookups. Referral relationships are retained for one year after the challenge for benefit issuance and fraud prevention. We may change conditions or end early with prior notice."
+      ],
+      "terms_link": "Terms §6",
+      "privacy_link": "Privacy Policy"
+    }
   }
 }

@@ -7,6 +7,8 @@ import {
 } from "@/lib/payment/subscriptionGrant";
 import { assertCron } from "@/lib/security/cron";
 import { sendGraceDowngradeNotice, sendGraceReminder } from "@/lib/notifications/graceMailer";
+import { notifyMilestoneIfReached } from "@/lib/partner/notify";
+import { PARTNER } from "@/lib/partner/config";
 
 const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET ?? "";
 const BATCH_SIZE = 200;
@@ -200,8 +202,29 @@ export async function GET(req: NextRequest) {
     errors.push(`grace_scan: ${e?.message || e}`);
   }
 
+  // 3) 파트너 12명 마일스톤 일일 스윕 (A-82) — 피추천인의 첫 인증이 나중에 발생하므로
+  //    추천 12건 이상인 파트너를 골라 유효 초대 수를 재확인, 새로 도달하면 검수 메일.
+  let milestonesReached = 0;
+  try {
+    const candidates = await prisma.partnerReferral.groupBy({
+      by: ["referrerId"],
+      where: { status: "confirmed" },
+      _count: { _all: true },
+      having: { referrerId: { _count: { gte: PARTNER.MILESTONE_COUNT } } },
+    });
+    for (const c of candidates) {
+      try {
+        if (await notifyMilestoneIfReached(c.referrerId)) milestonesReached++;
+      } catch (e: any) {
+        errors.push(`milestone ${c.referrerId}: ${e?.message || e}`);
+      }
+    }
+  } catch (e: any) {
+    errors.push(`milestone_scan: ${e?.message || e}`);
+  }
+
   return NextResponse.json({
-    ok: true, charged, alreadyDone, failed, downgraded, graceNoticed, graceReminded,
+    ok: true, charged, alreadyDone, failed, downgraded, graceNoticed, graceReminded, milestonesReached,
     errors: errors.slice(0, 20),
   });
 }

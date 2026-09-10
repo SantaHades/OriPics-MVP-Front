@@ -66,6 +66,10 @@ export async function POST(req: NextRequest) {
     ok: true,
     plan: result.plan,
     granted: result.granted,
+    // 파트너 혜택 적용 결과 (A-82) — success 화면 '오늘 결제 0원 · 다음 결제 ₩4,950' 안내용
+    amountCharged: result.amountCharged ?? null,
+    listAmount: result.listAmount ?? null,
+    discountAmount: result.discountAmount ?? null,
     pgProvider: result.pgProvider,
     ...(result.alreadyProcessed ? { already_processed: true } : {}),
   });

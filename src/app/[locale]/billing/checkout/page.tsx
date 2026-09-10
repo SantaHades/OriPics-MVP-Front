@@ -28,6 +28,15 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
+  // 파트너 혜택 미리보기 (A-82) — 첫 결제 최대 2장(0원)·이후 1장. 실제 청구액은 서버가 예약 시점에 확정
+  const [preview, setPreview] = useState<{ expectedAmount: number; discountAmount: number; couponsApplied: number; freeMonthApplied: boolean } | null>(null);
+  useEffect(() => {
+    if (status !== "authenticated" || changeCard) return;
+    fetch("/api/partner/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.nextCharge && setPreview(d.nextCharge))
+      .catch(() => {});
+  }, [status, changeCard]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -175,12 +184,26 @@ export default function CheckoutPage() {
           <div className="border border-slate-200 rounded-2xl p-5 mb-6 bg-slate-50/50">
             <div className="flex items-baseline justify-between mb-1">
               <span className="font-bold">{planInfo.orderName}</span>
-              <span className="text-xl font-extrabold">
-                ₩{planInfo.amount.toLocaleString()}
-              </span>
+              {preview && preview.discountAmount > 0 ? (
+                <span className="text-right">
+                  <span className="text-sm text-slate-400 line-through mr-2">₩{planInfo.amount.toLocaleString()}</span>
+                  <span className="text-xl font-extrabold text-blue-700">₩{preview.expectedAmount.toLocaleString()}</span>
+                </span>
+              ) : (
+                <span className="text-xl font-extrabold">
+                  ₩{planInfo.amount.toLocaleString()}
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500">{t("plan_period_monthly")}</p>
             <p className="text-xs text-slate-500">{t("plan_tax_note")}</p>
+            {preview && preview.discountAmount > 0 && (
+              <p className="mt-2 text-xs text-blue-800 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                {preview.expectedAmount === 0
+                  ? t("partner_zero_notice", { kind: preview.freeMonthApplied ? t("partner_kind_free_month") : t("partner_kind_coupons", { count: preview.couponsApplied }), next: "₩4,950" })
+                  : t("partner_discount_notice", { count: preview.couponsApplied, amount: preview.expectedAmount.toLocaleString() })}
+              </p>
+            )}
           </div>
           )}
 

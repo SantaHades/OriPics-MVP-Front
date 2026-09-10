@@ -6,6 +6,7 @@ import { useRouter } from "@/navigation";
 import { User, Mail, Lock, Camera, Save, ArrowLeft, RefreshCw, CheckCircle, Trash2, History, ExternalLink, ImageIcon, X, Wallet, FileText, Download, RotateCw, CreditCard, Copy, Check, Info, Ticket } from "lucide-react";
 import { Link } from "@/navigation";
 import ZoomableImage from "@/components/ZoomableImage";
+import PartnerCard from "@/components/PartnerCard";
 import { useTranslations, useLocale } from "next-intl";
 import { useCredits, type CreditTransactionView } from "@/lib/credits/useCredits";
 import { CREDIT_COSTS } from "@/lib/payment";
@@ -28,6 +29,8 @@ interface SubscriptionInfo {
   planGrant?: number | null;
   planPrice?: number | null;
   planPeriodDays?: number | null;
+  /** 파트너 혜택 적용 다음 결제 예상 (A-82) */
+  nextCharge?: { amount: number; listAmount: number; discountAmount: number; couponsApplied: number; freeMonthApplied: boolean; couponsAvailable: number; freeMonthsAvailable: number } | null;
 }
 
 interface ProofRecord {
@@ -186,6 +189,8 @@ export default function ProfilePage() {
     if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }, [subscription]);
   const cardChanged = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("card_changed") === "1";
+  // 가입 직후 파트너 카드 강조(?welcome=partner) — A-82
+  const partnerWelcome = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("welcome") === "partner";
 
   // A-79 조기 갱신 — 남은 건수가 적을 때(정액 10% 이하) 배너로 강조, 링크는 항상 노출.
   const [showRenewModal, setShowRenewModal] = useState(false);
@@ -1218,6 +1223,16 @@ export default function ProfilePage() {
                   <p className="font-bold tabular-nums">
                     {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
                   </p>
+                  {/* 파트너 혜택 적용 예상액 (A-82) */}
+                  {!subscription.cancelAtPeriodEnd && subscription.nextCharge && (
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {subscription.nextCharge.amount === 0
+                        ? t("subscription.next_charge_free", { kind: subscription.nextCharge.freeMonthApplied ? t("subscription.kind_free_month") : t("subscription.kind_coupons", { count: subscription.nextCharge.couponsApplied }) })
+                        : subscription.nextCharge.discountAmount > 0
+                          ? t("subscription.next_charge_discount", { amount: formatWon(subscription.nextCharge.amount), count: subscription.nextCharge.couponsApplied })
+                          : t("subscription.next_charge_list", { amount: formatWon(subscription.nextCharge.amount) })}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1433,7 +1448,7 @@ export default function ProfilePage() {
               <h3 className="text-xl font-bold text-slate-900 mb-3">{t("subscription.renew_modal_title")}</h3>
               <p className="text-sm text-slate-600 mb-2">
                 {t("subscription.renew_modal_desc", {
-                  price: formatWon(subscription.planPrice ?? 9900),
+                  price: formatWon(subscription.nextCharge ? subscription.nextCharge.amount : (subscription.planPrice ?? 9900)),
                   grant: planGrant,
                   date: projectedPeriodEnd.toLocaleDateString(),
                 })}
@@ -1478,12 +1493,15 @@ export default function ProfilePage() {
                   disabled={subBusy || (highRemaining && !renewAck)}
                   className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:bg-slate-300 transition-colors"
                 >
-                  {subBusy ? "…" : t("subscription.renew_modal_confirm", { price: formatWon(subscription.planPrice ?? 9900) })}
+                  {subBusy ? "…" : t("subscription.renew_modal_confirm", { price: formatWon(subscription.nextCharge ? subscription.nextCharge.amount : (subscription.planPrice ?? 9900)) })}
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* 파트너 릴레이 챌린지 (A-82) — 내 코드·초대 현황·혜택·사용 내역 */}
+        <PartnerCard highlight={partnerWelcome} />
 
         {/* 인증 히스토리 섹션 */}
         <div className="mt-12 pt-8 border-t border-slate-100">

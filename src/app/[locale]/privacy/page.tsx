@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-09-03";
+const LAST_UPDATED = "2026-09-10";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const COMPANY_ADDRESS_EN =
@@ -97,6 +97,7 @@ function PrivacyKo() {
         <li>이용 횟수 거래 이력: 회원 탈퇴 시까지 보관(부정 이용 방지·정산 목적).</li>
         <li>결제 기록: 「전자상거래 등에서의 소비자 보호에 관한 법률」에 따라 5년 보관.</li>
         <li>접속 로그: 「통신비밀보호법」에 따라 3개월 보관.</li>
+        <li>파트너 릴레이 챌린지 추천 관계(추천인·피추천인 계정 ID, 참여 시각, 접속 IP 해시): 혜택 지급·부정 참여 방지 목적으로 챌린지 종료 후 1년간 보관 후 파기. 코드 조회 시 코드 주인의 이름은 일부 가려서(예: 손*석) 표시됩니다.</li>
       </ul>
 
       <h2>4. 개인정보의 제3자 제공</h2>
@@ -294,6 +295,7 @@ function PrivacyEn() {
         <li>Usage (proof/verification) transaction history: until account deletion (abuse prevention, billing reconciliation).</li>
         <li>Payment records: 5 years (Korean Act on Consumer Protection in E-Commerce).</li>
         <li>Access logs: 3 months (Korean Communications Privacy Act).</li>
+        <li>Partner Relay Challenge referral relationships (referrer/referee account IDs, join time, hashed IP): retained for 1 year after the challenge ends for benefit issuance and fraud prevention, then erased. Code owners' names are partially masked (e.g., Y******g) when a code is looked up.</li>
       </ul>
 
       <h2>6. Recipients and International Transfers</h2>
