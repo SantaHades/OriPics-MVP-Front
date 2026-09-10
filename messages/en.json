@@ -987,7 +987,7 @@
         },
         {
           "q": "What happens after the first 500 partners are filled?",
-          "a": "You still get your own coupon when you sign up with a code. Only partners (within the 500) earn coupons when others use their code and qualify for the {goal}-friend bonus. Partners keep earning after the cap is filled, until the challenge ends."
+          "a": "After the first 500 partner spots are filled, you still get your own 50% coupon when you sign up with a code. Only partners (within the 500) earn coupons when others use their code and qualify for the {goal}-friend bonus. Partners keep earning after the cap is filled until the challenge ends on December 31; after that, code entry and accrual both stop. Coupons and vouchers you already have remain valid for {months24} months from issuance."
         },
         {
           "q": "How is reaching {goal} confirmed?",
