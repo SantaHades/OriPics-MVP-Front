@@ -2074,7 +2074,12 @@ export default function Home() {
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-emerald-600 mt-0.5" /> {t("pricing.free.f3")}</li>
                 <li className="flex gap-2 text-slate-400"><X size={16} className="shrink-0 mt-0.5" /> {t("pricing.free.f4_excluded")}</li>
               </ul>
-              {session ? (
+              {/* 티어 인식 (2026-09-10 대표): 유료 사용자에게 무료 카드를 '현재 플랜'으로 표시하던 문제 */}
+              {session && credits?.tier && credits.tier !== "free" ? (
+                <span className="w-full py-3 text-center text-sm font-semibold rounded-xl bg-slate-50 text-slate-400">
+                  {t("pricing.free.name")}
+                </span>
+              ) : session ? (
                 <span className="w-full py-3 text-center text-sm font-semibold rounded-xl bg-slate-100 text-slate-500">
                   {t("pricing.free.current_plan")}
                 </span>
@@ -2108,12 +2113,21 @@ export default function Home() {
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f4")}</li>
                 <li className="flex gap-2"><CheckCircle size={16} className="shrink-0 text-blue-600 mt-0.5" /> {t("pricing.pro.f5")}</li>
               </ul>
-              <Link
-                href="/billing/checkout?plan=pro_monthly"
-                className="w-full py-3 text-center text-sm font-bold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
-                {t("pricing.pro.cta_pay")}
-              </Link>
+              {session && (credits?.tier === "pro" || credits?.tier === "business") ? (
+                <Link
+                  href="/profile#subscription"
+                  className="w-full py-3 text-center text-sm font-bold rounded-xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                >
+                  {t("pricing.pro.current_plan")}
+                </Link>
+              ) : (
+                <Link
+                  href="/billing/checkout?plan=pro_monthly"
+                  className="w-full py-3 text-center text-sm font-bold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  {t("pricing.pro.cta_pay")}
+                </Link>
+              )}
             </div>
 
             {/* Business */}

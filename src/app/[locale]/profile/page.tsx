@@ -1004,6 +1004,29 @@ export default function ProfilePage() {
                   ? new Date(credits.creditsRenewAt).toLocaleDateString()
                   : "—"}
               </p>
+              {/* A-79 후속 (2026-09-10 대표): 구독 액션(지금 갱신하기·구독 해지)을 아래 '구독 관리' 섹션까지 내려가지 않아도 되게 이 카드 안에도 노출 */}
+              {subscription?.status === "active" && (
+                <div className="mt-3 flex flex-col gap-1.5 text-xs">
+                  {subscription.canRenewNow && (
+                    <button
+                      onClick={() => { setRenewError(null); setShowRenewModal(true); }}
+                      disabled={subBusy}
+                      className="text-left font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50"
+                    >
+                      {t("subscription.renew_link")}
+                    </button>
+                  )}
+                  {subscription.cancelAtPeriodEnd ? (
+                    <button onClick={() => handleSubscriptionAction("resume")} disabled={subBusy} className="text-left font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50">
+                      {t("subscription.resume_button")}
+                    </button>
+                  ) : (
+                    <button onClick={() => setShowCancelModal(true)} disabled={subBusy} className="text-left text-slate-500 hover:text-slate-700 underline underline-offset-4 disabled:opacity-50">
+                      {t("subscription.cancel_button")}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
             {/* 보관함 사용량 (A-61, 2026-08-31) — 버튼 클릭 시 조회 */}
             <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">

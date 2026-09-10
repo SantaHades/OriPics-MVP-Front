@@ -337,7 +337,8 @@
         "f4": "인증서(PDF) 월 5회 무료 발급",
         "f5": "API 액세스 (10 req/min)",
         "coming_soon": "곧 출시",
-        "cta_pay": "업그레이드 하기"
+        "cta_pay": "업그레이드 하기",
+        "current_plan": "현재 플랜 · 구독 관리"
       },
       "business": {
         "name": "Business",
