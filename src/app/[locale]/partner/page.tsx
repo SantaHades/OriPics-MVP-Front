@@ -85,7 +85,7 @@ export default function PartnerLandingPage() {
             {[
               { icon: <Ticket className="text-blue-600" size={22} />, title: t("step1_t"), body: t("step1_b", { amount: fmtWon(discount) }) },
               { icon: <Users className="text-blue-600" size={22} />, title: t("step2_t"), body: t("step2_b", { amount: fmtWon(discount) }) },
-              { icon: <Gift className="text-blue-600" size={22} />, title: t("step3_t"), body: t("step3_b", { goal, months }) },
+              { icon: <Gift className="text-blue-600" size={22} />, title: t("step3_t", { goal, months }), body: t("step3_b", { goal, months }) },
             ].map((s, i) => (
               <li key={i} className="rounded-2xl bg-white border border-slate-200 p-5">
                 <div className="mb-2">{s.icon}</div>
