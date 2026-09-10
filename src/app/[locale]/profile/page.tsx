@@ -1032,15 +1032,7 @@ export default function ProfilePage() {
                     <span className="text-slate-400 leading-snug">{t("subscription.renew_not_needed")}</span>
                   )}
                   {renewDoneText && <span className="text-emerald-700 leading-snug">{renewDoneText}</span>}
-                  {subscription.cancelAtPeriodEnd ? (
-                    <button onClick={() => handleSubscriptionAction("resume")} disabled={subBusy} className="text-left font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50">
-                      {t("subscription.resume_button")}
-                    </button>
-                  ) : (
-                    <button onClick={() => setShowCancelModal(true)} disabled={subBusy} className="text-left text-slate-500 hover:text-slate-700 underline underline-offset-4 disabled:opacity-50">
-                      {t("subscription.cancel_button")}
-                    </button>
-                  )}
+                  {/* 구독 해지는 아래 '구독 관리' 섹션에서만 (9/10 대표: 카드 안에서는 삭제) */}
                 </div>
               )}
             </div>
