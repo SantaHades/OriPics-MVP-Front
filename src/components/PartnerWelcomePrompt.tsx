@@ -120,14 +120,14 @@ export default function PartnerWelcomePrompt() {
                   setError(null);
                 }}
                 placeholder={t("code_placeholder")}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm tracking-widest tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-slate-200 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               />
               {name ? (
-                <button onClick={join} disabled={busy} className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold disabled:bg-slate-300">
+                <button onClick={join} disabled={busy} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold disabled:bg-slate-300">
                   {busy ? "…" : t("join_button")}
                 </button>
               ) : (
-                <button onClick={lookup} disabled={busy || code.length < 3} className="px-4 py-2.5 rounded-xl border border-blue-300 text-blue-700 text-sm font-bold disabled:opacity-40">
+                <button onClick={lookup} disabled={busy || code.length < 3} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl border border-blue-300 text-blue-700 text-sm font-bold disabled:opacity-40">
                   {busy ? "…" : t("check_button")}
                 </button>
               )}

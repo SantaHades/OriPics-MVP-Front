@@ -241,7 +241,7 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
         <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 mb-4">
           <p className="text-sm font-bold text-blue-900 mb-1">{t("join_title")}</p>
           <p className="text-xs text-blue-800/80 mb-3">{t("join_desc", { amount: fmtWon(c.discountAmount) })}</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <input
               inputMode="numeric"
               value={codeInput}
@@ -251,14 +251,14 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
                 setJoinError(null);
               }}
               placeholder={t("code_placeholder")}
-              className="flex-1 min-w-[140px] px-4 py-2.5 rounded-xl border border-slate-200 text-sm tracking-widest tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-slate-200 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500/40"
             />
             {lookupName ? (
-              <button onClick={join} disabled={joinBusy} className="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:bg-slate-300">
+              <button onClick={join} disabled={joinBusy} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:bg-slate-300">
                 {joinBusy ? "…" : t("join_button")}
               </button>
             ) : (
-              <button onClick={lookup} disabled={lookupBusy || codeInput.length < 3} className="px-4 py-2.5 rounded-xl border border-blue-300 text-blue-700 text-sm font-bold hover:bg-blue-100 disabled:opacity-40">
+              <button onClick={lookup} disabled={lookupBusy || codeInput.length < 3} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl border border-blue-300 text-blue-700 text-sm font-bold hover:bg-blue-100 disabled:opacity-40">
                 {lookupBusy ? "…" : t("check_button")}
               </button>
             )}
