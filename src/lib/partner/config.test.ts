@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PARTNER, isPartnerAccount, joinWindowOpen, maskName, normalizePartnerCode, planBenefitApplication } from "./config";
+import { PARTNER, isPartnerAccount, joinWindowOpen, maskName, normalizePartnerCode, planBenefitApplication, proofCountsForMilestone, validityDeadline } from "./config";
 
 const d = (days: number) => new Date(Date.now() + days * 86_400_000);
 
@@ -46,6 +46,12 @@ describe("partner/config", () => {
     expect(joinWindowOpen(signup, new Date("2026-12-31T15:00:00Z"))).toBe(false);
     // 기존 회원(공지 전 가입)도 종료 후에는 불가
     expect(joinWindowOpen(new Date("2026-08-01T00:00:00Z"), new Date("2026-12-31T15:00:00Z"))).toBe(false);
+  });
+
+  it("유효 초대 인정 기한 — 종료 +30일(2027-01-30 23:59:59 KST)까지의 첫 인증만 집계", () => {
+    expect(validityDeadline().toISOString()).toBe("2027-01-30T14:59:59.000Z");
+    expect(proofCountsForMilestone(new Date("2027-01-30T14:59:59Z"))).toBe(true);
+    expect(proofCountsForMilestone(new Date("2027-01-30T15:00:00Z"))).toBe(false);
   });
 
   describe("planBenefitApplication", () => {

@@ -22,7 +22,19 @@ export const PARTNER = {
   CAMPAIGN_START: new Date(process.env.PARTNER_CAMPAIGN_START ?? "2026-09-10T00:00:00+09:00"),
   /** 적립 종료 — 이후 가입은 양쪽 모두 미지급 */
   CAMPAIGN_END: new Date(process.env.PARTNER_CAMPAIGN_END ?? "2026-12-31T23:59:59+09:00"),
+  /** 유효 초대(첫 인증) 인정 기한 — 챌린지 종료 후 N일 (2026-09-10 대표 확정: 30일) */
+  VALIDITY_GRACE_DAYS: 30,
 } as const;
+
+/** 유효 초대로 인정되는 첫 인증의 마지막 시각 = 종료 + 30일 */
+export function validityDeadline(): Date {
+  return new Date(PARTNER.CAMPAIGN_END.getTime() + PARTNER.VALIDITY_GRACE_DAYS * 86_400_000);
+}
+
+/** 피추천인의 첫 인증 시각이 마일스톤 집계에 인정되는지 */
+export function proofCountsForMilestone(proofAt: Date): boolean {
+  return proofAt.getTime() <= validityDeadline().getTime();
+}
 
 export type BenefitType = "pro_50" | "pro_free_month";
 export type BenefitSource = "signup" | "referral" | "milestone_12" | "admin";

@@ -882,7 +882,7 @@
     },
     "referrals_title": "Referrals",
     "referrals_count": "{valid} valid / {total} signed up",
-    "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {months} one-month free vouchers (valid = completed first proof)",
+    "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {months} one-month free vouchers (valid = completed first proof, accepted up to 30 days after the challenge ends)",
     "milestone_pending": "{goal} reached! Your six 1-month free vouchers are under review (issued within 24h, reached {date}).",
     "milestone_approved": "Six 1-month free vouchers were issued ({date}). They apply to 6 consecutive charges after your coupons are used up.",
     "milestone_rejected": "The voucher was withheld after review. Contact hi@ori.pics",
@@ -991,7 +991,7 @@
         },
         {
           "q": "How is reaching {goal} confirmed?",
-          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. At {goal}, {months} one-month free vouchers are issued within 24 hours after review and you're notified by email. They apply one per charge for {months} consecutive months after your coupons are used up."
+          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. Only first proofs completed within 30 days after the challenge ends (by January 30, 2027) count. At {goal}, {months} one-month free vouchers are issued within 24 hours after review and you're notified by email. They apply one per charge for {months} consecutive months after your coupons are used up."
         }
       ],
       "notice_title": "Terms",
@@ -999,7 +999,7 @@
         "Period: benefits are granted for sign-ups and joins until the challenge end date. Partner status (earning on referrals) is limited to the first {cap} members by join order; closure is shown on this page.",
         "Coupons (₩{amount}) and 1-month free vouchers apply automatically to Pro monthly charges only (vouchers are used one per consecutive charge) — not to Day Passes, annual billing, or Business plans. Valid {months24} months from issuance; no cash refund, transfer, or resale; not a prepaid payment instrument.",
         "A registered card is still required for a month reduced to ₩0. The 2-coupon first charge applies once per account.",
-        "The {goal}-friend bonus ({months} one-month free vouchers) counts 'valid referrals' (first proof completed) and is issued after review. Once per account.",
+        "The {goal}-friend bonus ({months} one-month free vouchers) counts 'valid referrals' (first proof completed, accepted up to 30 days after the challenge ends) and is issued after review. Once per account.",
         "Benefits obtained through fake accounts, self-referral, or other abuse may be revoked and participation voided (benefits already used are not clawed back).",
         "Refunds for charges with a benefit applied follow Terms §7 based on the amount actually paid; coupons are restored for a full refund within 7 days without use.",
         "Code owners' names are partially masked in lookups. Referral relationships are retained for one year after the challenge for benefit issuance and fraud prevention. We may change conditions or end early with prior notice."

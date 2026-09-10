@@ -15,6 +15,7 @@ import {
   maskName,
   normalizePartnerCode,
   planBenefitApplication,
+  validityDeadline,
   type BenefitType,
   type ChargePlanResult,
 } from "./config";
@@ -197,7 +198,7 @@ export async function joinWithPartnerCode(opts: {
 
 // ───────────────────────── 유효 초대·마일스톤 ─────────────────────────
 
-/** 유효 초대 = confirmed 추천 중 피추천인이 사진 인증 1건 이상 완료 */
+/** 유효 초대 = confirmed 추천 중 피추천인이 사진 인증 1건 이상 완료(첫 인증은 챌린지 종료 +30일까지 인정) */
 export async function listReferralsWithValidity(referrerId: string) {
   const refs = await prisma.partnerReferral.findMany({
     where: { referrerId },
@@ -214,7 +215,11 @@ export async function listReferralsWithValidity(referrerId: string) {
   const refereeIds = refs.map((r) => r.referee.id);
   const proofs = await prisma.creditTransaction.groupBy({
     by: ["userId"],
-    where: { userId: { in: refereeIds }, action: { in: ["image_proof", "verified_proof"] } },
+    where: {
+      userId: { in: refereeIds },
+      action: { in: ["image_proof", "verified_proof"] },
+      createdAt: { lte: validityDeadline() },
+    },
     _count: { _all: true },
   });
   const proofSet = new Set(proofs.map((p) => p.userId));
