@@ -623,6 +623,7 @@
       "renew_modal_confirm": "Pay ₩{price} and renew",
       "renew_modal_cancel": "Close",
       "renew_done": "Renewed. {credits} certifications available; next billing date {date}.",
+      "renew_already": "Already renewed today — no additional charge was made.",
       "renew_error_card": "The card charge was declined. Check your card limit or expiry, or register the card again.",
       "renew_error_card_link": "Register card again",
       "renew_not_available": "This subscription can't be renewed from the web. App Store subscriptions are managed in the store."

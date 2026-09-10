@@ -623,6 +623,7 @@
       "renew_modal_confirm": "{price}원 결제하고 갱신",
       "renew_modal_cancel": "닫기",
       "renew_done": "갱신이 완료되었습니다. 인증 건수 {credits}건, 다음 결제일 {date}.",
+      "renew_already": "오늘 이미 갱신되었습니다. 추가 결제는 없습니다.",
       "renew_error_card": "카드 결제가 승인되지 않았습니다. 카드사 한도·유효기간을 확인하거나 카드를 다시 등록해 주세요.",
       "renew_error_card_link": "카드 다시 등록하기",
       "renew_not_available": "이 구독은 웹에서 갱신할 수 없습니다. 앱스토어 구독은 스토어에서 관리됩니다."

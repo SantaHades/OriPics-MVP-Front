@@ -180,7 +180,13 @@ export default function ProfilePage() {
   // A-79 조기 갱신 — 남은 건수가 적을 때(정액 10% 이하) 배너로 강조, 링크는 항상 노출.
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [renewAck, setRenewAck] = useState(false);
-  const [renewDone, setRenewDone] = useState<{ credits: number; periodEnd: string | null } | null>(null);
+  const [renewDone, setRenewDone] = useState<{ credits: number; periodEnd: string | null; alreadyProcessed?: boolean } | null>(null);
+  // 결과 문구 — 같은 날 재클릭은 서버가 멱등 처리(추가 결제 없음)하므로 구분해 안내 (2026-09-10 아이폰 실측: 안내가 아래 섹션에만 있어 안 보임)
+  const renewDoneText = renewDone
+    ? renewDone.alreadyProcessed
+      ? t("subscription.renew_already")
+      : t("subscription.renew_done", { credits: renewDone.credits, date: renewDone.periodEnd ? new Date(renewDone.periodEnd).toLocaleDateString() : "—" })
+    : null;
   const [renewError, setRenewError] = useState<string | null>(null);
   const planGrant = subscription?.planGrant ?? 0;
   const remainingCredits = credits?.credits ?? 0;
@@ -218,7 +224,7 @@ export default function ProfilePage() {
         );
         return;
       }
-      setRenewDone({ credits: typeof d?.credits === "number" ? d.credits : planGrant, periodEnd: d?.periodEnd ?? null });
+      setRenewDone({ credits: typeof d?.credits === "number" ? d.credits : planGrant, periodEnd: d?.periodEnd ?? null, alreadyProcessed: d?.alreadyProcessed === true });
       setShowRenewModal(false);
       setRenewAck(false);
       await Promise.all([refreshCredits(), refreshSubscription()]);
@@ -1023,6 +1029,7 @@ export default function ProfilePage() {
                   {subscription.renewBlockedReason === "unused_recent_payment" && (
                     <span className="text-slate-400 leading-snug">{t("subscription.renew_not_needed")}</span>
                   )}
+                  {renewDoneText && <span className="text-emerald-700 leading-snug">{renewDoneText}</span>}
                   {subscription.cancelAtPeriodEnd ? (
                     <button onClick={() => handleSubscriptionAction("resume")} disabled={subBusy} className="text-left font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50">
                       {t("subscription.resume_button")}
@@ -1199,10 +1206,7 @@ export default function ProfilePage() {
               {/* A-79 조기 갱신 배너 — 남은 건수 0 / 정액 10% 이하에서만 강조 */}
               {renewDone ? (
                 <p className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
-                  {t("subscription.renew_done", {
-                    credits: renewDone.credits,
-                    date: renewDone.periodEnd ? new Date(renewDone.periodEnd).toLocaleDateString() : "—",
-                  })}
+                  {renewDoneText}
                 </p>
               ) : zeroCredits ? (
                 <div className="mb-4 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex flex-wrap items-center justify-between gap-2">
