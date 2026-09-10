@@ -39,6 +39,15 @@ describe("partner/config", () => {
     expect(joinWindowOpen(new Date("2026-12-30T00:00:00Z"), new Date("2027-01-02T00:00:00Z"))).toBe(false);
   });
 
+  it("챌린지 종료 경계 — 12/31 23:59:59 KST까지 허용, 1초 뒤부터 불가(적립 중단)", () => {
+    expect(PARTNER.CAMPAIGN_END.toISOString()).toBe("2026-12-31T14:59:59.000Z");
+    const signup = new Date("2026-12-31T10:00:00Z");
+    expect(joinWindowOpen(signup, new Date("2026-12-31T14:59:59Z"))).toBe(true);
+    expect(joinWindowOpen(signup, new Date("2026-12-31T15:00:00Z"))).toBe(false);
+    // 기존 회원(공지 전 가입)도 종료 후에는 불가
+    expect(joinWindowOpen(new Date("2026-08-01T00:00:00Z"), new Date("2026-12-31T15:00:00Z"))).toBe(false);
+  });
+
   describe("planBenefitApplication", () => {
     const list = 9900;
     it("할인권 없음 → 정가", () => {
