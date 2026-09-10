@@ -36,6 +36,14 @@ const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET ?? "";
  *          해지 예약 상태였다면 갱신과 함께 예약을 해제한다(새 달을 결제한 의사 표시).
  */
 
+/** 현재 주기 결제가 7일(청약철회 기간) 이내 + 이번 주기 인증 사용 0건 — 조기 갱신 차단 조건 (A안) */
+async function isUnusedRecentPayment(userId: string, periodStart: Date): Promise<boolean> {
+  const withinWithdrawal = Date.now() - periodStart.getTime() < 7 * 24 * 60 * 60 * 1000;
+  if (!withinWithdrawal) return false;
+  const used = await countProofUsage(userId, periodStart);
+  return used === 0;
+}
+
 /** 현재 기간 결제(grant TX)와 환불 견적 산출 — preview/cancel 공용 */
 async function buildRefundContext(userId: string) {
   const sub = await prisma.subscription.findUnique({ where: { userId } });
@@ -99,11 +107,16 @@ export async function GET() {
   if (!sub) return NextResponse.json({ subscription: null });
   const plan: PlanId | null = isPlanId(sub.plan) ? sub.plan : null;
   const { billingKey, ...rest } = sub;
+  const renewEligible = sub.gateway === "portone" && !!billingKey && sub.status === "active";
+  // A-79 후속(2026-09-10 대표 A안): 현재 주기 결제가 7일 이내이고 인증을 한 건도 안 썼으면 조기 갱신 차단 —
+  // 갱신하면 미사용 결제분의 청약철회(전액 환불) 권리가 사실상 사라지고 고객에게 이득이 없는 결제가 된다.
+  const renewBlockedReason = renewEligible && (await isUnusedRecentPayment(userId, sub.currentPeriodStart)) ? "unused_recent_payment" : null;
   return NextResponse.json({
     subscription: {
       ...rest,
       // 조기 갱신(renew_now) 가능 여부 — PortOne 빌링키 구독만. Apple IAP는 스토어가 갱신을 관리.
-      canRenewNow: sub.gateway === "portone" && !!billingKey && sub.status === "active",
+      canRenewNow: renewEligible && !renewBlockedReason,
+      renewBlockedReason,
       planGrant: plan ? PLAN_GRANTS[plan] : null,
       planPrice: plan ? PLAN_PRICES[plan] : null,
       planPeriodDays: plan ? PLAN_PERIOD_DAYS[plan] : null,
@@ -142,6 +155,10 @@ export async function POST(req: NextRequest) {
     }
     if (sub.gateway !== "portone" || !sub.billingKey) {
       return NextResponse.json({ detail: "renew_not_available" }, { status: 409 });
+    }
+    if (await isUnusedRecentPayment(userId, sub.currentPeriodStart)) {
+      // A안: 미사용·7일 이내 결제분이 있으면 서버에서도 거절 (UI 우회 방지)
+      return NextResponse.json({ detail: "renew_not_needed" }, { status: 409 });
     }
     const plan: PlanId = isPlanId(sub.plan) ? sub.plan : "pro_monthly";
     // 오늘 날짜(UTC)로 결정적 paymentId — 같은 날 두 번 눌러도 한 번만 청구된다.

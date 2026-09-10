@@ -611,6 +611,7 @@
       "refund_not_available": "The calculated refund is ₩0, so a mid-term refund is not available. Please use the regular cancellation (keep access until period end).",
       "refund_done": "Refund processed — ₩{amount} was cancelled to your payment method (reflected within 3 business days). Your subscription has ended immediately.",
       "renew_link": "Renew now",
+      "renew_not_needed": "You have an unused payment this period, so renewal isn't needed yet.",
       "renew_button": "Renew now",
       "renew_low_banner": "Only {count} certifications left this month. Renew before your next site visit.",
       "renew_zero_banner": "You've used all certifications for this month. Renew now to keep certifying right away.",

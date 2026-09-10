@@ -21,6 +21,8 @@ interface SubscriptionInfo {
   canceledAt: string | null;
   /** A-79 조기 갱신 가능(PortOne 빌링키 구독) */
   canRenewNow?: boolean;
+  /** 조기 갱신 차단 사유 — unused_recent_payment(7일 이내·미사용 결제분 존재) */
+  renewBlockedReason?: string | null;
   planGrant?: number | null;
   planPrice?: number | null;
   planPeriodDays?: number | null;
@@ -210,7 +212,9 @@ export default function ProfilePage() {
             ? t("subscription.renew_error_card")
             : d?.detail === "renew_not_available"
               ? t("subscription.renew_not_available")
-              : t("subscription.error_generic"),
+              : d?.detail === "renew_not_needed"
+                ? t("subscription.renew_not_needed")
+                : t("subscription.error_generic"),
         );
         return;
       }
@@ -1016,6 +1020,9 @@ export default function ProfilePage() {
                       {t("subscription.renew_link")}
                     </button>
                   )}
+                  {subscription.renewBlockedReason === "unused_recent_payment" && (
+                    <span className="text-slate-400 leading-snug">{t("subscription.renew_not_needed")}</span>
+                  )}
                   {subscription.cancelAtPeriodEnd ? (
                     <button onClick={() => handleSubscriptionAction("resume")} disabled={subBusy} className="text-left font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 disabled:opacity-50">
                       {t("subscription.resume_button")}
@@ -1261,6 +1268,9 @@ export default function ProfilePage() {
                   >
                     {t("subscription.renew_link")}
                   </button>
+                )}
+                {subscription.renewBlockedReason === "unused_recent_payment" && (
+                  <span className="px-1 py-2 text-xs text-slate-400 self-center">{t("subscription.renew_not_needed")}</span>
                 )}
               </div>
 
