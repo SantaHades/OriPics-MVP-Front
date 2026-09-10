@@ -964,9 +964,9 @@
       "step3_t": "3. {goal} friends = {months} one-month free vouchers",
       "step3_b": "When {goal} people sign up with your code and finish their first proof, you get {months} one-month free vouchers. Coupons apply one per charge (up to 2 on the first); vouchers apply one per charge for {months} consecutive months after coupons run out.",
       "example_title": "How it adds up",
-      "ex1": "1 coupon for joining + 1 from your first friend = 2 → first Pro month ₩0 (card registration only)",
-      "ex2": "Then 1 coupon per friend → ₩{amount} per month",
-      "ex3": "From the {goal}th friend, {months} one-month free vouchers → 1 free · 11 at 50% · then {months} consecutive free months = 18 months",
+      "ex1": "One 50% coupon for joining with a code + one 50% coupon from your first friend = two 50% coupons → first Pro month ₩0 (card registration only)",
+      "ex2": "Then one 50% coupon per friend → ₩{amount} per month",
+      "ex3": "From the {goal}th friend, {months} one-month free vouchers → 1 free · 11 at 50% off · then {months} consecutive free months = 18 months",
       "faq_title": "FAQ",
       "faq": [
         {
