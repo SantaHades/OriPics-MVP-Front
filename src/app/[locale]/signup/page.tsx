@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useRouter } from "@/navigation";
 import { useSearchParams } from "next/navigation";
-import { Mail, Lock, User, RefreshCw, ArrowRight, ShieldCheck, CheckCircle } from "lucide-react";
+import { Mail, Lock, User, RefreshCw, ArrowRight, ShieldCheck, CheckCircle, Ticket } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useTranslations } from "next-intl";
 
@@ -405,16 +405,20 @@ export default function SignupPage() {
             {/* 파트너코드 (선택) — A-82. 확인 성공 시 주인 이름(마스킹) 표시 + 입력 잠금, [변경]으로 해제 */}
             <div>
               <label className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 block ml-1">{t("partner_code_label")}</label>
+              {/* 이메일 행과 동일 구조(아이콘 + flex-1 래퍼 + w-full 입력) — 입력창 고유 폭이 버튼을 밀어내지 않도록 min-w-0 */}
               <div className="flex gap-2">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder={t("partner_code_placeholder")}
-                  className={`flex-1 bg-slate-100 border rounded-2xl py-4 px-4 text-sm outline-none transition-all focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600 tracking-[0.2em] tabular-nums ${partnerName ? "border-emerald-500/30 bg-emerald-500/5" : "border-slate-100 focus:border-blue-500/50"}`}
-                  value={partnerCode}
-                  onChange={(e) => { setPartnerCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 8)); setPartnerName(null); setPartnerError(null); }}
-                  disabled={!!partnerName}
-                />
+                <div className="relative group flex-1 min-w-0">
+                  <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors" size={18} />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={t("partner_code_placeholder")}
+                    className={`w-full bg-slate-100 border rounded-2xl py-4 pl-12 pr-4 text-sm outline-none transition-all focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600 tabular-nums ${partnerName ? "border-emerald-500/30 bg-emerald-500/5" : "border-slate-100 focus:border-blue-500/50"}`}
+                    value={partnerCode}
+                    onChange={(e) => { setPartnerCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 8)); setPartnerName(null); setPartnerError(null); }}
+                    disabled={!!partnerName}
+                  />
+                </div>
                 {partnerName ? (
                   <button type="button" onClick={() => { setPartnerName(null); }} className="px-4 py-4 text-slate-500 text-sm font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 whitespace-nowrap shrink-0">
                     {t("partner_change")}
