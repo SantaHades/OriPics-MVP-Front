@@ -99,7 +99,7 @@ export default function PartnerLandingPage() {
         <section className="mt-10 rounded-2xl bg-white border border-slate-200 p-6">
           <h2 className="text-lg font-bold mb-3">{t("example_title")}</h2>
           <ul className="space-y-2 text-sm text-slate-700">
-            {[t("ex1"), t("ex2", { amount: fmtWon(discount) }), t("ex3", { months })].map((line, i) => (
+            {[t("ex1"), t("ex2", { amount: fmtWon(discount) }), t("ex3", { goal, months })].map((line, i) => (
               <li key={i} className="flex gap-2">
                 <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" /> {line}
               </li>
