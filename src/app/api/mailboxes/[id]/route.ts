@@ -1,6 +1,6 @@
 // 사서함 상세·설정·삭제 예고 (A-81, 2026-09-09)
 //   GET    /api/mailboxes/:id            — 참여자용 상세(사서함·참여자 목록·내 정보). 개설자는 초대 대기 목록 포함
-//   PATCH  /api/mailboxes/:id            — 개설자: name·description·memo·invite_status·password('' = 제거)
+//   PATCH  /api/mailboxes/:id            — 개설자: name·description·memo·report_title·invite_status·password('' = 제거)
 //   DELETE /api/mailboxes/:id            — 개설자: 삭제 예고(7일 유예) → 전원 알림. 취소는 actions cancel_delete
 import { NextRequest, NextResponse } from "next/server";
 
@@ -84,6 +84,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   }
   if (typeof body.description === "string") patch.description = body.description.trim().slice(0, 500) || null;
   if (typeof body.memo === "string") patch.memo = body.memo.trim().slice(0, 500) || null;
+  // 확인서 PDF 제목 (2026-09-10 대표) — 빈 문자열이면 기본 문구로 복귀(null)
+  if (typeof body.report_title === "string") patch.report_title = body.report_title.replace(/\s+/g, " ").trim().slice(0, 80) || null;
   if (typeof body.password === "string") patch.password_hash = body.password.trim() ? await hashPassword(body.password.trim().slice(0, 80)) : null;
   let closingInvites = false;
   if (body.invite_status === "open" || body.invite_status === "closed") {

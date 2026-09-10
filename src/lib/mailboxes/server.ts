@@ -35,9 +35,11 @@ export interface MailboxRow {
   created_at: string;
   locked_at: string | null;
   delete_after: string | null;
+  /** 확인서 PDF 제목(개설자 지정). NULL = 기본 문구 (2026-09-10) */
+  report_title: string | null;
 }
 export const MAILBOX_COLS =
-  "id, name, description, memo, password_hash, invite_status, status, owner_user_id, created_at, locked_at, delete_after";
+  "id, name, description, memo, password_hash, invite_status, status, owner_user_id, created_at, locked_at, delete_after, report_title";
 
 export interface MemberRow {
   mailbox_id: string;
@@ -280,6 +282,8 @@ export interface MailboxDto {
   memo?: string | null;
   invite_status: string;
   has_password?: boolean;
+  /** 확인서 PDF 제목(개설자 지정, 없으면 null → 기본 문구) */
+  report_title: string | null;
   locked: boolean;
   delete_after: string | null;
   created_at: string;
@@ -317,6 +321,7 @@ export async function mailboxDto(
     name: mb.name,
     description: mb.description,
     ...(mine ? { memo: mb.memo, has_password: !!mb.password_hash } : {}),
+    report_title: mb.report_title ?? null,
     invite_status: mb.invite_status,
     locked: !!mb.locked_at,
     delete_after: mb.delete_after,
@@ -504,6 +509,8 @@ export interface MailboxSnapshot {
   mailbox: {
     id: string; name: string; description: string | null; owner_name: string; created_at: string;
     invite_status: string; locked: boolean; delete_after: string | null;
+    /** 확인서 제목(개설자 지정). 백업 스냅샷에도 저장되어 백업본 확인서에 동일 적용 */
+    report_title?: string | null;
   };
   members: { user_id: string; display_name: string; role_text: string | null; kind: string; accepted_at: string; state: "active" | "kicked" | "left" }[];
   photos: (PhotoDto & { storage_path?: string | null; preview_path?: string | null; backup_preview_path?: string | null; backup_storage_path?: string | null })[];
@@ -528,6 +535,7 @@ export async function buildSnapshot(db: SupabaseClient, mb: MailboxRow, members:
     mailbox: {
       id: mb.id, name: mb.name, description: mb.description, owner_name: owner?.display_name ?? "", created_at: mb.created_at,
       invite_status: mb.invite_status, locked: !!mb.locked_at, delete_after: mb.delete_after,
+      report_title: mb.report_title ?? null,
     },
     members: members.filter((m) => !m.left_at || true).map((m) => ({
       user_id: m.user_id, display_name: m.display_name, role_text: m.role_text, kind: m.kind, accepted_at: m.accepted_at,

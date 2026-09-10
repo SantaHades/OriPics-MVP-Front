@@ -82,6 +82,7 @@ export async function buildReportData(opts: {
   return {
     mailboxId: s.mailbox.id,
     mailboxName: s.mailbox.name,
+    reportTitle: s.mailbox.report_title ?? null,
     description: s.mailbox.description,
     ownerName: s.mailbox.owner_name,
     createdAt: new Date(s.mailbox.created_at),

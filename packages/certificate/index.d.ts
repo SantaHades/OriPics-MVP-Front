@@ -69,6 +69,8 @@ export interface MailboxReportPhoto {
 export interface MailboxReportData {
   mailboxId: string;
   mailboxName: string;
+  /** 개설자가 지정한 확인서 제목. 비어 있으면 로케일 기본 문구 (2026-09-10) */
+  reportTitle?: string | null;
   description?: string | null;
   ownerName: string;
   createdAt: Date;

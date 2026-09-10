@@ -62,6 +62,8 @@ export interface MailboxReportPhoto {
 export interface MailboxReportData {
   mailboxId: string;
   mailboxName: string;
+  /** 개설자가 지정한 확인서 제목. 비어 있으면 로케일 기본 문구 (2026-09-10) */
+  reportTitle?: string | null;
   description?: string | null;
   ownerName: string;
   createdAt: Date;
@@ -226,9 +228,10 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
   const statusText = t[`status_${data.status}`] + (data.status === "delete_scheduled" && data.deleteAfter ? ` (${fmt(data.deleteAfter, locale, tz)})` : "");
   const basisText = data.basis === "backup" ? `${t.basisBackup} · ${fmt(data.basisAt, locale, tz, true)}` : `${t.basisLive} · ${fmt(data.basisAt, locale, tz, true)}`;
   const shortId = `mbr_${data.mailboxId}_${data.issuedAt.getTime().toString(36)}`;
+  const reportTitle = (data.reportTitle ?? "").trim() || t.title;
 
   return (
-    <Document title={`${t.title} — ${data.mailboxName}`} author="OriPics">
+    <Document title={`${reportTitle} — ${data.mailboxName}`} author="OriPics">
       <Page size="A4" style={st.page} wrap>
         <View style={st.header} fixed>
           <View style={st.brandRow}>
@@ -238,7 +241,7 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
           <Text style={{ fontSize: 8, color: "#64748b" }}>{`${t.issued} ${fmt(data.issuedAt, locale, tz, true)} · ${shortId}`}</Text>
         </View>
 
-        <Text style={st.title}>{t.title}</Text>
+        <Text style={st.title}>{reportTitle}</Text>
         <Text style={st.subtitle}>{t.subtitle}</Text>
         <Text style={st.basis}>{basisText}</Text>
 
