@@ -271,8 +271,8 @@ ChargeIntent  paymentId(unique), userId, plan, listAmount, discountAmount, expec
 | 이메일 | ✅ | `src/lib/partner/mailer.ts`·`notify.ts` — 코드 주인 적립 메일, 12명 도달(파트너+운영자), 6개월 지급 완료 |
 | 웹 UI | ✅ | 가입 폼 파트너코드 입력·확인·잠금(?ref= 프리필), 가입 완료→`/profile?welcome=partner#partner`, 앱 유입 완료 화면 코드 표시 / 소셜 첫 로그인 환영 모달 `PartnerWelcomePrompt`(홈) / 프로필 `PartnerCard`(코드·공유·입력·초대 현황·혜택·사용 내역·다음 결제 예상) / 구독 카드 다음 결제 예상·갱신 모달 할인가 / checkout 할인 표시·0원 고지 / success 0원 문구 / 랜딩 `/partner` / 어드민 `/admin/partner` / FAQ 17번·요금제 카드 링크 / 약관 제10조 9호·개인정보처리방침 보유기간 항목 |
 | 앱 | ✅ tsc·lint 통과 | `apps/mobile/src/components/partner-card.tsx`(설정 탭, 코드·복사·공유·입력만, 금액 문구 없음) · i18n `partner.*` ko/en — 다음 빌드 탑승 |
-| 환경 변수 | ⚠️ Vercel 추가 필요 | `ADMIN_EMAILS`(콤마 구분, 어드민·12명 검수 메일 수신) · 선택 `PARTNER_CAMPAIGN_START`(기본 2026-09-10) · `PARTNER_CAMPAIGN_END`(기본 2026-12-31 23:59:59 KST) |
-| 남은 것 | — | ①env `ADMIN_EMAILS` ②커밋·웹 배포(deploy-web.sh) ③테스트 결제 e2e: 코드 입력 가입 2계정 → 첫 결제 0원(카드 등록만) → 갱신 4,950 → 청약철회 복원 확인 → PortOne 콘솔 취소 ⑤빌드 17에 앱 카드 탑승 ⑥판매 개시 시 공지·랜딩 공개 |
+| 환경 변수 | ✅ `ADMIN_EMAILS` 저장(9/10) | `ADMIN_EMAILS`(콤마 구분, 어드민·12명 검수 메일 수신) · 선택 `PARTNER_CAMPAIGN_START`(기본 2026-09-10) · `PARTNER_CAMPAIGN_END`(기본 2026-12-31 23:59:59 KST) |
+| 남은 것 | — | ✅커밋 906129c·배포 Ready(9/10) → ①테스트 결제 e2e: 코드 입력 가입 2계정 → 첫 결제 0원(카드 등록만) → 갱신 4,950 → 청약철회 복원 확인 → PortOne 콘솔 취소 ⑤빌드 17에 앱 카드 탑승 ⑥판매 개시 시 공지·랜딩 공개 |
 
 구현 중 결정(기획 보완): User에 createdAt이 없어 **가입 시각 = signup_grant 거래 시각**으로 7일 판정 · 유효 초대는 훅 없이 **조회 시 계산**(image_proof/verified_proof 거래 존재) + 조회·참여·일일 cron에서 12명 도달 확인 · 대표(1234)·제휴사(100~999) 예약 코드 계정은 참여 절차 없이 파트너 자격(500명 카운트 제외) · 마이그레이션 전 환경에서도 결제·가입이 깨지지 않도록 파트너 로직은 전부 best-effort.
 
