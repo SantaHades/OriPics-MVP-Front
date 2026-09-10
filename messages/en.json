@@ -583,6 +583,8 @@
       "status_active": "Active",
       "status_cancel_scheduled": "Cancellation scheduled",
       "next_billing_label": "Next billing date",
+      "card_label": "Payment card",
+      "card_unknown": "Unavailable",
       "ends_at_label": "Access ends",
       "cancel_button": "Cancel subscription",
       "resume_button": "Undo cancellation (keep subscription)",

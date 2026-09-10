@@ -23,6 +23,8 @@ interface SubscriptionInfo {
   canRenewNow?: boolean;
   /** 조기 갱신 차단 사유 — unused_recent_payment(7일 이내·미사용 결제분 존재) */
   renewBlockedReason?: string | null;
+  /** 등록 카드(빌링키) — 카드사·마스킹 번호 (PortOne 조회, 없으면 null) */
+  paymentMethod?: { card_name: string | null; card_number: string | null } | null;
   planGrant?: number | null;
   planPrice?: number | null;
   planPeriodDays?: number | null;
@@ -1178,10 +1180,19 @@ export default function ProfilePage() {
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white/40 p-5">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                 <div>
                   <p className="text-xs text-slate-500 mb-1">{t("subscription.plan_label")}</p>
                   <p className="font-bold">OriPics Pro</p>
+                </div>
+                {/* 등록 카드 (2026-09-10 대표) — 어느 카드에서 빠지는지 보이게. 카드 변경은 후속(빌링키 재발급 흐름 분리 필요) */}
+                <div>
+                  <p className="text-xs text-slate-500 mb-1">{t("subscription.card_label")}</p>
+                  <p className="font-bold text-sm">
+                    {subscription.paymentMethod
+                      ? `${subscription.paymentMethod.card_name ?? ""} ${subscription.paymentMethod.card_number ?? ""}`.trim() || t("subscription.card_unknown")
+                      : t("subscription.card_unknown")}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">{t("subscription.status_label")}</p>

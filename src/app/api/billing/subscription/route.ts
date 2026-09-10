@@ -111,9 +111,22 @@ export async function GET() {
   // A-79 후속(2026-09-10 대표 A안): 현재 주기 결제가 7일 이내이고 인증을 한 건도 안 썼으면 조기 갱신 차단 —
   // 갱신하면 미사용 결제분의 청약철회(전액 환불) 권리가 사실상 사라지고 고객에게 이득이 없는 결제가 된다.
   const renewBlockedReason = renewEligible && (await isUnusedRecentPayment(userId, sub.currentPeriodStart)) ? "unused_recent_payment" : null;
+  // 등록 카드 표시 (2026-09-10 대표): 빌링키 정보에서 카드사·마스킹 번호만 — 실패해도 구독 조회는 정상 응답(best-effort)
+  let paymentMethod: { card_name: string | null; card_number: string | null } | null = null;
+  if (sub.gateway === "portone" && billingKey && PORTONE_API_SECRET) {
+    try {
+      const info: any = await PortOne.BillingKeyClient({ secret: PORTONE_API_SECRET }).getBillingKeyInfo({ billingKey });
+      const cardMethod = (info?.methods ?? []).find((m: any) => m?.type === "BillingKeyPaymentMethodCard");
+      const card = cardMethod?.card;
+      if (card) paymentMethod = { card_name: card.name ?? card.publisher ?? card.issuer ?? null, card_number: card.number ?? null };
+    } catch (e: any) {
+      console.warn("[subscription] billing key info failed:", e?.message ?? e);
+    }
+  }
   return NextResponse.json({
     subscription: {
       ...rest,
+      paymentMethod,
       // 조기 갱신(renew_now) 가능 여부 — PortOne 빌링키 구독만. Apple IAP는 스토어가 갱신을 관리.
       canRenewNow: renewEligible && !renewBlockedReason,
       renewBlockedReason,

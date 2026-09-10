@@ -583,6 +583,8 @@
       "status_active": "이용 중",
       "status_cancel_scheduled": "해지 예약됨",
       "next_billing_label": "다음 결제일",
+      "card_label": "결제 카드",
+      "card_unknown": "확인 불가",
       "ends_at_label": "이용 종료일",
       "cancel_button": "구독 해지",
       "resume_button": "해지 취소 (구독 유지)",
