@@ -5,7 +5,9 @@ import { Link, useRouter } from "@/navigation";
 import { useSearchParams } from "next/navigation";
 import { Mail, Lock, User, RefreshCw, ArrowRight, ShieldCheck, CheckCircle, Ticket } from "lucide-react";
 import { signIn } from "next-auth/react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { PARTNER } from "@/lib/partner/config";
+import { KNOWN_PARTNER_ERRORS, partnerErrorKey } from "@/components/PartnerCard";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
@@ -43,9 +45,12 @@ export default function SignupPage() {
   const [partnerName, setPartnerName] = useState<string | null>(null);
   const [partnerBusy, setPartnerBusy] = useState(false);
   const [partnerError, setPartnerError] = useState<string | null>(null);
-  const [appDonePartner, setAppDonePartner] = useState<{ code: string | null; joined: boolean } | null>(null);
+  // A-92 ②: 서버가 `partner.error`(예 email_already_joined)를 돌려주면 완료 화면·프로필 카드에 그 이유를 보여준다
+  const [appDonePartner, setAppDonePartner] = useState<{ code: string | null; joined: boolean; error?: string } | null>(null);
 
   const t = useTranslations("Signup");
+  const locale = useLocale();
+  const partnerPrice = new Intl.NumberFormat(locale === "en" ? "en-US" : "ko-KR").format(PARTNER.DISCOUNT_AMOUNT);
   const tL = useTranslations("Login");
   const tP = useTranslations("Partner");
 
@@ -59,7 +64,8 @@ export default function SignupPage() {
       const d = await res.json().catch(() => ({}));
       if (!res.ok || !d.ok) {
         setPartnerName(null);
-        setPartnerError(tP(`errors.${d?.error ?? "code_not_found"}`));
+        // 429(rate_limited)·알 수 없는 코드는 '없는 코드'로 오인 표시하지 않음 (A-92 ①)
+        setPartnerError(tP(`errors.${partnerErrorKey(res.status, d, "code_not_found")}`));
         return;
       }
       setPartnerName(d.ownerNameMasked);
@@ -165,6 +171,14 @@ export default function SignupPage() {
       return;
     }
 
+    // 파트너코드를 적었지만 [확인]을 안 거친 경우 — 코드가 조용히 빠진 채 가입되는 것을 막는다 (A-92 ②)
+    if (partnerCode.length > 0 && !partnerName) {
+      setPartnerError(t("partner_unconfirmed"));
+      setError(t("partner_unconfirmed"));
+      setLoading(false);
+      return;
+    }
+
     try {
       // 1. 회원가입 API 호출 (인증 코드 포함)
       const res = await fetch("/api/register", {
@@ -179,7 +193,8 @@ export default function SignupPage() {
         const errorMsg = data.code ? t(`api_errors.${data.code}`) : data.message;
         throw new Error(errorMsg);
       }
-      const partnerResult = data?.partner as { code: string | null; joined: boolean } | undefined;
+      const partnerResult = data?.partner as { code: string | null; joined: boolean; error?: string } | undefined;
+      const partnerErrorCode = partnerResult?.error && KNOWN_PARTNER_ERRORS.has(partnerResult.error) ? partnerResult.error : partnerResult?.error ? "unavailable" : null;
 
       // 앱 유입 가입은 웹 세션을 만들지 않고 완료 화면으로 — 앱 복귀 후 로그인 유도
       if (fromApp) {
@@ -200,9 +215,12 @@ export default function SignupPage() {
         return;
       }
 
-      // 3. 로그인 성공 시 — 파트너코드로 참여했으면 프로필 파트너 카드(내 코드·할인권 도착)로, 아니면 홈
+      // 3. 로그인 성공 시 — 파트너코드로 참여했으면 프로필 파트너 카드(내 코드·할인권 도착)로, 아니면 홈.
+      //    코드를 넣었는데 서버가 참여를 거절했으면(partner.error) 프로필 카드에 사유를 보여준다 (A-92 ②)
       if (partnerResult?.joined) {
         router.push("/profile?welcome=partner#partner");
+      } else if (partnerErrorCode) {
+        router.push(`/profile?partner_error=${encodeURIComponent(partnerErrorCode)}#partner`);
       } else {
         router.push("/");
       }
@@ -227,6 +245,11 @@ export default function SignupPage() {
               <p className="text-xs text-blue-700 font-bold mb-1">{t("partner_my_code")}</p>
               <p className="text-2xl font-extrabold tracking-[0.15em] tabular-nums">{appDonePartner.code}</p>
               <p className="text-xs text-slate-600 mt-1">{appDonePartner.joined ? t("partner_coupon_arrived") : t("partner_code_only")}</p>
+              {appDonePartner.error && (
+                <p className="text-xs text-amber-800 mt-2" role="alert">
+                  {t("partner_join_failed", { reason: tP(`errors.${KNOWN_PARTNER_ERRORS.has(appDonePartner.error) ? appDonePartner.error : "unavailable"}`) })}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -404,17 +427,28 @@ export default function SignupPage() {
             {/* 약관·개인정보 처리방침 동의 (필수) */}
             {/* 파트너코드 (선택) — A-82. 확인 성공 시 주인 이름(마스킹) 표시 + 입력 잠금, [변경]으로 해제 */}
             <div>
-              <label className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 block ml-1">{t("partner_code_label")}</label>
+              <label htmlFor="signup-partner-code" className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 block ml-1">{t("partner_code_label")}</label>
               {/* 이메일 행과 동일 구조(아이콘 + flex-1 래퍼 + w-full 입력) — 입력창 고유 폭이 버튼을 밀어내지 않도록 min-w-0 */}
               <div className="flex gap-2">
                 <div className="relative group flex-1 min-w-0">
                   <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors" size={18} />
                   <input
+                    id="signup-partner-code"
                     type="text"
                     inputMode="numeric"
+                    autoComplete="off"
+                    aria-describedby="signup-partner-code-hint"
+                    aria-invalid={partnerError ? true : undefined}
                     placeholder={t("partner_code_placeholder")}
-                    className={`w-full bg-slate-100 border rounded-2xl py-4 pl-12 pr-4 text-sm outline-none transition-all focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600 tabular-nums ${partnerName ? "border-emerald-500/30 bg-emerald-500/5" : "border-slate-100 focus:border-blue-500/50"}`}
+                    className={`w-full bg-slate-100 border rounded-2xl py-4 pl-12 pr-4 text-sm outline-none transition-all focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600 tabular-nums ${partnerName ? "border-emerald-500/30 bg-emerald-500/5" : partnerError ? "border-red-300" : "border-slate-100 focus:border-blue-500/50"}`}
                     value={partnerCode}
+                    onKeyDown={(e) => {
+                      // Enter = 폼 제출 대신 코드 확인 (미확인 제출 차단과 짝)
+                      if (e.key === "Enter" && !partnerName && partnerCode.length >= 3 && !partnerBusy) {
+                        e.preventDefault();
+                        checkPartnerCode();
+                      }
+                    }}
                     onChange={(e) => { setPartnerCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 8)); setPartnerName(null); setPartnerError(null); }}
                     disabled={!!partnerName}
                   />
@@ -424,17 +458,17 @@ export default function SignupPage() {
                     {t("partner_change")}
                   </button>
                 ) : (
-                  <button type="button" onClick={() => checkPartnerCode()} disabled={partnerBusy || partnerCode.length < 3} className="px-4 py-4 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap shrink-0">
+                  <button type="button" onClick={() => checkPartnerCode()} disabled={partnerBusy || partnerCode.length < 3} aria-busy={partnerBusy} className="px-4 py-4 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap shrink-0">
                     {partnerBusy ? <RefreshCw className="animate-spin" size={16} /> : t("partner_check")}
                   </button>
                 )}
               </div>
               {partnerName ? (
-                <p className="mt-2 ml-1 text-xs text-emerald-700">{t("partner_confirmed", { name: partnerName })}</p>
+                <p id="signup-partner-code-hint" className="mt-2 ml-1 text-xs text-emerald-700" role="status">{t("partner_confirmed", { name: partnerName })}</p>
               ) : partnerError ? (
-                <p className="mt-2 ml-1 text-xs text-red-600">{partnerError}</p>
+                <p id="signup-partner-code-hint" className="mt-2 ml-1 text-xs text-red-600" role="alert">{partnerError}</p>
               ) : (
-                <p className="mt-2 ml-1 text-[11px] text-slate-500">{t("partner_hint")}</p>
+                <p id="signup-partner-code-hint" className="mt-2 ml-1 text-[11px] text-slate-500">{t("partner_hint", { price: partnerPrice })}</p>
               )}
             </div>
 
@@ -471,7 +505,7 @@ export default function SignupPage() {
 
             {/* 에러 메시지 */}
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-600 text-xs p-4 rounded-xl flex items-start gap-2 animate-shake">
+              <div role="alert" className="bg-red-500/10 border border-red-500/20 text-red-600 text-xs p-4 rounded-xl flex items-start gap-2 animate-shake">
                 <span className="shrink-0 mt-0.5">⚠️</span>
                 <span>{error}</span>
               </div>
@@ -480,6 +514,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading || !codeSent || verificationCode.length !== 6 || !agreed}
+              aria-busy={loading}
               className="w-full py-4 bg-blue-800 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-blue-200/50 flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? <RefreshCw className="animate-spin" size={20} /> : (

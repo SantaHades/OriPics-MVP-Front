@@ -561,7 +561,9 @@
     "partner_check": "Check",
     "partner_change": "Change",
     "partner_confirmed": "This is {name}'s partner code. Sign up and you both get a 50% Pro coupon.",
-    "partner_hint": "Enter a friend's partner code and confirm to receive a 50% Pro coupon (₩4,950) on sign-up. Without a code you won't get one.",
+    "partner_hint": "Enter a friend's partner code and confirm to receive a 50% Pro coupon (₩{price}) on sign-up. Without a code you won't get one.",
+    "partner_unconfirmed": "Please check the partner code first (press Check) or clear the field before signing up.",
+    "partner_join_failed": "Your account was created, but the partner code could not be applied: {reason}",
     "partner_my_code": "My partner code",
     "partner_coupon_arrived": "A 50% Pro coupon has arrived. Share this code with friends.",
     "partner_code_only": "Share this code with friends; benefits accrue when they sign up."
@@ -830,6 +832,7 @@
     "grant_notice": "When your subscription starts, your monthly usage count is set to the plan allowance (Pro: 1,000). Remaining free-plan counts are replaced, not carried over, and the allowance resets the same way at each monthly renewal.",
     "withdrawal_notice_title": "Withdrawal (cooling-off) notice",
     "withdrawal_notice_body": "You receive a full refund if you request it within 7 days of payment without using any proof counts. Once you start using proof counts, withdrawal is restricted as to the used portion under Article 17(2) of the Korean E-Commerce Act; the unused portion is refunded per the refund policy. You can try the service in advance on the Free plan.",
+    "withdrawal_notice_body_zero": "Today's charge is ₩0, so there is no amount eligible for refund. Paid charges begin from the next billing cycle, and the withdrawal rules (full refund within 7 days if no proof counts were used; restricted for the used portion afterwards) apply from then on.",
     "withdrawal_notice_agree": "By paying, you are deemed to agree to the above and to §7 (Refunds and Withdrawal) of the Terms of Service.",
     "withdrawal_notice_link_terms": "Terms §7",
     "withdrawal_notice_link_refund": "Refund policy",
@@ -847,6 +850,10 @@
     "fail_title": "Payment failed",
     "fail_desc": "The payment was canceled or did not complete.",
     "partner_zero_notice": "{kind} applied — nothing is charged today. Only your card is registered; from next month you'll be charged {next} or the list price depending on your remaining benefits.",
+    "partner_zero_notice_exact": "{kind} applied — nothing is charged today. Only your card is registered; next month's expected charge is ₩{next} ({detail}).",
+    "partner_next_coupon": "1 coupon applied, {left} left",
+    "partner_next_free_month": "1-month free voucher applied",
+    "partner_next_list": "no benefit to apply, list price",
     "partner_discount_notice": "{count} partner coupon(s) applied — ₩{amount} will be charged.",
     "partner_kind_free_month": "one 1-month free voucher",
     "partner_kind_coupons": "{count} partner 50% coupon(s)",
@@ -870,7 +877,10 @@
     "share": "Share",
     "copied": "Copied",
     "share_text": "Join OriPics with my partner code {code} — it proves a photo is the original → {url}",
-    "not_partner_notice": "Partner recruitment (first 500) has closed, so referrals no longer earn coupons. Coupons you already have still work.",
+    "not_partner_notice": "Partner recruitment (first {cap}) has closed, so referrals no longer earn coupons. Coupons you already have still work.",
+    "copy_failed": "Couldn't copy. Please select the code and copy it manually.",
+    "signup_join_failed": "Your account was created, but the partner code could not be applied: {reason}",
+    "progress_label": "Valid referral progress",
     "join_title": "Have a partner code?",
     "join_desc": "Enter a friend's code and confirm to get one 50% Pro coupon (₩{amount}). Once per account.",
     "code_placeholder": "Partner code (digits)",
@@ -886,8 +896,8 @@
     "referrals_title": "Referrals",
     "referrals_count": "{valid} valid / {total} signed up",
     "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {months} one-month free vouchers (valid = completed first proof, accepted up to 30 days after the challenge ends)",
-    "milestone_pending": "{goal} reached! Your six 1-month free vouchers are under review (issued within 24h, reached {date}).",
-    "milestone_approved": "Six 1-month free vouchers were issued ({date}). They apply to 6 consecutive charges after your coupons are used up.",
+    "milestone_pending": "{goal} reached! Your {months} 1-month free vouchers are under review (issued within 24h, reached {date}).",
+    "milestone_approved": "{months} 1-month free vouchers were issued ({date}). They apply to {months} consecutive charges after your coupons are used up.",
     "milestone_rejected": "The voucher was withheld after review. Contact hi@ori.pics",
     "referrals_empty": "No one has signed up with your code yet. Share it!",
     "ref_valid": "valid",
@@ -938,8 +948,10 @@
       "campaign_ended": "The challenge has ended.",
       "user_not_found": "Account not found.",
       "unavailable": "Unavailable right now. Please try again later.",
-      "email_already_joined": "This email has already joined the challenge. Re-registering after deleting an account doesn't allow joining again."
+      "email_already_joined": "This email has already joined the challenge. Re-registering after deleting an account doesn't allow joining again.",
+      "rate_limited": "Too many requests. Please try again in a moment."
     },
+    "welcome_close": "Close",
     "welcome_title": "Have a partner code?",
     "welcome_body": "Enter a friend's code and you both get a 50% Pro coupon. You can enter one code within 7 days of signing up.",
     "welcome_skip": "No code",
@@ -952,11 +964,13 @@
       "eyebrow": "Partner Relay Challenge",
       "headline": "Become an OriPics partner. Benefits stack up.",
       "sub1": "Every time a friend signs up with your partner code, you get a 50% Pro coupon (₩{amount}).",
-      "sub2": "When {goal} sign up, you also get {months} one-month free vouchers (worth ₩{value}), applied to 6 consecutive charges.",
+      "sub2": "When {goal} sign up, you also get {months} one-month free vouchers (worth ₩{value}), applied to {months} consecutive charges.",
       "until": "Until {end}",
       "remaining": "First {cap} partners · {remaining} left",
       "full": "{cap} partners reached (coupons still issued)",
       "ended": "Challenge ended",
+      "stats_failed": "Couldn't load remaining spots",
+      "retry": "Retry",
       "cta_my_code": "See my partner code",
       "cta_signup": "Sign up with a code",
       "cta_login": "Log in",
@@ -990,12 +1004,12 @@
           "a": "No redemption needed — they apply automatically to Pro monthly charges. Up to 2 on the first charge (₩0), then 1 per charge (₩{amount}); once coupons run out, 1-month free vouchers are used one per consecutive charge. Valid for {months24} months from issuance."
         },
         {
-          "q": "What happens after the first 500 partners are filled?",
-          "a": "After the first 500 partner spots are filled, you still get your own 50% coupon when you sign up with a code. Only partners (within the 500) earn coupons when others use their code and qualify for the {goal}-friend bonus. Partners keep earning after the cap is filled until the challenge ends on December 31; after that, code entry and accrual both stop. Coupons and vouchers you already have remain valid for {months24} months from issuance."
+          "q": "What happens after the first {cap} partners are filled?",
+          "a": "After the first {cap} partner spots are filled, you still get your own 50% coupon when you sign up with a code. Only partners (within the {cap}) earn coupons when others use their code and qualify for the {goal}-friend bonus. Partners keep earning after the cap is filled until the challenge ends on {end}; after that, code entry and accrual both stop. Coupons and vouchers you already have remain valid for {months24} months from issuance."
         },
         {
           "q": "How is reaching {goal} confirmed?",
-          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. Only first proofs completed within 30 days after the challenge ends (by January 30, 2027) count. At {goal}, {months} one-month free vouchers are issued within 24 hours after review and you're notified by email. They apply one per charge for {months} consecutive months after your coupons are used up."
+          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. Only first proofs completed within 30 days after the challenge ends (by {deadline}) count. At {goal}, {months} one-month free vouchers are issued within 24 hours after review and you're notified by email. They apply one per charge for {months} consecutive months after your coupons are used up."
         }
       ],
       "notice_title": "Terms",

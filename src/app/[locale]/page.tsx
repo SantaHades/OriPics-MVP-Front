@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
-import PartnerWelcomePrompt from "@/components/PartnerWelcomePrompt";
 import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshCw, Download, User, LogOut, Image as ImageIcon, Camera, File as FileIcon, Clipboard, X, ChevronDown, HelpCircle, ExternalLink, ImageUp, Lock, Share2, BadgeCheck } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Link, useRouter } from "@/navigation";
@@ -2050,8 +2049,6 @@ export default function Home() {
         </section>
 
         {/* Pricing — 요금제 */}
-        {/* 소셜 가입 직후 파트너코드 환영 모달 (A-82) */}
-        <PartnerWelcomePrompt />
         <section id="pricing" className="w-full max-w-5xl mt-12 mb-20 scroll-mt-24">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-500/10 rounded-full text-orange-700 text-xs font-semibold tracking-wider uppercase mb-4">

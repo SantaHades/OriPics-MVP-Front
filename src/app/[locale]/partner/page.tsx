@@ -2,11 +2,12 @@
 
 // 파트너 릴레이 챌린지 랜딩 (A-82 §4.1) — /{locale}/partner
 // 혜택·방법·잔여 카운터·유의사항. 로그인 시 [내 파트너코드 보기], 비로그인 시 [코드 입력하고 가입].
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/navigation";
 import { ArrowLeft, Gift, Users, Ticket, CheckCircle2 } from "lucide-react";
+import { PARTNER, validityDeadline } from "@/lib/partner/config";
 
 interface Stats {
   cap: number;
@@ -25,19 +26,33 @@ export default function PartnerLandingPage() {
   const locale = useLocale();
   const { status } = useSession();
   const [stats, setStats] = useState<Stats | null>(null);
+  // 통계 실패 시 "…" 무한 대기 대신 "—" + 다시 시도 (A-92 ⑧)
+  const [statsFailed, setStatsFailed] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/partner/stats")
+  const loadStats = useCallback(() => {
+    setStatsFailed(false);
+    fetch("/api/partner/stats", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => d && setStats(d))
-      .catch(() => {});
+      .then((d) => (d ? setStats(d) : setStatsFailed(true)))
+      .catch(() => setStatsFailed(true));
   }, []);
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
-  const fmtWon = (n: number) => new Intl.NumberFormat(locale === "en" ? "en-US" : "ko-KR").format(n);
-  const end = stats ? new Date(stats.campaignEnd).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR") : "";
-  const discount = stats?.discountAmount ?? 4950;
-  const months = stats?.milestoneFreeMonths ?? 6;
-  const goal = stats?.milestoneCount ?? 12;
+  const dateLocale = locale === "en" ? "en-US" : "ko-KR";
+  const fmtWon = (n: number) => new Intl.NumberFormat(dateLocale).format(n);
+  const fmtDate = (d: Date) => d.toLocaleDateString(dateLocale, { year: "numeric", month: "long", day: "numeric" });
+  // 상수는 config.ts(PARTNER)에서 — 서버 stats 도착 전·실패 시 폴백. 하드코딩 숫자 제거 (A-92 ⑥)
+  const endDate = stats ? new Date(stats.campaignEnd) : PARTNER.CAMPAIGN_END;
+  const end = fmtDate(endDate);
+  /** 유효 초대(첫 인증) 인정 기한 = 종료 + VALIDITY_GRACE_DAYS (validityDeadline) */
+  const deadline = fmtDate(stats ? new Date(endDate.getTime() + PARTNER.VALIDITY_GRACE_DAYS * 86_400_000) : validityDeadline());
+  const discount = stats?.discountAmount ?? PARTNER.DISCOUNT_AMOUNT;
+  const months = stats?.milestoneFreeMonths ?? PARTNER.MILESTONE_FREE_MONTHS;
+  const goal = stats?.milestoneCount ?? PARTNER.MILESTONE_COUNT;
+  const cap = stats?.cap ?? PARTNER.CAP;
+  const months24 = stats?.benefitValidMonths ?? PARTNER.BENEFIT_VALID_MONTHS;
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -53,11 +68,18 @@ export default function PartnerLandingPage() {
           <p className="text-base text-slate-700 mb-6">{t("sub2", { goal, months, value: fmtWon(discount * 2 * months) })}</p>
 
           <div className="flex flex-wrap items-center gap-3 mb-6 text-sm">
-            <span className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700">{stats ? t("until", { end }) : "…"}</span>
-            {stats && (
+            <span className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700">{t("until", { end })}</span>
+            {stats ? (
               <span className={`px-3 py-1.5 rounded-full font-bold ${stats.remaining > 0 && !stats.campaignEnded ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"}`}>
                 {stats.campaignEnded ? t("ended") : stats.remaining > 0 ? t("remaining", { remaining: stats.remaining, cap: stats.cap }) : t("full", { cap: stats.cap })}
               </span>
+            ) : statsFailed ? (
+              <span className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" role="status">
+                {t("remaining", { remaining: "—", cap })} · {t("stats_failed")}{" "}
+                <button type="button" onClick={loadStats} className="underline text-blue-700 hover:text-blue-900">{t("retry")}</button>
+              </span>
+            ) : (
+              <span className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-400" aria-busy="true">{t("remaining", { remaining: "…", cap })}</span>
             )}
           </div>
 
@@ -112,8 +134,8 @@ export default function PartnerLandingPage() {
           <dl className="space-y-4">
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="rounded-2xl bg-white border border-slate-200 p-5">
-                <dt className="font-semibold mb-1">{t(`faq.${i}.q`, { goal, months })}</dt>
-                <dd className="text-sm text-slate-600 leading-relaxed">{t(`faq.${i}.a`, { amount: fmtWon(discount), goal, months, months24: stats?.benefitValidMonths ?? 24 })}</dd>
+                <dt className="font-semibold mb-1">{t(`faq.${i}.q`, { goal, months, cap })}</dt>
+                <dd className="text-sm text-slate-600 leading-relaxed">{t(`faq.${i}.a`, { amount: fmtWon(discount), goal, months, months24, cap, end, deadline })}</dd>
               </div>
             ))}
           </dl>
@@ -123,7 +145,7 @@ export default function PartnerLandingPage() {
           <h2 className="text-sm font-bold text-slate-700 mb-2">{t("notice_title")}</h2>
           <ul className="list-disc pl-5 space-y-1">
             {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-              <li key={i}>{t(`notice.${i}`, { amount: fmtWon(discount), goal, months, months24: stats?.benefitValidMonths ?? 24, cap: stats?.cap ?? 500 })}</li>
+              <li key={i}>{t(`notice.${i}`, { amount: fmtWon(discount), goal, months, months24, cap, end, deadline })}</li>
             ))}
           </ul>
           <p className="mt-3">

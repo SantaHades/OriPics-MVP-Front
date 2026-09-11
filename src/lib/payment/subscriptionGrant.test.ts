@@ -42,7 +42,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: { $transaction: (fn: any) => fn(tx) },
 }));
 
-import { verifyAndGrantSubscription } from "./subscriptionGrant";
+import { billingKeyUnusableReason, verifyAndGrantSubscription } from "./subscriptionGrant";
 import { PLAN_GRANTS } from "@/lib/payment";
 
 const PAID = { status: "PAID", amount: { total: 9900 }, channel: { pgProvider: "INICIS_V2" } };
@@ -149,5 +149,28 @@ describe("verifyAndGrantSubscription — 크레딧 리셋(SET)", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.code).toBe("amount_mismatch");
+  });
+});
+
+// (2026-09-11 A-91 ②) 0원 주기 카드 검증 — 조회 성공 + ISSUED + 결제수단 필수
+describe("billingKeyUnusableReason — 0원 주기 빌링키 검증", () => {
+  const card = { type: "BillingKeyPaymentMethodCard", card: { name: "국민", number: "1234-****" } };
+  it("ISSUED + 카드 → 사용 가능(null)", () => {
+    expect(billingKeyUnusableReason({ status: "ISSUED", methods: [card] }, null)).toBeNull();
+  });
+  it("간편결제 수단도 허용", () => {
+    expect(billingKeyUnusableReason({ status: "ISSUED", methods: [{ type: "BillingKeyPaymentMethodEasyPay" }] }, null)).toBeNull();
+  });
+  it("조회 실패(정보 없음) → lookup_failed", () => {
+    expect(billingKeyUnusableReason(null, "network")).toBe("lookup_failed:network");
+    expect(billingKeyUnusableReason(undefined, null)).toBe("lookup_empty");
+  });
+  it("DELETED 빌링키 → status:DELETED", () => {
+    expect(billingKeyUnusableReason({ status: "DELETED", methods: [card] }, null)).toBe("status:DELETED");
+  });
+  it("결제수단 없음 / 카드 정보 없는 카드 타입 → no_payment_method", () => {
+    expect(billingKeyUnusableReason({ status: "ISSUED", methods: [] }, null)).toBe("no_payment_method");
+    expect(billingKeyUnusableReason({ status: "ISSUED", methods: [{ type: "BillingKeyPaymentMethodCard" }] }, null)).toBe("no_payment_method");
+    expect(billingKeyUnusableReason({ status: "ISSUED" }, null)).toBe("no_payment_method");
   });
 });

@@ -8,6 +8,7 @@ import {
 import { assertCron } from "@/lib/security/cron";
 import { sendGraceDowngradeNotice, sendGraceReminder } from "@/lib/notifications/graceMailer";
 import { notifyMilestoneIfReached } from "@/lib/partner/notify";
+import { expireStaleChargeIntents } from "@/lib/partner/server";
 import { PARTNER } from "@/lib/partner/config";
 
 const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET ?? "";
@@ -202,8 +203,17 @@ export async function GET(req: NextRequest) {
     errors.push(`grace_scan: ${e?.message || e}`);
   }
 
+  // 2-b) 파트너 청구 의도 스윕 (2026-09-11 A-91 ③) — 2시간 넘게 pending 인 charge_intents 의 예약 혜택을 풀고 expired 처리.
+  //    (청구 도중 중단·부여 실패 분기 누락으로 `reserved` 고착 → 다음 결제에서 할인권이 안 잡히는 문제 방지)
+  let intentsExpired = 0;
+  try {
+    intentsExpired = await expireStaleChargeIntents();
+  } catch (e: any) {
+    errors.push(`intent_sweep: ${e?.message || e}`);
+  }
+
   // 3) 파트너 12명 마일스톤 일일 스윕 (A-82) — 피추천인의 첫 인증이 나중에 발생하므로
-  //    추천 12건 이상인 파트너를 골라 유효 초대 수를 재확인, 새로 도달하면 검수 메일.
+  //    추천 12건 이상인 파트너를 골라 유효 초대 수를 재확인, 미발송(notified_at IS NULL)이면 검수 메일 (A-91 ①).
   let milestonesReached = 0;
   try {
     const candidates = await prisma.partnerReferral.groupBy({
@@ -224,7 +234,7 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    ok: true, charged, alreadyDone, failed, downgraded, graceNoticed, graceReminded, milestonesReached,
+    ok: true, charged, alreadyDone, failed, downgraded, graceNoticed, graceReminded, milestonesReached, intentsExpired,
     errors: errors.slice(0, 20),
   });
 }

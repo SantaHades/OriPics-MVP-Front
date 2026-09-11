@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { lookupPartnerCode } from "@/lib/partner/server";
 import { checkRateLimit, clientIp, tooManyRequests, RATE_LIMITS } from "@/lib/security/rateLimit";
 
@@ -8,6 +9,8 @@ export const runtime = "nodejs";
  * GET /api/partner/lookup?code=1235  (비로그인 허용 — 가입 폼에서 사용)
  * → { ok:true, code, ownerNameMasked } | { ok:false, error }
  * 순번 코드 열람으로 회원 이름을 수집하지 못하도록 마스킹 + IP 레이트리밋(분 5·일 20).
+ * (2026-09-11 A-93 §3.1) error 구분: invalid_code(400) · code_not_found(404) · owner_gone(404, 탈퇴한 주인의 코드)
+ *   · self_code(409, 로그인 상태에서 본인 코드). 문구는 클라이언트(messages)에서 error 키로 매핑.
  */
 export async function GET(req: NextRequest) {
   const ip = clientIp(req);
@@ -18,8 +21,13 @@ export async function GET(req: NextRequest) {
 
   const code = req.nextUrl.searchParams.get("code");
   try {
-    const r = await lookupPartnerCode(code);
-    if (!r.ok) return NextResponse.json(r, { status: r.error === "invalid_code" ? 400 : 404 });
+    // 비로그인 조회(가입 폼)는 세션이 없으므로 self_code 판정 없이 진행 — 세션 오류도 조회를 막지 않음
+    const viewerId = await getSessionUserId().catch(() => null);
+    const r = await lookupPartnerCode(code, { viewerId });
+    if (!r.ok) {
+      const status = r.error === "invalid_code" ? 400 : r.error === "self_code" ? 409 : 404;
+      return NextResponse.json(r, { status });
+    }
     return NextResponse.json({ ok: true, code: r.code, ownerNameMasked: r.ownerNameMasked });
   } catch (e: any) {
     console.error("[partner/lookup] failed", e?.message ?? e);

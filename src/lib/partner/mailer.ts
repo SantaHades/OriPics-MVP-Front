@@ -62,8 +62,9 @@ export async function sendReferralJoinedMail(opts: {
   return send(opts.to, "[OriPics] 파트너코드로 새 회원이 가입했어요", shell("파트너 릴레이 챌린지", body, { href: PARTNER_URL, label: "초대 현황 보기" }));
 }
 
-export async function sendMilestoneReachedMail(opts: { to: string; nameMasked: string; userId: string; code: string | null }): Promise<void> {
-  await send(
+/** 반환: 파트너 본인 메일 발송 성공 여부 (운영자 메일은 best-effort) — notify.ts가 실패 시 notified_at 을 되돌린다 (2026-09-11 A-91 ①) */
+export async function sendMilestoneReachedMail(opts: { to: string; nameMasked: string; userId: string; code: string | null }): Promise<boolean> {
+  const sent = await send(
     opts.to,
     `[OriPics] 유효 초대 ${PARTNER.MILESTONE_COUNT}명 달성 — 1개월 무료 이용권 6장 검수 중`,
     shell(
@@ -86,6 +87,7 @@ export async function sendMilestoneReachedMail(opts: { to: string; nameMasked: s
       ),
     );
   }
+  return sent;
 }
 
 export async function sendMilestoneGrantedMail(opts: { to: string }): Promise<boolean> {

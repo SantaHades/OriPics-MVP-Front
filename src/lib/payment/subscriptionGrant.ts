@@ -78,10 +78,40 @@ export type GrantResult =
         | "ownership_mismatch"
         | "billing_key_not_owned"
         | "db_update_failed"
-        | "billing_key_charge_failed";
+        | "billing_key_charge_failed"
+        /** 0원 주기인데 빌링키 조회 실패·삭제됨·결제수단 없음 (2026-09-11 A-91 ②, 402) */
+        | "billing_key_invalid";
       httpStatus: number;
       detail?: any;
     };
+
+/**
+ * 부여 실패 시 예약 혜택을 해제할 코드 (2026-09-11 A-91 ③).
+ *  - portone_lookup_failed / payment_not_paid / db_update_failed: 이 요청에서는 부여가 끝나지 않았다. 해제해 두면
+ *    할인권이 `reserved` 로 고착되지 않고, 혹시 결제가 실제로 승인돼 webhook 이 뒤늦게 부여하더라도
+ *    settleChargeBenefits 가 `failed` 의도도 정산(available→used)하므로 이중 부여·유실이 없다.
+ *  - amount_mismatch / ownership_mismatch 는 제외: 결제 자체는 PAID 이고 의도 금액·소유권 대조에서 걸린 상태라
+ *    webhook(같은 의도 금액으로 재검증)이 정상 부여할 수 있다. 여기서 풀면 그 사이 다른 청구에 잡혀 이중 할인이 된다.
+ */
+const RELEASE_ON_GRANT_FAIL = new Set<string>(["portone_lookup_failed", "payment_not_paid", "db_update_failed"]);
+
+/**
+ * (2026-09-11 A-91 ②) 0원 주기 카드 검증 — 기획 §2-5 "첫 달 0원도 카드(빌링키) 등록 필수".
+ * PortOne 빌링키 조회가 성공하고(status=ISSUED) 결제수단(methods: 카드/간편결제 등)이 1개 이상이어야 한다.
+ * 반환: 문제 없으면 null, 아니면 사유 문자열(응답 detail).
+ */
+export function billingKeyUnusableReason(bkInfo: any, lookupError: string | null): string | null {
+  if (!bkInfo) return lookupError ? `lookup_failed:${lookupError}` : "lookup_empty";
+  if (bkInfo.status && bkInfo.status !== "ISSUED") return `status:${bkInfo.status}`;
+  const methods: any[] = Array.isArray(bkInfo.methods) ? bkInfo.methods : [];
+  const usable = methods.some(
+    (m) =>
+      typeof m?.type === "string" &&
+      m.type.startsWith("BillingKeyPaymentMethod") &&
+      (m.type !== "BillingKeyPaymentMethodCard" || !!m.card),
+  );
+  return usable ? null : "no_payment_method";
+}
 
 /**
  * 구독·크레딧 부여 트랜잭션 본체 — advisory lock·멱등 확인은 호출측(트랜잭션 안)에서 한다.
@@ -421,11 +451,13 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   // 시 저장된 고객정보(특히 휴대폰)를 조회해 명시적으로 전달한다.
   let bkCustomer: { name?: string; email?: string; phoneNumber?: string } = {};
   let bkInfo: any = null;
+  let bkLookupError: string | null = null;
   try {
     bkInfo = await PortOne.BillingKeyClient({ secret }).getBillingKeyInfo({ billingKey });
     bkCustomer = bkInfo?.customer ?? {};
-  } catch {
-    // 조회 실패 시 전달된 customer로 폴백
+  } catch (e: any) {
+    // 조회 실패 시 전달된 customer로 폴백 (유료 청구는 PG가 빌링키를 검증). 0원 주기는 아래에서 실패로 처리 (A-91 ②)
+    bkLookupError = String(e?.message ?? e);
   }
 
   // H-1b 소유권 검증 (최초 구독 경로만). 빌링키 발급 시 checkout이 주입한
@@ -480,7 +512,20 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   }
 
   if (reserved && !reserved.alreadyPaid && amount === 0) {
-    // 0원 주기 — PG 호출 없이 부여 (빌링키 저장 포함)
+    // 0원 주기 — PG 호출이 없으므로 여기서 카드(빌링키)를 직접 검증한다 (2026-09-11 A-91 ②).
+    // 조회 실패·삭제된 키·결제수단 없음이면 위조 빌링키 문자열로 결제 없이 Pro 를 받을 수 있으므로 402 + 예약 해제.
+    // (소유권 customData 검증은 위 verifyOwnership 블록에서 그대로 수행됨)
+    const unusable = billingKeyUnusableReason(bkInfo, bkLookupError);
+    if (unusable) {
+      console.warn("[subscriptionGrant] zero-amount cycle refused — billing key unusable", { userId, paymentId, reason: unusable });
+      try {
+        await releaseChargeBenefits(paymentId);
+      } catch (re: any) {
+        console.warn("[subscriptionGrant] benefit release failed", { paymentId, error: re?.message ?? re });
+      }
+      return { ok: false, code: "billing_key_invalid", httpStatus: 402, detail: unusable };
+    }
+    // 부여 (빌링키 저장 포함)
     return grantWithoutCharge({
       paymentId,
       userId,
@@ -535,5 +580,15 @@ export async function chargeWithBillingKeyAndGrant(opts: {
   }
 
   // 청구 완료된 paymentId로 검증 + 멱등 부여 + billingKey 저장
-  return verifyAndGrantSubscription({ paymentId, userId, plan, secret, billingKey });
+  const result = await verifyAndGrantSubscription({ paymentId, userId, plan, secret, billingKey });
+  // (2026-09-11 A-91 ③) PG 승인 뒤 부여가 실패하면 예약 혜택 해제 — 최초 구독(랜덤 paymentId)·renew_now(날짜 id)는
+  // 재시도 시 다른/같은 id로 다시 예약하므로 여기서 풀지 않으면 `reserved` 가 영구 고착된다. 제외 코드는 RELEASE_ON_GRANT_FAIL 주석 참고.
+  if (!result.ok && reserved && !reserved.alreadyPaid && RELEASE_ON_GRANT_FAIL.has(result.code)) {
+    try {
+      await releaseChargeBenefits(paymentId);
+    } catch (re: any) {
+      console.warn("[subscriptionGrant] benefit release after grant failure failed", { paymentId, code: result.code, error: re?.message ?? re });
+    }
+  }
+  return result;
 }

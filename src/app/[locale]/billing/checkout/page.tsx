@@ -7,6 +7,7 @@ import { useRouter, Link } from "@/navigation";
 import { useTranslations } from "next-intl";
 import * as PortOne from "@portone/browser-sdk/v2";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { PARTNER } from "@/lib/partner/config";
 
 const PLAN_PRICES: Record<string, { amount: number; orderName: string }> = {
   pro_monthly: { amount: 9900, orderName: "OriPics Pro" },
@@ -29,7 +30,10 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [phone, setPhone] = useState("");
   // 파트너 혜택 미리보기 (A-82) — 첫 결제 최대 2장(0원)·이후 1장. 실제 청구액은 서버가 예약 시점에 확정
-  const [preview, setPreview] = useState<{ expectedAmount: number; discountAmount: number; couponsApplied: number; freeMonthApplied: boolean } | null>(null);
+  const [preview, setPreview] = useState<{
+    expectedAmount: number; discountAmount: number; couponsApplied: number; freeMonthApplied: boolean;
+    listAmount?: number; couponsAvailable?: number; freeMonthsAvailable?: number;
+  } | null>(null);
   useEffect(() => {
     if (status !== "authenticated" || changeCard) return;
     fetch("/api/partner/me", { cache: "no-store" })
@@ -83,6 +87,21 @@ export default function CheckoutPage() {
     normalizedPhone = "0" + normalizedPhone.slice(2);
   }
   const phoneValid = /^01[0-9]{8,9}$/.test(normalizedPhone);
+
+  // 0원 결제(할인권 2장 또는 무료 이용권) 여부 — 청약철회 고지·다음 회차 예상액 문구 분기 (A-92 ④·⑥)
+  const zeroCharge = !!preview && preview.discountAmount > 0 && preview.expectedAmount === 0;
+  // 다음 회차 예상액: 이번에 쓰는 혜택을 제외한 잔여로 §3.4 규칙(할인권 1장 → 무료 이용권 1장 → 정가) 재적용.
+  // /api/partner/me 가 잔여 필드를 주지 않으면 null → 기존 "{next} 또는 정가" 문구로 폴백
+  const nextCharge = (() => {
+    if (!preview || preview.couponsAvailable == null || preview.freeMonthsAvailable == null) return null;
+    const list = preview.listAmount ?? planInfo?.amount ?? 0;
+    const perCoupon = preview.couponsApplied > 0 ? preview.discountAmount / preview.couponsApplied : PARTNER.DISCOUNT_AMOUNT;
+    const couponsLeft = Math.max(0, preview.couponsAvailable - preview.couponsApplied);
+    const freeLeft = Math.max(0, preview.freeMonthsAvailable - (preview.freeMonthApplied ? 1 : 0));
+    if (couponsLeft > 0) return { amount: Math.max(0, list - Math.min(list, perCoupon)), detail: t("partner_next_coupon", { left: couponsLeft - 1 }) };
+    if (freeLeft > 0) return { amount: 0, detail: t("partner_next_free_month") };
+    return { amount: list, detail: t("partner_next_list") };
+  })();
 
   const handlePay = async () => {
     if (!storeId || !channelKey) {
@@ -200,7 +219,16 @@ export default function CheckoutPage() {
             {preview && preview.discountAmount > 0 && (
               <p className="mt-2 text-xs text-blue-800 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
                 {preview.expectedAmount === 0
-                  ? t("partner_zero_notice", { kind: preview.freeMonthApplied ? t("partner_kind_free_month") : t("partner_kind_coupons", { count: preview.couponsApplied }), next: "₩4,950" })
+                  ? nextCharge
+                    ? t("partner_zero_notice_exact", {
+                        kind: preview.freeMonthApplied ? t("partner_kind_free_month") : t("partner_kind_coupons", { count: preview.couponsApplied }),
+                        next: nextCharge.amount.toLocaleString(),
+                        detail: nextCharge.detail,
+                      })
+                    : t("partner_zero_notice", {
+                        kind: preview.freeMonthApplied ? t("partner_kind_free_month") : t("partner_kind_coupons", { count: preview.couponsApplied }),
+                        next: `₩${(planInfo.amount - PARTNER.DISCOUNT_AMOUNT).toLocaleString()}`,
+                      })
                   : t("partner_discount_notice", { count: preview.couponsApplied, amount: preview.expectedAmount.toLocaleString() })}
               </p>
             )}
@@ -242,7 +270,8 @@ export default function CheckoutPage() {
           {!changeCard && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] leading-relaxed">
             <p className="font-bold text-slate-700 mb-1">{t("withdrawal_notice_title")}</p>
-            <p className="mb-1.5">{t("withdrawal_notice_body")}</p>
+            {/* 0원 결제(할인권 2장·무료 이용권)면 환불 대상 금액이 없음을 고지 — 유료 기준 문구 그대로 두던 A-92 ④ */}
+            <p className="mb-1.5">{zeroCharge ? t("withdrawal_notice_body_zero") : t("withdrawal_notice_body")}</p>
             <p className="text-slate-500">
               {t("withdrawal_notice_agree")}{" "}
               <Link href="/terms#refund" className="underline hover:text-slate-900" target="_blank">
@@ -257,7 +286,7 @@ export default function CheckoutPage() {
           )}
 
           {error && (
-            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+            <div role="alert" className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
               {error}
             </div>
           )}

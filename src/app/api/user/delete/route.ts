@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
 import { revokeSocialGrants } from "@/lib/auth/revokeSocialGrants";
+import { revokeReferrerBenefitsOnRefereeDelete } from "@/lib/partner/server";
 
 export async function DELETE() {
   try {
@@ -44,6 +45,12 @@ export async function DELETE() {
         where: { email: user.email },
       });
     }
+
+    // 파트너 탈퇴 파밍 방지 (2026-09-11 A-91 ⑥): 이 계정이 코드 입력으로 참여한 피추천인이면, 추천인에게 적립된
+    // 미사용 할인권을 삭제 **전에** 회수(참여 30일 미만 또는 참여 후 첫 인증 없음일 때만). 삭제 후엔 referral cascade로 연결이 끊긴다.
+    // 참여 원장(partner_join_ledger)은 남으므로 같은 이메일 재가입·재참여는 계속 차단된다.
+    const revoked = await revokeReferrerBenefitsOnRefereeDelete(user.id);
+    if (revoked > 0) console.info("[Delete User] partner benefits revoked from referrer", { userId: user.id, revoked });
 
     await prisma.user.delete({
       where: { id: user.id },

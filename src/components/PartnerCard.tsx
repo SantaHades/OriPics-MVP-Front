@@ -3,7 +3,9 @@
 // 파트너 릴레이 챌린지 카드 (A-82) — 프로필 #partner.
 // 내 코드·복사·공유 / 코드 입력(가능할 때) / 초대 현황(마스킹·유효 여부) / 혜택 보유·사용 내역 / 다음 결제 예상.
 // 금액 문구는 웹 전용(앱은 코드·공유·입력만 — App Store 3.1.1).
-import { useCallback, useEffect, useMemo, useState } from "react";
+// A-92: lookup 429(rate_limited) 분기·알 수 없는 에러 코드 방어, 가입 폼에서 넘어온 ?partner_error= 표시,
+//       접근성(label/htmlFor·role=alert·aria-busy·progressbar), 클립보드 실패 안내, 하드코딩 숫자 변수화.
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Check, Copy, Gift, Share2, Users } from "lucide-react";
 
@@ -55,6 +57,25 @@ export function partnerShareUrl(locale: string, code: string) {
   return `https://www.ori.pics/${locale}/signup?ref=${encodeURIComponent(code)}`;
 }
 
+/** `Partner.errors.*` 에 번역이 있는 서버 에러 코드 (lookup `error` · join `detail` · register `partner.error`) */
+export const KNOWN_PARTNER_ERRORS = new Set([
+  "invalid_code", "code_not_found", "self_code", "already_joined", "circular", "window_expired",
+  "campaign_ended", "user_not_found", "unavailable", "email_already_joined", "rate_limited",
+]);
+
+/**
+ * 파트너 API 실패 → `Partner.errors.*` 키. 429 또는 body `{code:"rate_limited"}`(rateLimit.ts)는 rate_limited,
+ * 그 외 알 수 없는 코드는 fallback (없는 코드로 오인 표시하던 A-92 ① 결함 방지).
+ */
+export function partnerErrorKey(status: number, body: unknown, fallback: "code_not_found" | "unavailable"): string {
+  const b = (body ?? {}) as { code?: unknown; error?: unknown; detail?: unknown };
+  if (status === 429 || b.code === "rate_limited") return "rate_limited";
+  const raw = typeof b.error === "string" ? b.error : typeof b.detail === "string" ? b.detail : null;
+  if (raw && KNOWN_PARTNER_ERRORS.has(raw)) return raw;
+  if (status >= 500 || status === 0) return "unavailable";
+  return fallback;
+}
+
 export default function PartnerCard({ highlight = false }: { highlight?: boolean }) {
   const t = useTranslations("Partner");
   const locale = useLocale();
@@ -69,6 +90,11 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinDone, setJoinDone] = useState<string | null>(null);
   const [showAllBenefits, setShowAllBenefits] = useState(false);
+  const [copyError, setCopyError] = useState(false);
+  // 가입 폼에서 코드 참여가 실패한 채 넘어온 경우 (?partner_error=코드, A-92 ②)
+  const [signupJoinError, setSignupJoinError] = useState<string | null>(null);
+  const codeInputId = useId();
+  const progressId = useId();
 
   const fmtWon = useCallback((n: number) => new Intl.NumberFormat(locale === "en" ? "en-US" : "ko-KR").format(n), [locale]);
   const fmtDate = useCallback(
@@ -95,17 +121,27 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const err = new URLSearchParams(window.location.search).get("partner_error");
+    if (err) setSignupJoinError(KNOWN_PARTNER_ERRORS.has(err) ? err : "unavailable");
+  }, []);
+
   const shareUrl = useMemo(() => (data?.code ? partnerShareUrl(locale, data.code) : ""), [data?.code, locale]);
   const shareText = useMemo(() => (data?.code ? t("share_text", { code: data.code, url: shareUrl }) : ""), [data?.code, shareUrl, t]);
 
   const copy = async (what: "code" | "link") => {
     if (!data?.code) return;
+    setCopyError(false);
     try {
+      if (!navigator.clipboard?.writeText) throw new Error("clipboard_unavailable");
       await navigator.clipboard.writeText(what === "code" ? data.code : shareText);
       setCopied(what);
       setTimeout(() => setCopied(null), 1600);
     } catch {
-      /* ignore */
+      // 비보안 컨텍스트·권한 거부 등 — 코드가 화면에 있으니 직접 복사 안내
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 4000);
     }
   };
   const share = async () => {
@@ -131,10 +167,13 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
       const d = await res.json().catch(() => ({}));
       if (!res.ok || !d.ok) {
         setLookupName(null);
-        setJoinError(t(`errors.${d?.error ?? "code_not_found"}`));
+        setJoinError(t(`errors.${partnerErrorKey(res.status, d, "code_not_found")}`));
         return;
       }
       setLookupName(d.ownerNameMasked);
+    } catch {
+      setLookupName(null);
+      setJoinError(t("errors.unavailable"));
     } finally {
       setLookupBusy(false);
     }
@@ -152,13 +191,16 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setJoinError(t(`errors.${d?.detail ?? "unavailable"}`));
+        setJoinError(t(`errors.${partnerErrorKey(res.status, d, "unavailable")}`));
         return;
       }
       setJoinDone(d.referrerNameMasked ?? lookupName ?? "");
       setLookupName(null);
       setCodeInput("");
+      setSignupJoinError(null);
       await load();
+    } catch {
+      setJoinError(t("errors.unavailable"));
     } finally {
       setJoinBusy(false);
     }
@@ -213,8 +255,13 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
         </div>
       )}
       {joinDone !== null && (
-        <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
+        <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm" role="status">
           {t("join_done", { name: joinDone })}
+        </div>
+      )}
+      {signupJoinError && joinDone === null && !data.joined && (
+        <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm" role="alert">
+          {t("signup_join_failed", { reason: t(`errors.${signupJoinError}`) })}
         </div>
       )}
 
@@ -223,16 +270,17 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
         <p className="text-xs text-slate-500 mb-1">{t("my_code")}</p>
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-3xl font-extrabold tracking-[0.15em] tabular-nums">{data.code ?? "—"}</span>
-          <button onClick={() => copy("code")} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold hover:bg-slate-50">
-            {copied === "code" ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />} {copied === "code" ? t("copied") : t("copy_code")}
+          <button type="button" onClick={() => copy("code")} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold hover:bg-slate-50">
+            {copied === "code" ? <Check size={14} className="text-emerald-600" aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />} {copied === "code" ? t("copied") : t("copy_code")}
           </button>
-          <button onClick={share} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">
-            {copied === "link" ? <Check size={14} /> : <Share2 size={14} />} {copied === "link" ? t("copied") : t("share")}
+          <button type="button" onClick={share} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700">
+            {copied === "link" ? <Check size={14} aria-hidden="true" /> : <Share2 size={14} aria-hidden="true" />} {copied === "link" ? t("copied") : t("share")}
           </button>
         </div>
-        <p className="mt-2 text-[11px] text-slate-400 break-all">{shareUrl}</p>
+        <p className="mt-2 text-[11px] text-slate-400 break-all select-all">{shareUrl}</p>
+        {copyError && <p className="mt-1 text-xs text-red-600" role="alert">{t("copy_failed")}</p>}
         {!data.isPartner && !c.campaignEnded && (
-          <p className="mt-2 text-xs text-amber-700">{t("not_partner_notice")}</p>
+          <p className="mt-2 text-xs text-amber-700">{t("not_partner_notice", { cap: c.cap })}</p>
         )}
       </div>
 
@@ -241,30 +289,41 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
         <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 mb-4">
           <p className="text-sm font-bold text-blue-900 mb-1">{t("join_title")}</p>
           <p className="text-xs text-blue-800/80 mb-3">{t("join_desc", { amount: fmtWon(c.discountAmount) })}</p>
+          <label htmlFor={codeInputId} className="sr-only">{t("code_placeholder")}</label>
           <div className="flex gap-2">
             <input
+              id={codeInputId}
               inputMode="numeric"
+              autoComplete="off"
               value={codeInput}
               onChange={(e) => {
                 setCodeInput(e.target.value.replace(/[^0-9]/g, "").slice(0, 8));
                 setLookupName(null);
                 setJoinError(null);
               }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && codeInput.length >= 3 && !lookupBusy && !joinBusy) {
+                  e.preventDefault();
+                  if (lookupName) join();
+                  else lookup();
+                }
+              }}
               placeholder={t("code_placeholder")}
+              aria-invalid={joinError ? true : undefined}
               className="flex-1 min-w-0 px-4 py-2.5 rounded-xl border border-slate-200 text-sm tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500/40"
             />
             {lookupName ? (
-              <button onClick={join} disabled={joinBusy} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:bg-slate-300">
+              <button type="button" onClick={join} disabled={joinBusy} aria-busy={joinBusy} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:bg-slate-300">
                 {joinBusy ? "…" : t("join_button")}
               </button>
             ) : (
-              <button onClick={lookup} disabled={lookupBusy || codeInput.length < 3} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl border border-blue-300 text-blue-700 text-sm font-bold hover:bg-blue-100 disabled:opacity-40">
+              <button type="button" onClick={lookup} disabled={lookupBusy || codeInput.length < 3} aria-busy={lookupBusy} className="shrink-0 whitespace-nowrap px-4 py-2.5 rounded-xl border border-blue-300 text-blue-700 text-sm font-bold hover:bg-blue-100 disabled:opacity-40">
                 {lookupBusy ? "…" : t("check_button")}
               </button>
             )}
           </div>
-          {lookupName && <p className="mt-2 text-xs text-emerald-700">{t("lookup_ok", { name: lookupName })}</p>}
-          {joinError && <p className="mt-2 text-xs text-red-600">{joinError}</p>}
+          {lookupName && <p className="mt-2 text-xs text-emerald-700" role="status">{t("lookup_ok", { name: lookupName })}</p>}
+          {joinError && <p className="mt-2 text-xs text-red-600" role="alert">{joinError}</p>}
         </div>
       )}
       {!data.canJoin && !data.joined && data.joinBlockedReason && (
@@ -284,13 +343,21 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
             <h3 className="text-sm font-bold">{t("referrals_title")}</h3>
             <span className="ml-auto text-xs text-slate-500">{t("referrals_count", { valid: data.validCount, total: data.referrals.length })}</span>
           </div>
-          <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-1">
+          <div
+            role="progressbar"
+            aria-label={t("progress_label")}
+            aria-valuemin={0}
+            aria-valuemax={c.milestoneCount}
+            aria-valuenow={Math.min(data.validCount, c.milestoneCount)}
+            aria-describedby={progressId}
+            className="h-2 rounded-full bg-slate-100 overflow-hidden mb-1"
+          >
             <div className="h-full bg-blue-600 transition-all" style={{ width: `${Math.min(100, (data.validCount / c.milestoneCount) * 100)}%` }} />
           </div>
-          <p className="text-[11px] text-slate-500 mb-3">{t("milestone_progress", { valid: data.validCount, goal: c.milestoneCount, months: c.milestoneFreeMonths })}</p>
+          <p id={progressId} className="text-[11px] text-slate-500 mb-3">{t("milestone_progress", { valid: data.validCount, goal: c.milestoneCount, months: c.milestoneFreeMonths })}</p>
           {data.milestone && (
             <p className={`mb-3 px-3 py-2 rounded-lg text-xs ${data.milestone.status === "approved" ? "bg-emerald-50 text-emerald-800" : data.milestone.status === "rejected" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-800"}`}>
-              {t(`milestone_${data.milestone.status}`, { date: fmtDate(data.milestone.approvedAt ?? data.milestone.reachedAt) })}
+              {t(`milestone_${data.milestone.status}`, { date: fmtDate(data.milestone.approvedAt ?? data.milestone.reachedAt), goal: c.milestoneCount, months: c.milestoneFreeMonths })}
             </p>
           )}
           {data.referrals.length === 0 ? (
@@ -353,7 +420,7 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
             </ul>
           )}
           {data.benefits.list.length > benefitList.length || showAllBenefits ? (
-            <button onClick={() => setShowAllBenefits((v) => !v)} className="mt-2 text-[11px] text-blue-600 hover:underline">
+            <button type="button" onClick={() => setShowAllBenefits((v) => !v)} aria-expanded={showAllBenefits} className="mt-2 text-[11px] text-blue-600 hover:underline">
               {showAllBenefits ? t("show_less") : t("show_all", { count: data.benefits.list.length })}
             </button>
           ) : null}

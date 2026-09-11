@@ -152,6 +152,26 @@ export function planBenefitApplication(opts: {
   };
 }
 
+/**
+ * 참여 원장(partner_join_ledger) 키용 이메일 정규화 (2026-09-11 A-91 ⑤).
+ *  - 공통: trim + 소문자
+ *  - 모든 도메인: 로컬파트의 `+tag` 제거 (a+x@b.com → a@b.com)
+ *  - gmail.com / googlemail.com: 로컬파트의 점 제거 (a.b.c@gmail.com → abc@gmail.com), googlemail → gmail 통일
+ * 기존 원장 행은 lower(trim()) 해시라 조회 시 두 해시를 모두 본다(server.ts hashEmailLegacy) — 백필: scripts/admin-partner-ledger-backfill.ts
+ */
+export function normalizeEmailForLedger(email: string): string {
+  const e = email.trim().toLowerCase();
+  const at = e.lastIndexOf("@");
+  if (at <= 0) return e;
+  let local = e.slice(0, at);
+  let domain = e.slice(at + 1);
+  const plus = local.indexOf("+");
+  if (plus > 0) local = local.slice(0, plus);
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") local = local.replace(/\./g, "");
+  return `${local}@${domain}`;
+}
+
 /** 가입 시각 기준 코드 입력 가능 여부 — 기존 회원(공지 전 가입)은 기간 중 언제나, 신규는 7일 */
 export function joinWindowOpen(signupAt: Date | null, now: Date = new Date()): boolean {
   if (now.getTime() > PARTNER.CAMPAIGN_END.getTime()) return false;

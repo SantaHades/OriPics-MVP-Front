@@ -85,12 +85,15 @@ export async function POST(req: Request) {
     // 2. 비밀번호 암호화
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. 사용자 생성
+    // 3. 사용자 생성 — 위에서 이메일 인증 코드를 확인했으므로 emailVerified 를 함께 기록
+    //    (2026-09-11 A-93: 파트너 참여 '이메일 인증 완료 계정' 조건의 근거 컬럼. 이전 가입자는 null이지만
+    //     이 경로는 항상 인증 후 생성이므로 파트너 참여 자체는 컬럼 값으로 차단하지 않는다 — lib/partner/server.ts 주석)
     const user = await prisma.user.create({
       data: {
         email,
         name,
         password: hashedPassword,
+        emailVerified: new Date(),
       },
     });
 

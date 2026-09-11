@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import '@/app/globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
+import PartnerWelcomePrompt from '@/components/PartnerWelcomePrompt';
 
 export async function generateMetadata(props: {params: Promise<{locale: string}>}) {
   const params = await props.params;
@@ -64,6 +65,8 @@ export default async function RootLayout(
         <NextIntlClientProvider locale={locale} messages={messages} timeZone="Asia/Seoul">
           <AuthProvider>
             {children}
+            {/* 소셜 가입 직후 파트너코드 환영 모달 (A-82·A-92) — 홈 외 첫 진입 경로에서도 1회 노출. 제외 경로는 컴포넌트 내부에서 판정 */}
+            <PartnerWelcomePrompt />
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

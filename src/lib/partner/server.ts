@@ -13,6 +13,7 @@ import {
   isPartnerAccount,
   joinWindowOpen,
   maskName,
+  normalizeEmailForLedger,
   normalizePartnerCode,
   planBenefitApplication,
   validityDeadline,
@@ -44,16 +45,28 @@ export interface CodeLookup {
   ownerId: string;
   ownerNameMasked: string;
 }
-export type CodeLookupError = "invalid_code" | "code_not_found";
+/**
+ * self_code: 조회자 본인의 코드 (viewerId 전달 시) · owner_gone: 코드 주인이 탈퇴한 코드 (2026-09-11 A-93 §3.1).
+ * 탈퇴 판정: User 삭제로 코드가 사라지므로, 참여 원장(partner_join_ledger.referrer_code)에 그 코드로 참여한 기록이
+ * 남아 있으면 '한때 존재했다가 사라진 코드'로 본다(원장은 FK 없이 영구 보관).
+ */
+export type CodeLookupError = "invalid_code" | "code_not_found" | "self_code" | "owner_gone";
 
-export async function lookupPartnerCode(raw: unknown): Promise<CodeLookup | { ok: false; error: CodeLookupError }> {
+export async function lookupPartnerCode(
+  raw: unknown,
+  opts: { viewerId?: string | null } = {},
+): Promise<CodeLookup | { ok: false; error: CodeLookupError }> {
   const code = normalizePartnerCode(raw);
   if (!code) return { ok: false, error: "invalid_code" };
   const owner = await prisma.user.findUnique({
     where: { partnerCode: code },
     select: { id: true, name: true, email: true },
   });
-  if (!owner) return { ok: false, error: "code_not_found" };
+  if (!owner) {
+    const gone = await prisma.partnerJoinLedger.findFirst({ where: { referrerCode: code }, select: { emailHash: true } }).catch(() => null);
+    return { ok: false, error: gone ? "owner_gone" : "code_not_found" };
+  }
+  if (opts.viewerId && owner.id === opts.viewerId) return { ok: false, error: "self_code" };
   return {
     ok: true,
     code,
@@ -79,9 +92,26 @@ export function hashIp(ip: string | null | undefined): string | null {
   return createHash("sha256").update(ip).digest("hex").slice(0, 16);
 }
 
-/** 참여 원장 키 — sha256(lower(trim(email))) hex. SQL 백필(encode(sha256(...),'hex'))과 동일 */
+/**
+ * 참여 원장 키 — sha256(normalizeEmailForLedger(email)) hex (2026-09-11 A-91 ⑤: gmail 점·`+tag` 별칭 정규화).
+ * 정규화가 무의미한 이메일(별칭 없음)은 기존 lower(trim()) 해시와 동일 값이 나온다.
+ */
 export function hashEmail(email: string): string {
+  return createHash("sha256").update(normalizeEmailForLedger(email), "utf8").digest("hex");
+}
+
+/** 기존 원장 키 — sha256(lower(trim(email))). 09/10 SQL 백필과 동일. 백필 전 조회 호환용 */
+export function hashEmailLegacy(email: string): string {
   return createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("hex");
+}
+
+/** 원장 조회 — 정규화 해시 → 없으면 레거시 해시 (2026-09-11 A-91 ⑤) */
+async function findJoinLedger(email: string) {
+  const norm = hashEmail(email);
+  const legacy = hashEmailLegacy(email);
+  const keys = norm === legacy ? [norm] : [norm, legacy];
+  const rows = await prisma.partnerJoinLedger.findMany({ where: { emailHash: { in: keys } } });
+  return rows.find((r) => r.emailHash === norm) ?? rows[0] ?? null;
 }
 
 // ───────────────────────── 참여(코드 입력) ─────────────────────────
@@ -95,6 +125,7 @@ export type JoinError =
   | "window_expired"
   | "campaign_ended"
   | "email_already_joined"
+  | "owner_gone"
   | "user_not_found";
 
 export interface JoinResult {
@@ -119,7 +150,7 @@ export async function joinWithPartnerCode(opts: {
   code: unknown;
   ip?: string | null;
 }): Promise<JoinResult | { ok: false; error: JoinError }> {
-  const look = await lookupPartnerCode(opts.code);
+  const look = await lookupPartnerCode(opts.code, { viewerId: opts.userId });
   if (!look.ok) return look;
   if (look.ownerId === opts.userId) return { ok: false, error: "self_code" };
 
@@ -132,12 +163,13 @@ export async function joinWithPartnerCode(opts: {
 
   // 탈퇴·재가입 반복 차단 (2026-09-10 대표 확정): 이메일당 평생 1회. 원장은 User 삭제와 무관하게 남는다.
   // 어떤 코드를 넣든(다른 파트너 코드 포함) 거절 — 양쪽 모두 미지급. 시도 횟수는 어뷰즈 플래그로 기록.
+  // (2026-09-11 A-91 ⑤) 조회는 정규화 해시+레거시 해시 둘 다, 기록은 정규화 해시로.
   const emailHash = me.email ? hashEmail(me.email) : null;
-  if (emailHash) {
-    const prior = await prisma.partnerJoinLedger.findUnique({ where: { emailHash } });
+  if (me.email) {
+    const prior = await findJoinLedger(me.email);
     if (prior && prior.firstUserId !== opts.userId) {
       await prisma.partnerJoinLedger
-        .update({ where: { emailHash }, data: { rejoinAttempts: { increment: 1 }, lastAttemptAt: new Date() } })
+        .update({ where: { emailHash: prior.emailHash }, data: { rejoinAttempts: { increment: 1 }, lastAttemptAt: new Date() } })
         .catch(() => {});
       return { ok: false, error: "email_already_joined" };
     }
@@ -165,8 +197,15 @@ export async function joinWithPartnerCode(opts: {
     const fresh = await tx.user.findUnique({ where: { id: opts.userId }, select: { referredById: true } });
     if (fresh?.referredById) throw new Error("already_joined");
 
+    // 좌석(500명)은 현재 파트너 수로, 순번은 max+1 로 — 어드민 revoke_referral(free_seat)로 좌석이 회수되면
+    // 인원은 줄지만 기존 순번과 겹치지 않게 다음 번호를 준다 (2026-09-11 A-93 §5)
     const partners = await tx.user.count({ where: { partnerRank: { not: null } } });
-    const rank = partners < PARTNER.CAP ? partners + 1 : null;
+    const maxRank = partners > 0 ? (await tx.user.aggregate({ _max: { partnerRank: true } }))._max.partnerRank ?? 0 : 0;
+    const rank = partners < PARTNER.CAP ? Math.max(partners, maxRank) + 1 : null;
+
+    // 이전 참여가 어드민에 의해 무효화(revoked)돼 좌석이 회수된 계정의 재참여: referee_id UNIQUE 이므로 옛 행 제거
+    // (그 행에 매인 혜택은 이미 revoked 상태, referral_id 만 NULL 로 풀림)
+    await tx.partnerReferral.deleteMany({ where: { refereeId: opts.userId, status: "revoked" } });
 
     // 24시간 내 같은 IP 참여 수 — 어뷰즈 플래그(차단은 아님, 어드민 검수용)
     let sameIp = 0;
@@ -225,69 +264,123 @@ export async function joinWithPartnerCode(opts: {
 
 // ───────────────────────── 유효 초대·마일스톤 ─────────────────────────
 
-/** 유효 초대 = confirmed 추천 중 피추천인이 사진 인증 1건 이상 완료(첫 인증은 챌린지 종료 +30일까지 인정) */
-export async function listReferralsWithValidity(referrerId: string) {
+export interface ReferralValidity {
+  id: string;
+  status: string;
+  rewarded: boolean;
+  joinedAt: Date;
+  nameMasked: string;
+  valid: boolean;
+}
+
+/**
+ * 유효 초대 = confirmed 추천 중 피추천인이 사진 인증 1건 이상 완료.
+ *  - 첫 인증은 챌린지 종료 +30일까지 인정.
+ *  - (2026-09-11 A-93) 피추천인의 **첫 인증(가장 이른 인증)** 이 참여(추천 생성) 시각 이후여야 한다 — 이미 활동하던
+ *    기존 회원 12명이 코드만 입력해 즉시 달성하는 것을 막는다. 참여 전에 이미 인증한 계정은 유효 초대로 세지 않는다.
+ *  - 이메일 인증: 이메일 가입은 인증 코드 확인 뒤에만 계정이 생성되고(register), 소셜은 provider가 검증하므로
+ *    `emailVerified IS NOT NULL` 을 추가로 요구하지 않는다(레거시·소셜 계정은 컬럼이 비어 있음).
+ * 여러 파트너를 한 번에 집계(어드민 목록 N+1 제거)하려면 listReferralsWithValidityBulk.
+ */
+export async function listReferralsWithValidityBulk(referrerIds: string[]): Promise<Map<string, ReferralValidity[]>> {
+  const out = new Map<string, ReferralValidity[]>();
+  if (referrerIds.length === 0) return out;
+  for (const id of referrerIds) out.set(id, []);
   const refs = await prisma.partnerReferral.findMany({
-    where: { referrerId },
+    where: { referrerId: { in: referrerIds } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
+      referrerId: true,
       status: true,
       referrerRewarded: true,
       createdAt: true,
       referee: { select: { id: true, name: true, email: true } },
     },
   });
-  if (refs.length === 0) return [];
-  const refereeIds = refs.map((r) => r.referee.id);
+  if (refs.length === 0) return out;
+  const refereeIds = Array.from(new Set(refs.map((r) => r.referee.id)));
   const proofs = await prisma.creditTransaction.groupBy({
     by: ["userId"],
     where: {
       userId: { in: refereeIds },
       action: { in: ["image_proof", "verified_proof"] },
-      createdAt: { lte: validityDeadline() },
     },
-    _count: { _all: true },
+    _min: { createdAt: true },
   });
-  const proofSet = new Set(proofs.map((p) => p.userId));
-  return refs.map((r) => ({
-    id: r.id,
-    status: r.status,
-    rewarded: r.referrerRewarded,
-    joinedAt: r.createdAt,
-    nameMasked: maskName(r.referee.name || r.referee.email?.split("@")[0]),
-    valid: r.status === "confirmed" && proofSet.has(r.referee.id),
-  }));
+  const firstProofAt = new Map(proofs.map((p) => [p.userId, p._min.createdAt]));
+  const deadline = validityDeadline().getTime();
+  for (const r of refs) {
+    const first = firstProofAt.get(r.referee.id);
+    const valid =
+      r.status === "confirmed" &&
+      !!first &&
+      first.getTime() >= r.createdAt.getTime() &&
+      first.getTime() <= deadline;
+    out.get(r.referrerId)!.push({
+      id: r.id,
+      status: r.status,
+      rewarded: r.referrerRewarded,
+      joinedAt: r.createdAt,
+      nameMasked: maskName(r.referee.name || r.referee.email?.split("@")[0]),
+      valid,
+    });
+  }
+  return out;
+}
+
+export async function listReferralsWithValidity(referrerId: string): Promise<ReferralValidity[]> {
+  const m = await listReferralsWithValidityBulk([referrerId]);
+  return m.get(referrerId) ?? [];
+}
+
+export interface MilestoneCheck {
+  /** 이번 호출에서 행을 새로 만들었는지 */
+  created: boolean;
+  /** 현재 마일스톤 행(도달하지 않았으면 null) */
+  row: Awaited<ReturnType<typeof prisma.partnerMilestone.findUnique>>;
 }
 
 /**
  * 12명 도달 확인 — 도달 시 partner_milestones 행 생성(검수 대기). 지급은 어드민 approve.
- * 반환: 새로 도달했으면 true (호출측이 대표/운영자 알림 발송).
+ * (2026-09-11 A-91 ①) 반환을 `{ created, row }` 로 바꿈. 알림 발송 여부는 누가 행을 만들었는지가 아니라
+ * `row.notifiedAt IS NULL` 로 판단한다(notify.ts notifyMilestoneIfReached) — getPartnerOverview가 먼저 행을 만들어도
+ * /api/partner/me·cron의 알림이 유실되지 않는다.
  */
-export async function checkMilestoneReached(referrerId: string): Promise<boolean> {
-  const existing = await prisma.partnerMilestone.findUnique({ where: { userId: referrerId }, select: { userId: true } });
-  if (existing) return false;
+export async function checkMilestoneReached(referrerId: string): Promise<MilestoneCheck> {
+  const existing = await prisma.partnerMilestone.findUnique({ where: { userId: referrerId } });
+  if (existing) return { created: false, row: existing };
   const owner = await prisma.user.findUnique({ where: { id: referrerId }, select: { partnerRank: true, partnerCode: true } });
-  if (!owner || !isPartnerAccount(owner)) return false;
+  if (!owner || !isPartnerAccount(owner)) return { created: false, row: null };
   const refs = await listReferralsWithValidity(referrerId);
   const valid = refs.filter((r) => r.valid).length;
-  if (valid < PARTNER.MILESTONE_COUNT) return false;
+  if (valid < PARTNER.MILESTONE_COUNT) return { created: false, row: null };
   try {
-    await prisma.partnerMilestone.create({ data: { userId: referrerId } });
-    return true;
+    const row = await prisma.partnerMilestone.create({ data: { userId: referrerId } });
+    return { created: true, row };
   } catch {
-    return false; // 동시 생성 경합 — 이미 존재
+    // 동시 생성 경합 — 이미 존재
+    const row = await prisma.partnerMilestone.findUnique({ where: { userId: referrerId } });
+    return { created: false, row };
   }
 }
 
-/** 어드민 승인 → 무료 이용권 6장 발급(멱등: approvedAt 있으면 스킵) */
+/**
+ * 어드민 승인 → 무료 이용권 6장 발급.
+ * (2026-09-11 A-91 ④) 확인·발급을 분리하지 않고 `updateMany({ approvedAt: null })` 조건부 갱신이 정확히 1행일 때만
+ * 같은 트랜잭션에서 발급 — 더블클릭·동시 요청에도 6장만 나간다.
+ */
 export async function approveMilestone(userId: string, approvedBy: string): Promise<"granted" | "already" | "not_reached"> {
-  const ms = await prisma.partnerMilestone.findUnique({ where: { userId } });
+  const ms = await prisma.partnerMilestone.findUnique({ where: { userId }, select: { approvedAt: true } });
   if (!ms) return "not_reached";
   if (ms.approvedAt) return "already";
   const expires = benefitExpiry();
-  await prisma.$transaction(async (tx) => {
-    await tx.partnerMilestone.update({ where: { userId }, data: { approvedAt: new Date(), approvedBy, rejectedAt: null, rejectReason: null } });
+  return prisma.$transaction(async (tx) => {
+    const claimed = await tx.partnerMilestone.updateMany({
+      where: { userId, approvedAt: null },
+      data: { approvedAt: new Date(), approvedBy, rejectedAt: null, rejectReason: null },
+    });
+    if (claimed.count !== 1) return "already" as const;
     await tx.partnerBenefit.createMany({
       data: Array.from({ length: PARTNER.MILESTONE_FREE_MONTHS }, () => ({
         userId,
@@ -296,8 +389,79 @@ export async function approveMilestone(userId: string, approvedBy: string): Prom
         expiresAt: expires,
       })),
     });
+    return "granted" as const;
   });
-  return "granted";
+}
+
+/**
+ * (2026-09-11 A-91 ⑥) 피추천인 탈퇴 시 추천인에게 적립된 미사용 할인권 회수 — 탈퇴 파밍 방지.
+ * User 삭제 **직전**에 호출해야 한다(삭제되면 partner_referrals가 cascade로 사라지고 partner_benefits.referral_id는 NULL이 돼
+ * 연결을 잃는다). 보수적 기준:
+ *  - 추천 생성 30일 미만 **또는** 피추천인이 참여 이후 첫 인증을 한 번도 하지 않은 경우에만 회수
+ *  - 대상은 그 추천(referral_id)으로 **추천인**에게 발급된 `available` 혜택만. 이미 `used`·`reserved`(결제 진행 중)는 건드리지 않음
+ *  - 피추천인 본인 혜택은 계정과 함께 cascade 삭제되므로 별도 처리 없음
+ * 반환: 회수한 장수. 마이그레이션 전·오류 시 0 (best-effort).
+ */
+export async function revokeReferrerBenefitsOnRefereeDelete(refereeId: string): Promise<number> {
+  try {
+    const ref = await prisma.partnerReferral.findUnique({
+      where: { refereeId },
+      select: { id: true, referrerId: true, createdAt: true, status: true },
+    });
+    if (!ref || ref.status !== "confirmed") return 0;
+    const ageMs = Date.now() - ref.createdAt.getTime();
+    const young = ageMs < 30 * 86_400_000;
+    let certified = false;
+    if (!young) {
+      const proof = await prisma.creditTransaction.findFirst({
+        where: { userId: refereeId, action: { in: ["image_proof", "verified_proof"] }, createdAt: { gte: ref.createdAt } },
+        select: { id: true },
+      });
+      certified = !!proof;
+    }
+    if (!young && certified) return 0;
+    const r = await prisma.partnerBenefit.updateMany({
+      where: { referralId: ref.id, userId: ref.referrerId, status: "available" },
+      data: { status: "revoked", revokedReason: young ? "referee_withdrawn_30d" : "referee_withdrawn_uncertified" },
+    });
+    return r.count;
+  } catch (e: any) {
+    console.warn("[partner] revokeReferrerBenefitsOnRefereeDelete skipped", { refereeId, error: e?.message ?? e });
+    return 0;
+  }
+}
+
+// ───────────────────────── 어드민 감사 기록 ─────────────────────────
+
+/**
+ * (2026-09-11 A-93) 어드민 조치 실행자 기록 — `meta JSONB` 컬럼(db_migrations/2026_09_11_partner_fixes.sql)에 병합.
+ * 컬럼은 Prisma 스키마에 넣지 않고(마이그레이션 전 모든 조회가 깨지는 것을 피함) raw UPDATE 로만 쓰며,
+ * 컬럼이 없으면 조용히 건너뛴다. 실행자는 사유 텍스트(`... (by admin@x)`)에도 남겨 마이그레이션 전에도 추적 가능.
+ */
+export async function recordPartnerAudit(
+  client: Tx | typeof prisma,
+  target: { table: "partner_referrals" | "partner_benefits"; id: string } | { table: "partner_milestones"; userId: string },
+  patch: Record<string, unknown>,
+): Promise<boolean> {
+  const json = JSON.stringify(patch);
+  try {
+    if (target.table === "partner_milestones") {
+      await client.$executeRaw`UPDATE public.partner_milestones SET meta = COALESCE(meta, '{}'::jsonb) || ${json}::jsonb WHERE user_id = ${target.userId}`;
+    } else if (target.table === "partner_referrals") {
+      await client.$executeRaw`UPDATE public.partner_referrals SET meta = COALESCE(meta, '{}'::jsonb) || ${json}::jsonb WHERE id = ${target.id}`;
+    } else {
+      await client.$executeRaw`UPDATE public.partner_benefits SET meta = COALESCE(meta, '{}'::jsonb) || ${json}::jsonb WHERE id = ${target.id}`;
+    }
+    return true;
+  } catch {
+    return false; // meta 컬럼 미적용 환경
+  }
+}
+
+/** 사유 텍스트에 실행자 표기 — "reason (by admin@x)" (300자 컷) */
+export function withActor(reason: string | null | undefined, actorEmail: string): string {
+  const base = (reason ?? "").trim() || "admin";
+  return `${base} (by ${actorEmail})`.slice(0, 300);
 }
 
 // ───────────────────────── 혜택 예약·정산 (결제 연동) ─────────────────────────
@@ -424,6 +588,43 @@ export async function releaseChargeBenefits(paymentId: string): Promise<void> {
   ]);
 }
 
+/** charge_intents.status 값 — pending | paid | failed | expired(2026-09-11 A-91 ③ 스윕) */
+export const CHARGE_INTENT_STATUS = {
+  PENDING: "pending",
+  PAID: "paid",
+  FAILED: "failed",
+  EXPIRED: "expired",
+} as const;
+
+/**
+ * (2026-09-11 A-91 ③) 장기 `pending` 의도 스윕 — 청구 도중 프로세스가 죽거나 부여 실패 분기를 타지 못해
+ * `reserved` 로 고착된 혜택을 풀어 준다. 기준: 마지막 갱신(updated_at) 2시간 경과(정상 청구는 수 초 안에 paid/failed 확정).
+ * 예약 혜택 → available, 의도 → expired. 이후 같은 paymentId로 재시도하면 reserveChargeBenefits가 재계획한다(pending 재설정).
+ * 반환: 만료 처리한 의도 수.
+ */
+export async function expireStaleChargeIntents(opts: { olderThanMs?: number; limit?: number } = {}): Promise<number> {
+  const cutoff = new Date(Date.now() - (opts.olderThanMs ?? 2 * 3_600_000));
+  const stale = await prisma.chargeIntent.findMany({
+    where: { status: CHARGE_INTENT_STATUS.PENDING, updatedAt: { lt: cutoff } },
+    select: { paymentId: true, benefitIds: true },
+    take: opts.limit ?? 200,
+  });
+  let n = 0;
+  for (const it of stale) {
+    const ids = Array.isArray(it.benefitIds) ? (it.benefitIds as string[]) : [];
+    await prisma.$transaction([
+      prisma.partnerBenefit.updateMany({ where: { id: { in: ids }, status: "reserved" }, data: { status: "available" } }),
+      // 그 사이 paid 로 바뀐 의도는 건드리지 않음(조건부)
+      prisma.chargeIntent.updateMany({
+        where: { paymentId: it.paymentId, status: CHARGE_INTENT_STATUS.PENDING },
+        data: { status: CHARGE_INTENT_STATUS.EXPIRED },
+      }),
+    ]);
+    n++;
+  }
+  return n;
+}
+
 /** 기대 금액 조회 — 없으면 null(정가 검증으로 폴백) */
 export async function getChargeIntent(paymentId: string) {
   try {
@@ -526,8 +727,8 @@ export async function getPartnerOverview(userId: string, opts: { listAmount: num
   // 마일스톤 도달 지연 확인(피추천인의 첫 인증은 나중에 발생) — 조회 시점에도 체크
   let milestoneRow = milestone;
   if (!milestoneRow && validCount >= PARTNER.MILESTONE_COUNT) {
-    const reached = await checkMilestoneReached(userId);
-    if (reached) milestoneRow = await prisma.partnerMilestone.findUnique({ where: { userId } });
+    // 알림은 여기서 보내지 않는다 — /api/partner/me·cron의 notifyMilestoneIfReached가 notified_at IS NULL 기준으로 발송 (A-91 ①)
+    milestoneRow = (await checkMilestoneReached(userId)).row;
   }
 
   const view = benefits.map((b) => ({

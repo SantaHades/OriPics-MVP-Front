@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PARTNER, isPartnerAccount, joinWindowOpen, maskName, normalizePartnerCode, planBenefitApplication, proofCountsForMilestone, validityDeadline } from "./config";
+import { PARTNER, isPartnerAccount, joinWindowOpen, maskName, normalizeEmailForLedger, normalizePartnerCode, planBenefitApplication, proofCountsForMilestone, validityDeadline } from "./config";
 
 const d = (days: number) => new Date(Date.now() + days * 86_400_000);
 
@@ -116,5 +116,29 @@ describe("partner/config", () => {
       expect(total).toBe(4950 * 11);
       expect(PARTNER.DISCOUNT_AMOUNT * 2).toBe(9900);
     });
+  });
+});
+
+// (2026-09-11 A-91 ⑤) 참여 원장 키 정규화 — gmail 점·`+tag` 별칭으로 '이메일당 1회' 우회 차단
+describe("normalizeEmailForLedger", () => {
+  it("공통: trim + 소문자", () => {
+    expect(normalizeEmailForLedger("  Foo@Example.COM ")).toBe("foo@example.com");
+  });
+  it("모든 도메인에서 +tag 제거", () => {
+    expect(normalizeEmailForLedger("foo+promo@example.com")).toBe("foo@example.com");
+    expect(normalizeEmailForLedger("foo+a+b@naver.com")).toBe("foo@naver.com");
+  });
+  it("gmail/googlemail 은 점 제거 + googlemail→gmail 통일", () => {
+    expect(normalizeEmailForLedger("f.o.o@gmail.com")).toBe("foo@gmail.com");
+    expect(normalizeEmailForLedger("F.O.O+x@GoogleMail.com")).toBe("foo@gmail.com");
+  });
+  it("gmail 이 아닌 도메인의 점은 유지", () => {
+    expect(normalizeEmailForLedger("f.o.o@example.com")).toBe("f.o.o@example.com");
+  });
+  it("별칭이 없는 이메일은 lower(trim()) 과 동일 (레거시 해시 호환)", () => {
+    expect(normalizeEmailForLedger("user@daum.net")).toBe("user@daum.net");
+  });
+  it("@ 없는 문자열은 그대로 소문자", () => {
+    expect(normalizeEmailForLedger("Nope")).toBe("nope");
   });
 });
