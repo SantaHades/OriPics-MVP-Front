@@ -4,13 +4,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { eventsDb, isMissingTable } from "@/lib/events/server";
 import { INVITE_COLS, formatInviteCode, inviteState, loadMailbox, normalizeInviteCode, type InviteRow } from "@/lib/mailboxes/server";
+import { RATE_LIMITS, checkRateLimit, clientIp, tooManyRequests } from "@/lib/security/rateLimit";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, props: { params: Promise<{ code: string }> }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ code: string }> }) {
   const { code: raw } = await props.params;
   const code = normalizeInviteCode(raw);
   if (!code) return NextResponse.json({ detail: "invalid_code" }, { status: 400 });
+  // A-83: 비로그인 공개 조회 — IP별 시간당 60회. 코드 존재 여부 오라클(무차별 조회) 억제
+  const rl = await checkRateLimit(RATE_LIMITS.mailboxInviteLookup, clientIp(req));
+  if (!rl.allowed) return tooManyRequests(rl, "조회가 너무 많습니다. 잠시 후 다시 시도해 주세요.");
   const db = eventsDb();
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   const { data, error } = await db.from("mailbox_invites").select(INVITE_COLS).eq("code", code).maybeSingle();

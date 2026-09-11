@@ -6,7 +6,24 @@ import type { MailboxReportData, MailboxReportPhoto } from "@oripics/certificate
 import type { MailboxSnapshot } from "./server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const MAX_THUMBS = 200;
+export const MAX_THUMBS = 200;
+/** 썸네일 fetch+sharp+QR 동시 실행 수 — 순차 처리로 수백 장이 60초를 넘던 문제 (2026-09-11 A-87) */
+const CONCURRENCY = 6;
+
+/** 순서를 유지하는 제한 병렬 map — 의존성 추가 없이 인라인 (2026-09-11 A-87) */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
 
 function publicUrl(path: string | null | undefined): string | null {
   return path ? `${SUPABASE_URL}/storage/v1/object/public/oripics-proofs/${path}` : null;
@@ -48,18 +65,20 @@ export async function buildReportData(opts: {
   basisAt: Date;
   issuedTo: string;
   issuedToEmail?: string | null;
+  /** 발행 시각 — 라우트가 한 번 만들어 파일명과 본문에 같이 쓴다 (2026-09-11 A-87, 이중 생성 제거) */
+  issuedAt?: Date;
+  /** 본문 시각 표기 시간대 (기본 Asia/Seoul) — PDF 지면에 라벨로도 인쇄 */
+  timeZone?: string;
 }): Promise<MailboxReportData> {
   const { snapshot: s } = opts;
   const activeCount = s.members.filter((m) => m.state === "active").length;
-  const photos: MailboxReportPhoto[] = [];
-  for (let i = 0; i < s.photos.length; i++) {
-    const p = s.photos[i];
+  const photos: MailboxReportPhoto[] = await mapLimit(s.photos, CONCURRENCY, async (p, i) => {
     const imgUrl = publicUrl(p.backup_preview_path) ?? p.image_url ?? publicUrl(p.preview_path);
     const [thumb, qr] = await Promise.all([
       i < MAX_THUMBS ? thumbDataUrl(imgUrl) : Promise.resolve(null),
       QRCode.toDataURL(p.link_url, { errorCorrectionLevel: "M", margin: 0, width: 120 }).catch(() => null),
     ]);
-    photos.push({
+    return {
       no: i + 1,
       thumbDataUrl: thumb,
       capturedAt: parseCapturedAt(p.captured_at),
@@ -75,8 +94,8 @@ export async function buildReportData(opts: {
       total: activeCount,
       memo: p.memo,
       source: p.source === "capture" ? "capture" : "submit",
-    });
-  }
+    };
+  });
   const counts = new Map<string, number>();
   for (const p of s.photos) if (p.uploaded_by) counts.set(p.uploaded_by, (counts.get(p.uploaded_by) ?? 0) + 1);
   return {
@@ -90,9 +109,12 @@ export async function buildReportData(opts: {
     deleteAfter: s.mailbox.delete_after ? new Date(s.mailbox.delete_after) : null,
     basis: opts.basis,
     basisAt: opts.basisAt,
-    issuedAt: new Date(),
+    issuedAt: opts.issuedAt ?? opts.basisAt,
     issuedTo: opts.issuedTo,
     issuedToEmail: opts.issuedToEmail ?? null,
+    timeZone: opts.timeZone ?? "Asia/Seoul",
+    photoTotal: s.photo_total ?? s.photos.length,
+    thumbLimit: MAX_THUMBS,
     members: s.members
       .filter((m) => m.state !== "left")
       .map((m) => ({
@@ -111,4 +133,15 @@ export function reportFileName(mailboxName: string, basisAt: Date): string {
   const safe = mailboxName.replace(/[^\p{L}\p{N}_-]+/gu, "_").slice(0, 40) || "mailbox";
   const d = basisAt.toISOString().slice(0, 16).replace(/[-:T]/g, "");
   return `OriPics_mailbox_${safe}_${d}.pdf`;
+}
+
+/** IANA 시간대 검증 — 잘못된 값이면 Asia/Seoul (2026-09-11 A-87) */
+export function safeTimeZone(v: string | null): string {
+  if (!v) return "Asia/Seoul";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: v });
+    return v;
+  } catch {
+    return "Asia/Seoul";
+  }
 }

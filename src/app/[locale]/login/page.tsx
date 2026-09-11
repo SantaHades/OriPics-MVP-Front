@@ -15,13 +15,16 @@ export default function LoginPage() {
 
   // 소셜 버튼 중복 클릭 방지 (2026-08-28) — signIn 리다이렉트까지의 공백에 재클릭되면
   // authorize가 이중 개시돼 state 쿠키가 덮이며 콜백 검증이 실패할 수 있음
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // 로그인 후 복귀 경로 — 사서함 등 보호 페이지가 ?callbackUrl= 로 넘김. 오픈 리다이렉트 방지: 같은 사이트 상대경로("/…", "//…" 제외)만 (2026-09-11 A-90)
+  const rawCallback = searchParams.get("callbackUrl") ?? "";
+  const callbackUrl = /^\/(?!\/)/.test(rawCallback) ? rawCallback : "/";
   const socialSignIn = (provider: string) => {
     if (oauthBusy || loading) return;
     setOauthBusy(provider);
-    signIn(provider, { callbackUrl: "/" });
+    signIn(provider, { callbackUrl });
   };
-  const router = useRouter();
-  const searchParams = useSearchParams();
   
   const t = useTranslations("Login");
 
@@ -66,7 +69,7 @@ export default function LoginPage() {
       setError(t(`errors.${result.error}`) || t("errors.default"));
       setLoading(false);
     } else {
-      router.push("/");
+      router.push(callbackUrl);
       router.refresh();
     }
   };

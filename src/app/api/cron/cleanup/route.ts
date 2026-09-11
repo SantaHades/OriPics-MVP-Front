@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assertCron } from "@/lib/security/cron";
 import { purgeExpiredRefreshTokens } from "@/lib/auth/refreshStore";
-import { lockedLinkIds } from "@/lib/mailboxes/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 const BUCKET_NAME = "oripics-proofs";
 /** links row가 없는 고아 파일(업로드 후 publish 실패 등)의 보존 기간 */
 const ORPHAN_RETENTION_DAYS = 7;
+/** 무료 보관 기간 — publish의 FREE_RETENTION_DAYS와 동일 (pricing-policy §11.2). 사서함 삭제 시 제출분 링크에 다시 적용 (A-85①) */
+const FREE_RETENTION_DAYS = 7;
 const BATCH = 500;
 
 export const dynamic = "force-dynamic";
@@ -41,16 +43,30 @@ export async function GET(req: NextRequest) {
 
   // 1) 만료 링크 정리 (DB 주도)
   try {
-    const { data: expired, error: qErr } = await supabase
-      .from("links")
-      .select("link_id, storage_path, preview_path")
-      .lte("expires_at", new Date().toISOString())
-      .limit(BATCH);
-    if (qErr) throw qErr;
-
     // A-81: 사서함 소속 링크는 만료 정리에서 제외 (삭제 잠금). 사서함 삭제 시 함께 정리된다.
-    const locked = await lockedLinkIds(supabase, (expired ?? []).map((l) => l.link_id as string));
-    const expiredFree = (expired ?? []).filter((l) => !locked.has(l.link_id as string));
+    // A-85② (2026-09-11): 제외를 SQL(NOT EXISTS)에서 수행. 이전엔 500건을 가져온 뒤 JS에서 걸러서, 다운그레이드로
+    // expires_at이 찍힌 사서함 링크가 500건을 채우면 매 실행 아무것도 못 지우는 head-of-line 블로킹이 있었다.
+    // Supabase JS는 NOT EXISTS를 표현하지 못해 같은 Postgres에 붙은 Prisma raw 쿼리를 쓴다(rate_limits 정리와 동일 경로).
+    // mailbox_photos 테이블이 없는(마이그레이션 전) 환경은 단순 조회로 폴백.
+    let expiredFree: { link_id: string; storage_path: string | null; preview_path: string | null }[];
+    try {
+      expiredFree = await prisma.$queryRaw<{ link_id: string; storage_path: string | null; preview_path: string | null }[]>`
+        SELECT l.link_id, l.storage_path, l.preview_path
+        FROM public.links l
+        WHERE l.expires_at <= now()
+          AND NOT EXISTS (SELECT 1 FROM public.mailbox_photos mp WHERE mp.link_id = l.link_id)
+        ORDER BY l.expires_at ASC
+        LIMIT ${BATCH}::int`;
+    } catch (e: any) {
+      if (!/does not exist/i.test(String(e?.message || e))) throw e;
+      const { data: expired, error: qErr } = await supabase
+        .from("links")
+        .select("link_id, storage_path, preview_path")
+        .lte("expires_at", new Date().toISOString())
+        .limit(BATCH);
+      if (qErr) throw qErr;
+      expiredFree = (expired ?? []) as typeof expiredFree;
+    }
     if (expiredFree.length > 0) {
       const paths: string[] = [];
       for (const l of expiredFree) {
@@ -138,7 +154,10 @@ export async function GET(req: NextRequest) {
 
   // A-81: 삭제 예고 유예(7일) 지난 사서함 정리 — 사서함 촬영분(source=capture) 링크·파일은 삭제,
   // 제출분(source=submit)은 mailbox_photos 행만 사라져 올린 사람의 일반 링크로 복귀. 사서함 행 삭제 시 참여자·초대·열람은 CASCADE.
+  // A-85① (2026-09-11): 제출 시 expires_at=NULL로 풀린 링크를 복귀 시점에 소유자 티어로 재설정 — 무료는 지금부터 7일,
+  //   pro/business는 NULL 유지. 이전엔 복귀 후에도 NULL이 남아 무료 7일 정책을 사서함 제출로 우회할 수 있었다.
   let mailboxesDeleted = 0;
+  let submitLinksReset = 0;
   try {
     const { data: due, error: dueErr } = await supabase
       .from("mailboxes")
@@ -175,6 +194,26 @@ export async function GET(req: NextRequest) {
           }
         }
       }
+      // A-85①: 제출분(source=submit) 중 다른 사서함에 남지 않는 링크 → 소유자가 무료 티어면 7일 만료 재설정 (NULL인 것만)
+      const submitLinks = (photos ?? []).filter((p) => p.source === "submit").map((p) => p.link_id as string);
+      if (submitLinks.length > 0) {
+        try {
+          const n = await prisma.$executeRaw`
+            UPDATE public.links l
+            SET expires_at = now() + make_interval(days => ${FREE_RETENTION_DAYS}::int)
+            FROM public."User" u
+            WHERE u.id = l.user_id
+              AND l.link_id IN (${Prisma.join(submitLinks)})
+              AND l.expires_at IS NULL
+              AND u.tier NOT IN ('pro', 'business')
+              AND NOT EXISTS (
+                SELECT 1 FROM public.mailbox_photos mp WHERE mp.link_id = l.link_id AND mp.mailbox_id <> ${mb.id}
+              )`;
+          submitLinksReset += n;
+        } catch (e: any) {
+          errors.push(`mailbox ${mb.id} submit expiry: ${e?.message || e}`);
+        }
+      }
       const { error: mbErr } = await supabase.from("mailboxes").delete().eq("id", mb.id);
       if (mbErr) errors.push(`mailbox ${mb.id} delete: ${mbErr.message}`);
       else mailboxesDeleted++;
@@ -202,5 +241,5 @@ export async function GET(req: NextRequest) {
     errors.push(`refresh_tokens purge: ${e?.message || e}`);
   }
 
-  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, rateLimitsPurged, refreshTokensPurged, errors });
+  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, submitLinksReset, rateLimitsPurged, refreshTokensPurged, errors });
 }

@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 
 import { eventsDb } from "@/lib/events/server";
 import { inviteUrl, langOf, normalizeInviteCode } from "@/lib/mailboxes/server";
+import { RATE_LIMITS, checkRateLimit, clientIp, tooManyRequests } from "@/lib/security/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ code: str
   const { code: raw } = await props.params;
   const code = normalizeInviteCode(raw);
   if (!code) return NextResponse.json({ detail: "invalid_code" }, { status: 400 });
+  // A-83: 공개 QR — 조회 라우트와 같은 IP별 카운터(시간당 60회)를 공유해 코드 존재 여부 오라클 억제
+  const rl = await checkRateLimit(RATE_LIMITS.mailboxInviteLookup, clientIp(req));
+  if (!rl.allowed) return tooManyRequests(rl, "조회가 너무 많습니다. 잠시 후 다시 시도해 주세요.");
   const db = eventsDb();
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   const { data } = await db.from("mailbox_invites").select("code").eq("code", code).maybeSingle();

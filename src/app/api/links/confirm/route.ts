@@ -5,6 +5,8 @@ import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits } from "@/lib/credits/consumeCredits";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
 import { consumePassProof } from "@/lib/pass/dayPass";
+import { eventsDb } from "@/lib/events/server";
+import { verifyMailboxCapture } from "@/lib/mailboxes/captureGuard";
 import { prisma } from "@/lib/prisma";
 import { StepTimer } from "@/lib/timing";
 
@@ -107,6 +109,17 @@ export async function POST(req: NextRequest) {
   }
   if (sessionUserId !== user_id) {
     return NextResponse.json({ detail: "user_mismatch" }, { status: 403 });
+  }
+
+  // A-84②: 사서함 촬영은 차감 전에 멤버십·잠금·촬영 허용·부담 주체를 DB에서 재검증 (sign 이후 변경 반영)
+  if (typeof mailbox_id === "string" && mailbox_id) {
+    const mdb = eventsDb();
+    if (!mdb) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
+    const guard = await t.span("mailbox_guard", () => verifyMailboxCapture(mdb, mailbox_id, user_id, billingUserId));
+    if (!guard.ok) {
+      console.warn(`[confirm] mailbox guard rejected link_id=${link_id} mailbox=${mailbox_id} detail=${guard.detail}`);
+      return NextResponse.json({ detail: guard.detail, mailbox_id }, { status: 409 });
+    }
   }
 
   const tier: "standard" | "verified" = claimedTier === "verified" ? "verified" : "standard";

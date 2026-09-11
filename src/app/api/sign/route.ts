@@ -293,7 +293,8 @@ export async function POST(req: NextRequest) {
       const mdb = eventsDb();
       if (mdb) {
         const mb = await loadMailbox(mdb, mailboxCtx.mailbox_id);
-        await notify(mdb, [billingUserId], mailboxCtx.mailbox_id, "owner_credits_low", { mailbox_name: mb?.name ?? "", required: proofCost, balance: billingUser.credits });
+        // 402마다(앱 재시도마다) 반복 발송되지 않게 6시간 내 동일 알림은 생략 (2026-09-11 A-86)
+        await notify(mdb, [billingUserId], mailboxCtx.mailbox_id, "owner_credits_low", { mailbox_name: mb?.name ?? "", required: proofCost, balance: billingUser.credits }, { dedupeWindowMinutes: 360 });
       }
     }
     return NextResponse.json(

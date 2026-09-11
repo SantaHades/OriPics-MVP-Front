@@ -44,6 +44,15 @@ export const RATE_LIMITS = {
   partnerLookupDaily: { name: "partnerlookupd", windowSec: 86400, max: 20 },
   /** 파트너코드 참여(/api/partner/join) — 사용자별 시간당 10회(실패 포함) */
   partnerJoin: { name: "partnerjoin", windowSec: 3600, max: 10 },
+  /**
+   * 사서함 이름+비밀번호 참여(/api/mailboxes/join) — 사용자+IP별 시간당 10회(실패 포함).
+   * 사서함 번호가 MB-1001+ 순번이라 대상 특정이 쉽고 bcrypt 비교를 무제한 시도할 수 있었음 (2026-09-11 A-83)
+   */
+  mailboxJoin: { name: "mbjoin", windowSec: 3600, max: 10 },
+  /** 초대코드 공개 조회·QR(/api/mailboxes/invites/:code, /qr) — IP별 시간당 60회. 코드 존재 여부 오라클 억제 (A-83) */
+  mailboxInviteLookup: { name: "mbinvlookup", windowSec: 3600, max: 60 },
+  /** 사서함 백업 생성(/api/mailboxes/:id/backups POST) — 사용자별 시간당 5회. 파일 복사(스토리지 copy)·보관함 용량 남용 억제 (2026-09-11 A-87) */
+  mailboxBackup: { name: "mbbackup", windowSec: 3600, max: 5 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export interface RateLimitResult {

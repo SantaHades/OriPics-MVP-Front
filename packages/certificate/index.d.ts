@@ -81,8 +81,15 @@ export interface MailboxReportData {
   issuedAt: Date;
   issuedTo: string;
   issuedToEmail?: string | null;
+  /** IANA 시간대 — 본문 모든 시각의 표기 기준. 기본 Asia/Seoul. 지면에 라벨로도 인쇄 (2026-09-11 A-87) */
   timeZone?: string;
   members: MailboxReportMember[];
   photos: MailboxReportPhoto[];
+  /** 사서함의 실제 사진 총수. photos.length보다 크면 '앞 N장만 수록' 고지 (2026-09-11 A-87) */
+  photoTotal?: number;
+  /** 썸네일을 생성한 상한(호출 측 MAX_THUMBS). photos.length보다 작으면 '썸네일 N장까지만' 고지 */
+  thumbLimit?: number;
 }
+/** 폰트 등록 실패 시 renderMailboxReportPdf가 던지는 Error.message — 라우트가 500 detail로 그대로 전달 (2026-09-11 A-87) */
+export declare const FONT_UNAVAILABLE: "font_unavailable";
 export declare function renderMailboxReportPdf(opts: { data: MailboxReportData; locale: "ko" | "en" }): Promise<Buffer>;

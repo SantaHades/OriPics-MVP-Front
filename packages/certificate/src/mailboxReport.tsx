@@ -13,21 +13,45 @@ function resolveKrFont(weight: "400" | "700"): string {
   return path.join(process.cwd(), "node_modules/@fontsource/noto-sans-kr/files", `noto-sans-kr-korean-${weight}-normal.woff`);
 }
 let fontRegistered = false;
+/** 폰트 파일 부재·등록 실패 → 한글이 모두 빠진 PDF가 200으로 나가던 문제. throw 해서 라우트가 500 `font_unavailable`로 응답 (2026-09-11 A-87) */
+export const FONT_UNAVAILABLE = "font_unavailable";
 function ensureFontRegistered() {
   if (fontRegistered) return;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const fs = require("fs") as typeof import("fs");
+    const files = [resolveKrFont("400"), resolveKrFont("700")];
+    const missing = files.filter((f) => !fs.existsSync(f));
+    if (missing.length > 0) throw new Error(`${FONT_UNAVAILABLE}: ${missing.join(", ")}`);
     Font.register({
       family: "NotoSansKR",
       fonts: [
-        { src: resolveKrFont("400"), fontWeight: "normal" },
-        { src: resolveKrFont("700"), fontWeight: "bold" },
+        { src: files[0], fontWeight: "normal" },
+        { src: files[1], fontWeight: "bold" },
       ],
     });
     Font.registerHyphenationCallback((word) => [word]);
     fontRegistered = true;
   } catch (e) {
     console.error("[mailbox-report] Korean font register failed", (e as any)?.message);
+    const err = new Error(FONT_UNAVAILABLE);
+    (err as any).cause = e;
+    throw err;
   }
+}
+
+/** 공백 없는 장문(설명문·메모·URL)이 칸을 넘치지 않게 문자 단위로 잘라 준다 — 전역 콜백은 단어 유지 (2026-09-11 A-87) */
+const breakAnywhere = (word: string): string[] => (word.length <= 12 ? [word] : Array.from(word));
+
+/** 시간대 라벨 — 모든 시각이 이 시간대로 표기됨을 지면에 명시 (2026-09-11 A-87). Asia/Seoul → "KST (UTC+9)" */
+function tzLabel(tz: string, locale: Locale): string {
+  let offset = "";
+  try {
+    const part = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" }).formatToParts(new Date()).find((p) => p.type === "timeZoneName")?.value ?? "";
+    offset = part.replace(/^GMT/, "UTC").replace(/^UTC$/, "UTC+0");
+  } catch { /* 라벨만 생략 */ }
+  if (tz === "Asia/Seoul") return offset ? `KST (${offset})` : "KST (UTC+9)";
+  return offset ? `${tz} (${offset})` : tz;
 }
 
 type Locale = "ko" | "en";
@@ -75,9 +99,14 @@ export interface MailboxReportData {
   issuedAt: Date;
   issuedTo: string;
   issuedToEmail?: string | null;
+  /** IANA 시간대 — 본문 모든 시각의 표기 기준. 기본 Asia/Seoul. 지면에 라벨로도 인쇄 (2026-09-11 A-87) */
   timeZone?: string;
   members: MailboxReportMember[];
   photos: MailboxReportPhoto[];
+  /** 사서함의 실제 사진 총수. photos.length보다 크면 '앞 N장만 수록' 고지 (2026-09-11 A-87) */
+  photoTotal?: number;
+  /** 썸네일을 생성한 상한(호출 측 MAX_THUMBS). photos.length보다 작으면 '썸네일 N장까지만' 고지 */
+  thumbLimit?: number;
 }
 
 const S: Record<Locale, Record<string, string>> = {
@@ -131,6 +160,9 @@ const S: Record<Locale, Record<string, string>> = {
     signature: "확인자 서명",
     page: "페이지",
     footer: "OriPics — 그 시각·그곳·실제 기기 촬영을 증명합니다.",
+    tzNote: "모든 시각은 {tz} 기준",
+    truncPhotos: "사진 {total}장 중 앞 {shown}장만 수록됨 (확인서 상한). 전체 목록은 웹 사서함에서 확인하세요.",
+    truncThumbs: "사진 {total}장 중 {shown}장까지만 썸네일 표시 — 이후 사진은 정보·공개링크만 수록됨.",
   },
   en: {
     title: "Photo Mailbox Report",
@@ -182,6 +214,9 @@ const S: Record<Locale, Record<string, string>> = {
     signature: "Signature",
     page: "Page",
     footer: "OriPics — proof of when, where and on which device a photo was taken.",
+    tzNote: "All times in {tz}",
+    truncPhotos: "Only the first {shown} of {total} photos are listed (report limit). See the web mailbox for the full list.",
+    truncThumbs: "Thumbnails omitted beyond {shown} of {total} photos — details and public links are still listed.",
   },
 };
 
@@ -190,7 +225,9 @@ const st = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: 1, borderBottomColor: "#e2e8f0", paddingBottom: 6, marginBottom: 8 },
   brandRow: { flexDirection: "row", alignItems: "center" },
   brandText: { fontSize: 13, fontWeight: "bold", marginLeft: 6 },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 1 },
+  // 제목은 2줄까지·말줄임 — 80자 제목이 지면을 밀어내지 않게 (2026-09-11 A-87)
+  title: { fontSize: 20, fontWeight: "bold", marginBottom: 1, maxLines: 2, textOverflow: "ellipsis" },
+  warn: { fontSize: 8, color: "#b45309", backgroundColor: "#fffbeb", borderWidth: 0.6, borderColor: "#fcd34d", borderRadius: 3, paddingVertical: 3, paddingHorizontal: 6, marginBottom: 4 },
   subtitle: { fontSize: 10, color: "#64748b", marginBottom: 6 },
   basis: { fontSize: 9, color: "#1d4ed8", fontWeight: "bold", marginBottom: 8 },
   section: { marginBottom: 8 },
@@ -226,9 +263,15 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
   const t = S[locale];
   const tz = data.timeZone ?? "Asia/Seoul";
   const statusText = t[`status_${data.status}`] + (data.status === "delete_scheduled" && data.deleteAfter ? ` (${fmt(data.deleteAfter, locale, tz)})` : "");
-  const basisText = data.basis === "backup" ? `${t.basisBackup} · ${fmt(data.basisAt, locale, tz, true)}` : `${t.basisLive} · ${fmt(data.basisAt, locale, tz, true)}`;
+  const tzText = tzLabel(tz, locale);
+  const basisText = `${data.basis === "backup" ? t.basisBackup : t.basisLive} · ${fmt(data.basisAt, locale, tz, true)} · ${t.tzNote.replace("{tz}", tzText)}`;
   const shortId = `mbr_${data.mailboxId}_${data.issuedAt.getTime().toString(36)}`;
   const reportTitle = (data.reportTitle ?? "").trim() || t.title;
+  // 잘림 고지 — 스냅샷 상한(photoTotal > photos.length)·썸네일 상한(thumbLimit < photos.length) (2026-09-11 A-87)
+  const shown = data.photos.length;
+  const total = Math.max(data.photoTotal ?? shown, shown);
+  const truncPhotos = total > shown ? t.truncPhotos.replace("{total}", String(total)).replace("{shown}", String(shown)) : null;
+  const truncThumbs = data.thumbLimit != null && data.thumbLimit < shown ? t.truncThumbs.replace("{total}", String(shown)).replace("{shown}", String(data.thumbLimit)) : null;
 
   return (
     <Document title={`${reportTitle} — ${data.mailboxName}`} author="OriPics">
@@ -238,22 +281,23 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
             <Image src={LOGO_DATA_URL} style={{ width: 22, height: 22 }} />
             <Text style={st.brandText}>OriPics</Text>
           </View>
-          <Text style={{ fontSize: 8, color: "#64748b" }}>{`${t.issued} ${fmt(data.issuedAt, locale, tz, true)} · ${shortId}`}</Text>
+          <Text style={{ fontSize: 8, color: "#64748b" }}>{`${t.issued} ${fmt(data.issuedAt, locale, tz, true)} (${tzText}) · ${shortId}`}</Text>
         </View>
 
-        <Text style={st.title}>{reportTitle}</Text>
+        {/* 공백 없는 긴 제목도 2줄로 접히고 말줄임 — 전역 콜백(단어 유지)만으론 한 줄에서 잘려 나감 (2026-09-11 A-87 실측) */}
+        <Text style={st.title} hyphenationCallback={breakAnywhere}>{reportTitle}</Text>
         <Text style={st.subtitle}>{t.subtitle}</Text>
         <Text style={st.basis}>{basisText}</Text>
 
         <View style={st.section}>
           <Text style={st.sectionTitle}>{t.mailbox}</Text>
-          <View style={st.row}><Text style={st.label}>{t.mailbox}</Text><Text style={[st.value, { fontWeight: "bold", fontSize: 11 }]}>{data.mailboxName}</Text></View>
+          <View style={st.row}><Text style={st.label}>{t.mailbox}</Text><Text style={[st.value, { fontWeight: "bold", fontSize: 11, maxLines: 2, textOverflow: "ellipsis" }]} hyphenationCallback={breakAnywhere}>{data.mailboxName}</Text></View>
           <View style={st.row}><Text style={st.label}>{t.number}</Text><Text style={st.value}>{data.mailboxId}</Text></View>
           <View style={st.row}><Text style={st.label}>{t.created}</Text><Text style={st.value}>{fmt(data.createdAt, locale, tz)}</Text></View>
           <View style={st.row}><Text style={st.label}>{t.owner}</Text><Text style={st.value}>{data.ownerName}</Text></View>
           <View style={st.row}><Text style={st.label}>{t.status}</Text><Text style={st.value}>{statusText}</Text></View>
           {data.description ? (
-            <View style={st.row}><Text style={st.label}>{t.description}</Text><Text style={st.value}>{data.description}</Text></View>
+            <View style={st.row}><Text style={st.label}>{t.description}</Text><Text style={st.value} hyphenationCallback={breakAnywhere}>{data.description}</Text></View>
           ) : null}
           <View style={st.row}>
             <Text style={st.label}>{t.issuedTo}</Text>
@@ -284,7 +328,9 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
         </View>
 
         <View style={st.section}>
-          <Text style={st.sectionTitle}>{`${t.photos} (${data.photos.length})`}</Text>
+          <Text style={st.sectionTitle}>{total > shown ? `${t.photos} (${shown} / ${total})` : `${t.photos} (${shown})`}</Text>
+          {truncPhotos ? <Text style={st.warn}>{`⚠ ${truncPhotos}`}</Text> : null}
+          {truncThumbs ? <Text style={st.warn}>{`⚠ ${truncThumbs}`}</Text> : null}
           {data.photos.length === 0 ? (
             <Text style={st.small}>{t.noPhotos}</Text>
           ) : (
@@ -308,7 +354,7 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
                     {p.capturedAt && p.publishedAt ? <Text style={st.small}>{`${t.publishedAt} ${fmt(p.publishedAt, locale, tz)}`}</Text> : null}
                     <Text style={st.small}>{p.lat != null && p.lng != null ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : t.noCoords}</Text>
                     <Text style={st.small}>{`${p.tier === "verified" ? "Verified" : "Standard"} · ${p.source === "capture" ? t.sourceCapture : t.sourceSubmit}`}</Text>
-                    {p.memo ? <Text style={st.small}>{`${t.memo}: ${p.memo}`}</Text> : null}
+                    {p.memo ? <Text style={st.small} hyphenationCallback={breakAnywhere}>{`${t.memo}: ${p.memo}`}</Text> : null}
                   </View>
                   {/* QR 위·주소 아래 세로 배치 — 주소가 옆 칸으로 넘치지 않게 고정 폭 (2026-09-10 대표) */}
                   {/* 실제 PDF 링크(annotation)로 — 글자만 두면 Android 뷰어에서 탭해도 열리지 않음 (2026-09-10 갤럭시) */}
@@ -318,8 +364,9 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
                         <Image src={p.qrDataUrl} style={st.qr} />
                       </Link>
                     ) : null}
+                    {/* 긴 URL은 문자 단위로 줄바꿈 — Link에는 hyphenationCallback이 없어 Text로 감쌈 (2026-09-11 A-87) */}
                     <Link src={p.linkUrl} style={[st.link, { textAlign: "center", marginTop: 2, textDecoration: "none" }]}>
-                      {p.linkUrl.replace(/^https?:\/\//, "")}
+                      <Text style={st.link} hyphenationCallback={breakAnywhere}>{p.linkUrl.replace(/^https?:\/\//, "")}</Text>
                     </Link>
                   </View>
                   <Text style={[st.td, { flex: 1.3, paddingLeft: 4 }]}>{p.uploader}{p.uploaderRole ? `\n(${p.uploaderRole})` : ""}</Text>

@@ -1,10 +1,10 @@
 // 백업본 확인서 PDF (A-81 2차) — GET /api/mailboxes/backups/:backupId/report?locale= (백업 소유자)
 import { NextRequest, NextResponse } from "next/server";
-import { renderMailboxReportPdf } from "@oripics/certificate";
+import { FONT_UNAVAILABLE, renderMailboxReportPdf } from "@oripics/certificate";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb } from "@/lib/events/server";
-import { buildReportData, reportFileName } from "@/lib/mailboxes/report";
+import { buildReportData, reportFileName, safeTimeZone } from "@/lib/mailboxes/report";
 import { BACKUP_COLS, langOf, type BackupRow } from "@/lib/mailboxes/server";
 import { prisma } from "@/lib/prisma";
 
@@ -26,7 +26,12 @@ export async function GET(req: NextRequest, props: { params: Promise<{ backupId:
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
   const me = row.snapshot.members.find((m) => m.user_id === userId);
   const basisAt = new Date(row.taken_at);
-  const reportData = await buildReportData({ snapshot: row.snapshot, basis: "backup", basisAt, issuedTo: me?.display_name || user?.name || user?.email || userId, issuedToEmail: user?.email });
+  const issuedAt = new Date();
+  const timeZone = safeTimeZone(req.nextUrl.searchParams.get("tz"));
+  const reportData = await buildReportData({
+    snapshot: row.snapshot, basis: "backup", basisAt, issuedAt, timeZone,
+    issuedTo: me?.display_name || user?.name || user?.email || userId, issuedToEmail: user?.email,
+  });
   try {
     const pdf = await renderMailboxReportPdf({ data: reportData, locale });
     return new NextResponse(new Uint8Array(pdf), {
@@ -38,6 +43,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ backupId:
     });
   } catch (e: any) {
     console.error("[mailboxes] backup report render failed:", e?.message || e);
-    return NextResponse.json({ detail: "render_failed" }, { status: 500 });
+    const detail = e?.message === FONT_UNAVAILABLE ? FONT_UNAVAILABLE : "render_failed";
+    return NextResponse.json({ detail }, { status: 500 });
   }
 }

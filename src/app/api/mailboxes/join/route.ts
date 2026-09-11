@@ -9,12 +9,18 @@ import {
   MAILBOX_COLS, MEMBER_COLS, isActiveMember, isLocked, limitsFor, listMembers, loadMember, mailboxDto, notify, photoCounts,
   verifyPassword, type MailboxRow, type MemberRow,
 } from "@/lib/mailboxes/server";
+import { MAILBOX_ID_RE, MAX_JOIN_CANDIDATES, likePrefixPattern } from "@/lib/mailboxes/joinSearch";
+import { maskName } from "@/lib/partner/config";
+import { RATE_LIMITS, checkRateLimit, clientIp, tooManyRequests } from "@/lib/security/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
+  // A-83: 사용자+IP별 시간당 10회(실패 포함) — 비밀번호 무차별 대입·사서함 열람(enumeration) 억제
+  const rl = await checkRateLimit(RATE_LIMITS.mailboxJoin, `${userId}:${clientIp(req)}`);
+  if (!rl.allowed) return tooManyRequests(rl, "참여 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.");
   const db = eventsDb();
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
   let body: Record<string, unknown>;
@@ -31,29 +37,42 @@ export async function POST(req: NextRequest) {
 
   let candidates: MailboxRow[] = [];
   if (pickedId) {
-    const { data } = await db.from("mailboxes").select(MAILBOX_COLS).eq("id", pickedId).eq("status", "active");
+    if (!MAILBOX_ID_RE.test(pickedId)) return NextResponse.json({ detail: "not_found" }, { status: 404 });
+    const { data } = await db.from("mailboxes").select(MAILBOX_COLS).eq("id", pickedId.toUpperCase()).eq("status", "active");
     candidates = (data ?? []) as MailboxRow[];
-  } else {
-    const { data, error } = await db
-      .from("mailboxes")
-      .select(MAILBOX_COLS)
-      .eq("status", "active")
-      .or(`id.ilike."${query.replace(/["\\]/g, "")}",name.ilike."${query.replace(/["\\]/g, "")}"`); // 값에 공백·쉼표가 있어도 안전하게 인용
+  } else if (MAILBOX_ID_RE.test(query)) {
+    // 번호 입력 — 정확일치만 (A-83: 패턴 검색으로 번호 순번을 훑지 못하게)
+    const { data, error } = await db.from("mailboxes").select(MAILBOX_COLS).eq("id", query.toUpperCase()).eq("status", "active");
     if (error) {
       if (isMissingTable(error)) return NextResponse.json({ detail: "setup_required" }, { status: 503 });
       return NextResponse.json({ detail: "db_error" }, { status: 500 });
     }
     candidates = (data ?? []) as MailboxRow[];
-    // 번호가 정확히 맞으면 그것 하나
-    const exact = candidates.find((c) => c.id.toLowerCase() === query.toLowerCase());
-    if (exact) candidates = [exact];
+  } else {
+    // 이름 입력 — 이스케이프된 접두어 ilike, 후보 ≤10 (A-83: 이전엔 `%` 한 글자로 활성 사서함 전체가 409 ambiguous에 노출)
+    const { data, error } = await db
+      .from("mailboxes")
+      .select(MAILBOX_COLS)
+      .eq("status", "active")
+      .ilike("name", likePrefixPattern(query))
+      .order("created_at", { ascending: false })
+      .limit(MAX_JOIN_CANDIDATES);
+    if (error) {
+      if (isMissingTable(error)) return NextResponse.json({ detail: "setup_required" }, { status: 503 });
+      return NextResponse.json({ detail: "db_error" }, { status: 500 });
+    }
+    candidates = (data ?? []) as MailboxRow[];
+    // 이름이 정확히 맞는 것이 있으면 그것들만 (접두어가 같은 다른 사서함은 제외)
+    const exact = candidates.filter((c) => c.name.toLowerCase() === query.toLowerCase());
+    if (exact.length > 0) candidates = exact;
   }
   if (candidates.length === 0) return NextResponse.json({ detail: "not_found" }, { status: 404 });
   if (candidates.length > 1) {
+    // 개설자 이름은 마스킹("손용석"→"손*석") — 로그인 사용자라도 타 사서함 개설자 실명은 노출하지 않음 (A-83)
     const owners = await Promise.all(
       candidates.map(async (c) => {
         const { data } = await db.from("mailbox_members").select("display_name").eq("mailbox_id", c.id).eq("kind", "owner").maybeSingle();
-        return { id: c.id, name: c.name, owner_name: (data?.display_name as string | undefined) ?? "" };
+        return { id: c.id, name: c.name, owner_name: maskName((data?.display_name as string | undefined) ?? "", "") };
       }),
     );
     return NextResponse.json({ detail: "ambiguous", candidates: owners }, { status: 409 });

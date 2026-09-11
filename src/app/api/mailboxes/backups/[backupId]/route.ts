@@ -35,6 +35,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ backupId
     backup: {
       id: row.id, mailbox_id: row.mailbox_id, mailbox_name: row.mailbox_name, taken_at: row.taken_at, copied_files: row.copied_files,
       photo_count: row.photo_count, member_count: row.member_count, bytes: row.bytes,
+      // 백업 시 복사 실패 건수 — 부분 백업 표시용 (2026-09-11 A-87)
+      copy_failed: row.snapshot.copy_failed ?? 0,
       mailbox: row.snapshot.mailbox, members: row.snapshot.members, photos,
     },
   });

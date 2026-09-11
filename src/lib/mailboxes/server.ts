@@ -216,32 +216,96 @@ export type NoticeKind =
   | "invite_accepted" | "new_photos" | "delete_scheduled" | "delete_cancelled" | "locked" | "unlocked"
   | "kicked" | "unkicked" | "left" | "owner_credits_low" | "billing_changed" | "owner_transferred";
 
-/** 인앱 알림 + (행동이 필요한 종류는) 이메일 병행 — 2차(2026-09-09). 이메일은 best-effort, emailed_at 기록 */
+export interface NotifyOptions {
+  /**
+   * 같은 user_id+mailbox_id+kind 알림이 최근 N분 내 이미 있으면 인앱·이메일 모두 생략.
+   * owner_credits_low가 402마다(앱 재시도마다) 개설자에게 반복 발송되던 문제 (2026-09-11 A-86)
+   */
+  dedupeWindowMinutes?: number;
+}
+/** new_photos 합산 윈도(분) — 같은 사서함의 미확인 new_photos가 이 시간 안에 있으면 count만 올린다 (2026-09-11 A-86) */
+export const NEW_PHOTOS_AGGREGATE_MINUTES = 5;
+
+/**
+ * 인앱 알림 + (행동이 필요한 종류는) 이메일 병행 — 2차(2026-09-09). 이메일은 best-effort, emailed_at 기록.
+ * 2026-09-11 A-86: ① dedupeWindowMinutes 중복 억제 ② new_photos 5분 합산('새 사진 n장') ③ 이메일은 응답 경로에서 await 하지 않음.
+ *   ③ 주의: @vercel/functions waitUntil 미사용(의존성 없음) — 서버리스에서 응답 직후 인스턴스가 얼면 발송이 유실될 수 있어
+ *      emailed_at NULL 행은 cron 재시도 경로 후보로 남겨둔다.
+ */
 export async function notify(
   db: SupabaseClient,
   userIds: string[],
   mailboxId: string | null,
   kind: NoticeKind,
   payload: Record<string, unknown>,
+  opts: NotifyOptions = {},
 ): Promise<void> {
-  const ids = Array.from(new Set(userIds.filter(Boolean)));
+  let ids = Array.from(new Set(userIds.filter(Boolean)));
   if (ids.length === 0) return;
+  const nowIso = new Date().toISOString();
+
+  // ① 중복 억제 — 최근 윈도 안에 같은 (user, mailbox, kind)가 있으면 그 수신자는 제외
+  if (opts.dedupeWindowMinutes && opts.dedupeWindowMinutes > 0) {
+    const since = new Date(Date.now() - opts.dedupeWindowMinutes * 60_000).toISOString();
+    let q = db.from("mailbox_notices").select("user_id").eq("kind", kind).in("user_id", ids).gte("created_at", since);
+    q = mailboxId ? q.eq("mailbox_id", mailboxId) : q.is("mailbox_id", null);
+    const { data, error } = await q;
+    if (!error) {
+      const recent = new Set(((data ?? []) as { user_id: string }[]).map((r) => r.user_id));
+      ids = ids.filter((id) => !recent.has(id));
+    }
+    if (ids.length === 0) return;
+  }
+
+  // ② new_photos 합산 — 수신자별 미확인(read_at NULL) new_photos가 윈도 안에 있으면 count 누적 + created_at 갱신(목록 상단 유지·윈도 연장)
+  //    payload 형식은 앱(mailbox-panel 'mb.notice.new_photos': name·count·actor_name) 호환 유지 — 마지막 올린 사람 표기
+  if (kind === "new_photos" && mailboxId) {
+    const since = new Date(Date.now() - NEW_PHOTOS_AGGREGATE_MINUTES * 60_000).toISOString();
+    const { data, error } = await db
+      .from("mailbox_notices")
+      .select("id, user_id, payload")
+      .eq("kind", "new_photos")
+      .eq("mailbox_id", mailboxId)
+      .in("user_id", ids)
+      .is("read_at", null)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false });
+    if (!error && data && data.length > 0) {
+      const merged = new Set<string>();
+      const add = Number(payload.count ?? 1) || 1;
+      for (const row of data as { id: number; user_id: string; payload: Record<string, unknown> | null }[]) {
+        if (merged.has(row.user_id)) continue; // 수신자당 가장 최근 1건만 합산
+        merged.add(row.user_id);
+        const prev = row.payload ?? {};
+        const count = (Number(prev.count ?? 1) || 1) + add;
+        await db.from("mailbox_notices").update({ payload: { ...prev, ...payload, count }, created_at: nowIso }).eq("id", row.id);
+      }
+      ids = ids.filter((id) => !merged.has(id));
+      if (ids.length === 0) return; // 합산만 — 이메일 대상 종류도 아님
+    }
+  }
+
   const rows = ids.map((user_id) => ({ user_id, mailbox_id: mailboxId, kind, payload }));
   const { data: inserted, error } = await db.from("mailbox_notices").insert(rows).select("id, user_id");
   if (error && !isMissingTable(error)) console.error("[mailboxes] notify failed:", error.message);
-  try {
-    const { EMAIL_KINDS, sendNoticeEmail } = await import("./mailer");
-    if (!EMAIL_KINDS.has(kind)) return;
-    const users = await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, email: true } });
-    for (const u of users) {
-      if (!u.email) continue;
-      const ok = await sendNoticeEmail(u.email, kind, payload);
-      const row = (inserted ?? []).find((r) => r.user_id === u.id);
-      if (ok && row) await db.from("mailbox_notices").update({ emailed_at: new Date().toISOString() }).eq("id", row.id);
+
+  // ③ 이메일 — 응답 경로를 막지 않음(참여자 50명 삭제 예고 시 SMTP 순차 발송으로 응답 지연). emailed_at 기록은 유지
+  const emailIds = ids;
+  void (async () => {
+    try {
+      const { EMAIL_KINDS, sendNoticeEmail } = await import("./mailer");
+      if (!EMAIL_KINDS.has(kind)) return;
+      const users = await prisma.user.findMany({ where: { id: { in: emailIds } }, select: { id: true, email: true } });
+      for (const u of users) {
+        if (!u.email) continue;
+        const ok = await sendNoticeEmail(u.email, kind, payload);
+        const row = (inserted ?? []).find((r) => r.user_id === u.id);
+        if (ok && row) await db.from("mailbox_notices").update({ emailed_at: new Date().toISOString() }).eq("id", row.id);
+      }
+    } catch (e: any) {
+      console.warn("[mailboxes] notify email skipped:", e?.message || e);
     }
-  } catch (e: any) {
-    console.warn("[mailboxes] notify email skipped:", e?.message || e);
-  }
+  })();
 }
 
 // ── DTO ─────────────────────────────────────────────────────────────────
@@ -514,7 +578,13 @@ export interface MailboxSnapshot {
   };
   members: { user_id: string; display_name: string; role_text: string | null; kind: string; accepted_at: string; state: "active" | "kicked" | "left" }[];
   photos: (PhotoDto & { storage_path?: string | null; preview_path?: string | null; backup_preview_path?: string | null; backup_storage_path?: string | null })[];
+  /** 사서함의 실제 사진 총수 — photos는 SNAPSHOT_PHOTO_CAP까지만 수록되므로 확인서에 잘림 고지용 (2026-09-11 A-87) */
+  photo_total?: number;
+  /** 백업 시 파일 복사 실패 건수(0이면 생략). 부분 백업이 성공으로 보이지 않게 (2026-09-11 A-87) */
+  copy_failed?: number;
 }
+/** 스냅샷에 수록하는 사진 상한 — 확인서·백업 공용 (2026-09-11 A-87 상수화) */
+export const SNAPSHOT_PHOTO_CAP = 500;
 
 export function newBackupId(): string {
   return `MBK${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -522,7 +592,8 @@ export function newBackupId(): string {
 
 /** 현재 상태 스냅샷 (백업·확인서 공용). readers 포함 */
 export async function buildSnapshot(db: SupabaseClient, mb: MailboxRow, members: MemberRow[], viewerId: string, lang: Lang): Promise<MailboxSnapshot> {
-  const { data: photoRows } = await db.from("mailbox_photos").select(PHOTO_COLS).eq("mailbox_id", mb.id).order("created_at", { ascending: true }).limit(500);
+  const { data: photoRows, count: photoTotal } = await db
+    .from("mailbox_photos").select(PHOTO_COLS, { count: "exact" }).eq("mailbox_id", mb.id).order("created_at", { ascending: true }).limit(SNAPSHOT_PHOTO_CAP);
   const photos = await photoDtos(db, (photoRows ?? []) as PhotoRow[], members, viewerId, lang, true);
   const linkIds = photos.map((p) => p.link_id);
   const paths = new Map<string, { storage_path: string | null; preview_path: string | null }>();
@@ -542,5 +613,6 @@ export async function buildSnapshot(db: SupabaseClient, mb: MailboxRow, members:
       state: m.kicked_at ? "kicked" : m.left_at ? "left" : "active",
     })),
     photos: photos.map((p) => ({ ...p, storage_path: paths.get(p.link_id)?.storage_path ?? null, preview_path: paths.get(p.link_id)?.preview_path ?? null })),
+    photo_total: typeof photoTotal === "number" ? photoTotal : photos.length,
   };
 }

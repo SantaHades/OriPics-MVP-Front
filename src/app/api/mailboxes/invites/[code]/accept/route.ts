@@ -1,5 +1,8 @@
 // 초대코드로 참여 (A-81) — POST /api/mailboxes/invites/:code/accept (로그인 필수)
-//   코드 상태(valid) 검사 → 내보내진 사용자 거부 → 참여자 한도 → members upsert(이름·역할·촬영 조건은 코드에 적힌 값 고정) → 코드 사용 처리 → 개설자 알림
+//   코드 상태(valid) 검사 → 내보내진 사용자 거부 → 참여자 한도 → 코드 사용 처리(원자 UPDATE) → members upsert(이름·역할·촬영 조건은 코드에 적힌 값 고정) → 개설자 알림
+//   (2026-09-11 A-84①) 순서 변경: 이전엔 멤버 upsert 후 코드를 소비해, 경합에서 진 쪽이 신규 행만 삭제하고
+//   과거 나간 사용자의 left_at=null 복귀는 되돌리지 못해 코드 없이 재참여가 성립했다. 지금은 코드를 먼저 소비하고
+//   멤버 단계가 실패하면 코드를 되돌린다.
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
@@ -47,6 +50,16 @@ export async function POST(_req: NextRequest, props: { params: Promise<{ code: s
   }
 
   const now = new Date().toISOString();
+  // 1) 코드 1회 사용 처리 먼저 — 경합(같은 코드 동시 수락) 시 used_at IS NULL 조건으로 한 명만 통과 (A-84①)
+  const { data: used, error: useErr } = await db
+    .from("mailbox_invites").update({ used_by: userId, used_at: now }).eq("code", code).is("used_at", null).select("code");
+  if (useErr) {
+    console.error("[mailboxes] accept consume failed:", useErr.message);
+    return NextResponse.json({ detail: "db_error" }, { status: 500 });
+  }
+  if (!used || used.length === 0) return NextResponse.json({ detail: "invite_used" }, { status: 409 });
+
+  // 2) 멤버 upsert — 실패하면 코드를 되돌려 다시 쓸 수 있게 (used_by=본인 조건으로 남의 소비는 건드리지 않음)
   const fields = {
     display_name: inv.invitee_name, role_text: inv.role_text, can_capture: inv.can_capture, capture_billing: inv.capture_billing,
     left_at: null, accepted_at: now,
@@ -56,15 +69,10 @@ export async function POST(_req: NextRequest, props: { params: Promise<{ code: s
     : await db.from("mailbox_members").insert({ mailbox_id: mb.id, user_id: userId, kind: "member", ...fields });
   if (upErr) {
     console.error("[mailboxes] accept failed:", upErr.message);
+    const { error: revErr } = await db
+      .from("mailbox_invites").update({ used_by: null, used_at: null }).eq("code", code).eq("used_by", userId);
+    if (revErr) console.error("[mailboxes] accept revert failed:", revErr.message);
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
-  }
-  // 코드 1회 사용 처리 — 경합(같은 코드 동시 수락) 시 used_at IS NULL 조건으로 한 명만 통과
-  const { data: used } = await db
-    .from("mailbox_invites").update({ used_by: userId, used_at: now }).eq("code", code).is("used_at", null).select("code");
-  if (!used || used.length === 0) {
-    // 다른 사람이 먼저 사용 — 방금 만든 참여 행 되돌림
-    if (!existing) await db.from("mailbox_members").delete().eq("mailbox_id", mb.id).eq("user_id", userId);
-    return NextResponse.json({ detail: "invite_used" }, { status: 409 });
   }
   if (mb.owner_user_id) {
     await notify(db, [mb.owner_user_id], mb.id, "invite_accepted", { mailbox_name: mb.name, actor_name: inv.invitee_name, role_text: inv.role_text });

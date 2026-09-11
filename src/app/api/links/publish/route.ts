@@ -10,6 +10,7 @@ import { decodePngPixels, extractFinalHashFromPixels, computeInnerHashFromPixels
 import { StepTimer } from "@/lib/timing";
 import { normalizeMemo, isMissingColumn } from "@/lib/links/memo";
 import { isActiveMember, listMembers, loadMailbox, loadMember, newPhotoId, notify } from "@/lib/mailboxes/server";
+import { verifyMailboxCapture } from "@/lib/mailboxes/captureGuard";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -142,6 +143,17 @@ export async function POST(req: NextRequest) {
       public_url: publicUrl,
       already_published: true,
     });
+  }
+
+  // A-84②: 사서함 촬영 — LINK_CREATE 차감·expires_at=null 발행 전에 멤버십·잠금·촬영 허용·부담 주체 재검증.
+  // (receipt는 30일 유효 — confirm 통과 뒤에도 내보내기/잠금이 있을 수 있다.) 실패 시 차감 없이 409.
+  // 이미 발행된 link_id는 위에서 멱등 응답했으므로 여기는 최초 발행만.
+  if (mailboxId) {
+    const guard = await t.span("mailbox_guard", () => verifyMailboxCapture(supabase, mailboxId, user_id, billingUserId));
+    if (!guard.ok) {
+      console.warn(`[publish] mailbox guard rejected link_id=${link_id} mailbox=${mailboxId} detail=${guard.detail}`);
+      return NextResponse.json({ detail: guard.detail, mailbox_id: mailboxId }, { status: 409 });
+    }
   }
 
   const isPaidTier = owner?.tier === "pro" || owner?.tier === "business";
