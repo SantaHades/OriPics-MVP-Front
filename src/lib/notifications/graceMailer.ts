@@ -18,6 +18,8 @@ function transporter() {
 
 const FROM = () => `"OriPics" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`;
 const PROFILE_URL = "https://www.ori.pics/ko/profile";
+// 수신 계정 힌트 — 다른 계정으로 로그인된 브라우저에서 열리면 프로필 페이지가 불일치 배너를 띄운다 (2026-09-11 대표 실측: 타 계정 보관함이 열림)
+const profileUrlFor = (email: string) => `${PROFILE_URL}?account=${encodeURIComponent(email)}`;
 const PRICING_URL = "https://www.ori.pics/ko#pricing";
 
 function fmtDate(d: Date): string {
@@ -29,13 +31,14 @@ function fmtDate(d: Date): string {
   }).format(d);
 }
 
-function shell(title: string, bodyHtml: string): string {
+function shell(title: string, bodyHtml: string, email: string): string {
   return `
   <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR',sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#0f172a">
     <h2 style="font-size:18px;margin:0 0 16px">${title}</h2>
     <div style="font-size:14px;line-height:1.7;color:#334155">${bodyHtml}</div>
+    <p style="font-size:13px;line-height:1.7;color:#64748b;background:#f1f5f9;border-radius:8px;padding:10px 14px;margin-top:16px">이 안내는 <strong style="color:#0f172a">${email}</strong> 계정의 보관함에 대한 것입니다. 브라우저에 다른 계정으로 로그인되어 있으면 그 계정의 보관함이 열리니, 위 계정으로 로그인했는지 확인해 주세요.</p>
     <p style="margin-top:24px">
-      <a href="${PROFILE_URL}" style="display:inline-block;background:#1d61e7;color:#fff;text-decoration:none;font-weight:bold;padding:10px 20px;border-radius:10px">보관함에서 이미지 다운로드</a>
+      <a href="${profileUrlFor(email)}" style="display:inline-block;background:#1d61e7;color:#fff;text-decoration:none;font-weight:bold;padding:10px 20px;border-radius:10px">보관함에서 이미지 다운로드</a>
       &nbsp;
       <a href="${PRICING_URL}" style="display:inline-block;border:1px solid #cbd5e1;color:#0f172a;text-decoration:none;font-weight:bold;padding:10px 20px;border-radius:10px">Pro 재구독</a>
     </p>
@@ -61,7 +64,7 @@ export async function sendGraceDowngradeNotice(opts: {
     from: FROM(),
     to: email,
     subject,
-    html: shell("보관함 이용 종료 안내", body),
+    html: shell("보관함 이용 종료 안내", body, email),
   });
 }
 
@@ -84,6 +87,6 @@ export async function sendGraceReminder(opts: {
     from: FROM(),
     to: email,
     subject,
-    html: shell(`공개링크 삭제 ${daysLeft}일 전 안내`, body),
+    html: shell(`공개링크 삭제 ${daysLeft}일 전 안내`, body, email),
   });
 }

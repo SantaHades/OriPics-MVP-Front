@@ -107,14 +107,21 @@ export default function ProfilePage() {
   const [passDetailsOpen, setPassDetailsOpen] = useState(false);
   // 선물 랜딩(/pass/{code} → ?pass_code=)에서 넘어온 코드 자동 입력 (A-60 Phase 3).
   // useSearchParams 대신 location 직접 읽기 — 클라이언트 페이지 prerender 시 Suspense 요구 회피
+  // 보관 유예 이메일의 ?account= 힌트 — 로그인 계정과 다르면 불일치 배너 (2026-09-11 대표: 타 계정으로 로그인된 브라우저에서 다른 보관함이 열림)
+  const [accountHint, setAccountHint] = useState<string | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const q = new URLSearchParams(window.location.search).get("pass_code");
+    const sp = new URLSearchParams(window.location.search);
+    const q = sp.get("pass_code");
     if (q) {
       setPassCode(q);
       setTimeout(() => document.getElementById("pass")?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
     }
+    const acc = sp.get("account");
+    if (acc) setAccountHint(acc.trim().toLowerCase());
   }, []);
+  const accountMismatch =
+    sessionStatus === "authenticated" && !!accountHint && !!session?.user?.email && accountHint !== session.user.email.toLowerCase();
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
     fetch("/api/pass/active")
@@ -699,6 +706,19 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-extrabold tracking-tight mb-2">{t("title")}</h1>
           <p className="text-slate-600">{t("subtitle")}</p>
         </div>
+
+        {accountMismatch && accountHint ? (
+          <div role="alert" className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5 text-sm text-amber-900">
+            <p className="font-bold mb-1">{t("account_mismatch_title")}</p>
+            <p className="leading-relaxed">{t("account_mismatch_body", { expected: accountHint, current: session?.user?.email ?? "" })}</p>
+            <button
+              type="button"
+              onClick={() => void signOut({ callbackUrl: "/login" })}
+              className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 font-bold text-white hover:bg-amber-700 transition-colors">
+              {t("account_mismatch_switch")}
+            </button>
+          </div>
+        ) : null}
 
         <div className="auth-card">
           <form onSubmit={handleSave} className="space-y-8">
