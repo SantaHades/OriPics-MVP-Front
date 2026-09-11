@@ -226,6 +226,8 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
   }
 
   const c = data.campaign;
+  // (2026-09-11 A-94 ④) 가입만 하고 첫 인증을 아직 안 한 피추천인 수 — 유효 초대(12명 집계)로 확정되기 전
+  const pendingFirstProof = data.referrals.filter((r) => r.status === "confirmed" && !r.valid).length;
   const benefitList = showAllBenefits ? data.benefits.list : data.benefits.list.filter((b) => b.status === "available").slice(0, 6);
   const nc = data.nextCharge;
 
@@ -252,11 +254,14 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
       {highlight && joinDone === null && data.joined && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm">
           {t("welcome_banner", { code: data.code ?? "" })}
+          {/* (2026-09-11 A-94 ④) 첫 인증 시 파트너 적립 확정 안내 */}
+          <span className="block mt-1 text-xs text-emerald-700">{t("first_proof_nudge")}</span>
         </div>
       )}
       {joinDone !== null && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm" role="status">
           {t("join_done", { name: joinDone })}
+          <span className="block mt-1 text-xs text-emerald-700">{t("first_proof_nudge")}</span>
         </div>
       )}
       {signupJoinError && joinDone === null && !data.joined && (
@@ -341,7 +346,13 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
           <div className="flex items-center gap-2 mb-2">
             <Users size={16} className="text-blue-600" />
             <h3 className="text-sm font-bold">{t("referrals_title")}</h3>
-            <span className="ml-auto text-xs text-slate-500">{t("referrals_count", { valid: data.validCount, total: data.referrals.length })}</span>
+            <span className="ml-auto text-xs text-slate-500">
+              {t("referrals_count", { valid: data.validCount, total: data.referrals.length })}
+              {/* (2026-09-11 A-94 ④) 첫 인증 대기 n명 */}
+              {pendingFirstProof > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold">{t("pending_first_proof", { n: pendingFirstProof })}</span>
+              )}
+            </span>
           </div>
           <div
             role="progressbar"

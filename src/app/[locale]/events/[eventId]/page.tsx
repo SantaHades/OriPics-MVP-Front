@@ -13,8 +13,11 @@ import type { EventDefDto } from "@/lib/channels/server";
 import { getEvent } from "@/lib/events/catalog";
 import type { EntryDto } from "@/lib/events/server";
 import { ANDROID_STORE_URL, IOS_APP_URL } from "@/lib/appLinks";
+import { PARTNER } from "@/lib/partner/config";
 
 type Sort = "likes" | "new";
+// (2026-09-11 A-94 ②) 이벤트 유입 가입 CTA 에 대표 파트너코드(1234) ref 부착 — 기획 Q4(대표 코드 공개 진입 유도) 허용. 가입 CTA 에만.
+const EVENT_SIGNUP_HREF = `/signup?ref=${encodeURIComponent(PARTNER.OWNER_CODE)}`;
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -133,6 +136,12 @@ export default function EventDetailPage() {
           <div className="flex flex-wrap gap-2 mt-4">
             <a href={IOS_APP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700"><Smartphone size={14} /> {ko ? "iPhone 앱에서 참여" : "Enter on iPhone"}</a>
             <a href={ANDROID_STORE_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-700"><Smartphone size={14} /> {ko ? "Android 앱에서 참여" : "Enter on Android"}</a>
+            {/* (2026-09-11 A-94 ②) 비로그인 방문자 가입 CTA — 대표 파트너코드 ref (참여는 앱에서, 계정은 웹에서 먼저 만들 수 있음) */}
+            {!signedIn ? (
+              <Link href={EVENT_SIGNUP_HREF} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-300 text-slate-800 text-sm font-semibold hover:bg-slate-50">
+                {ko ? "계정 만들기" : "Create account"}
+              </Link>
+            ) : null}
           </div>
         </div>
 
@@ -180,7 +189,13 @@ export default function EventDetailPage() {
           </div>
         </div>
         {!signedIn ? (
-          <p className="text-xs text-slate-500 mb-4">{ko ? "좋아요는 로그인 후 누를 수 있어요. " : "Sign in to like entries. "}<Link href="/login" className="text-blue-600 font-semibold hover:underline">{ko ? "로그인" : "Sign in"}</Link></p>
+          <p className="text-xs text-slate-500 mb-4">
+            {ko ? "좋아요는 로그인 후 누를 수 있어요. " : "Sign in to like entries. "}
+            <Link href="/login" className="text-blue-600 font-semibold hover:underline">{ko ? "로그인" : "Sign in"}</Link>
+            {" · "}
+            {/* (2026-09-11 A-94 ②) 가입 CTA — 대표 코드 ref */}
+            <Link href={EVENT_SIGNUP_HREF} className="text-blue-600 font-semibold hover:underline">{ko ? "회원가입" : "Sign up"}</Link>
+          </p>
         ) : null}
         {loading && entries.length === 0 ? (
           <p className="text-sm text-slate-500">{ko ? "불러오는 중…" : "Loading…"}</p>

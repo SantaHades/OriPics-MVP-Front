@@ -56,7 +56,8 @@ export async function sendReferralJoinedMail(opts: {
   const body = opts.rewarded
     ? `<p><strong>${opts.refereeNameMasked}</strong> 님이 회원님의 파트너코드로 가입했어요.</p>
        <p>Pro 50% 할인권 <strong>1장</strong>이 도착했습니다. 현재 보유 <strong>${opts.totalCoupons}장</strong>.</p>
-       <p>할인권은 Pro 결제마다 1장씩(첫 결제는 2장까지) 자동으로 쓰입니다. ${PARTNER.MILESTONE_COUNT}명이 가입해 첫 인증까지 마치면 1개월 무료 이용권 ${PARTNER.MILESTONE_FREE_MONTHS}장(${PARTNER.MILESTONE_FREE_MONTHS}개월 연속 자동 적용)도 드려요.</p>`
+       <p>할인권은 Pro 결제마다 1장씩(첫 결제는 2장까지) 자동으로 쓰입니다. ${PARTNER.MILESTONE_COUNT}명이 가입해 첫 인증까지 마치면 1개월 무료 이용권 ${PARTNER.MILESTONE_FREE_MONTHS}장(${PARTNER.MILESTONE_FREE_MONTHS}개월 연속 자동 적용)도 드려요.</p>
+       <p style="color:#047857">${opts.refereeNameMasked} 님이 첫 사진 인증 1건을 완료하면 파트너 적립(유효 초대)이 확정됩니다.</p>`
     : `<p><strong>${opts.refereeNameMasked}</strong> 님이 회원님의 파트너코드로 가입했어요.</p>
        <p>파트너 모집(선착순 ${PARTNER.CAP}명)이 마감되어 이번 가입에 대한 할인권 적립은 없지만, 이미 받은 할인권은 그대로 사용할 수 있습니다.</p>`;
   return send(opts.to, "[OriPics] 파트너코드로 새 회원이 가입했어요", shell("파트너 릴레이 챌린지", body, { href: PARTNER_URL, label: "초대 현황 보기" }));

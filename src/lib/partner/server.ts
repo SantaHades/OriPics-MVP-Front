@@ -677,6 +677,8 @@ export async function partnerStats() {
     cap: PARTNER.CAP,
     partnersJoined: partners,
     remaining: Math.max(0, PARTNER.CAP - partners),
+    /** (2026-09-11 A-94 ③) 랜딩 '잔여 좌석' 명시 필드 — remaining 과 동일 값(500 − 참여 파트너) */
+    remainingSeats: Math.max(0, PARTNER.CAP - partners),
     campaignEnd: PARTNER.CAMPAIGN_END.toISOString(),
     campaignEnded: Date.now() > PARTNER.CAMPAIGN_END.getTime(),
     discountAmount: PARTNER.DISCOUNT_AMOUNT,
@@ -684,6 +686,52 @@ export async function partnerStats() {
     milestoneFreeMonths: PARTNER.MILESTONE_FREE_MONTHS,
     benefitValidMonths: PARTNER.BENEFIT_VALID_MONTHS,
   };
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  /** maskName 적용 — "손*석" */
+  nameMasked: string;
+  validCount: number;
+  totalCount: number;
+}
+
+/**
+ * 마스킹 리더보드 (2026-09-11 A-94 ③) — 유효 초대(가입 후 첫 인증 완료) 수 상위 N 명. 동률은 가입 수 → id 순.
+ * confirmed 추천이 1건 이상인 추천인만. 이름은 maskName(없으면 이메일 로컬파트). 호출측(/api/partner/stats)이 5분 캐시.
+ */
+export async function partnerLeaderboard(limit = 10): Promise<LeaderboardEntry[]> {
+  const grouped = await prisma.partnerReferral.groupBy({
+    by: ["referrerId"],
+    where: { status: "confirmed" },
+    _count: { _all: true },
+  });
+  if (grouped.length === 0) return [];
+  const byReferrer = await listReferralsWithValidityBulk(grouped.map((g) => g.referrerId));
+  const scored = grouped
+    .map((g) => {
+      const list = byReferrer.get(g.referrerId) ?? [];
+      return {
+        referrerId: g.referrerId,
+        validCount: list.filter((r) => r.valid).length,
+        totalCount: list.filter((r) => r.status === "confirmed").length,
+      };
+    })
+    .filter((s) => s.totalCount > 0)
+    .sort((a, b) => b.validCount - a.validCount || b.totalCount - a.totalCount || a.referrerId.localeCompare(b.referrerId))
+    .slice(0, limit);
+  if (scored.length === 0) return [];
+  const users = await prisma.user.findMany({
+    where: { id: { in: scored.map((s) => s.referrerId) } },
+    select: { id: true, name: true, email: true },
+  });
+  const nameOf = new Map(users.map((u) => [u.id, maskName(u.name || u.email?.split("@")[0])]));
+  return scored.map((s, i) => ({
+    rank: i + 1,
+    nameMasked: nameOf.get(s.referrerId) ?? maskName(null),
+    validCount: s.validCount,
+    totalCount: s.totalCount,
+  }));
 }
 
 export async function getPartnerOverview(userId: string, opts: { listAmount: number }) {

@@ -13,6 +13,11 @@ const mockTxBenefitCreateMany = vi.fn();
 const mockRefFindUnique = vi.fn();
 const mockCtFindFirst = vi.fn();
 const mockBenefitUpdateMany = vi.fn();
+// (2026-09-11 A-94 ③) partnerLeaderboard
+const mockRefGroupBy = vi.fn();
+const mockRefFindMany = vi.fn();
+const mockCtGroupBy = vi.fn();
+const mockUserFindMany = vi.fn();
 
 const tx = {
   partnerMilestone: { updateMany: (...a: any[]) => mockTxMsUpdateMany(...a) },
@@ -23,13 +28,18 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: (fn: any) => fn(tx),
     partnerMilestone: { findUnique: (...a: any[]) => mockMsFindUnique(...a) },
-    partnerReferral: { findUnique: (...a: any[]) => mockRefFindUnique(...a) },
-    creditTransaction: { findFirst: (...a: any[]) => mockCtFindFirst(...a) },
+    partnerReferral: {
+      findUnique: (...a: any[]) => mockRefFindUnique(...a),
+      groupBy: (...a: any[]) => mockRefGroupBy(...a),
+      findMany: (...a: any[]) => mockRefFindMany(...a),
+    },
+    creditTransaction: { findFirst: (...a: any[]) => mockCtFindFirst(...a), groupBy: (...a: any[]) => mockCtGroupBy(...a) },
     partnerBenefit: { updateMany: (...a: any[]) => mockBenefitUpdateMany(...a) },
+    user: { findMany: (...a: any[]) => mockUserFindMany(...a) },
   },
 }));
 
-import { approveMilestone, hashEmail, hashEmailLegacy, revokeReferrerBenefitsOnRefereeDelete } from "./server";
+import { approveMilestone, hashEmail, hashEmailLegacy, partnerLeaderboard, revokeReferrerBenefitsOnRefereeDelete } from "./server";
 import { PARTNER } from "./config";
 
 beforeEach(() => {
@@ -118,5 +128,60 @@ describe("revokeReferrerBenefitsOnRefereeDelete — 탈퇴 파밍 회수 (A-91 �
     expect(await revokeReferrerBenefitsOnRefereeDelete("x")).toBe(0);
     mockRefFindUnique.mockResolvedValue({ id: "r1", referrerId: "o", createdAt: new Date(), status: "revoked" });
     expect(await revokeReferrerBenefitsOnRefereeDelete("x")).toBe(0);
+  });
+});
+
+describe("partnerLeaderboard — 마스킹 리더보드 (A-94 ③)", () => {
+  const t0 = new Date("2026-09-12T00:00:00Z");
+  const before = new Date("2026-09-11T00:00:00Z");
+  const after = new Date("2026-09-13T00:00:00Z");
+
+  it("추천이 없으면 빈 배열, 추가 쿼리 없음", async () => {
+    mockRefGroupBy.mockResolvedValue([]);
+    expect(await partnerLeaderboard()).toEqual([]);
+    expect(mockRefFindMany).not.toHaveBeenCalled();
+    expect(mockUserFindMany).not.toHaveBeenCalled();
+  });
+
+  it("유효 초대(참여 후 첫 인증) 수 내림차순, 동률은 가입 수, 이름은 마스킹·순위 1부터", async () => {
+    mockRefGroupBy.mockResolvedValue([{ referrerId: "A" }, { referrerId: "B" }, { referrerId: "C" }]);
+    mockRefFindMany.mockResolvedValue([
+      // A: 2명 가입, 1명 유효(참여 후 인증), 1명은 참여 전 인증(무효)
+      { id: "r1", referrerId: "A", status: "confirmed", referrerRewarded: true, createdAt: t0, referee: { id: "a1", name: "김철수", email: null } },
+      { id: "r2", referrerId: "A", status: "confirmed", referrerRewarded: true, createdAt: t0, referee: { id: "a2", name: "박영희", email: null } },
+      // B: 1명 가입, 1명 유효
+      { id: "r3", referrerId: "B", status: "confirmed", referrerRewarded: true, createdAt: t0, referee: { id: "b1", name: null, email: "friend@x.com" } },
+      // C: 회수된 추천만 → 제외
+      { id: "r4", referrerId: "C", status: "revoked", referrerRewarded: false, createdAt: t0, referee: { id: "c1", name: "x", email: null } },
+    ]);
+    mockCtGroupBy.mockResolvedValue([
+      { userId: "a1", _min: { createdAt: after } },
+      { userId: "a2", _min: { createdAt: before } },
+      { userId: "b1", _min: { createdAt: after } },
+    ]);
+    mockUserFindMany.mockResolvedValue([
+      { id: "A", name: "손용석", email: "a@x.com" },
+      { id: "B", name: null, email: "yongseog@x.com" },
+    ]);
+    const lb = await partnerLeaderboard(10);
+    expect(lb).toEqual([
+      { rank: 1, nameMasked: "손*석", validCount: 1, totalCount: 2 },
+      { rank: 2, nameMasked: "y******g", validCount: 1, totalCount: 1 },
+    ]);
+    // 이름 조회는 상위 N 명만
+    expect(mockUserFindMany.mock.calls[0][0].where.id.in).toEqual(["A", "B"]);
+  });
+
+  it("limit 만큼만 잘라 반환", async () => {
+    mockRefGroupBy.mockResolvedValue([{ referrerId: "A" }, { referrerId: "B" }]);
+    mockRefFindMany.mockResolvedValue([
+      { id: "r1", referrerId: "A", status: "confirmed", referrerRewarded: true, createdAt: t0, referee: { id: "a1", name: "a", email: null } },
+      { id: "r3", referrerId: "B", status: "confirmed", referrerRewarded: true, createdAt: t0, referee: { id: "b1", name: "b", email: null } },
+    ]);
+    mockCtGroupBy.mockResolvedValue([{ userId: "a1", _min: { createdAt: after } }]);
+    mockUserFindMany.mockResolvedValue([{ id: "A", name: "손용석", email: null }]);
+    const lb = await partnerLeaderboard(1);
+    expect(lb).toHaveLength(1);
+    expect(lb[0]).toMatchObject({ rank: 1, nameMasked: "손*석", validCount: 1 });
   });
 });

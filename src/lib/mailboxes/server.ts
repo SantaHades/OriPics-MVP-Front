@@ -165,8 +165,29 @@ export function extractInviteCode(value: string): string | null {
 export function formatInviteCode(code: string): string {
   return `${code.slice(0, 4)}-${code.slice(4)}`;
 }
-export function inviteUrl(code: string, lang: Lang): string {
-  return `${SITE_URL}/${lang}/invite/${formatInviteCode(code)}`;
+/**
+ * 초대 URL. (2026-09-11 A-94) 개설자의 파트너코드가 있으면 `?ref=코드`를 붙인다 — 초대받아 가입한 참여자가
+ * 개설자의 추천 가입으로 집계되도록(초대 랜딩 → /signup?ref= 프리필). 코드가 없으면 부착하지 않는다.
+ * 앱 스캐너·랜딩의 extractInviteCode 는 `XXXX-XXXX` 뒤 `?` 를 비영숫자로 보므로 코드 추출에 영향 없음.
+ */
+export function inviteUrl(code: string, lang: Lang, ref?: string | null): string {
+  const base = `${SITE_URL}/${lang}/invite/${formatInviteCode(code)}`;
+  return ref ? `${base}?ref=${encodeURIComponent(ref)}` : base;
+}
+
+/**
+ * 개설자의 파트너코드 조회 (2026-09-11 A-94) — 초대문·QR·URL 생성 시 1회 호출해 재사용.
+ * 파트너 마이그레이션 전 환경·조회 실패 시 null(부착 생략, best-effort).
+ */
+export async function ownerPartnerRef(ownerUserId: string | null | undefined): Promise<string | null> {
+  if (!ownerUserId) return null;
+  try {
+    const u = await prisma.user.findUnique({ where: { id: ownerUserId }, select: { partnerCode: true } });
+    const code = u?.partnerCode?.trim();
+    return code && /^[0-9]{3,8}$/.test(code) ? code : null;
+  } catch {
+    return null;
+  }
 }
 export function inviteState(inv: InviteRow, mailbox?: MailboxRow | null): "valid" | "used" | "expired" | "revoked" | "closed" {
   if (inv.used_at) return "used";
@@ -179,9 +200,9 @@ export function inviteState(inv: InviteRow, mailbox?: MailboxRow | null): "valid
 /** 초대문 (서버 템플릿, 개설자 편집 불가 — 코드·만료일 누락 방지) */
 export function inviteMessage(
   lang: Lang,
-  p: { inviteeName: string; roleText: string | null; ownerName: string; mailboxName: string; code: string; expiresAt: string },
+  p: { inviteeName: string; roleText: string | null; ownerName: string; mailboxName: string; code: string; expiresAt: string; ref?: string | null },
 ): string {
-  const url = inviteUrl(p.code, lang);
+  const url = inviteUrl(p.code, lang, p.ref); // (2026-09-11 A-94) 개설자 파트너코드 ?ref=
   const code = formatInviteCode(p.code);
   const d = new Date(p.expiresAt);
   if (lang === "en") {

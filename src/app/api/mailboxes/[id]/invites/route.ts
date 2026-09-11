@@ -6,7 +6,7 @@ import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb } from "@/lib/events/server";
 import {
   INVITE_TTL_DAYS, formatInviteCode, generateInviteCode, inviteMessage, inviteUrl, isActiveMember, isLocked, langOf,
-  limitsFor, listMembers, loadMailbox,
+  limitsFor, listMembers, loadMailbox, ownerPartnerRef,
 } from "@/lib/mailboxes/server";
 
 export const dynamic = "force-dynamic";
@@ -56,13 +56,15 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   }
   const lang = langOf(req.nextUrl.searchParams.get("locale"));
   const owner = members.find((m) => m.kind === "owner");
+  // (2026-09-11 A-94) 개설자 파트너코드 → 초대 URL·초대문에 ?ref= (없으면 미부착). 1회 조회
+  const ref = await ownerPartnerRef(userId);
   console.log(`[mailboxes] invite created mailbox=${id} code=${code}`);
   return NextResponse.json(
     {
       invite: {
         code,
         code_display: formatInviteCode(code),
-        url: inviteUrl(code, lang),
+        url: inviteUrl(code, lang, ref),
         qr_url: `/api/mailboxes/invites/${code}/qr`,
         invitee_name: inviteeName,
         role_text: roleText,
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
         expires_at: expiresAt,
         state: "valid",
         message: inviteMessage(lang, {
-          inviteeName, roleText, ownerName: owner?.display_name ?? "", mailboxName: mb.name, code, expiresAt,
+          inviteeName, roleText, ownerName: owner?.display_name ?? "", mailboxName: mb.name, code, expiresAt, ref,
         }),
       },
     },

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb } from "@/lib/events/server";
-import { INVITE_COLS, inviteMessage, langOf, loadMailbox, normalizeInviteCode, type InviteRow } from "@/lib/mailboxes/server";
+import { INVITE_COLS, inviteMessage, langOf, loadMailbox, normalizeInviteCode, ownerPartnerRef, type InviteRow } from "@/lib/mailboxes/server";
 
 export const dynamic = "force-dynamic";
 
@@ -22,10 +22,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ code: str
   if (!mb || mb.owner_user_id !== userId) return NextResponse.json({ detail: "forbidden" }, { status: 403 });
   const { data: owner } = await db.from("mailbox_members").select("display_name").eq("mailbox_id", mb.id).eq("kind", "owner").maybeSingle();
   const lang = langOf(req.nextUrl.searchParams.get("locale"));
+  const ref = await ownerPartnerRef(mb.owner_user_id); // (2026-09-11 A-94) 개설자 파트너코드 ?ref=
   return NextResponse.json({
     message: inviteMessage(lang, {
       inviteeName: inv.invitee_name, roleText: inv.role_text, ownerName: (owner?.display_name as string | undefined) ?? "",
-      mailboxName: mb.name, code, expiresAt: inv.expires_at,
+      mailboxName: mb.name, code, expiresAt: inv.expires_at, ref,
     }),
   });
 }

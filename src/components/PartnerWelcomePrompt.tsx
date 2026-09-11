@@ -167,6 +167,8 @@ export default function PartnerWelcomePrompt() {
             <h3 id={titleId} className="text-base font-bold text-slate-900">{done !== null ? t("welcome_done_title") : t("welcome_title")}</h3>
             <p id={bodyId} className="text-xs text-slate-500 mt-1">
               {done !== null ? t("welcome_done_body", { name: done, code: myCode ?? "" }) : t("welcome_body")}
+              {/* (2026-09-11 A-94 ④) 참여 완료 시 첫 인증 안내 */}
+              {done !== null && <span className="block mt-1 text-emerald-700">{t("first_proof_nudge")}</span>}
             </p>
           </div>
           <button type="button" onClick={dismissSession} className="text-slate-400 hover:text-slate-700" aria-label={t("welcome_close")}>

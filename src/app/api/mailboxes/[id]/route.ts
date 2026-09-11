@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb } from "@/lib/events/server";
 import {
-  DELETE_GRACE_DAYS, INVITE_COLS, formatInviteCode, hashPassword, inviteState, inviteUrl, isActiveMember, langOf,
+  DELETE_GRACE_DAYS, INVITE_COLS, formatInviteCode, hashPassword, inviteState, inviteUrl, isActiveMember, langOf, ownerPartnerRef,
   listMembers, loadMailbox, loadMember, mailboxDto, memberDto, notify, photoCounts, type InviteRow,
 } from "@/lib/mailboxes/server";
 
@@ -42,10 +42,11 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
       .is("used_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
+    const ref = await ownerPartnerRef(userId); // (2026-09-11 A-94) 개설자 파트너코드 ?ref= — 목록 전체에 1회 조회
     out.invites = ((data ?? []) as InviteRow[]).map((inv) => ({
       code: inv.code,
       code_display: formatInviteCode(inv.code),
-      url: inviteUrl(inv.code, lang),
+      url: inviteUrl(inv.code, lang, ref),
       invitee_name: inv.invitee_name,
       role_text: inv.role_text,
       can_capture: inv.can_capture,

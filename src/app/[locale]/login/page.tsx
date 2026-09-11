@@ -28,6 +28,15 @@ export default function LoginPage() {
   
   const t = useTranslations("Login");
 
+  // (2026-09-11 A-94) 초대 랜딩(/invite/[code]?ref=) 등에서 파트너코드를 들고 온 경우 — 회원가입 링크로 전달하고,
+  // 소셜 로그인으로 바로 가입해도 첫 로그인 환영 모달(PartnerWelcomePrompt)이 읽도록 가입 폼과 같은 세션 키에 저장
+  const refParam = (searchParams.get("ref") ?? "").replace(/[^0-9]/g, "").slice(0, 8);
+  const signupHref = refParam.length >= 3 ? `/signup?ref=${encodeURIComponent(refParam)}` : "/signup";
+  React.useEffect(() => {
+    if (refParam.length < 3) return;
+    try { window.sessionStorage.setItem("oripics.partner.ref", refParam); } catch { /* ignore */ }
+  }, [refParam]);
+
   // URL 에러 확인
   React.useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -216,7 +225,7 @@ export default function LoginPage() {
 
           <div className="mt-8 text-center text-sm text-slate-500">
             {t("no_account")}{" "}
-            <Link href="/signup" className="text-blue-600 font-bold hover:underline">
+            <Link href={signupHref} className="text-blue-600 font-bold hover:underline">
               {t("signup_link")}
             </Link>
           </div>

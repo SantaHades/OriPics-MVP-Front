@@ -2,17 +2,29 @@
 
 // 파트너 릴레이 챌린지 랜딩 (A-82 §4.1) — /{locale}/partner
 // 혜택·방법·잔여 카운터·유의사항. 로그인 시 [내 파트너코드 보기], 비로그인 시 [코드 입력하고 가입].
+// (2026-09-11 A-94 ③) 잔여 좌석(500 − 참여 파트너)·종료일을 큰 숫자 카드로 강조 + 마스킹 리더보드(유효 초대 상위 10, 손*석).
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/navigation";
-import { ArrowLeft, Gift, Users, Ticket, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Gift, Users, Ticket, CheckCircle2, Trophy } from "lucide-react";
 import { PARTNER, validityDeadline } from "@/lib/partner/config";
+
+interface LeaderboardEntry {
+  rank: number;
+  nameMasked: string;
+  validCount: number;
+  totalCount: number;
+}
 
 interface Stats {
   cap: number;
   partnersJoined: number;
   remaining: number;
+  /** (A-94) 잔여 좌석 = remaining 동일 값 */
+  remainingSeats?: number;
+  /** (A-94) 마스킹 리더보드 top 10 — 서버 5분 캐시 */
+  leaderboard?: LeaderboardEntry[];
   campaignEnd: string;
   campaignEnded: boolean;
   discountAmount: number;
@@ -53,6 +65,11 @@ export default function PartnerLandingPage() {
   const goal = stats?.milestoneCount ?? PARTNER.MILESTONE_COUNT;
   const cap = stats?.cap ?? PARTNER.CAP;
   const months24 = stats?.benefitValidMonths ?? PARTNER.BENEFIT_VALID_MONTHS;
+  // (2026-09-11 A-94 ③) 잔여 좌석·남은 일수·리더보드
+  const remainingSeats = stats ? (stats.remainingSeats ?? stats.remaining) : null;
+  const ended = stats?.campaignEnded ?? Date.now() > endDate.getTime();
+  const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86_400_000));
+  const leaderboard = stats?.leaderboard ?? [];
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -67,20 +84,32 @@ export default function PartnerLandingPage() {
           <p className="text-base text-slate-700 mb-2">{t("sub1", { amount: fmtWon(discount) })}</p>
           <p className="text-base text-slate-700 mb-6">{t("sub2", { goal, months, value: fmtWon(discount * 2 * months) })}</p>
 
-          <div className="flex flex-wrap items-center gap-3 mb-6 text-sm">
-            <span className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700">{t("until", { end })}</span>
-            {stats ? (
-              <span className={`px-3 py-1.5 rounded-full font-bold ${stats.remaining > 0 && !stats.campaignEnded ? "bg-blue-50 text-blue-700" : "bg-slate-200 text-slate-600"}`}>
-                {stats.campaignEnded ? t("ended") : stats.remaining > 0 ? t("remaining", { remaining: stats.remaining, cap: stats.cap }) : t("full", { cap: stats.cap })}
-              </span>
-            ) : statsFailed ? (
-              <span className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-500" role="status">
-                {t("remaining", { remaining: "—", cap })} · {t("stats_failed")}{" "}
-                <button type="button" onClick={loadStats} className="underline text-blue-700 hover:text-blue-900">{t("retry")}</button>
-              </span>
-            ) : (
-              <span className="px-3 py-1.5 rounded-full bg-slate-100 text-slate-400" aria-busy="true">{t("remaining", { remaining: "…", cap })}</span>
-            )}
+          {/* (2026-09-11 A-94 ③) 잔여 좌석·종료일 강조 카드 */}
+          <div className="grid sm:grid-cols-2 gap-3 mb-6">
+            <div
+              className={`rounded-2xl border p-4 ${ended || remainingSeats === 0 ? "bg-slate-100 border-slate-200" : "bg-blue-50 border-blue-100"}`}
+              role="status"
+              aria-busy={!stats && !statsFailed ? true : undefined}
+            >
+              <p className="text-xs font-semibold text-blue-700">{t("seats_label")}</p>
+              <p className="text-3xl sm:text-4xl font-extrabold tabular-nums leading-tight mt-1">
+                {ended ? t("ended") : remainingSeats === 0 ? t("seats_full") : t("seats_value", { remaining: remainingSeats ?? (statsFailed ? "—" : "…") })}
+              </p>
+              <p className="text-xs text-slate-600 mt-1">
+                {t("seats_of", { cap })}
+                {statsFailed ? (
+                  <>
+                    {" · "}{t("stats_failed")}{" "}
+                    <button type="button" onClick={loadStats} className="underline text-blue-700 hover:text-blue-900">{t("retry")}</button>
+                  </>
+                ) : null}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold text-slate-600">{t("end_label")}</p>
+              <p className="text-xl sm:text-2xl font-extrabold leading-tight mt-1">{end}</p>
+              <p className="text-xs text-slate-600 mt-1">{ended ? t("ended") : t("days_left", { days: daysLeft })}</p>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
@@ -127,6 +156,30 @@ export default function PartnerLandingPage() {
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* (2026-09-11 A-94 ③) 마스킹 리더보드 — 유효 초대 상위 10, 이름 마스킹(손*석), 서버 5분 캐시 */}
+        <section className="mt-10 rounded-2xl bg-white border border-slate-200 p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Trophy size={18} className="text-amber-500" />
+            <h2 className="text-lg font-bold">{t("leaderboard_title")}</h2>
+          </div>
+          <p className="text-xs text-slate-500 mb-4">{t("leaderboard_sub", { goal })}</p>
+          {!stats ? (
+            <p className="text-sm text-slate-400" aria-busy={!statsFailed ? true : undefined}>{statsFailed ? t("stats_failed") : "…"}</p>
+          ) : leaderboard.length === 0 ? (
+            <p className="text-sm text-slate-500">{t("leaderboard_empty")}</p>
+          ) : (
+            <ol className="divide-y divide-slate-100">
+              {leaderboard.map((e) => (
+                <li key={e.rank} className="py-2 flex items-center gap-3 text-sm">
+                  <span className={`w-8 shrink-0 text-center font-extrabold tabular-nums ${e.rank <= 3 ? "text-amber-600" : "text-slate-400"}`}>{t("leaderboard_rank", { rank: e.rank })}</span>
+                  <span className="font-semibold text-slate-800">{e.nameMasked}</span>
+                  <span className="ml-auto text-xs text-slate-500 tabular-nums">{t("leaderboard_valid", { valid: e.validCount, total: e.totalCount })}</span>
+                </li>
+              ))}
+            </ol>
+          )}
         </section>
 
         <section className="mt-10">

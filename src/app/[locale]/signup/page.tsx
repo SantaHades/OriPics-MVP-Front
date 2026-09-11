@@ -245,6 +245,8 @@ export default function SignupPage() {
               <p className="text-xs text-blue-700 font-bold mb-1">{t("partner_my_code")}</p>
               <p className="text-2xl font-extrabold tracking-[0.15em] tabular-nums">{appDonePartner.code}</p>
               <p className="text-xs text-slate-600 mt-1">{appDonePartner.joined ? t("partner_coupon_arrived") : t("partner_code_only")}</p>
+              {/* (2026-09-11 A-94 ④) 첫 인증 시 파트너 적립 확정 안내 — 코드로 참여한 경우 */}
+              {appDonePartner.joined && <p className="text-xs text-emerald-700 mt-1">{t("partner_first_proof_nudge")}</p>}
               {appDonePartner.error && (
                 <p className="text-xs text-amber-800 mt-2" role="alert">
                   {t("partner_join_failed", { reason: tP(`errors.${KNOWN_PARTNER_ERRORS.has(appDonePartner.error) ? appDonePartner.error : "unavailable"}`) })}

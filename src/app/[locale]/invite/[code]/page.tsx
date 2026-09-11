@@ -3,6 +3,8 @@
 // 서버 공개 API(/api/mailboxes/invites/:code)는 사서함 이름·개설자·초대받는 이름·상태만 내려준다(사진·참여자 비노출).
 // 앱 설치자는 [앱에서 열기](oripics://invite/CODE) → 앱 제출 탭 > 사서함 참여 미리보기. 미설치자는 설치 후 코드를 직접 입력.
 // iOS는 설치 직후 딥링크가 유실될 수 있어 코드를 크게 보여 주고 복사 버튼을 둔다.
+// (2026-09-11 A-94) 초대 URL 의 ?ref=개설자 파트너코드 → 가입 CTA(/signup?ref=)·소셜 가입용 sessionStorage 로 전달.
+//   초대받아 가입한 참여자 = 개설자의 추천 가입(양쪽 할인권). ref 없으면 일반 가입 링크.
 import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -28,6 +30,12 @@ function normalize(raw: string): string | null {
   const s = decodeURIComponent(raw).toUpperCase().replace(/[^A-Z0-9]/g, "");
   return /^[A-Z0-9]{8}$/.test(s) ? s : null;
 }
+/** ?ref= 파트너코드 정규화 — 숫자 3~8자리만 (config.normalizePartnerCode 와 동일 규칙, 2026-09-11 A-94) */
+function normalizeRef(raw: string | null): string | null {
+  if (!raw) return null;
+  const d = raw.replace(/[^0-9]/g, "");
+  return d.length >= 3 && d.length <= 8 ? d : null;
+}
 
 export default function InviteLanding() {
   const params = useParams();
@@ -37,6 +45,18 @@ export default function InviteLanding() {
   const [info, setInfo] = useState<InviteInfo | null | "loading" | "missing">(code ? "loading" : "missing");
   const [qr, setQr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // (2026-09-11 A-94) 개설자 파트너코드 — window.location 에서 읽음(useSearchParams 의 Suspense 요구 회피, 프로필 페이지와 동일 방식)
+  const [ref, setRef] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const r = normalizeRef(new URLSearchParams(window.location.search).get("ref"));
+    setRef(r);
+    // 소셜 로그인으로 가입해도 첫 로그인 환영 모달(PartnerWelcomePrompt)이 읽어 코드를 프리필하도록 저장 — 가입 폼(?ref=)과 같은 키
+    if (r) {
+      try { window.sessionStorage.setItem("oripics.partner.ref", r); } catch { /* ignore */ }
+    }
+  }, []);
 
   useEffect(() => {
     if (!code) return;
@@ -67,6 +87,9 @@ export default function InviteLanding() {
 
   const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
   const storeUrl = isAndroid ? ANDROID_STORE_URL : IOS_APP_URL;
+  // (2026-09-11 A-94) 가입 CTA — ref 가 있으면 가입 폼 파트너코드 프리필(/signup?ref=). 로그인은 ref 를 callbackUrl 없이 그대로
+  const signupHref = ref ? `/signup?ref=${encodeURIComponent(ref)}` : "/signup";
+  const loginHref = ref ? `/login?ref=${encodeURIComponent(ref)}` : "/login";
 
   const stateText: Record<InviteInfo["state"], string> = {
     valid: ko ? "유효한 초대코드입니다" : "This invite code is valid",
@@ -150,6 +173,20 @@ export default function InviteLanding() {
                     {ko
                       ? "설치 후: 앱 > 제출 탭 > 사서함 > 초대받은 사서함 [+ 추가하기]에 위 코드를 입력하세요. 참여에는 로그인이 필요합니다."
                       : "After installing: App > Submit tab > Mailboxes > Invited mailboxes [+ Add] and enter the code above. Sign-in is required."}
+                  </p>
+                  {/* (2026-09-11 A-94) 계정 CTA — ref(개설자 파트너코드)를 가입 폼까지 전달 */}
+                  <p className="text-xs text-slate-600 text-center mt-3 leading-relaxed">
+                    {ko ? "OriPics 계정이 없다면 " : "No OriPics account yet? "}
+                    <Link href={signupHref} className="text-blue-600 font-semibold hover:underline">{ko ? "회원가입" : "Sign up"}</Link>
+                    {" · "}
+                    <Link href={loginHref} className="text-blue-600 font-semibold hover:underline">{ko ? "로그인" : "Sign in"}</Link>
+                    {ref ? (
+                      <span className="block mt-1 text-[11px] text-emerald-700">
+                        {ko
+                          ? `개설자의 파트너코드 ${ref}가 가입 폼에 자동 입력됩니다. 가입하면 두 분 모두 Pro 50% 할인권을 받아요.`
+                          : `Partner code ${ref} from the owner will be pre-filled. Sign up and you both get a 50% Pro coupon.`}
+                      </span>
+                    ) : null}
                   </p>
                 </div>
               ) : null}
