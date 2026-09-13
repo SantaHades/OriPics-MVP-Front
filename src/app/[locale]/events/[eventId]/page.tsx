@@ -170,7 +170,8 @@ export default function EventDetailPage() {
                     <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
                     <span className="absolute bottom-2 right-2"><LikeButton entry={e} /></span>
                   </div>
-                  {e.caption ? <p className="px-4 py-3 text-sm text-slate-700 line-clamp-2">{e.caption}</p> : null}
+                  {/* 공개 메모 전문 표시(줄 수 제한 없음), 없으면 흐린 안내 — 앱 사서함 그리드와 동일 (2026-09-13 대표) */}
+                  <p className={`px-4 py-3 text-sm whitespace-pre-wrap break-words ${e.caption ? "text-slate-700" : "text-slate-400"}`}>{e.caption || (ko ? "공개 메모 없음" : "No public memo")}</p>
                 </div>
               ))}
             </div>
@@ -235,8 +236,8 @@ export default function EventDetailPage() {
           >
             <X size={24} />
           </button>
-          <div className="absolute z-10 bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 max-w-[95vw]">
-            <a href={lightbox.link_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/90 hover:bg-white text-slate-800 text-sm font-semibold">
+          <div className="absolute z-10 bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 max-w-[95vw] flex-nowrap">
+            <a href={lightbox.link_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 whitespace-nowrap rounded-full bg-white/90 hover:bg-white text-slate-800 text-xs sm:text-sm font-semibold">
               <ExternalLink size={14} /> {ko ? "공개링크에서 검증" : "Verify on public link"}
             </a>
             <span className="text-white/80 text-sm">♥ {lightbox.like_count}</span>
