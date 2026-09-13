@@ -49,16 +49,21 @@ export default function EventDetailPage() {
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // (2026-09-13 A-97) 페이지네이션 — API limit 상한 100, offset=현재 로드 수. 정렬을 바꾸면 처음부터.
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const PAGE = 100;
 
   const load = useCallback(async () => {
     if (!eventId) return;
     setLoading(true);
     try {
-      const r = await fetch(`/api/events/${encodeURIComponent(eventId)}/entries?sort=${sort}&limit=100&locale=${lang}`, { cache: "no-store" });
+      const r = await fetch(`/api/events/${encodeURIComponent(eventId)}/entries?sort=${sort}&limit=${PAGE}&offset=0&locale=${lang}`, { cache: "no-store" });
       if (!r.ok) return;
       const d = await r.json();
       setEntries(d.entries ?? []);
       setTotal(d.total ?? 0);
+      setHasMore(d.has_more === true);
       setOpen(d.open !== false);
     } finally {
       setLoading(false);
@@ -67,6 +72,28 @@ export default function EventDetailPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // (2026-09-13 A-97) 다음 페이지 — 같은 정렬로 offset 이어받기, id 중복 제거(사이에 새 출품·좋아요 변동으로 경계가 밀릴 수 있음)
+  const loadMore = useCallback(async () => {
+    if (!eventId || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const r = await fetch(`/api/events/${encodeURIComponent(eventId)}/entries?sort=${sort}&limit=${PAGE}&offset=${entries.length}&locale=${lang}`, { cache: "no-store" });
+      if (!r.ok) return;
+      const d = await r.json();
+      const next = (d.entries ?? []) as EntryDto[];
+      setEntries((prev) => {
+        const seen = new Set(prev.map((e) => e.id));
+        return [...prev, ...next.filter((e) => !seen.has(e.id))];
+      });
+      setTotal(d.total ?? total);
+      setHasMore(d.has_more === true && next.length > 0);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [eventId, sort, lang, entries.length, hasMore, loadingMore, total]);
+
+  // 상위 3(명예의 전당) — 지금까지 로드된 출품작 기준. 기본 정렬(좋아요 순)의 첫 페이지가 상위를 포함하므로 실사용에선 정확하고,
+  //   '최신 순'으로 보다가 더 보기를 누르면 로드된 범위 안에서만 뽑는다 (2026-09-13 A-97 주석)
   const hall = useMemo(() => {
     const winners = entries.filter((e) => e.status === "winner");
     const base = winners.length > 0 ? winners : [...entries].sort((a, b) => b.like_count - a.like_count || a.created_at.localeCompare(b.created_at));
@@ -163,7 +190,8 @@ export default function EventDetailPage() {
                   <div className="relative aspect-[4/3] bg-slate-100">
                     {e.image_url ? (
                       <button type="button" onClick={() => setLightbox(e)} className="block w-full h-full cursor-zoom-in" aria-label="View photo">
-                        <img src={e.image_url} alt="" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
+                        {/* (2026-09-13 A-96) 카드는 썸네일(320px), 라이트박스는 image_url */}
+                        <img src={e.thumb_url ?? e.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
                       </button>
                     ) : null}
                     <span className="absolute top-2 left-2 rounded-full bg-amber-500 text-white text-xs font-bold px-2 py-0.5">#{i + 1}</span>
@@ -212,7 +240,7 @@ export default function EventDetailPage() {
                 <div className="aspect-square bg-slate-100">
                   {e.image_url ? (
                     <button type="button" onClick={() => setLightbox(e)} className="block w-full h-full cursor-zoom-in" aria-label="View photo">
-                      <img src={e.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
+                      <img src={e.thumb_url ?? e.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
                     </button>
                   ) : null}
                 </div>
@@ -223,6 +251,19 @@ export default function EventDetailPage() {
             ))}
           </div>
         )}
+        {/* (2026-09-13 A-97) 더 보기 — has_more일 때만, 누르면 다음 100건을 같은 정렬로 이어붙임 */}
+        {hasMore && entries.length > 0 ? (
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+              className="inline-flex items-center gap-2 rounded-xl bg-white border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:border-blue-400 hover:text-blue-700 disabled:opacity-50"
+            >
+              {loadingMore ? (ko ? "불러오는 중…" : "Loading…") : (ko ? `더 보기 (${entries.length}/${total})` : `Load more (${entries.length}/${total})`)}
+            </button>
+          </div>
+        ) : null}
         <p className="text-xs text-slate-400 mt-6">{ko ? "사진을 누르면 크게 볼 수 있고(확대·이동), 오른쪽 위 링크 아이콘을 누르면 공개링크에서 촬영 시각·원본 여부를 확인할 수 있습니다." : "Tap a photo to view it large (zoom and pan); the link icon in the corner opens its public link to verify capture time and originality."}</p>
       </div>
 

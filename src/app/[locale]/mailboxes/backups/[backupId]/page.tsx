@@ -108,7 +108,8 @@ export default function BackupDetailPage() {
                 {b.photos.map((p) => (
                   <button key={p.id} type="button" onClick={() => setOpen(p)} className="text-left rounded-xl bg-white border border-slate-200 overflow-hidden hover:border-blue-300">
                     <div className="relative aspect-square bg-slate-100">
-                      {p.image_url ? <img src={p.image_url} alt="" className="w-full h-full object-cover" /> : null}
+                      {/* (2026-09-13 A-96) 그리드는 썸네일, 라이트박스는 image_url */}
+                      {p.image_url ? <img src={p.thumb_url ?? p.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : null}
                       <span className="absolute bottom-1.5 right-1.5 text-[11px] font-bold bg-black/60 text-white rounded-full px-1.5">{p.unread_count}</span>
                     </div>
                     <div className="p-2">

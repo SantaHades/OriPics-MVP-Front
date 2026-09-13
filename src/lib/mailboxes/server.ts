@@ -2,6 +2,8 @@
 // 테이블: mailboxes · mailbox_members · mailbox_invites · mailbox_photos · mailbox_reads · mailbox_notices
 // 모든 접근은 service role(eventsDb) — RLS deny-by-default. 비밀번호는 bcryptjs.
 import type { SupabaseClient } from "@supabase/supabase-js";
+
+import { hasThumbColumn, publicObjectUrl } from "@/lib/links/previewBackfill";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "crypto";
 
@@ -459,6 +461,8 @@ export interface PhotoDto {
   uploader_name: string;
   uploader_role: string | null;
   image_url: string | null;
+  /** (2026-09-13 A-96) 목록 썸네일(320px JPEG) 공개 URL — 없으면 null, 클라이언트는 image_url로 폴백 */
+  thumb_url: string | null;
   link_url: string;
   width: number | null;
   height: number | null;
@@ -486,14 +490,22 @@ export async function photoDtos(
 ): Promise<PhotoDto[]> {
   if (photos.length === 0) return [];
   const linkIds = Array.from(new Set(photos.map((p) => p.link_id)));
+  // (2026-09-13 A-96) thumb_path는 컬럼이 있을 때만 select — 캐시 판정이 어긋나도 아래 폴백 체인이 기본 컬럼으로 재시도
+  const withThumb = await hasThumbColumn(db);
   const LINK_COLS = "link_id, width, height, captured_at, timestamp, lat, lng, tier, signed_url, preview_path";
-  let { data: links, error } = await db.from("links").select(`${LINK_COLS}, memo`).in("link_id", linkIds);
+  const FULL_COLS = withThumb ? `${LINK_COLS}, memo, thumb_path` : `${LINK_COLS}, memo`;
+  let { data: links, error } = await db.from("links").select(FULL_COLS).in("link_id", linkIds);
+  if (error && withThumb) {
+    const fb = await db.from("links").select(`${LINK_COLS}, memo`).in("link_id", linkIds);
+    links = fb.data as unknown as typeof links;
+    error = fb.error;
+  }
   if (error) {
     const fb = await db.from("links").select(LINK_COLS).in("link_id", linkIds);
     links = fb.data as unknown as typeof links;
   }
   const linkMap = new Map<string, Record<string, unknown>>();
-  for (const l of (links ?? []) as Record<string, unknown>[]) linkMap.set(l.link_id as string, l);
+  for (const l of (links ?? []) as unknown as Record<string, unknown>[]) linkMap.set(l.link_id as string, l);
 
   const { data: reads } = await db
     .from("mailbox_reads")
@@ -520,6 +532,7 @@ export async function photoDtos(
         ? `${SUPABASE_URL}/storage/v1/object/public/oripics-proofs/${l.preview_path}`
         : ((l.signed_url as string | null) ?? null)
       : null;
+    const thumb_url = l?.thumb_path ? publicObjectUrl(SUPABASE_URL, l.thumb_path as string) : null;
     return {
       id: p.id,
       link_id: p.link_id,
@@ -529,6 +542,7 @@ export async function photoDtos(
       uploader_name: uploader?.display_name ?? "",
       uploader_role: uploader?.role_text ?? null,
       image_url,
+      thumb_url,
       link_url: `${SITE_URL}/${p.link_id}`, // 앱 목록 탭 공개링크(API_URL/link_id)와 같은 형식 — 뷰어가 언어를 자동 판별
       width: (l?.width as number | null) ?? null,
       height: (l?.height as number | null) ?? null,

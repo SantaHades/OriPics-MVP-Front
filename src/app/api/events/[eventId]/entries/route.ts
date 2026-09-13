@@ -1,5 +1,6 @@
 // 이벤트 출품 목록/등록 (A-72, 2026-09-05)
 //   GET  /api/events/:eventId/entries?sort=likes|new&limit=&offset=&locale=  — 공개. 로그인 시 liked/mine 포함.
+//        응답 total(전체 수)·has_more(다음 페이지 존재) — 앱 무한 스크롤·웹 '더 보기' 기준 (2026-09-13 A-97)
 //   POST /api/events/:eventId/entries { link_ids: string[], caption? }        — 로그인 필수(웹 쿠키·모바일 Bearer).
 //        출품 = 본인 소유·미만료 공개링크. 같은 이벤트에 같은 링크는 1회(UNIQUE) — 중복은 무시하고 기존 반환.
 import { NextRequest, NextResponse } from "next/server";
@@ -38,13 +39,16 @@ export async function GET(req: NextRequest, props: { params: Promise<{ eventId: 
   if (error) {
     if (isMissingTable(error)) {
       // 마이그레이션 전 — 빈 목록 + 안내 플래그 (UI는 "아직 출품작이 없습니다"로 표시)
-      return NextResponse.json({ entries: [], total: 0, open: event.open, setup_required: true });
+      return NextResponse.json({ entries: [], total: 0, has_more: false, open: event.open, setup_required: true });
     }
     console.error("[events] list failed:", error.message);
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
   }
   const entries = await toDtos(db, (data ?? []) as EntryRow[], viewer, locale);
-  return NextResponse.json({ entries, total: count ?? entries.length, open: event.open, ends_at: event.ends_at });
+  const total = count ?? offset + entries.length;
+  // (2026-09-13 A-97) count가 없으면(드묾) 가득 찬 페이지를 '더 있음'으로 — 다음 요청이 빈 배열이면 클라이언트가 멈춘다
+  const has_more = typeof count === "number" ? offset + entries.length < count : entries.length === limit;
+  return NextResponse.json({ entries, total, has_more, open: event.open, ends_at: event.ends_at });
 }
 
 export async function POST(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {

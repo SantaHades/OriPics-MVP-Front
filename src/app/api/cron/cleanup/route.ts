@@ -244,13 +244,15 @@ export async function GET(req: NextRequest) {
 
   // 7) 뷰어 경량본(preview_path) 누락 링크 백필 — 매 실행 20건 (2026-09-13, 큰 사진이 늦게 열리던 원인)
   let previewsBackfilled = 0;
+  let thumbsBackfilled = 0; // (2026-09-13 A-96) 목록 썸네일(thumb_path) — 같은 배치에서 생성
   try {
     const pb = await backfillPreviews(supabase, SUPABASE_URL, 20);
     previewsBackfilled = pb.done;
+    thumbsBackfilled = pb.thumbs;
     for (const f of pb.failures) errors.push(`preview:${f.link_id}:${f.error}`);
   } catch (e: any) {
     errors.push(`preview_backfill: ${e?.message || e}`);
   }
 
-  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, submitLinksReset, rateLimitsPurged, refreshTokensPurged, previewsBackfilled, errors });
+  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, submitLinksReset, rateLimitsPurged, refreshTokensPurged, previewsBackfilled, thumbsBackfilled, errors });
 }

@@ -11,12 +11,17 @@ export interface WMailbox {
 export interface WMember { user_id: string; display_name: string; role_text: string | null; kind: string; accepted_at: string; kicked: boolean; left: boolean; me?: boolean; state?: string }
 export interface WPhoto {
   id: string; link_id: string; source: string; created_at: string; uploader_name: string; uploader_role: string | null; image_url: string | null; link_url: string;
+  /** (2026-09-13 A-96) 320px 썸네일 — 그리드용, 없으면 image_url 폴백(옛 스냅샷은 필드 자체가 없을 수 있음) */
+  thumb_url?: string | null;
   captured_at: string | null; timestamp: string | null; lat: number | null; lng: number | null; tier: string | null; memo: string | null;
   unread_count: number; read_count: number; read_by_me: boolean; readers?: { user_id: string; display_name: string; read_at: string | null }[];
 }
 export interface WBackup {
   id: string; mailbox_id: string; mailbox_name: string; taken_at: string; copied_files: boolean; photo_count: number; member_count: number; bytes: number; owner_name?: string;
 }
+
+/** (2026-09-13 A-98) GET /api/mailboxes/:id/photos/summary — 폴링 경량화용 요약 */
+export interface WPhotoSummary { photo_count: number; unread_total: number; latest_at: string | null }
 
 export async function getJson<T>(url: string): Promise<T> {
   const r = await fetch(url, { cache: "no-store" });

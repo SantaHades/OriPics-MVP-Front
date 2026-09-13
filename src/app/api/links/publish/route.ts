@@ -9,6 +9,7 @@ import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/
 import { decodePngPixels, extractFinalHashFromPixels, computeInnerHashFromPixels, hexToBytes } from "@/lib/oripics-stamp/server";
 import { StepTimer } from "@/lib/timing";
 import { normalizeMemo, isMissingColumn } from "@/lib/links/memo";
+import { hasThumbColumn, makeThumb, thumbPathFor } from "@/lib/links/previewBackfill";
 import { isActiveMember, listMembers, loadMailbox, loadMember, newPhotoId, notify } from "@/lib/mailboxes/server";
 import { verifyMailboxCapture } from "@/lib/mailboxes/captureGuard";
 
@@ -335,6 +336,7 @@ export async function POST(req: NextRequest) {
 
   // 3.5. 뷰어용 경량 표시본 업로드 (A-36, best-effort — 실패해도 publish 진행)
   let previewPath: string | null = null;
+  let previewBuffer: Buffer | null = null; // (2026-09-13 A-96) 썸네일은 원본 PNG 대신 이 1600px 경량본에서 축소
   if (typeof preview === "string" && preview.startsWith("data:image/jpeg;base64,") && preview.length < 1_000_000) {
     try {
       const jpegBuffer = Buffer.from(preview.slice("data:image/jpeg;base64,".length), "base64");
@@ -348,7 +350,7 @@ export async function POST(req: NextRequest) {
             cacheControl: IMMUTABLE_CACHE_SECONDS,
           }),
       );
-      if (!pvErr) previewPath = candidatePath;
+      if (!pvErr) { previewPath = candidatePath; previewBuffer = jpegBuffer; }
       else console.error(`[publish] preview upload failed link_id=${link_id}:`, pvErr.message);
     } catch (e: any) {
       console.error(`[publish] preview processing failed link_id=${link_id}:`, e?.message || e);
@@ -367,11 +369,30 @@ export async function POST(req: NextRequest) {
       const { error: pvErr } = await t.span("preview_generate_upload", () =>
         supabase.storage.from(BUCKET_NAME).upload(candidatePath, jpegBuffer, { contentType: "image/jpeg", upsert: true, cacheControl: IMMUTABLE_CACHE_SECONDS }),
       );
-      if (!pvErr) previewPath = candidatePath;
+      if (!pvErr) { previewPath = candidatePath; previewBuffer = jpegBuffer; }
       else console.error(`[publish] server preview upload failed link_id=${link_id}:`, pvErr.message);
     } catch (e: any) {
       console.error(`[publish] server preview generation failed link_id=${link_id}:`, e?.message || e);
     }
+  }
+
+  // 3.7. (2026-09-13 A-96) 목록 썸네일(긴 변 320px JPEG q75) — 사서함 3열 그리드·이벤트 갤러리·필름스트립용. best-effort.
+  //   links.thumb_path 컬럼이 아직 없으면(대표 SQL 미실행) 업로드도 생략 — 경로 규칙이 고정이라 백필이 나중에 채운다.
+  let thumbPath: string | null = null;
+  let thumbColumn = false;
+  try {
+    thumbColumn = await hasThumbColumn(supabase);
+    if (thumbColumn) {
+      const thumbBuffer = await t.span("thumb_generate", () => makeThumb(previewBuffer ?? pngBuffer));
+      const candidatePath = thumbPathFor(storage_path);
+      const { error: thErr } = await t.span("thumb_upload", () =>
+        supabase.storage.from(BUCKET_NAME).upload(candidatePath, thumbBuffer, { contentType: "image/jpeg", upsert: true, cacheControl: IMMUTABLE_CACHE_SECONDS }),
+      );
+      if (!thErr) thumbPath = candidatePath;
+      else console.error(`[publish] thumb upload failed link_id=${link_id}:`, thErr.message);
+    }
+  } catch (e: any) {
+    console.error(`[publish] thumb generation failed link_id=${link_id}:`, e?.message || e);
   }
 
   // 4. links DB row insert
@@ -387,6 +408,10 @@ export async function POST(req: NextRequest) {
     expires_at: expiresAt, // free: +7일 / 패스: +1년 고정 / 유료: null(보관함 활성 중 무기한)
     preview_path: previewPath, // 뷰어 경량 표시본 (없으면 뷰어가 원본 폴백)
   };
+  if (thumbColumn && thumbPath) {
+    // (2026-09-13 A-96) 목록 썸네일 — 컬럼 있을 때만 기록 (없으면 upsert가 42703으로 실패하므로 키 자체를 넣지 않는다)
+    row.thumb_path = thumbPath;
+  }
   if (lat_e6 != null && lng_e6 != null) {
     row.lat = lat_e6 / 1_000_000;
     row.lng = lng_e6 / 1_000_000;
@@ -417,11 +442,12 @@ export async function POST(req: NextRequest) {
   let { error: dbErr } = await t.span("links_upsert", () =>
     supabase.from("links").upsert(row, { onConflict: "link_id" }),
   );
-  if (dbErr && isMissingColumn(dbErr) && "memo" in row) {
+  if (dbErr && isMissingColumn(dbErr) && ("memo" in row || "thumb_path" in row)) {
     // A-76 마이그레이션 전 — 메모 없이 발행은 계속 (메모는 뷰어에서 나중에 추가 가능)
-    const { memo: _m, memo_updated_at: _u, ...rowNoMemo } = row;
-    void _m; void _u;
-    ({ error: dbErr } = await supabase.from("links").upsert(rowNoMemo, { onConflict: "link_id" }));
+    // (2026-09-13 A-96) thumb_path도 같은 방식 — 컬럼 캐시가 어긋난 경우(스키마 캐시 지연 등) 썸네일 경로만 빼고 재시도, 백필이 나중에 채움
+    const { memo: _m, memo_updated_at: _u, thumb_path: _t, ...rowMinimal } = row;
+    void _m; void _u; void _t;
+    ({ error: dbErr } = await supabase.from("links").upsert(rowMinimal, { onConflict: "link_id" }));
   }
   if (dbErr) {
     console.error(`[publish] db upsert failed link_id=${link_id}:`, dbErr.message);

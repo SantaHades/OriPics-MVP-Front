@@ -1,16 +1,18 @@
 "use client";
 // 웹 사서함 실시간 열람 (A-81 2차 W3) — 참여 중 사서함의 현재 상태: 정보·참여자·사진 그리드(라이트박스=열람 기록)·[백업]·[확인서 PDF]
 // 2026-09-11 A-90: 세션 가드(401→로그인 callbackUrl)·403 안내·백업 오류 상세(쿼터·횟수)·확인서 제목 편집(개설자)·라이트박스 패널 스크롤·탭 비활성 시 폴링 중단
+// 2026-09-13 A-96: 그리드는 thumb_url(320px) + lazy/async 디코딩 · A-98: 15초 폴링은 photos/summary만 받고 값이 바뀔 때만 목록 재수신, 라이트박스 열림 중 정지
 import { Link } from "@/navigation";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Download, ExternalLink, FileText, Pencil, RefreshCw, Save } from "lucide-react";
 import MapPinLink from "@/components/MapPinLink";
 import { mapsUrl } from "@/lib/mapsUrl";
 import ZoomableImage from "@/components/ZoomableImage";
 
-import { downloadPdf, errorText, fmtCaptured, fmtDateTime, getJson, loginUrl, type WMailbox, type WMember, type WPhoto } from "@/lib/mailboxes/webClient";
+import { downloadPdf, errorText, fmtCaptured, fmtDateTime, getJson, loginUrl, type WMailbox, type WMember, type WPhoto, type WPhotoSummary } from "@/lib/mailboxes/webClient";
+import { summaryChanged } from "@/lib/mailboxes/summary";
 
 const POLL_MS = 15000;
 
@@ -30,6 +32,10 @@ export default function MailboxLivePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [titleEdit, setTitleEdit] = useState<string | null>(null); // null = 편집 닫힘
+  // (2026-09-13 A-98) 마지막으로 목록을 받았을 때의 요약 — 폴링 틱에서 summary와 비교, 라이트박스 열림 여부는 ref로(인터벌 클로저가 최신값을 보게)
+  const lastSummary = useRef<WPhotoSummary | null>(null);
+  const openRef = useRef(false);
+  openRef.current = open !== null;
 
   // 세션 가드 — 미로그인이면 로그인 후 이 페이지로 복귀
   useEffect(() => {
@@ -38,27 +44,42 @@ export default function MailboxLivePage() {
 
   const load = useCallback(async () => {
     try {
-      const [d, p] = await Promise.all([
+      const [d, p, s] = await Promise.all([
         getJson<{ mailbox: WMailbox; members: WMember[] }>(`/api/mailboxes/${encodeURIComponent(id)}?locale=${lang}`),
         getJson<{ photos: WPhoto[] }>(`/api/mailboxes/${encodeURIComponent(id)}/photos?locale=${lang}`),
+        // 목록과 같은 시점의 요약을 기준값으로 — 실패해도 목록은 표시(다음 틱에 요약이 없으면 무조건 재수신)
+        getJson<WPhotoSummary>(`/api/mailboxes/${encodeURIComponent(id)}/photos/summary`).catch(() => null),
       ]);
       setMb(d.mailbox); setMembers(d.members); setPhotos(p.photos); setErr(null);
+      lastSummary.current = s;
     } catch (e) {
       const msg = (e as Error).message;
       if (msg === "http_401" || msg === "unauthenticated") { router.replace(loginUrl(lang, pathname || `/${lang}/mailboxes/${id}`)); return; }
       setErr(msg);
     }
   }, [id, lang, pathname, router]);
-  // 폴링 — 탭이 보일 때만(백그라운드 탭에서 15초마다 API를 두드리지 않게), 다시 보이면 즉시 1회 갱신
+  // (2026-09-13 A-98) 폴링 틱 — 요약(사진 수·내 미열람·최신 시각)만 받고 바뀌었을 때만 전체 목록 재수신.
+  //   요약 요청 자체가 실패하면(일시 오류) 옛 동작처럼 전체 갱신으로 폴백.
+  const poll = useCallback(async () => {
+    let s: WPhotoSummary | null = null;
+    try { s = await getJson<WPhotoSummary>(`/api/mailboxes/${encodeURIComponent(id)}/photos/summary`); }
+    catch (e) {
+      const msg = (e as Error).message;
+      if (msg === "http_401" || msg === "unauthenticated") { router.replace(loginUrl(lang, pathname || `/${lang}/mailboxes/${id}`)); return; }
+    }
+    if (!s || summaryChanged(lastSummary.current, s)) await load();
+  }, [id, lang, pathname, router, load]);
+  // 폴링 — 탭이 보일 때만(백그라운드 탭에서 15초마다 API를 두드리지 않게), 다시 보이면 즉시 1회 갱신.
+  //   라이트박스가 열려 있을 때도 정지(A-98) — 보고 있는 사진 뒤에서 그리드가 바뀌지 않게, 닫으면 다음 틱에 재개
   useEffect(() => {
     if (status !== "authenticated") return;
     void load();
-    const tick = () => { if (document.visibilityState === "visible") void load(); };
+    const tick = () => { if (document.visibilityState === "visible" && !openRef.current) void poll(); };
     const t = setInterval(tick, POLL_MS);
-    const onVis = () => { if (document.visibilityState === "visible") void load(); };
+    const onVis = () => { if (document.visibilityState === "visible" && !openRef.current) void poll(); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(t); document.removeEventListener("visibilitychange", onVis); };
-  }, [status, load]);
+  }, [status, load, poll]);
 
   const openPhoto = (p: WPhoto) => {
     setOpen(p);
@@ -176,7 +197,8 @@ export default function MailboxLivePage() {
                   {photos.map((p) => (
                     <button key={p.id} type="button" onClick={() => openPhoto(p)} className="text-left rounded-xl bg-white border border-slate-200 overflow-hidden hover:border-blue-300">
                       <div className="relative aspect-square bg-slate-100">
-                        {p.image_url ? <img src={p.image_url} alt="" className="w-full h-full object-cover" /> : null}
+                        {/* (2026-09-13 A-96) 그리드는 썸네일(320px), 라이트박스는 image_url */}
+                        {p.image_url ? <img src={p.thumb_url ?? p.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" /> : null}
                         {!p.read_by_me ? <span className="absolute top-1.5 left-1.5 text-[10px] font-bold bg-red-600 text-white rounded px-1">N</span> : null}
                         <span className="absolute bottom-1.5 right-1.5 text-[11px] font-bold bg-black/60 text-white rounded-full px-1.5">{p.unread_count}</span>
                       </div>
