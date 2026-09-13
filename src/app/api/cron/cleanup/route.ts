@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { backfillPreviews } from "@/lib/links/previewBackfill";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assertCron } from "@/lib/security/cron";
@@ -241,5 +242,15 @@ export async function GET(req: NextRequest) {
     errors.push(`refresh_tokens purge: ${e?.message || e}`);
   }
 
-  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, submitLinksReset, rateLimitsPurged, refreshTokensPurged, errors });
+  // 7) 뷰어 경량본(preview_path) 누락 링크 백필 — 매 실행 20건 (2026-09-13, 큰 사진이 늦게 열리던 원인)
+  let previewsBackfilled = 0;
+  try {
+    const pb = await backfillPreviews(supabase, SUPABASE_URL, 20);
+    previewsBackfilled = pb.done;
+    for (const f of pb.failures) errors.push(`preview:${f.link_id}:${f.error}`);
+  } catch (e: any) {
+    errors.push(`preview_backfill: ${e?.message || e}`);
+  }
+
+  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, submitLinksReset, rateLimitsPurged, refreshTokensPurged, previewsBackfilled, errors });
 }
