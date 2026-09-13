@@ -167,8 +167,9 @@ export default function EventDetailPage() {
                       </button>
                     ) : null}
                     <span className="absolute top-2 left-2 rounded-full bg-amber-500 text-white text-xs font-bold px-2 py-0.5">#{i + 1}</span>
-                    <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
-                    <span className="absolute bottom-2 right-2"><LikeButton entry={e} /></span>
+                    <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute bottom-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
+                    {/* 좋아요 배지 우측 상단, 공개링크 아이콘은 우측 하단으로 (2026-09-13 대표, 앱과 동일) */}
+                <span className="absolute top-2 right-2"><LikeButton entry={e} /></span>
                   </div>
                   {/* 공개 메모 전문 표시(줄 수 제한 없음), 없으면 흐린 안내 — 앱 사서함 그리드와 동일 (2026-09-13 대표) */}
                   <p className={`px-4 py-3 text-sm whitespace-pre-wrap break-words ${e.caption ? "text-slate-700" : "text-slate-400"}`}>{e.caption || (ko ? "공개 메모 없음" : "No public memo")}</p>
@@ -215,9 +216,9 @@ export default function EventDetailPage() {
                     </button>
                   ) : null}
                 </div>
-                <span className="absolute bottom-2 right-2"><LikeButton entry={e} /></span>
+                <span className="absolute top-2 right-2"><LikeButton entry={e} /></span>
                 {e.mine ? <span className="absolute top-2 left-2 rounded-full bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5">{ko ? "내 출품" : "Mine"}</span> : null}
-                <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
+                <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute bottom-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
               </div>
             ))}
           </div>
