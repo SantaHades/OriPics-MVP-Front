@@ -2,6 +2,8 @@
 // ADMIN_EMAILS 세션만. cron/cleanup도 매 실행 20건씩 자동 처리하므로 이 엔드포인트는 급할 때 브라우저에서 호출하는 용도.
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 import { requireAdmin } from "@/lib/partner/admin";
 import { backfillPreviews } from "@/lib/links/previewBackfill";
 
@@ -10,7 +12,12 @@ export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ detail: "forbidden" }, { status: 403 });
+  if (!admin) {
+    // 진단용: 세션 자체가 없는지(쿠키 미전송·미로그인) vs 로그인은 됐지만 ADMIN_EMAILS 밖인지 구분 (2026-09-13). 이메일은 노출하지 않음.
+    const session = await getServerSession(authOptions);
+    const reason = session?.user?.email ? "not_admin" : "no_session";
+    return NextResponse.json({ detail: "forbidden", reason }, { status: 403 });
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return NextResponse.json({ detail: "setup_required" }, { status: 503 });
