@@ -6,6 +6,7 @@ import React from "react";
 import { Document, Page, Text, View, Image, Link, StyleSheet, Font } from "@react-pdf/renderer";
 
 import { LOGO_DATA_URL } from "./logoData";
+import { MapPinIcon, mapsUrl } from "./mapPin";
 
 function resolveKrFont(weight: "400" | "700"): string {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -155,6 +156,7 @@ const S: Record<Locale, Record<string, string>> = {
     notice1: "이 확인서는 표기된 기준 시점의 사서함 상태(참여자·사진 속성·열람 현황)를 OriPics 서버 기록에 따라 그대로 출력한 것입니다.",
     notice2: "각 사진의 원본 무결성·촬영시각·좌표는 해당 공개링크(QR)에서 누구나 온라인으로 검증할 수 있습니다. 공개메모는 올린 사람이 적은 내용으로 검증 대상이 아닙니다.",
     notice3: "본 문서는 사실관계 기록을 돕기 위한 것으로, 법적 증거능력이나 콘텐츠의 진실성을 단정하지 않습니다.",
+    mapHint: "좌표 옆 핀을 누르면 지도가 열립니다.",
     issuer: "발행자",
     issuerName: "주식회사 산타하데스 (SantaHades Co., Ltd.) · www.ori.pics",
     signature: "확인자 서명",
@@ -209,6 +211,7 @@ const S: Record<Locale, Record<string, string>> = {
     notice1: "This report reproduces the mailbox state (participants, photo attributes, read status) as recorded on OriPics servers at the stated basis time.",
     notice2: "The originality, capture time and location of each photo can be verified online by anyone via its public link (QR). Public memos are written by the uploader and are not verified.",
     notice3: "This document supports factual record-keeping; it does not assert legal evidentiary value or the truth of the content.",
+    mapHint: "Tap the pin next to coordinates to open the map.",
     issuer: "Issuer",
     issuerName: "SantaHades Co., Ltd. · www.ori.pics",
     signature: "Signature",
@@ -352,7 +355,17 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
                   <View style={{ flex: 2.4, paddingRight: 4 }}>
                     <Text style={st.td}>{`${t.capturedAt} ${fmt(p.capturedAt ?? p.publishedAt, locale, tz, true)}`}</Text>
                     {p.capturedAt && p.publishedAt ? <Text style={st.small}>{`${t.publishedAt} ${fmt(p.publishedAt, locale, tz)}`}</Text> : null}
-                    <Text style={st.small}>{p.lat != null && p.lng != null ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : t.noCoords}</Text>
+                    {/* 좌표 + 오른쪽 지도 핀 — 텍스트·핀 모두 Link(annotation) 안에 두어 어느 쪽을 눌러도 지도가 열림 (2026-09-13 대표) */}
+                    {p.lat != null && p.lng != null ? (
+                      <Link src={mapsUrl(p.lat, p.lng)} style={{ textDecoration: "none" }}>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Text style={[st.small, { color: "#1d4ed8" }]}>{`${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`}</Text>
+                          <View style={{ marginLeft: 3 }}><MapPinIcon size={10} /></View>
+                        </View>
+                      </Link>
+                    ) : (
+                      <Text style={st.small}>{t.noCoords}</Text>
+                    )}
                     <Text style={st.small}>{`${p.tier === "verified" ? "Verified" : "Standard"} · ${p.source === "capture" ? t.sourceCapture : t.sourceSubmit}`}</Text>
                     {p.memo ? <Text style={st.small} hyphenationCallback={breakAnywhere}>{`${t.memo}: ${p.memo}`}</Text> : null}
                   </View>
@@ -382,6 +395,8 @@ export function MailboxReportDocument({ data, locale }: { data: MailboxReportDat
           <Text style={st.notice}>{`· ${t.notice1}`}</Text>
           <Text style={st.notice}>{`· ${t.notice2}`}</Text>
           <Text style={st.notice}>{`· ${t.notice3}`}</Text>
+          {/* 지도 핀 안내 (2026-09-13 대표) */}
+          <Text style={st.notice}>{`· ${t.mapHint}`}</Text>
           <View style={st.row}><Text style={st.label}>{t.issuer}</Text><Text style={st.value}>{t.issuerName}</Text></View>
           <View style={st.signBox}>
             <Text style={st.small}>{t.signature}</Text>

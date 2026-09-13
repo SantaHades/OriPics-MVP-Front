@@ -49,6 +49,8 @@ describe("certificate PDF render", () => {
       const buf = await renderCertificatePdf({ data, locale });
       expect(buf.length).toBeGreaterThan(1000);
       expect(buf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+      // 위치(GPS) 행의 지도 핀 Link — URI annotation 이 실제 PDF 바이트에 남는지 (2026-09-13 대표)
+      expect(buf.toString("latin1")).toContain("google.com/maps/search/?api=1&query=37.123456,127.123456");
     }
   // 로컬(인텔 맥) 렌더는 로케일당 ~20초 — 짧은 타임아웃은 가짜 실패 (2026-08-28 실측)
   }, 180000);

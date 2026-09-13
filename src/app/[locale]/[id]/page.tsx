@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { ShieldCheck, Calendar, Camera as CameraIcon, Maximize2, Download, AlertCircle, RefreshCw, Home, Copy, Check, Upload, MapPin, Expand, X, ExternalLink, BadgeCheck, FileText } from "lucide-react";
 import { Link } from "@/navigation";
 import { useTranslations } from "next-intl";
+import MapPinLink from "@/components/MapPinLink";
+import { mapsUrl } from "@/lib/mapsUrl";
 import { useSession } from "next-auth/react";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
 import { VerifiedDetailLines, type VerifiedAssertionData } from "@/components/VerifiedDetailLines";
@@ -56,6 +58,7 @@ export default function LinkViewer() {
   const linkId = params.id as string;
   const locale = (params?.locale as string) || "ko";
   const t = useTranslations("LinkViewer");
+  const tc = useTranslations("Common"); // 지도 핀 라벨 (2026-09-13 대표)
   const { data: session } = useSession();
   const { data: credits } = useCredits();
 
@@ -597,15 +600,18 @@ export default function LinkViewer() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-500 mb-1">GPS</p>
-                    <a
-                      href={`https://maps.google.com/?q=${data!.lat},${data!.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium font-mono text-blue-700 hover:underline inline-flex items-center gap-1"
-                    >
-                      {data!.lat!.toFixed(6)}, {data!.lng!.toFixed(6)}
-                      <ExternalLink size={16} />
-                    </a>
+                    {/* 좌표 텍스트 + 오른쪽 지도 핀 — 둘 다 같은 지도 URL (2026-09-13 대표). a 중첩 금지라 형제로 배치 */}
+                    <span className="inline-flex items-center gap-1.5">
+                      <a
+                        href={mapsUrl(data!.lat!, data!.lng!)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium font-mono text-blue-700 hover:underline"
+                      >
+                        {data!.lat!.toFixed(6)}, {data!.lng!.toFixed(6)}
+                      </a>
+                      <MapPinLink lat={data!.lat!} lng={data!.lng!} size={18} title={tc("open_map")} />
+                    </span>
                   </div>
                 </div>
               )}

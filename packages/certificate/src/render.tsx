@@ -8,7 +8,9 @@ import {
   Image,
   StyleSheet,
   Font,
+  Link,
 } from "@react-pdf/renderer";
+import { MapPinIcon, mapsUrl } from "./mapPin";
 
 // 한글 폰트 — @fontsource/noto-sans-kr (npm 의존성, 로컬 번들).
 // 과거 gstatic CDN URL을 직접 참조했으나 URL이 불안정해(bold URL이 실제로 404가
@@ -133,6 +135,7 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     resolution: "해상도",
     location: "위치(GPS)",
     locationNone: "기록 없음",
+    mapHint: "좌표 옆 핀을 누르면 지도가 열립니다.",
     verifiedTitle: "기기 검증 (Verified)",
     verifiedAuthority: "검증 주체",
     verifiedAuthority_ios: "Apple App Attest (iOS)",
@@ -196,6 +199,7 @@ const STRINGS: Record<Locale, Record<string, string>> = {
     resolution: "Resolution",
     location: "Location (GPS)",
     locationNone: "Not recorded",
+    mapHint: "Tap the pin next to coordinates to open the map.",
     verifiedTitle: "Device Verification (Verified)",
     verifiedAuthority: "Verified by",
     verifiedAuthority_ios: "Apple App Attest (iOS)",
@@ -529,10 +533,19 @@ export function CertificateDocument({
             <Text style={styles.label}>{t.location}</Text>
             {/* 좌표(ASCII)만 Courier — "기록 없음" 같은 한글을 Courier로 찍으면
                 글리프가 깨짐 (2026-08-28 첫 실발급에서 실측) */}
+            {/* 좌표 + 오른쪽 지도 핀 — 둘 다 Link(annotation) 안 (2026-09-13 대표) */}
+            {/* monoValue(flex:1)를 그대로 쓰면 flexBasis 0 으로 폭이 0 이 돼 좌표가 두 줄로 꺾이고 핀과 겹침 — 폭 auto 인라인 스타일 사용 (2026-09-13 실측) */}
             {data.lat != null && data.lng != null ? (
-              <Text style={styles.monoValue}>
-                {`${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`}
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Link src={mapsUrl(data.lat, data.lng)} style={{ textDecoration: "none" }}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Text style={{ color: "#1d4ed8", fontSize: 9, fontFamily: "Courier" }}>
+                      {`${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`}
+                    </Text>
+                    <View style={{ marginLeft: 4 }}><MapPinIcon size={12} /></View>
+                  </View>
+                </Link>
+              </View>
             ) : (
               <Text style={styles.value}>{t.locationNone}</Text>
             )}
@@ -705,6 +718,8 @@ export function CertificateDocument({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t.disclaimerTitle}</Text>
           <Text style={styles.disclaimer}>{t.disclaimer}</Text>
+          {/* 지도 핀 안내 — 좌표가 있을 때만 (2026-09-13 대표) */}
+          {data.lat != null && data.lng != null ? <Text style={styles.disclaimer}>{t.mapHint}</Text> : null}
         </View>
 
         {/* 푸터 */}

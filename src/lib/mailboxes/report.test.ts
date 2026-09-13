@@ -39,7 +39,22 @@ describe("mailbox report pdf", () => {
     expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
     const en = await renderMailboxReportPdf({ data: data({ timeZone: "UTC" }), locale: "en" });
     expect(en.subarray(0, 5).toString()).toBe("%PDF-");
-  }, 60_000);
+  // 로컬(인텔 맥) 렌더는 건당 ~20~30초 — 병렬 tsc 등과 겹치면 60초를 넘겨 가짜 실패 (2026-09-13 실측, render.test.ts와 동일 기준)
+  }, 180_000);
+
+  // 좌표 옆 지도 핀 (2026-09-13 대표) — Svg 핀 + Link annotation 이 렌더를 깨지 않고, 지도 URI 가 PDF 바이트에 실제로 들어가는지.
+  it("renders the map pin link next to coordinates", async () => {
+    const buf = await renderMailboxReportPdf({ data: data(), locale: "ko" });
+    expect(buf.subarray(0, 5).toString()).toBe("%PDF-");
+    // react-pdf 는 Link src 를 /URI 로 그대로 기록 — 압축 대상이 아닌 annotation dict 에 남는다
+    expect(buf.toString("latin1")).toContain("google.com/maps/search/?api=1&query=37.1,127.1");
+    // 좌표 없는 사진은 핀 없이 "좌표 없음" 만 — 렌더 안전
+    const noCoords = await renderMailboxReportPdf({
+      data: data({ photos: data().photos.map((p) => ({ ...p, lat: null, lng: null })) }),
+      locale: "en",
+    });
+    expect(noCoords.toString("latin1")).not.toContain("google.com/maps");
+  }, 180_000);
 });
 
 describe("safeTimeZone", () => {

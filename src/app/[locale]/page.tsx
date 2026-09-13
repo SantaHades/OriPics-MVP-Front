@@ -5,6 +5,8 @@ import { UploadCloud, CheckCircle, XCircle, ShieldCheck, AlertTriangle, RefreshC
 import { useSession, signOut } from "next-auth/react";
 import { Link, useRouter } from "@/navigation";
 import { useTranslations } from "next-intl";
+import MapPinLink from "@/components/MapPinLink";
+import { mapsUrl } from "@/lib/mapsUrl";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EventBadge from "@/components/EventBadge";
@@ -1532,15 +1534,18 @@ export default function Home() {
                 {resultData.metadata.lat != null && resultData.metadata.lng != null && (
                   <div>
                     <span className="text-slate-500 block mb-1">GPS</span>
-                    <a
-                      href={`https://maps.google.com/?q=${resultData.metadata.lat},${resultData.metadata.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
-                    >
-                      {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
-                      <ExternalLink size={16} />
-                    </a>
+                    {/* 좌표 + 오른쪽 지도 핀 (2026-09-13 대표) */}
+                    <span className="inline-flex items-center gap-1.5">
+                      <a
+                        href={mapsUrl(resultData.metadata.lat, resultData.metadata.lng)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-blue-700 hover:underline"
+                      >
+                        {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
+                      </a>
+                      <MapPinLink lat={resultData.metadata.lat} lng={resultData.metadata.lng} size={16} title={tc("open_map")} />
+                    </span>
                   </div>
                 )}
                 <div className="pt-2">
@@ -1898,15 +1903,18 @@ export default function Home() {
                 {resultData.metadata.lat != null && resultData.metadata.lng != null && (
                   <div className="flex justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500">GPS</span>
-                    <a
-                      href={`https://maps.google.com/?q=${resultData.metadata.lat},${resultData.metadata.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-xs text-blue-700 hover:underline inline-flex items-center gap-1"
-                    >
-                      {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
-                      <ExternalLink size={16} />
-                    </a>
+                    {/* 좌표 + 오른쪽 지도 핀 (2026-09-13 대표) */}
+                    <span className="inline-flex items-center gap-1.5">
+                      <a
+                        href={mapsUrl(resultData.metadata.lat, resultData.metadata.lng)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-mono text-xs text-blue-700 hover:underline"
+                      >
+                        {resultData.metadata.lat.toFixed(6)}, {resultData.metadata.lng.toFixed(6)}
+                      </a>
+                      <MapPinLink lat={resultData.metadata.lat} lng={resultData.metadata.lng} size={16} title={tc("open_map")} />
+                    </span>
                   </div>
                 )}
                 {resultData.verify_url && (

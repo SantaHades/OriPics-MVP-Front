@@ -6,6 +6,8 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Download, ExternalLink, FileText, Pencil, RefreshCw, Save } from "lucide-react";
+import MapPinLink from "@/components/MapPinLink";
+import { mapsUrl } from "@/lib/mapsUrl";
 import ZoomableImage from "@/components/ZoomableImage";
 
 import { downloadPdf, errorText, fmtCaptured, fmtDateTime, getJson, loginUrl, type WMailbox, type WMember, type WPhoto } from "@/lib/mailboxes/webClient";
@@ -198,7 +200,8 @@ export default function MailboxLivePage() {
           <div className="bg-white text-sm p-4 grid gap-1 sm:grid-cols-2 max-h-[45vh] overflow-y-auto">
             <div>{ko ? "올린사람" : "Uploaded by"}: <b>{open.uploader_name}{open.uploader_role ? `(${open.uploader_role})` : ""}</b> · {open.source === "capture" ? (ko ? "사서함 촬영" : "captured") : (ko ? "제출" : "submitted")}</div>
             <div>{ko ? "촬영" : "Captured"}: {fmtCaptured(open.captured_at, lang)}</div>
-            <div>{ko ? "좌표" : "Location"}: {open.lat != null && open.lng != null ? <a className="text-blue-600 underline" target="_blank" rel="noreferrer" href={`https://maps.google.com/?q=${open.lat},${open.lng}`}>{open.lat.toFixed(5)}, {open.lng.toFixed(5)}</a> : "-"}</div>
+            {/* 좌표 오른쪽 지도 핀 (2026-09-13 대표) */}
+            <div>{ko ? "좌표" : "Location"}: {open.lat != null && open.lng != null ? <span className="inline-flex items-center gap-1"><a className="text-blue-600 underline" target="_blank" rel="noreferrer" href={mapsUrl(open.lat, open.lng)}>{open.lat.toFixed(5)}, {open.lng.toFixed(5)}</a><MapPinLink lat={open.lat} lng={open.lng} size={16} title={ko ? "지도에서 위치 열기" : "Open location in maps"} /></span> : "-"}</div>
             <div>{ko ? "등급" : "Tier"}: {open.tier === "verified" ? "Verified" : "Standard"}</div>
             <div className="sm:col-span-2 break-all">{ko ? "공개링크" : "Public link"}: <a className="text-blue-600 underline inline-flex items-center gap-1" href={open.link_url} target="_blank" rel="noreferrer">{open.link_url.replace(/^https?:\/\//, "")} <ExternalLink size={12} /></a></div>
             {open.memo ? <div className="sm:col-span-2 whitespace-pre-wrap break-words">{ko ? "공개메모" : "Memo"}: {open.memo}</div> : null}

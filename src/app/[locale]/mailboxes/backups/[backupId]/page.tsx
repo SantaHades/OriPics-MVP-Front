@@ -6,6 +6,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink, FileText, RefreshCw, Trash2 } from "lucide-react";
+import MapPinLink from "@/components/MapPinLink";
 import ZoomableImage from "@/components/ZoomableImage";
 
 import { downloadPdf, errorText, fmtBytes, fmtCaptured, fmtDateTime, getJson, loginUrl, type WMember, type WPhoto } from "@/lib/mailboxes/webClient";
@@ -127,7 +128,8 @@ export default function BackupDetailPage() {
           <div className="bg-white text-sm p-4 grid gap-1 sm:grid-cols-2 max-h-[45vh] overflow-y-auto">
             <div>{ko ? "올린사람" : "Uploaded by"}: <b>{open.uploader_name}{open.uploader_role ? `(${open.uploader_role})` : ""}</b></div>
             <div>{ko ? "촬영" : "Captured"}: {fmtCaptured(open.captured_at, lang)}</div>
-            <div>{ko ? "좌표" : "Location"}: {open.lat != null && open.lng != null ? `${open.lat.toFixed(5)}, ${open.lng.toFixed(5)}` : "-"}</div>
+            {/* 좌표 오른쪽 지도 핀 (2026-09-13 대표) */}
+            <div>{ko ? "좌표" : "Location"}: {open.lat != null && open.lng != null ? <span className="inline-flex items-center gap-1">{open.lat.toFixed(5)}, {open.lng.toFixed(5)}<MapPinLink lat={open.lat} lng={open.lng} size={16} title={ko ? "지도에서 위치 열기" : "Open location in maps"} /></span> : "-"}</div>
             <div>{ko ? "등급" : "Tier"}: {open.tier === "verified" ? "Verified" : "Standard"}</div>
             <div className="sm:col-span-2 break-all">{ko ? "공개링크" : "Public link"}: <a className="text-blue-600 underline inline-flex items-center gap-1" href={open.link_url} target="_blank" rel="noreferrer">{open.link_url.replace(/^https?:\/\//, "")} <ExternalLink size={12} /></a></div>
             {open.memo ? <div className="sm:col-span-2 whitespace-pre-wrap break-words">{ko ? "공개메모" : "Memo"}: {open.memo}</div> : null}
