@@ -355,6 +355,25 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // 3.6. 앱이 preview를 보내지 않았거나 실패한 경우 서버에서 생성 (2026-09-13) — 누락되면 갤러리·뷰어가 원본 PNG(수 MB)를 매번 받아 늦게 열림
+  if (!previewPath) {
+    try {
+      const sharpMod = (await import("sharp")).default;
+      const jpegBuffer = await sharpMod(pngBuffer)
+        .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+        .jpeg({ quality: 82, mozjpeg: true })
+        .toBuffer();
+      const candidatePath = storage_path.replace(/\.png$/, "_preview.jpg");
+      const { error: pvErr } = await t.span("preview_generate_upload", () =>
+        supabase.storage.from(BUCKET_NAME).upload(candidatePath, jpegBuffer, { contentType: "image/jpeg", upsert: true, cacheControl: IMMUTABLE_CACHE_SECONDS }),
+      );
+      if (!pvErr) previewPath = candidatePath;
+      else console.error(`[publish] server preview upload failed link_id=${link_id}:`, pvErr.message);
+    } catch (e: any) {
+      console.error(`[publish] server preview generation failed link_id=${link_id}:`, e?.message || e);
+    }
+  }
+
   // 4. links DB row insert
   const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${storage_path}`;
   const row: Record<string, any> = {
