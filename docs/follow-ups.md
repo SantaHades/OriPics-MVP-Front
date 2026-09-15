@@ -180,6 +180,7 @@
 
 | ID | 항목 | 트리거 | P |
 |---|---|---|---|
+| A-99 | **앱 내 이용약관·개인정보 처리방침 링크** — 설정 탭 하단(문의·사용사례 링크 아래, 로그인 무관)에 웹 `/terms`·`/privacy` 열기 2개 추가. 근거: Apple 5.1.1(i)(앱 내 접근 가능한 처리방침 링크)·Google Play 사용자 데이터 정책(스토어 등록+앱 내 양쪽). 환불 정책·사업자정보확인은 판매가 웹에서만 일어나 앱 필수 아님 — 가격 노출 페이지 링크는 App Store 3.1.1 위험이라 의도적으로 제외. 취약점 신고는 웹 전용. ✅ 2026-09-15 구현(빌드 23 탑승 대상) | 정식 심사 전 | P1 |
 | A-9 | 트랙 B Phase 2~7 모노레포 추출 (`packages/stamp/`) | 모바일 본 시작 | P1 |
 | A-10 | 모바일 앱 본 개발 (트랙 D, 8~10주) | A-9 + U-2·U-16 완료 | P0 |
 | A-11 | 모바일용 stamp 클라이언트 인터페이스 (Verified mode) | 모바일 본 시작 | P1 |
@@ -260,7 +261,7 @@ SSL.com 회신 (U-1)
 
 | 일자 | 변경 |
 |---|---|
-| 2026-09-15 (오후) | **🚀 빌드 22 (v1.0.1) EAS 제출** — iOS bb84e004(빌드번호 22)·Android c646af8c(versionCode 24), `store-build.sh all` auto-submit(ASC·Play alpha). 탑승분: A-96~98 앱 변경(f347a98 — 사서함/이벤트 그리드 expo-image·무한 스크롤·요약 폴링), 목록탭 다른 계정 사진 안내 카드 분리·뷰어 닫을 때 마지막 본 카드로 스크롤(28e9042). 제출 링크: expo.dev/accounts/santahades/projects/oripics/submissions/b25151d5(iOS)·3a6464dd(Android). 결과: 빌드 진행 중(아래 갱신). 잠금 파일 `~$proposal-carmore.pptx` 삭제 커밋 9db834a. 모두의 창업 지원서는 대표가 Q4-2 79,000원 수정 후 **제출 완료** |
+| 2026-09-15 (오후) | **🚀 빌드 22 (v1.0.1) EAS 제출** — iOS bb84e004(빌드번호 22)·Android c646af8c(versionCode 24), `store-build.sh all` auto-submit(ASC·Play alpha). 탑승분: A-96~98 앱 변경(f347a98 — 사서함/이벤트 그리드 expo-image·무한 스크롤·요약 폴링), 목록탭 다른 계정 사진 안내 카드 분리·뷰어 닫을 때 마지막 본 카드로 스크롤(28e9042). 제출 링크: expo.dev/accounts/santahades/projects/oripics/submissions/b25151d5(iOS)·3a6464dd(Android). **결과(14:4x)**: iOS #22 FINISHED / Android vc24 FINISHED — 양 플랫폼 빌드 성공, ASC·Play alpha 자동 제출 예약됨(제출 페이지에서 확인). 후속: A-99 앱 내 약관·처리방침 링크 구현(빌드 23 대상). 잠금 파일 `~$proposal-carmore.pptx` 삭제 커밋 9db834a. 모두의 창업 지원서는 대표가 Q4-2 79,000원 수정 후 **제출 완료** |
 | 2026-09-15 | **목록탭 UX 2건(대표 실기기 확인 완료, iPhone 로컬 설치)** — ①"다른 계정으로 인증한 사진 N장…" 안내가 헤더 버튼 행에서 [모두 인증]과 폭을 다투다 한 글자씩 세로로 깨짐(iPhone) → 로그인 안내와 같은 배경 카드로 분리(`queue.tsx`, 9/9 갤럭시용 flex 처리 제거) ②뷰어에서 좌우로 이동한 뒤 닫으면 마지막으로 본 사진 카드를 목록 맨 위로 `scrollToIndex`(열었던 사진 그대로 닫으면 위치 유지, `viewerOpenedIdRef`), 미렌더 카드 대비 `onScrollToIndexFailed` 근사 오프셋+재시도. **빌드 22 탑승 대상**(A-96~98과 함께) |
 | 2026-09-14 | **모두의 창업 2차(일반/기술트랙·더인벤션랩) 도전신청서 업그레이드·제출** — 8/20 제출본을 9/13 기준 사실로 전면 재작성: `gtm/modoo-application-v2-2026-09.md`(더인벤션랩 1R 평가지표 3축 9항목 매핑표, Q1~Q10 붙여넣기 전문, 표현 가드, 이미지 배치·체크리스트). 핵심 변경: 초기 타깃 중고거래→시공·임대관리·렌터카 3직군, 공동 사서함을 차별점 4번으로, 스토어 베타 상태·환불 자동화·네이버페이·운영 인증서 Trusted·손익분기 Pro 10명 반영, Q8 3번을 회복탄력성 사례로 교체. 첨부 7장(웹 히어로·C2PA Explorer·앱 콜라주·c2patool Trusted 캡처·요금제·스토어 콜라주·3직군 랜딩 콜라주, 콜라주 PNG는 ~/Downloads). c2patool 실측 재현: 운영 발행본(P260913-045610-506617) `validation_state: Trusted`·failure 0. 특허 출원번호통지서는 로컬 부재 → 출원인(손효연) 계정 또는 조영철 변리사 경유 필요(U-37 명의 이전 상담 병행). 파트너 정액 표기는 Q3-2·Q4-2 모두 79,000원(Business 요금)으로 통일. 접수 마감 9/17 16:00 |
 | 2026-09-13 (오후) | **🚀 빌드 20 (v1.0.1) EAS 제출** — iOS b141ec72(빌드번호 20)·Android 5d80d6d6(versionCode 22), `store-build.sh all` auto-submit(ASC·Play alpha). 탑승분: 목록탭 뷰어 오버레이(‹ › 넘김·정보·옵션 칩·인증하기·삭제 후 유지·메모 인라인 편집·인증마크 아이콘), 지도 위치 열기 핀(목록 카드·뷰어·사서함 사진 상세·검증 탭, Android는 Google 지도 URL로 위치만), 핀 크기 19·카드 메타 한 줄. 제출 링크: expo.dev/accounts/santahades/projects/oripics/submissions/3f103c52(iOS)·adcee5c8(Android). **결과(14:0x)**: iOS #20 FINISHED·ASC FINISHED / Android vc22 FINISHED·Play alpha FINISHED. ⚠️**빌드 20에 이벤트 출품 크래시 포함**(아래 행) → 빌드 21로 교체 필요 |
