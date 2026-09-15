@@ -70,6 +70,7 @@
 
 | ID | 항목 | 시점 | P |
 |---|---|---|---|
+| U-40 | **테스트 계정 `test@ori.pics` 삭제** — 심사·실기기 테스트용으로 2026-09-15 생성(pro·960건, 비밀번호 6자 숫자). 대표 결정: 심사 끝나면 바로 삭제. 삭제는 웹 프로필 회원탈퇴 또는 앱 설정 탭 회원탈퇴('탈퇴합니다' 입력)로 본인 처리, 데모 계정(demo-screenshots@)은 유지 | 정식 심사 종료 직후 | P1 |
 | U-14 | 연령 등급 결정 — **Google 완료(2026-08-24)**: 타겟 18+·IARC 설문 제출(UGC 아니요·위치공유 아니요·전연령 콘텐츠). **잔여: Apple만** (4+ 권장, store-privacy-forms.md §4) | 앱 심사 직전 | P1 |
 | ~~U-15~~ | **✅ 2026-09-03 완료** — English keywords 107자 → **95자**(`no blockchain`·`real photo` 제거). 확정본=app-store-metadata.md §1.5 | 완료 | ✅ |
 | U-16 | ~~앱 아이콘 디자인~~ → **완료 (2026-08-18, 발주 불필요)** — 기존 브랜드 마크(`image/투명로고-1024x1024.png`, 육각+체크)에서 전 슬롯 생성: iOS 1024(무알파)·adaptive 3종(safe zone 58%)·splash·favicon·Play 512(`image/oripics-playstore-icon-512.png`). 홈 히어로 AnimatedIcon도 Expo 로고→OriPics 마크 교체. 잔여(선택): 정식 출시 전 마크 벡터화(현 PNG 1024 기반으로 충분히 선명) | 완료 | P0 |
