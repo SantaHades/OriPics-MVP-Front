@@ -181,6 +181,7 @@
 
 | ID | 항목 | 트리거 | P |
 |---|---|---|---|
+| A-100 | **인증 중 앱 전환 시 네트워크 유실 → 실패·이중 차감 위험** — 대표 실측(9/17 iPhone, 이벤트 참여 9장 중 인증 진행 중 다른 앱 전환 → '참여 준비 실패: fetch failed … 네트워크 연결이 유실되었습니다'). 원인: iOS가 백그라운드 전환 시 진행 중 요청을 끊음(NSURLErrorNetworkConnectionLost) + 이벤트/제보 루프는 첫 실패에 전체 중단 + **실패 항목 재인증이 서명부터 재실행 → confirm 이후 실패 시 proof 이중 차감(코드로 확정: confirm 비멱등, 재인증 시 receipt 미사용)**. 수정 ✅ 2026-09-17: ①서버 `/api/links/confirm` link_id 기준 멱등(CreditTransaction.metadata.link_id 기존 차감이면 재차감 없이 receipt 재발급) ②앱 `lib/net/foregroundRetry.ts` — 일시 네트워크 오류는 포그라운드 복귀 대기 후 1회 재시도(sign·upload·confirm·publish·upload-url) ③`certifyItem`: confirm 직후 linkId를 큐에 기록(`onConfirmed`), 이후 publish 실패는 done+미발행으로 확정, 재인증 진입 시 linkId+미발행이면 receipt로 발행만 재시도 ④이벤트·제보 루프는 실패 항목 건너뛰고 성공분 출품/제보 + 실패 건수 안내, 진행 중 '완료될 때까지 앱을 벗어나지 마세요' 표시. 사서함 촬영 자동 인증·재시도(`retryLocal`)도 같은 certifyItem 경로라 함께 해소. 잔존: confirm 응답 유실 후 앱 강제종료(재시도 기회 없음)면 receipt 미보관 — 서버 멱등으로 다음 인증 시 재차감은 없으나 해당 link_id는 미발행으로 남음 | 빌드 24 탑승 | P0 |
 | A-99 | **앱 내 이용약관·개인정보 처리방침 링크** — 설정 탭 하단(문의·사용사례 링크 아래, 로그인 무관)에 웹 `/terms`·`/privacy` 열기 2개 추가. 근거: Apple 5.1.1(i)(앱 내 접근 가능한 처리방침 링크)·Google Play 사용자 데이터 정책(스토어 등록+앱 내 양쪽). 환불 정책·사업자정보확인은 판매가 웹에서만 일어나 앱 필수 아님 — 가격 노출 페이지 링크는 App Store 3.1.1 위험이라 의도적으로 제외. 취약점 신고는 웹 전용. ✅ 2026-09-15 구현(빌드 23 탑승 대상) | 정식 심사 전 | P1 |
 | A-9 | 트랙 B Phase 2~7 모노레포 추출 (`packages/stamp/`) | 모바일 본 시작 | P1 |
 | A-10 | 모바일 앱 본 개발 (트랙 D, 8~10주) | A-9 + U-2·U-16 완료 | P0 |
@@ -262,6 +263,7 @@ SSL.com 회신 (U-1)
 
 | 일자 | 변경 |
 |---|---|
+| 2026-09-17 | **A-100 인증 중 앱 전환 네트워크 유실·이중 차감 수정** — 상세 A-100 행. 서버 confirm 멱등(웹 배포), 앱 포그라운드 재시도·receipt 기반 재발행·부분 성공 출품, 이벤트/제보 진행 문구. 웹 vitest 175 통과, iPhone 로컬 설치(대표 확인 대기). **빌드 24 탑승 대상** |
 | 2026-09-15 (밤) | **🚀 빌드 23 (v1.0.1) EAS 제출** — iOS 520cd341(빌드번호 23)·Android 354f1d3b(versionCode 25), `store-build.sh all` auto-submit(ASC·Play alpha). 탑승분: **A-99 앱 내 이용약관·개인정보 처리방침 링크**(d02687a) + 설정 탭 하단 링크 2줄 가운데 정렬·라벨 축약(3eed586). **결과(21:xx)**: iOS #23 FINISHED / Android vc25 FINISHED — 양 플랫폼 빌드 성공, ASC·Play alpha 자동 제출 예약(제출 페이지 a31982b6·ac0fc410). **스토어 메타(대표 입력 완료)**: TestFlight 빌드 23 테스트 내용(특수문자 없음, 2항목+영문 병기) · Play 릴리스 1.0.1(vc25) 출시 노트 ko-KR 193자·en-US 289자 저장 |
 | 2026-09-15 (밤) | **테스트 계정 추가 `test@ori.pics`** — 데모 계정(demo-screenshots@ori.pics: pro·960건·구독 레코드 없음·갱신 10/08)과 같은 자격으로 복제 생성. 신설 `scripts/admin-clone-demo-account.ts <email> <pw> [--from=] [--apply]`(bcrypt cost10·emailVerified=now·tier/credits/creditsRenewAt 복제·manual 구독 복제(원본에 있을 때)·CreditTransaction 기록, dry-run 기본). 비밀번호는 대표 지정(6자 숫자, 프로덕션 DB) — 데모 계정처럼 `.secrets`에 두지 않았으니 외부 공유 시 주의. 용도: 실기기·심사 테스트 |
 | 2026-09-15 (저녁) | **A-99 앱 내 약관·처리방침 링크 + 설정 탭 하단 링크 2줄 정렬(대표 실기기 확인 완료)** — Apple 5.1.1(i)·Play 사용자 데이터 정책 근거로 설정 탭에 이용약관·개인정보 처리방침(웹 `/terms`·`/privacy`, 로케일별) 추가(d02687a). 이어 4개 링크가 3줄로 보이던 하단을 **1줄 사용사례 보내기 / 2줄 문의하기 · 이용약관 · 개인정보 처리방침** 가운데 정렬(`footerLinks` row·wrap)로 재구성, 라벨 축약(문의·의견 보내기→문의하기, 이모지 제거, en Contact/Send a use case). 환불 정책·사업자정보확인·취약점 신고는 앱 미포함(A-99 행 사유). **빌드 23 탑승 대상** |

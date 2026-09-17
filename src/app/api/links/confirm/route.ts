@@ -129,7 +129,24 @@ export async function POST(req: NextRequest) {
   const creditAction = tier === "verified" ? "verified_proof" : "image_proof";
 
   let passRemaining: number | null = null;
-  if (typeof pass_id === "string" && pass_id) {
+  // A-100 (2026-09-17): 멱등 재확정 — 같은 sign JWT(link_id)로 confirm이 다시 오면(모바일이 앱 전환 중 네트워크
+  // 유실로 응답을 못 받고 재시도) 이미 차감된 기록이 있을 때 재차감 없이 receipt만 다시 발급한다.
+  // 차감 기록은 CreditTransaction.metadata.link_id(크레딧·패스 모두)로 식별. receipt는 JWT 내용에서 결정되므로 동일하게 재생성됨.
+  const priorTx = await t.span("idempotency", () =>
+    prisma.creditTransaction.findFirst({
+      where: {
+        userId: billingUserId,
+        action: { in: ["image_proof", "verified_proof", "day_pass_proof"] },
+        metadata: { path: ["link_id"], equals: link_id },
+      },
+      select: { id: true, action: true },
+    }),
+  );
+  const replay = !!priorTx;
+  if (replay) {
+    console.log(`[confirm] replay link_id=${link_id} prior=${priorTx!.action} — 재차감 생략`);
+    if (priorTx!.action === "day_pass_proof") passRemaining = -1; // 패스 차감분 재확정: 잔여 수는 알 수 없음(클라이언트는 proof_cost 0으로만 처리)
+  } else if (typeof pass_id === "string" && pass_id) {
     // A-60: 패스 1회 차감 (사이즈 무관, 크레딧 미차감). 소유자 검증 포함 원자 UPDATE.
     const passResult = await t.span("consume_pass", () => consumePassProof(pass_id, billingUserId));
     if (!passResult.ok) {
@@ -231,7 +248,9 @@ export async function POST(req: NextRequest) {
   console.log(
     passRemaining !== null
       ? `[confirm] pass proof link_id=${link_id} pass_id=${pass_id} remaining=${passRemaining}`
-      : `[confirm] proof charged link_id=${link_id} cost=${proofCost}`,
+      : replay
+        ? `[confirm] proof replay link_id=${link_id} (no charge)`
+        : `[confirm] proof charged link_id=${link_id} cost=${proofCost}`,
   );
   t.log("links/confirm", { link_id, tier, ...(passRemaining !== null ? { pass: true } : {}) });
 
