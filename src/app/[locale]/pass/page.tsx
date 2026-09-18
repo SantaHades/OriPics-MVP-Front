@@ -6,6 +6,7 @@
 // 문구는 verified-trust-model.md 가이드 준수 — Verified는 "기기 검증 통과 시"로만 표기.
 import { Link } from "@/navigation";
 import { useParams, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   ArrowLeft,
   Ticket,
@@ -67,6 +68,8 @@ const RULES = {
 export default function PassProductPage() {
   const params = useParams();
   const ko = ((params?.locale as string) || "ko") !== "en";
+  // 사업자 정보·약관 푸터 — 홈·뷰어와 같은 LinkViewer 키 재사용 (KG 상점 심사: 판매 페이지 사업자 표기, 2026-09-18)
+  const tLV = useTranslations("LinkViewer");
   // 앱 설정탭 ⓘ에서 열린 경우(from=app): iOS 3.1.1(외부 결제 유도) 회피 — 가격·구매 카드 숨김, 안내만 (2026-09-03)
   const fromApp = useSearchParams()?.get("from") === "app";
   const features = FEATURES[ko ? "ko" : "en"];
@@ -196,6 +199,33 @@ export default function PassProductPage() {
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors">
           <ArrowLeft size={16} /> {ko ? "메인으로 돌아가기" : "Back to home"}
         </Link>
+
+        <footer className="mt-16 pt-8 border-t border-slate-200 text-xs text-slate-500 flex flex-col items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link href="/terms" className="hover:text-slate-900 transition-colors">
+              {tLV("terms_link")}
+            </Link>
+            <Link href="/privacy" className="hover:text-slate-900 transition-colors">
+              {tLV("privacy_link")}
+            </Link>
+            <Link href="/refund" className="hover:text-slate-900 transition-colors">
+              {tLV("refund_link")}
+            </Link>
+            <a
+              href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=4448802865"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-900 transition-colors"
+            >
+              {ko ? "사업자정보확인" : "Business registration"}
+            </a>
+          </div>
+          <p>{tLV("footer")}</p>
+          <div className="text-[10px] text-slate-400 text-center leading-relaxed">
+            <p>{tLV("business_info_line1")}</p>
+            <p>{tLV("business_info_line2")}</p>
+          </div>
+        </footer>
       </div>
     </div>
   );
