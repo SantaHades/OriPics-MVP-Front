@@ -18,7 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-type Phase = "confirming" | "success" | "error";
+type Phase = "confirming" | "success" | "test" | "error";
 
 const T = {
   ko: {
@@ -39,6 +39,8 @@ const T = {
     keepSafe: "이 패스는 구매 계정 전용이라 다른 계정에서는 사용할 수 없어요. 이 화면을 벗어나도 프로필의 최근 내역에서 코드를 다시 볼 수 있습니다.",
     errorTitle: "결제 확인에 실패했어요",
     errorDesc: "결제가 완료됐다면 반복 시도하지 마시고 hi@ori.pics로 문의해 주세요.",
+    testTitle: "테스트 결제가 완료되었습니다",
+    testDesc: "PG 상점 심사용 테스트 채널 결제입니다. 실제 청구는 없으며 패스 코드는 발급되지 않습니다.",
     retry: "다시 시도하기",
     goHome: "홈으로",
     missingPayment: "결제 정보가 없어요. 결제 후 이동한 링크가 맞는지 확인해 주세요.",
@@ -61,6 +63,8 @@ const T = {
     keepSafe: "This pass is exclusive to the purchasing account — it cannot be used on any other account. You can find the code again under your profile's recent activity.",
     errorTitle: "Payment confirmation failed",
     errorDesc: "If you were charged, please don't retry repeatedly — contact hi@ori.pics.",
+    testTitle: "Test payment completed",
+    testDesc: "This was a test-channel payment for PG merchant review. You were not charged and no pass code is issued.",
     retry: "Try again",
     goHome: "Home",
     missingPayment: "No payment information found. Please check the link you were redirected to.",
@@ -117,6 +121,11 @@ export default function PassSuccessPage() {
           setErrorDetail(payload?.detail ?? `HTTP ${res.status}`);
           return;
         }
+        if (payload?.test_channel) {
+          // PG 상점 심사용 테스트 채널 결제 — 서버가 코드를 발급하지 않음
+          setPhase("test");
+          return;
+        }
         setPassCode(payload?.code ?? null);
         setValidUntil(payload?.code_expires_at ?? null);
         setPhase("success");
@@ -165,6 +174,14 @@ export default function PassSuccessPage() {
             <Loader2 size={48} className="text-blue-500 animate-spin mx-auto mb-4" />
             <h1 className="text-lg font-bold mb-1">{t.confirmingTitle}</h1>
             <p className="text-sm text-slate-500">{t.confirmingDesc}</p>
+          </div>
+        )}
+
+        {phase === "test" && (
+          <div className="bg-white border border-amber-200 rounded-3xl p-8 shadow-sm text-center">
+            <CheckCircle2 size={48} className="text-amber-500 mx-auto mb-4" />
+            <h1 className="text-lg font-bold mb-2">{t.testTitle}</h1>
+            <p className="text-sm text-slate-600">{t.testDesc}</p>
           </div>
         )}
 

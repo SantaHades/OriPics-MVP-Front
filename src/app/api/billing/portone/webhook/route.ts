@@ -205,6 +205,9 @@ export async function POST(req: NextRequest) {
       console.warn("[portone/webhook] day pass permanent rejection", { paymentId, code: passResult.code });
       return NextResponse.json({ ok: true, rejected: passResult.code });
     }
+    if (passResult.testChannel) {
+      return NextResponse.json({ ok: true, ignored: "test_channel" });
+    }
     return NextResponse.json({ ok: true, pass_issued: true, alreadyProcessed: passResult.alreadyProcessed });
   }
 

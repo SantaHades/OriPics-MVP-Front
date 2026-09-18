@@ -57,6 +57,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (result.testChannel) {
+    console.log(`[pass] TEST channel payment acknowledged, no code issued payment=${paymentId} user=${userId}`);
+    return NextResponse.json({ ok: true, test_channel: true });
+  }
+
   console.log(`[pass] purchase complete payment=${paymentId} user=${userId} already=${result.alreadyProcessed}`);
   return NextResponse.json({
     ok: true,

@@ -117,9 +117,15 @@ export default function PassProductPage() {
                 >
                   {ko ? "구매하기" : "Buy now"}
                 </Link>
-                <p className="text-[11px] text-slate-400 mt-2">
-                  {ko ? "카드 결제 · 코드 즉시 발급" : "Card payment · instant code"}
-                </p>
+                {process.env.NEXT_PUBLIC_PORTONE_TEST_MODE === "true" ? (
+                  <p className="text-[11px] text-amber-700 mt-2">
+                    {ko ? "심사용 테스트 결제 · 실제 청구·코드 발급 없음" : "Test payment (PG review) · no charge, no code"}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-slate-400 mt-2">
+                    {ko ? "카드 결제 · 코드 즉시 발급" : "Card payment · instant code"}
+                  </p>
+                )}
               </>
             ) : (
               <>

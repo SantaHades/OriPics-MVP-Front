@@ -37,8 +37,8 @@ const T = {
     comingSoonTitle: "결제 오픈을 준비하고 있어요",
     comingSoonBody: "원데이 패스 판매가 곧 시작됩니다. 조금만 기다려 주세요!",
     loading: "불러오는 중…",
-    testModeTitle: "테스트 모드",
-    testModeDesc: "실제 청구되지 않는 테스트 결제입니다.",
+    testModeTitle: "심사용 테스트 결제",
+    testModeDesc: "PG 상점 심사 기간의 테스트 결제입니다. 실제 청구되지 않으며 패스 코드도 발급되지 않습니다.",
   },
   en: {
     back: "About the pass",
@@ -62,8 +62,8 @@ const T = {
     comingSoonTitle: "Payments are being prepared",
     comingSoonBody: "One-Day Pass sales are opening soon. Please check back!",
     loading: "Loading…",
-    testModeTitle: "Test mode",
-    testModeDesc: "This is a test payment — you will not be charged.",
+    testModeTitle: "Test payment (PG review)",
+    testModeDesc: "Test payment during PG merchant review — you will not be charged and no pass code will be issued.",
   },
 };
 

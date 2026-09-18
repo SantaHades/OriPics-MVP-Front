@@ -17,9 +17,15 @@ export const PASS_PRODUCT_MARKER = "day_pass";
 export type PassPurchaseResult =
   | {
       ok: true;
+      testChannel?: false;
       alreadyProcessed: boolean;
       code: string;
       codeExpiresAt: Date;
+    }
+  | {
+      /** 테스트 채널(PG 상점 심사용) 결제 — 검증은 통과했지만 코드는 발급하지 않음 */
+      ok: true;
+      testChannel: true;
     }
   | {
       ok: false;
@@ -56,6 +62,14 @@ export async function verifyAndIssueDayPass(opts: {
 
   if (payment.status !== "PAID") {
     return { ok: false, code: "payment_not_paid", httpStatus: 402, detail: payment.status };
+  }
+
+  // 테스트 채널 결제(KG이니시스 상점·카드사 심사 기간에 운영 사이트에 테스트 채널키를
+  // 거는 경우) — PG 승인은 나지만 실제 청구가 없으므로 패스를 발급하면 무료 패스 구멍.
+  // PAID 확인 후, 금액 검증 전에 차단해 심사 담당자의 성공 화면은 정상 노출되게 한다.
+  if (payment.channel?.type === "TEST") {
+    console.warn("[passPurchase] TEST channel payment — verified but not issuing", { paymentId, userId });
+    return { ok: true, testChannel: true };
   }
 
   const paidAmount = payment.amount?.total;
