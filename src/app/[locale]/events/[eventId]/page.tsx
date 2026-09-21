@@ -193,7 +193,12 @@ export default function EventDetailPage() {
                         {/* (2026-09-13 A-96) 카드는 썸네일(320px), 라이트박스는 image_url */}
                         <img src={e.thumb_url ?? e.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
                       </button>
-                    ) : null}
+                    ) : (
+                      /* 보관 기간이 지나 사진이 삭제된 출품작 (2026-09-21) — 빈 칸 대신 사유를 알린다 */
+                      <div className="flex h-full w-full items-center justify-center px-3 text-center">
+                        <span className="text-[11px] leading-snug text-slate-400">{ko ? "사진 보관 기간이 지났습니다" : "Photo retention period has ended"}</span>
+                      </div>
+                    )}
                     <span className="absolute top-2 left-2 rounded-full bg-amber-500 text-white text-xs font-bold px-2 py-0.5">#{i + 1}</span>
                     <a href={e.link_url} target="_blank" rel="noopener noreferrer" className="absolute bottom-2 right-2 rounded-full bg-white/90 hover:bg-white text-slate-600 p-1" aria-label="Open public link"><ExternalLink size={12} /></a>
                     {/* 좋아요 배지 우측 상단, 공개링크 아이콘은 우측 하단으로 (2026-09-13 대표, 앱과 동일) */}
@@ -242,7 +247,12 @@ export default function EventDetailPage() {
                     <button type="button" onClick={() => setLightbox(e)} className="block w-full h-full cursor-zoom-in" aria-label="View photo">
                       <img src={e.thumb_url ?? e.image_url} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform" />
                     </button>
-                  ) : null}
+                  ) : (
+                    /* 보관 기간이 지나 사진이 삭제된 출품작 (2026-09-21) */
+                    <div className="flex h-full w-full items-center justify-center px-3 text-center">
+                      <span className="text-[11px] leading-snug text-slate-400">{ko ? "사진 보관 기간이 지났습니다" : "Photo retention period has ended"}</span>
+                    </div>
+                  )}
                 </div>
                 <span className="absolute top-2 right-2"><LikeButton entry={e} /></span>
                 {e.mine ? <span className="absolute top-2 left-2 rounded-full bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5">{ko ? "내 출품" : "Mine"}</span> : null}
