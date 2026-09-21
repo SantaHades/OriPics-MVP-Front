@@ -87,6 +87,11 @@ export async function generateMetadata(
   return {
     title,
     description,
+    // 검색 색인 차단 (2026-09-21): 공개링크는 '링크를 받은 사람'이 보는 것이지
+    // 검색 결과에 뜨라고 만든 페이지가 아니다(사진·촬영 위치 GPS 포함).
+    // robots.txt로 크롤링 자체를 막지 않는 이유 = A-67 메신저 미리보기(og:image)는
+    // 스크래퍼가 이 페이지를 읽어야 동작하므로, 색인만 선택적으로 차단한다.
+    robots: { index: false, follow: false },
     openGraph: {
       type: 'article',
       siteName: 'OriPics',
