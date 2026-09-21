@@ -16,6 +16,8 @@ export default function SignupPage() {
   const [codeVerified, setCodeVerified] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
   const [checkingCode, setCheckingCode] = useState(false);
+  /** 코드를 실제로 발송한 주소 — 이메일을 고쳤다가 되돌렸을 때 '인증'/'재발송'을 가르는 기준 (2026-09-21) */
+  const [sentToEmail, setSentToEmail] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -167,6 +169,7 @@ export default function SignupPage() {
       }
 
       setCodeSent(true);
+      setSentToEmail(formData.email.trim().toLowerCase());
       setCooldown(60); // 60초 쿨다운
       setSuccessMsg(t("verification.code_sent"));
     } catch (err: any) {
@@ -399,12 +402,16 @@ export default function SignupPage() {
                     }`}
                     value={formData.email}
                     onChange={(e) => {
-                      setFormData({ ...formData, email: e.target.value });
-                      setCodeSent(false);
+                      // 인증 후에도 오타를 고칠 수 있어야 한다(2026-09-21 대표) — 잠그지 않는다.
+                      // 코드를 보낸 주소와 같아지면 '재발송' 상태로 복귀(입력해 둔 코드도 유지해
+                      // 자동 재확인됨), 다른 주소면 처음부터 '인증'으로 되돌린다.
+                      const next = e.target.value;
+                      const sameAsSent = !!sentToEmail && next.trim().toLowerCase() === sentToEmail;
+                      setFormData({ ...formData, email: next });
                       setCodeVerified(false);
-                      setVerificationCode("");
+                      setCodeSent(sameAsSent);
+                      if (!sameAsSent) setVerificationCode("");
                     }}
-                    disabled={codeVerified}
                   />
                 </div>
                 <button
