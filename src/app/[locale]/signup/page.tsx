@@ -410,7 +410,14 @@ export default function SignupPage() {
                       setFormData({ ...formData, email: next });
                       setCodeVerified(false);
                       setCodeSent(sameAsSent);
-                      if (!sameAsSent) setVerificationCode("");
+                      if (!sameAsSent) {
+                        setVerificationCode("");
+                        // 오타를 고쳐 다른 주소가 됐다면 재발송 쿨다운을 기다릴 이유가 없다
+                        // (2026-09-21 대표). 남용은 서버 레이트리밋(sendVerification, IP 기준
+                        // 1시간 10회)이 막으므로 클라이언트 카운트다운만 해제한다.
+                        setCooldown(0);
+                        setSuccessMsg("");
+                      }
                     }}
                   />
                 </div>
