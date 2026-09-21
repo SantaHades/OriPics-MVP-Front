@@ -25,6 +25,8 @@ export const RATE_LIMITS = {
   passwordReset: { name: "pwreset", windowSec: 3600, max: 5 },
   /** 인증 코드 발송 — IP */
   sendVerification: { name: "sendverify", windowSec: 3600, max: 10 },
+  /** 가입 폼의 코드 사전 확인 — 6자리 추측 오라클이 되지 않도록 IP+이메일 기준 10분 10회 (2026-09-21) */
+  checkVerification: { name: "checkverify", windowSec: 600, max: 10 },
   /** 모바일 refresh — IP. 정상 앱은 시간당 수 회 수준, 위조 토큰 대량 시도 차단 (A-38②) */
   refresh: { name: "refresh", windowSec: 600, max: 30 },
   /**

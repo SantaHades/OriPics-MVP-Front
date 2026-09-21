@@ -15,6 +15,7 @@ export default function SignupPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [codeVerified, setCodeVerified] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
+  const [checkingCode, setCheckingCode] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -91,6 +92,44 @@ export default function SignupPage() {
       return () => clearTimeout(timer);
     }
   }, [cooldown]);
+
+  // 6자리를 다 입력하면 서버에 사전 확인 (2026-09-21 대표) — 맞으면 남은 시간 표시를
+  // 멈추고 "인증됨"으로 전환한다. 토큰은 소비하지 않으므로 실제 검증은 가입 시 register가
+  // 다시 수행한다. 틀리면 문구만 띄우고 다시 입력받는다.
+  useEffect(() => {
+    if (!codeSent || codeVerified || verificationCode.length !== 6) return;
+    let cancelled = false;
+    setCheckingCode(true);
+    setError("");
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/check-verification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: formData.email, code: verificationCode }),
+        });
+        if (cancelled) return;
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data?.ok) {
+          setCodeVerified(true);
+          setCooldown(0); // 재발송 카운트다운 중지 — 더 기다릴 이유가 없다
+          setSuccessMsg(t("verification.verified_msg"));
+        } else if (data?.code === "rate_limited") {
+          setError(data.message ?? t("api_errors.invalid_code"));
+        } else if (data?.code) {
+          setError(t(`api_errors.${data.code}`));
+        }
+      } catch {
+        // 네트워크 오류는 무시 — 가입 시 register가 어차피 재검증한다
+      } finally {
+        if (!cancelled) setCheckingCode(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verificationCode, codeSent, codeVerified, formData.email]);
 
   // URL 에러 확인
   useEffect(() => {
@@ -374,7 +413,9 @@ export default function SignupPage() {
                   disabled={sendingCode || cooldown > 0 || !formData.email || codeVerified}
                   className="px-4 py-4 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
                 >
-                  {sendingCode ? (
+                  {codeVerified ? (
+                    t("verification.verified")
+                  ) : sendingCode ? (
                     <RefreshCw className="animate-spin" size={16} />
                   ) : cooldown > 0 ? (
                     `${cooldown}s`
@@ -406,7 +447,17 @@ export default function SignupPage() {
                     }}
                   />
                 </div>
-                <p className="text-sm text-slate-500 mt-2 ml-1">{t("verification.hint")}</p>
+                <p className="text-sm text-slate-500 mt-2 ml-1">
+                  {checkingCode ? t("verification.checking") : t("verification.hint")}
+                </p>
+              </div>
+            )}
+
+            {/* 인증 완료 — 코드 입력란을 대체 (2026-09-21 대표) */}
+            {codeSent && codeVerified && (
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300 flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
+                <CheckCircle className="text-emerald-600 shrink-0" size={18} />
+                <p className="text-sm font-bold text-emerald-700">{t("verification.verified")}</p>
               </div>
             )}
 

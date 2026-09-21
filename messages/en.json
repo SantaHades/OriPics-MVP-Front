@@ -543,7 +543,10 @@
       "code_sent": "A verification code has been sent to your email. Please check your inbox.",
       "code_label": "Verification Code",
       "enter_code": "Please enter the 6-digit code sent to your email.",
-      "hint": "Enter the 6-digit code from your email. (Valid for 10 minutes)"
+      "hint": "Enter the 6-digit code from your email. (Valid for 10 minutes)",
+      "verified": "Verified",
+      "verified_msg": "Email verified.",
+      "checking": "Checking…"
     },
     "api_errors": {
       "missing_fields": "Please enter both email and password.",
