@@ -51,6 +51,29 @@ export async function GET(req: NextRequest, props: { params: Promise<{ eventId: 
   return NextResponse.json({ entries, total, has_more, open: event.open, ends_at: event.ends_at });
 }
 
+/**
+ * 출품된 링크의 보관 연장 (2026-09-21).
+ *
+ * 무료 발행 링크는 7일(FREE_RETENTION_DAYS)이면 만료되고 cleanup 크론이 파일·row를
+ * 지운다. 그 결과 10/31까지 열려 있는 콘테스트의 9/7~9/13 출품작 28/38건이 이미
+ * 사진 없이 남았다(대표 발견). 출품 시점에 이벤트 종료 이후까지 보관을 늘린다.
+ *
+ * 상한을 두는 이유: 사설 이벤트는 개설자가 종료일을 정할 수 있어, 먼 미래로 잡으면
+ * 무료 계정이 사실상 무기한 보관을 얻는다.
+ */
+const EVENT_LINK_GRACE_DAYS = 30; // 종료 후 심사·명예의 전당 열람 여유
+const EVENT_LINK_MAX_DAYS = 180; // 출품으로 늘릴 수 있는 최대 보관 기간
+const EVENT_LINK_OPEN_ENDED_DAYS = 90; // 종료일이 없는 이벤트
+
+/** 이번 출품으로 적용할 만료 시각 — 기존보다 짧아지는 경우는 없다(연장 전용) */
+function eventLinkExpiry(endsAt: string | null): Date {
+  const now = Date.now();
+  const base = endsAt
+    ? new Date(endsAt).getTime() + EVENT_LINK_GRACE_DAYS * 86_400_000
+    : now + EVENT_LINK_OPEN_ENDED_DAYS * 86_400_000;
+  return new Date(Math.min(base, now + EVENT_LINK_MAX_DAYS * 86_400_000));
+}
+
 export async function POST(req: NextRequest, props: { params: Promise<{ eventId: string }> }) {
   const { eventId } = await props.params;
   const userId = await getSessionUserId();
@@ -108,6 +131,26 @@ export async function POST(req: NextRequest, props: { params: Promise<{ eventId:
     console.error("[events] insert failed:", insErr.message);
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
   }
+  // 출품된 링크의 보관 연장 (2026-09-21) — 이벤트가 끝나기 전에 사진이 사라지지 않게.
+  // expires_at이 null인 링크(유료 무기한 보관)는 건드리지 않고, 이미 더 긴 링크도 그대로 둔다.
+  // 출품 자체는 이미 성공했으므로 실패해도 응답을 깨지 않는다(best-effort, 로깅만).
+  try {
+    const target = eventLinkExpiry(event.ends_at);
+    const toExtend = owned
+      .filter((l) => l.expires_at && new Date(l.expires_at as string) < target)
+      .map((l) => l.link_id as string);
+    if (toExtend.length) {
+      const { error: extErr } = await db
+        .from("links")
+        .update({ expires_at: target.toISOString() })
+        .in("link_id", toExtend);
+      if (extErr) console.warn("[events] link retention extend failed:", extErr.message);
+      else console.log(`[events] extended ${toExtend.length} link(s) to ${target.toISOString()} for event=${eventId}`);
+    }
+  } catch (e: any) {
+    console.warn("[events] link retention extend error:", e?.message ?? e);
+  }
+
   const { data: mine } = await db
     .from("event_entries")
     .select("id, event_id, link_id, user_id, caption, status, like_count, created_at")
