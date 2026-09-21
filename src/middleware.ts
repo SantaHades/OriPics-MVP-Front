@@ -3,6 +3,9 @@ import createMiddleware from 'next-intl/middleware';
 
 const locales = ['en', 'ko'];
 
+/** 정식 호스트 — apex(ori.pics)는 아래에서 301로 여기로 보낸다 */
+const CANONICAL_ORIGIN = 'https://www.ori.pics';
+
 const intlMiddleware = createMiddleware({
   locales,
   defaultLocale: 'en',
@@ -31,7 +34,20 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${preferredLocale}`, request.url));
   }
 
-  return intlMiddleware(request);
+  const response = intlMiddleware(request);
+
+  // canonical (2026-09-21): 정식 주소를 명시해 중복 색인을 막는다.
+  // 사이트맵 대상 페이지 대부분이 'use client'라 generateMetadata를 쓸 수 없어,
+  // 구글이 meta 태그와 동등하게 취급하는 Link 헤더 방식으로 한 곳에서 처리한다.
+  // (현재 어떤 페이지도 canonical meta를 내보내지 않으므로 신호 충돌 없음)
+  // 쿼리스트링은 제외 — ?ref=1234 같은 파라미터가 별도 URL로 색인되지 않도록.
+  if (response && response.status < 300) {
+    response.headers.set(
+      'Link',
+      `<${CANONICAL_ORIGIN}${request.nextUrl.pathname}>; rel="canonical"`,
+    );
+  }
+  return response;
 }
 
 export const config = {
