@@ -109,7 +109,7 @@ export default function InviteLanding() {
         <div className="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm">
           <div className="flex items-center gap-2 text-blue-600 mb-3">
             <Mailbox size={20} />
-            <span className="text-sm font-semibold">{ko ? "사진 사진함 초대" : "Photo mailbox invitation"}</span>
+            <span className="text-sm font-semibold">{ko ? "사진함 초대" : "Photo mailbox invitation"}</span>
           </div>
 
           {info === "loading" ? (

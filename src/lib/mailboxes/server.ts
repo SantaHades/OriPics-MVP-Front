@@ -224,7 +224,7 @@ export function inviteMessage(
   const exp = `${kst.getUTCMonth() + 1}/${kst.getUTCDate()}`;
   return [
     `${p.inviteeName}님, ${p.ownerName}입니다.`,
-    `OriPics 사진 사진함 '${p.mailboxName}'에 초대합니다.`,
+    `OriPics 사진함 '${p.mailboxName}'에 초대합니다.`,
     ``,
     `1. 아래 링크를 누르거나 QR을 찍어 주세요. 앱이 없으면 설치로 이어집니다.`,
     `   ${url}`,
