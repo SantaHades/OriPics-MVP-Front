@@ -2,7 +2,6 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import '@/app/globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
-import PartnerWelcomePrompt from '@/components/PartnerWelcomePrompt';
 
 export async function generateMetadata(props: {params: Promise<{locale: string}>}) {
   const params = await props.params;
@@ -66,7 +65,9 @@ export default async function RootLayout(
           <AuthProvider>
             {children}
             {/* 소셜 가입 직후 파트너코드 환영 모달 (A-82·A-92) — 홈 외 첫 진입 경로에서도 1회 노출. 제외 경로는 컴포넌트 내부에서 판정 */}
-            <PartnerWelcomePrompt />
+            {/* (2026-09-22) 웹 파트너 참여 경로 차단(A-106) — 코드 입력은 앱 전용이므로 환영 모달도 내린다.
+                앱 첫 로그인 시 partner-join-prompt가 같은 역할을 한다. 컴포넌트는 남겨 두되 마운트만 해제. */}
+            {/* <PartnerWelcomePrompt /> */}
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

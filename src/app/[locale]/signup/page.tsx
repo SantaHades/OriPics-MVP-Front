@@ -44,10 +44,8 @@ export default function SignupPage() {
   const [appDone, setAppDone] = useState(false);
   // 파트너 릴레이 챌린지 (A-82) — ?ref=코드 프리필·자동 확인, [확인] 후 주인 이름(마스킹) 표시·잠금
   const refParam = searchParams?.get("ref") ?? "";
-  const [partnerCode, setPartnerCode] = useState(refParam.replace(/[^0-9]/g, "").slice(0, 8));
-  const [partnerName, setPartnerName] = useState<string | null>(null);
-  const [partnerBusy, setPartnerBusy] = useState(false);
-  const [partnerError, setPartnerError] = useState<string | null>(null);
+  // ?ref= 로 들어온 코드 — 표시 전용(앱에서 입력하도록 안내)
+  const partnerCode = refParam.replace(/[^0-9]/g, "").slice(0, 8);
   // A-92 ②: 서버가 `partner.error`(예 email_already_joined)를 돌려주면 완료 화면·프로필 카드에 그 이유를 보여준다
   const [appDonePartner, setAppDonePartner] = useState<{ code: string | null; joined: boolean; error?: string } | null>(null);
 
@@ -57,35 +55,9 @@ export default function SignupPage() {
   const tL = useTranslations("Login");
   const tP = useTranslations("Partner");
 
-  const checkPartnerCode = async (raw?: string) => {
-    const code = (raw ?? partnerCode).replace(/[^0-9]/g, "");
-    if (code.length < 3) return;
-    setPartnerBusy(true);
-    setPartnerError(null);
-    try {
-      const res = await fetch(`/api/partner/lookup?code=${code}`);
-      const d = await res.json().catch(() => ({}));
-      if (!res.ok || !d.ok) {
-        setPartnerName(null);
-        // 429(rate_limited)·알 수 없는 코드는 '없는 코드'로 오인 표시하지 않음 (A-92 ①)
-        setPartnerError(tP(`errors.${partnerErrorKey(res.status, d, "code_not_found")}`));
-        return;
-      }
-      setPartnerName(d.ownerNameMasked);
-    } catch {
-      setPartnerError(tP("errors.unavailable"));
-    } finally {
-      setPartnerBusy(false);
-    }
-  };
-  // ?ref= 프리필은 자동 확인. 소셜 가입으로 이어질 때를 위해 세션 저장(환영 모달이 읽음)
-  useEffect(() => {
-    if (refParam) {
-      try { window.sessionStorage.setItem("oripics.partner.ref", refParam); } catch { /* ignore */ }
-      checkPartnerCode(refParam);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refParam]);
+  // (2026-09-22) 웹은 더 이상 파트너 참여를 처리하지 않는다 — 코드 입력은 앱 전용(A-106).
+  // ?ref= 값은 안내 문구에 보여 주기만 한다(사용자가 앱에서 같은 코드를 입력할 수 있게).
+  // 자동 확인·세션 저장·가입 요청 전달은 모두 제거.
 
   // 재발송 쿨다운 타이머
   useEffect(() => {
@@ -213,20 +185,12 @@ export default function SignupPage() {
       return;
     }
 
-    // 파트너코드를 적었지만 [확인]을 안 거친 경우 — 코드가 조용히 빠진 채 가입되는 것을 막는다 (A-92 ②)
-    if (partnerCode.length > 0 && !partnerName) {
-      setPartnerError(t("partner_unconfirmed"));
-      setError(t("partner_unconfirmed"));
-      setLoading(false);
-      return;
-    }
-
     try {
       // 1. 회원가입 API 호출 (인증 코드 포함)
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, verificationCode, ...(partnerName && partnerCode ? { partnerCode } : {}) }),
+        body: JSON.stringify({ ...formData, verificationCode }), // 파트너코드는 앱에서만 입력 (2026-09-22)
       });
 
       const data = await res.json();
@@ -492,51 +456,19 @@ export default function SignupPage() {
             </div>
 
             {/* 약관·개인정보 처리방침 동의 (필수) */}
-            {/* 파트너코드 (선택) — A-82. 확인 성공 시 주인 이름(마스킹) 표시 + 입력 잠금, [변경]으로 해제 */}
-            <div>
-              <label htmlFor="signup-partner-code" className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-2 block ml-1">{t("partner_code_label")}</label>
-              {/* 이메일 행과 동일 구조(아이콘 + flex-1 래퍼 + w-full 입력) — 입력창 고유 폭이 버튼을 밀어내지 않도록 min-w-0 */}
-              <div className="flex gap-2">
-                <div className="relative group flex-1 min-w-0">
-                  <Ticket className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-600 transition-colors" size={18} />
-                  <input
-                    id="signup-partner-code"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    aria-describedby="signup-partner-code-hint"
-                    aria-invalid={partnerError ? true : undefined}
-                    placeholder={t("partner_code_placeholder")}
-                    className={`w-full bg-slate-100 border rounded-2xl py-4 pl-12 pr-4 text-sm outline-none transition-all focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600 tabular-nums ${partnerName ? "border-emerald-500/30 bg-emerald-500/5" : partnerError ? "border-red-300" : "border-slate-100 focus:border-blue-500/50"}`}
-                    value={partnerCode}
-                    onKeyDown={(e) => {
-                      // Enter = 폼 제출 대신 코드 확인 (미확인 제출 차단과 짝)
-                      if (e.key === "Enter" && !partnerName && partnerCode.length >= 3 && !partnerBusy) {
-                        e.preventDefault();
-                        checkPartnerCode();
-                      }
-                    }}
-                    onChange={(e) => { setPartnerCode(e.target.value.replace(/[^0-9]/g, "").slice(0, 8)); setPartnerName(null); setPartnerError(null); }}
-                    disabled={!!partnerName}
-                  />
-                </div>
-                {partnerName ? (
-                  <button type="button" onClick={() => { setPartnerName(null); }} className="px-4 py-4 text-slate-500 text-sm font-bold rounded-2xl border border-slate-200 hover:bg-slate-50 whitespace-nowrap shrink-0">
-                    {t("partner_change")}
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => checkPartnerCode()} disabled={partnerBusy || partnerCode.length < 3} aria-busy={partnerBusy} className="px-4 py-4 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-2xl transition-all disabled:opacity-30 disabled:cursor-not-allowed whitespace-nowrap shrink-0">
-                    {partnerBusy ? <RefreshCw className="animate-spin" size={16} /> : t("partner_check")}
-                  </button>
-                )}
-              </div>
-              {partnerName ? (
-                <p id="signup-partner-code-hint" className="mt-2 ml-1 text-xs text-emerald-700" role="status">{t("partner_confirmed", { name: partnerName })}</p>
-              ) : partnerError ? (
-                <p id="signup-partner-code-hint" className="mt-2 ml-1 text-xs text-red-600" role="alert">{partnerError}</p>
-              ) : (
-                <p id="signup-partner-code-hint" className="mt-2 ml-1 text-[11px] text-slate-500">{t("partner_hint", { price: partnerPrice })}</p>
-              )}
+            {/* 파트너코드 — 웹 입력 비활성화 (2026-09-22 대표 확정).
+                이유: 코드 입력을 앱 한 곳으로 모아야 기기 단위 1회 제한(A-106)이 성립한다.
+                브라우저에는 신뢰할 기기 식별자가 없어 웹을 열어두면 시크릿 창·다른 PC로 우회된다.
+                전환 손실은 작다 — 유효 초대 조건인 '첫 인증'이 앱 전용 기능이라 어차피 앱을 설치해야 한다.
+                앱 첫 로그인 시 partner-join-prompt 모달이 코드를 다시 묻는다(가입 후 7일 이내). */}
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
+              <p className="text-xs font-bold text-blue-700 mb-1">{t("partner_code_label")}</p>
+              <p className="text-xs text-slate-600 leading-relaxed">{t("partner_app_only")}</p>
+              {partnerCode ? (
+                <p className="text-xs text-slate-700 mt-2">
+                  {t("partner_app_only_code")} <span className="font-bold tabular-nums tracking-[0.15em]">{partnerCode}</span>
+                </p>
+              ) : null}
             </div>
 
             <label className="flex items-start gap-2 cursor-pointer select-none px-1">

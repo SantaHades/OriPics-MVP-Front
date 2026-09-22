@@ -241,12 +241,17 @@ export async function joinWithPartnerCode(opts: {
         riskFlags: Object.keys(riskFlags).length ? (riskFlags as Prisma.InputJsonObject) : undefined,
       },
     });
+    // (2026-09-22 대표 확정) 할인권은 참여 즉시가 아니라 **참여 이후 첫 인증 1건**을 마쳐야 지급한다.
+    // 이메일만 여러 개 만들어 가입을 반복하는 파밍의 수익을 없애는 것이 목적 — 계정마다 앱에서
+    // 실제로 사진을 찍어야 하므로 자동화가 어렵다. 유효 초대(12명) 집계 기준과 규칙이 하나로 통일된다.
+    // locked는 어떤 조회·적용 경로에서도 잡히지 않는다(모든 필터가 status:"available" 기준).
+    // 해제는 unlockPartnerBenefitsOnFirstProof — confirm 라우트에서 호출 + overview 진입 시 자가 치유.
     await tx.partnerBenefit.create({
-      data: { userId: opts.userId, type: "pro_50", source: "signup", referralId: referral.id, expiresAt: expires },
+      data: { userId: opts.userId, type: "pro_50", source: "signup", referralId: referral.id, expiresAt: expires, status: "locked" },
     });
     if (rewardOwner) {
       await tx.partnerBenefit.create({
-        data: { userId: owner.id, type: "pro_50", source: "referral", referralId: referral.id, expiresAt: expires },
+        data: { userId: owner.id, type: "pro_50", source: "referral", referralId: referral.id, expiresAt: expires, status: "locked" },
       });
     }
     return { myCode, rank };
@@ -394,11 +399,50 @@ export async function approveMilestone(userId: string, approvedBy: string): Prom
 }
 
 /**
+ * (2026-09-22) 참여 이후 첫 인증 1건을 마치면 잠가둔 할인권(locked)을 available 로 푼다.
+ *
+ * 호출 지점 2곳:
+ *  - `/api/links/confirm` 성공 직후(best-effort) — 정상 경로
+ *  - `getPartnerOverview` 진입 시 locked가 남아 있으면 자가 치유 — confirm 호출이 유실된 경우 대비
+ *
+ * 멱등: locked 인 것만 업데이트하므로 중복 호출은 0건 갱신. 실패해도 예외를 밖으로 던지지 않는다.
+ * 반환: 해제한 장수.
+ */
+export async function unlockPartnerBenefitsOnFirstProof(userId: string): Promise<number> {
+  try {
+    const ref = await prisma.partnerReferral.findUnique({
+      where: { refereeId: userId },
+      select: { id: true, createdAt: true, status: true },
+    });
+    if (!ref || ref.status !== "confirmed") return 0;
+    // '참여 이후'의 인증만 인정 — 가입 전 인증은 집계에서도 제외되는 기존 규칙과 동일
+    const proof = await prisma.creditTransaction.findFirst({
+      where: {
+        userId,
+        action: { in: ["image_proof", "verified_proof", "day_pass_proof"] },
+        createdAt: { gte: ref.createdAt },
+      },
+      select: { id: true },
+    });
+    if (!proof) return 0;
+    const r = await prisma.partnerBenefit.updateMany({
+      where: { referralId: ref.id, status: "locked" },
+      data: { status: "available" },
+    });
+    if (r.count) console.log(`[partner] unlocked ${r.count} benefit(s) after first proof user=${userId}`);
+    return r.count;
+  } catch (e: any) {
+    console.warn("[partner] unlockPartnerBenefitsOnFirstProof skipped", { userId, error: e?.message ?? e });
+    return 0;
+  }
+}
+
+/**
  * (2026-09-11 A-91 ⑥) 피추천인 탈퇴 시 추천인에게 적립된 미사용 할인권 회수 — 탈퇴 파밍 방지.
  * User 삭제 **직전**에 호출해야 한다(삭제되면 partner_referrals가 cascade로 사라지고 partner_benefits.referral_id는 NULL이 돼
  * 연결을 잃는다). 보수적 기준:
  *  - 추천 생성 30일 미만 **또는** 피추천인이 참여 이후 첫 인증을 한 번도 하지 않은 경우에만 회수
- *  - 대상은 그 추천(referral_id)으로 **추천인**에게 발급된 `available` 혜택만. 이미 `used`·`reserved`(결제 진행 중)는 건드리지 않음
+ *  - 대상은 그 추천(referral_id)으로 **추천인**에게 발급된 `available`·`locked` 혜택. 이미 `used`·`reserved`(결제 진행 중)는 건드리지 않음
  *  - 피추천인 본인 혜택은 계정과 함께 cascade 삭제되므로 별도 처리 없음
  * 반환: 회수한 장수. 마이그레이션 전·오류 시 0 (best-effort).
  */
@@ -421,7 +465,7 @@ export async function revokeReferrerBenefitsOnRefereeDelete(refereeId: string): 
     }
     if (!young && certified) return 0;
     const r = await prisma.partnerBenefit.updateMany({
-      where: { referralId: ref.id, userId: ref.referrerId, status: "available" },
+      where: { referralId: ref.id, userId: ref.referrerId, status: { in: ["available", "locked"] } },
       data: { status: "revoked", revokedReason: young ? "referee_withdrawn_30d" : "referee_withdrawn_uncertified" },
     });
     return r.count;
@@ -761,6 +805,10 @@ export async function getPartnerOverview(userId: string, opts: { listAmount: num
         ? "window_expired"
         : null;
 
+  // locked 혜택이 남아 있을 수 있으므로 진입 시 한 번 해제를 시도한다 (2026-09-22 자가 치유).
+  // confirm 라우트 호출이 유실돼도 사용자가 파트너 화면을 열면 복구된다. 멱등·best-effort.
+  await unlockPartnerBenefitsOnFirstProof(userId);
+
   const [referrals, benefits, milestone, stats] = await Promise.all([
     listReferralsWithValidity(userId),
     prisma.partnerBenefit.findMany({
@@ -786,6 +834,8 @@ export async function getPartnerOverview(userId: string, opts: { listAmount: num
   }));
   const coupons = view.filter((b) => b.type === "pro_50" && b.status === "available");
   const freeMonths = view.filter((b) => b.type === "pro_free_month" && b.status === "available");
+  // 첫 인증 대기 중인 잠금 혜택 — UI가 "인증 1건을 마치면 지급"을 안내할 수 있게 개수를 내린다 (2026-09-22)
+  const lockedCoupons = view.filter((b) => b.status === "locked").length;
 
   // 사용 내역: 결제(paymentId)별 묶음 + 청구 의도 금액
   const usedPaymentIds = Array.from(new Set(view.filter((b) => b.status === "used" && b.paymentId).map((b) => b.paymentId as string)));
@@ -837,6 +887,7 @@ export async function getPartnerOverview(userId: string, opts: { listAmount: num
       : null,
     benefits: {
       coupons: coupons.length,
+      lockedCoupons,
       couponsNearestExpiry: coupons[0]?.expiresAt ?? null,
       freeMonths: freeMonths.length,
       list: view,

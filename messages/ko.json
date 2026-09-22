@@ -571,7 +571,9 @@
     "partner_my_code": "내 파트너코드",
     "partner_coupon_arrived": "Pro 50% 할인권 1장이 도착했어요. 지인에게 이 코드를 알려 주세요.",
     "partner_first_proof_nudge": "첫 사진 인증 1건을 완료하면 파트너 적립이 확정됩니다.",
-    "partner_code_only": "지인에게 이 코드를 알려 주면 지인이 가입할 때 혜택이 쌓입니다."
+    "partner_code_only": "지인에게 이 코드를 알려 주면 지인이 가입할 때 혜택이 쌓입니다.",
+    "partner_app_only": "파트너코드는 OriPics 앱에서만 입력할 수 있습니다. 가입 후 앱에 로그인하면 코드를 물어봅니다(가입 후 7일 이내).",
+    "partner_app_only_code": "받으신 코드:"
   },
   "Profile": {
     "title": "내 정보 관리",

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
+import { unlockPartnerBenefitsOnFirstProof } from "@/lib/partner/server";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits } from "@/lib/credits/consumeCredits";
 import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
@@ -200,6 +201,12 @@ export async function POST(req: NextRequest) {
         { status: 402 },
       );
     }
+  }
+
+  // (2026-09-22) 파트너 참여 후 첫 인증이면 잠가둔 할인권을 푼다 — 재확정(replay)은 제외.
+  // best-effort: 실패해도 인증 응답을 막지 않고, 사용자가 파트너 화면을 열면 overview가 자가 치유한다.
+  if (!replay) {
+    void unlockPartnerBenefitsOnFirstProof(billingUserId).catch(() => {});
   }
 
   // receipt JWT 발급 (publish 시 재제출)

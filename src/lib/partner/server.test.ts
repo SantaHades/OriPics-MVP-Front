@@ -39,7 +39,7 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-import { approveMilestone, hashEmail, hashEmailLegacy, partnerLeaderboard, revokeReferrerBenefitsOnRefereeDelete } from "./server";
+import { approveMilestone, hashEmail, hashEmailLegacy, partnerLeaderboard, revokeReferrerBenefitsOnRefereeDelete, unlockPartnerBenefitsOnFirstProof } from "./server";
 import { PARTNER } from "./config";
 
 beforeEach(() => {
@@ -102,12 +102,12 @@ describe("hashEmail — 정규화 해시 (A-91 ⑤)", () => {
 
 describe("revokeReferrerBenefitsOnRefereeDelete — 탈퇴 파밍 회수 (A-91 ⑥)", () => {
   const day = 86_400_000;
-  it("참여 30일 미만이면 추천인의 available 혜택만 회수", async () => {
+  it("참여 30일 미만이면 추천인의 available·locked 혜택 회수", async () => {
     mockRefFindUnique.mockResolvedValue({ id: "r1", referrerId: "owner", createdAt: new Date(Date.now() - 3 * day), status: "confirmed" });
     mockBenefitUpdateMany.mockResolvedValue({ count: 1 });
     expect(await revokeReferrerBenefitsOnRefereeDelete("referee")).toBe(1);
     expect(mockBenefitUpdateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { referralId: "r1", userId: "owner", status: "available" } }),
+      expect.objectContaining({ where: { referralId: "r1", userId: "owner", status: { in: ["available", "locked"] } } }),
     );
     expect(mockCtFindFirst).not.toHaveBeenCalled();
   });
@@ -183,5 +183,44 @@ describe("partnerLeaderboard — 마스킹 리더보드 (A-94 ③)", () => {
     const lb = await partnerLeaderboard(1);
     expect(lb).toHaveLength(1);
     expect(lb[0]).toMatchObject({ rank: 1, nameMasked: "손*석", validCount: 1 });
+  });
+});
+
+describe("unlockPartnerBenefitsOnFirstProof — 첫 인증 후 할인권 해제 (2026-09-22)", () => {
+  const day = 86_400_000;
+  beforeEach(() => {
+    mockRefFindUnique.mockReset();
+    mockCtFindFirst.mockReset();
+    mockBenefitUpdateMany.mockReset();
+  });
+
+  it("참여 이후 인증이 있으면 locked 를 available 로 푼다", async () => {
+    const joinedAt = new Date(Date.now() - 2 * day);
+    mockRefFindUnique.mockResolvedValue({ id: "r1", createdAt: joinedAt, status: "confirmed" });
+    mockCtFindFirst.mockResolvedValue({ id: "tx1" });
+    mockBenefitUpdateMany.mockResolvedValue({ count: 2 });
+    expect(await unlockPartnerBenefitsOnFirstProof("referee")).toBe(2);
+    // 양쪽(피추천인·추천인) 모두 같은 referralId 로 묶여 있으므로 userId 조건 없이 해제
+    expect(mockBenefitUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { referralId: "r1", status: "locked" } }),
+    );
+    // '참여 이후'의 인증만 인정
+    expect(mockCtFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ createdAt: { gte: joinedAt } }) }),
+    );
+  });
+
+  it("인증이 없으면 아무것도 풀지 않는다", async () => {
+    mockRefFindUnique.mockResolvedValue({ id: "r1", createdAt: new Date(), status: "confirmed" });
+    mockCtFindFirst.mockResolvedValue(null);
+    expect(await unlockPartnerBenefitsOnFirstProof("referee")).toBe(0);
+    expect(mockBenefitUpdateMany).not.toHaveBeenCalled();
+  });
+
+  it("참여 기록이 없으면 조회만 하고 종료", async () => {
+    mockRefFindUnique.mockResolvedValue(null);
+    expect(await unlockPartnerBenefitsOnFirstProof("nobody")).toBe(0);
+    expect(mockCtFindFirst).not.toHaveBeenCalled();
+    expect(mockBenefitUpdateMany).not.toHaveBeenCalled();
   });
 });
