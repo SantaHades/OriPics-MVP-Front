@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
   // LINK_CREATE 차감 생략 + Pro와 동일한 보관 규칙 + links.pass_id 태그.
   const passId: string | null =
     typeof claims.pass_id === "string" && claims.pass_id ? claims.pass_id : null;
-  // A-81: 사서함 촬영 — 차감·용량 귀속 주체는 billing_user_id(개설자 또는 촬영자), links.user_id는 촬영자
+  // A-81: 사진함 촬영 — 차감·용량 귀속 주체는 billing_user_id(개설자 또는 촬영자), links.user_id는 촬영자
   const mailboxId: string | null = typeof claims.mailbox_id === "string" && claims.mailbox_id ? claims.mailbox_id : null;
   const billingUserId: string = typeof claims.billing_user_id === "string" && claims.billing_user_id ? claims.billing_user_id : user_id;
   // stamp_version 없는 구 receipt(V5 배포 전 발급)는 V4 (하위호환)
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // A-84②: 사서함 촬영 — LINK_CREATE 차감·expires_at=null 발행 전에 멤버십·잠금·촬영 허용·부담 주체 재검증.
+  // A-84②: 사진함 촬영 — LINK_CREATE 차감·expires_at=null 발행 전에 멤버십·잠금·촬영 허용·부담 주체 재검증.
   // (receipt는 30일 유효 — confirm 통과 뒤에도 내보내기/잠금이 있을 수 있다.) 실패 시 차감 없이 409.
   // 이미 발행된 link_id는 위에서 멱등 응답했으므로 여기는 최초 발행만.
   if (mailboxId) {
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
   // A-60: 패스 발행 링크 = 발행 시점부터 1년 고정 보관 (2026-08-31 대표 —
   // 사고 증거 등 용도라 확정적 보관 기간 고지. 유예/복원 없이 cleanup cron이 자연 처리).
   // 이후 Pro 구독 시 기존 재구독 복원 규칙대로 무기한 전환.
-  // A-81: 사서함 사진은 사서함이 삭제될 때까지 보존(만료 없음) — 삭제 잠금·열람 확인의 전제
+  // A-81: 사진함 사진은 사진함이 삭제될 때까지 보존(만료 없음) — 삭제 잠금·열람 확인의 전제
   const expiresAt = isPaidTier || mailboxId
     ? null
     : passId
@@ -376,7 +376,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // 3.7. (2026-09-13 A-96) 목록 썸네일(긴 변 320px JPEG q75) — 사서함 3열 그리드·이벤트 갤러리·필름스트립용. best-effort.
+  // 3.7. (2026-09-13 A-96) 목록 썸네일(긴 변 320px JPEG q75) — 사진함 3열 그리드·이벤트 갤러리·필름스트립용. best-effort.
   //   links.thumb_path 컬럼이 아직 없으면(대표 SQL 미실행) 업로드도 생략 — 경로 규칙이 고정이라 백필이 나중에 채운다.
   let thumbPath: string | null = null;
   let thumbColumn = false;
@@ -455,7 +455,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: `db_error:${dbErr.message}` }, { status: 500 });
   }
 
-  // 4.5. A-81 사서함 등록 (best-effort — 실패해도 링크는 발행됨, 앱이 재시도 가능하도록 로그)
+  // 4.5. A-81 사진함 등록 (best-effort — 실패해도 링크는 발행됨, 앱이 재시도 가능하도록 로그)
   if (mailboxId) {
     try {
       const mb = await loadMailbox(supabase, mailboxId);

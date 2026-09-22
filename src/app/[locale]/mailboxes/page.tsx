@@ -1,5 +1,5 @@
 "use client";
-// 웹 사서함 (A-81 2차, 2026-09-09) — 탭 [참여 중 | 백업]. 참여 중 = 앱과 같은 목록(현재 상태), 백업 = 내 저장소의 스냅샷(백업 시각·용량·PDF·영구삭제).
+// 웹 사진함 (A-81 2차, 2026-09-09) — 탭 [참여 중 | 백업]. 참여 중 = 앱과 같은 목록(현재 상태), 백업 = 내 저장소의 스냅샷(백업 시각·용량·PDF·영구삭제).
 // 2026-09-11 A-90: loading 스켈레톤(빈 상태와 구분)·목록/백업 조회 실패를 오류 배너로(setup_required 별도)·로그인 복귀 callbackUrl
 import { Link } from "@/navigation";
 import { useParams, usePathname, useRouter } from "next/navigation";
@@ -99,7 +99,7 @@ export default function MailboxesPage() {
         <Link href="/profile" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-6"><ArrowLeft size={14} /> {ko ? "내 정보" : "Profile"}</Link>
         <div className="flex items-center gap-3 mb-6">
           <MailboxIcon className="text-blue-600" size={22} />
-          <h1 className="text-2xl font-bold">{ko ? "사서함" : "Mailboxes"}</h1>
+          <h1 className="text-2xl font-bold">{ko ? "사진함" : "Mailboxes"}</h1>
           <button type="button" onClick={() => void load()} className="ml-auto text-slate-500 hover:text-slate-800" aria-label="refresh"><RefreshCw size={16} className={loading ? "animate-spin" : ""} /></button>
         </div>
         <div className="inline-flex rounded-xl bg-slate-200 p-1 mb-6">
@@ -114,23 +114,23 @@ export default function MailboxesPage() {
           <div className="space-y-8">
             {liveErr ? banner(liveErr, liveErr === "setup_required" ? "warn" : "error") : null}
             <section>
-              <h2 className="text-sm font-bold text-slate-500 mb-3">{ko ? "나의 사서함" : "My mailboxes"}</h2>
-              {loading && status !== "unauthenticated" ? skeleton(2) : liveErr ? null : mine.length === 0 ? <p className="text-sm text-slate-500">{ko ? "개설한 사서함이 없습니다. 개설은 앱 제출 탭에서 할 수 있습니다." : "No mailboxes yet. Create one in the app's Submit tab."}</p> : <div className="grid gap-3 sm:grid-cols-2">{mine.map(card)}</div>}
+              <h2 className="text-sm font-bold text-slate-500 mb-3">{ko ? "나의 사진함" : "My mailboxes"}</h2>
+              {loading && status !== "unauthenticated" ? skeleton(2) : liveErr ? null : mine.length === 0 ? <p className="text-sm text-slate-500">{ko ? "개설한 사진함이 없습니다. 개설은 앱 제출 탭에서 할 수 있습니다." : "No mailboxes yet. Create one in the app's Submit tab."}</p> : <div className="grid gap-3 sm:grid-cols-2">{mine.map(card)}</div>}
             </section>
             <section>
-              <h2 className="text-sm font-bold text-slate-500 mb-3">{ko ? "초대받은 사서함" : "Invited mailboxes"}</h2>
-              {loading && status !== "unauthenticated" ? skeleton(2) : liveErr ? null : invited.length === 0 ? <p className="text-sm text-slate-500">{ko ? "초대받은 사서함이 없습니다." : "No invited mailboxes."}</p> : <div className="grid gap-3 sm:grid-cols-2">{invited.map(card)}</div>}
+              <h2 className="text-sm font-bold text-slate-500 mb-3">{ko ? "초대받은 사진함" : "Invited mailboxes"}</h2>
+              {loading && status !== "unauthenticated" ? skeleton(2) : liveErr ? null : invited.length === 0 ? <p className="text-sm text-slate-500">{ko ? "초대받은 사진함이 없습니다." : "No invited mailboxes."}</p> : <div className="grid gap-3 sm:grid-cols-2">{invited.map(card)}</div>}
             </section>
           </div>
         ) : (
           <section>
-            <p className="text-xs text-slate-500 mb-3">{ko ? "백업은 그 시점의 사서함 상태(참여자·사진 속성·열람 현황)를 내 저장소에 남긴 스냅샷입니다. 사서함이 삭제돼도 백업본은 남고, 여기서 언제든 영구삭제할 수 있습니다." : "A backup is a snapshot of the mailbox state at that moment, kept in your storage. It survives mailbox deletion and can be permanently deleted here."}</p>
+            <p className="text-xs text-slate-500 mb-3">{ko ? "백업은 그 시점의 사진함 상태(참여자·사진 속성·열람 현황)를 내 저장소에 남긴 스냅샷입니다. 사진함이 삭제돼도 백업본은 남고, 여기서 언제든 영구삭제할 수 있습니다." : "A backup is a snapshot of the mailbox state at that moment, kept in your storage. It survives mailbox deletion and can be permanently deleted here."}</p>
             {backupErr ? banner(backupErr, backupErr === "setup_required" ? "warn" : "error") : null}
-            {loading ? skeleton(2) : backupErr ? null : backups.length === 0 ? <p className="text-sm text-slate-500">{ko ? "백업본이 없습니다. 앱이나 사서함 페이지의 [백업]으로 만들 수 있습니다." : "No backups yet. Use [Back up] in the app or on a mailbox page."}</p> : (
+            {loading ? skeleton(2) : backupErr ? null : backups.length === 0 ? <p className="text-sm text-slate-500">{ko ? "백업본이 없습니다. 앱이나 사진함 페이지의 [백업]으로 만들 수 있습니다." : "No backups yet. Use [Back up] in the app or on a mailbox page."}</p> : (
               <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-50 text-slate-500 text-xs">
-                    <tr><th className="text-left p-3">{ko ? "사서함" : "Mailbox"}</th><th className="text-left p-3">{ko ? "백업 시각" : "Backed up"}</th><th className="text-left p-3">{ko ? "내용" : "Contents"}</th><th className="text-left p-3">{ko ? "용량" : "Size"}</th><th className="p-3"></th></tr>
+                    <tr><th className="text-left p-3">{ko ? "사진함" : "Mailbox"}</th><th className="text-left p-3">{ko ? "백업 시각" : "Backed up"}</th><th className="text-left p-3">{ko ? "내용" : "Contents"}</th><th className="text-left p-3">{ko ? "용량" : "Size"}</th><th className="p-3"></th></tr>
                   </thead>
                   <tbody>
                     {backups.map((b) => (

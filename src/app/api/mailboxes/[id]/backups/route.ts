@@ -1,5 +1,5 @@
-// 사서함 백업 (A-81 2차) — POST /api/mailboxes/:id/backups (참여자) → 그 시점 스냅샷을 내 웹 저장소에 저장.
-//   삭제 예고 상태면 사서함 촬영분 파일(원본·프리뷰)을 mailbox-backups/{backupId}/ 로 복사해 사서함 삭제 후에도 사진이 남게 한다.
+// 사진함 백업 (A-81 2차) — POST /api/mailboxes/:id/backups (참여자) → 그 시점 스냅샷을 내 웹 저장소에 저장.
+//   삭제 예고 상태면 사진함 촬영분 파일(원본·프리뷰)을 mailbox-backups/{backupId}/ 로 복사해 사진함 삭제 후에도 사진이 남게 한다.
 //   2026-09-11 A-87: 파일명 link_id 접두어(동명 덮어쓰기 방지) · 복사 실패 집계(copied/failed, snapshot.copy_failed)
 //                    · 보관함 쿼터(5GB, 409 storage_quota) · 사용자별 시간당 5회(429 rate_limited)
 import { NextRequest, NextResponse } from "next/server";
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!userId) return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
   const db = eventsDb();
   if (!db) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
-  // 횟수 제한 — 사용자별 시간당 5회 (실패 포함). 사서함 API의 detail 형식 유지 + Retry-After
+  // 횟수 제한 — 사용자별 시간당 5회 (실패 포함). 사진함 API의 detail 형식 유지 + Retry-After
   const rl = await checkRateLimit(RATE_LIMITS.mailboxBackup, userId);
   if (!rl.allowed) {
     return NextResponse.json({ detail: "rate_limited", retry_after: rl.retryAfterSec }, { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } });
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   let failed = 0;
   let bytes = 0;
   if (mb.delete_after) {
-    // 사서함 촬영분만 복사(제출분은 올린 사람의 일반 링크로 남음)
+    // 사진함 촬영분만 복사(제출분은 올린 사람의 일반 링크로 남음)
     const jobs: { p: (typeof snapshot.photos)[number]; key: "storage_path" | "preview_path"; src: string }[] = [];
     for (const p of snapshot.photos) {
       if (p.source !== "capture") continue;

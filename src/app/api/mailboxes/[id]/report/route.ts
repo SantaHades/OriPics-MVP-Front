@@ -1,4 +1,4 @@
-// 사서함 확인서 PDF — 현재 상태 (A-81 2차) — GET /api/mailboxes/:id/report?locale= (참여자, 무료)
+// 사진함 확인서 PDF — 현재 상태 (A-81 2차) — GET /api/mailboxes/:id/report?locale= (참여자, 무료)
 import { NextRequest, NextResponse } from "next/server";
 import { FONT_UNAVAILABLE, renderMailboxReportPdf } from "@oripics/certificate";
 

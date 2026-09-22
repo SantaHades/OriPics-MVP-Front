@@ -1,4 +1,4 @@
-// 내 사서함 백업 목록 (A-81 2차) — GET /api/mailboxes/backups
+// 내 사진함 백업 목록 (A-81 2차) — GET /api/mailboxes/backups
 import { NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";

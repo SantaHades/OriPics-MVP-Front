@@ -1,4 +1,4 @@
-// 사서함 v2 서버 헬퍼 (A-81, 2026-09-09) — 기획 apps/web/docs/mailbox-v2-ux-draft.md
+// 사진함 v2 서버 헬퍼 (A-81, 2026-09-09) — 기획 apps/web/docs/mailbox-v2-ux-draft.md
 // 테이블: mailboxes · mailbox_members · mailbox_invites · mailbox_photos · mailbox_reads · mailbox_notices
 // 모든 접근은 service role(eventsDb) — RLS deny-by-default. 비밀번호는 bcryptjs.
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -224,13 +224,13 @@ export function inviteMessage(
   const exp = `${kst.getUTCMonth() + 1}/${kst.getUTCDate()}`;
   return [
     `${p.inviteeName}님, ${p.ownerName}입니다.`,
-    `OriPics 사진 사서함 '${p.mailboxName}'에 초대합니다.`,
+    `OriPics 사진 사진함 '${p.mailboxName}'에 초대합니다.`,
     ``,
     `1. 아래 링크를 누르거나 QR을 찍어 주세요. 앱이 없으면 설치로 이어집니다.`,
     `   ${url}`,
-    `2. 앱 > 제출 탭 > 사서함 > 초대받은 사서함 [+ 추가하기]에 초대코드 ${code} 입력`,
+    `2. 앱 > 제출 탭 > 사진함 > 초대받은 사진함 [+ 추가하기]에 초대코드 ${code} 입력`,
     `※ ${exp}까지 1회만 사용할 수 있습니다.`,
-    `※ 사서함에는 '${p.inviteeName}'${p.roleText ? `(${p.roleText})` : ""}으로 표시됩니다.`,
+    `※ 사진함에는 '${p.inviteeName}'${p.roleText ? `(${p.roleText})` : ""}으로 표시됩니다.`,
   ].join("\n");
 }
 
@@ -246,7 +246,7 @@ export interface NotifyOptions {
    */
   dedupeWindowMinutes?: number;
 }
-/** new_photos 합산 윈도(분) — 같은 사서함의 미확인 new_photos가 이 시간 안에 있으면 count만 올린다 (2026-09-11 A-86) */
+/** new_photos 합산 윈도(분) — 같은 사진함의 미확인 new_photos가 이 시간 안에 있으면 count만 올린다 (2026-09-11 A-86) */
 export const NEW_PHOTOS_AGGREGATE_MINUTES = 5;
 
 /**
@@ -383,7 +383,7 @@ export interface MailboxDto {
   unread_count: number;
   /** 내 참여 정보 */
   me: { display_name: string; role_text: string | null; can_capture: boolean; capture_billing: string; kicked: boolean } | null;
-  /** 사서함 촬영 시 차감 주체가 Pro/패스 → 앱이 verified 요청 */
+  /** 사진함 촬영 시 차감 주체가 Pro/패스 → 앱이 verified 요청 */
   capture_pro: boolean;
 }
 
@@ -426,7 +426,7 @@ export async function mailboxDto(
   };
 }
 
-/** 사서함별 사진 수·내 미열람 수 */
+/** 사진함별 사진 수·내 미열람 수 */
 export async function photoCounts(
   db: SupabaseClient,
   mailboxIds: string[],
@@ -572,7 +572,7 @@ export function newPhotoId(): string {
   return `MP${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** 사서함 소속 여부 — 링크 삭제 잠금 판정 (DELETE /api/links/:id · cleanup cron) */
+/** 사진함 소속 여부 — 링크 삭제 잠금 판정 (DELETE /api/links/:id · cleanup cron) */
 export async function mailboxesHoldingLink(db: SupabaseClient, linkId: string): Promise<{ id: string; name: string }[]> {
   const { data, error } = await db.from("mailbox_photos").select("mailbox_id").eq("link_id", linkId);
   if (error || !data || data.length === 0) return [];
@@ -580,7 +580,7 @@ export async function mailboxesHoldingLink(db: SupabaseClient, linkId: string): 
   const { data: mbs } = await db.from("mailboxes").select("id, name").in("id", ids);
   return ((mbs ?? []) as { id: string; name: string }[]);
 }
-/** 링크 ID 집합 중 사서함에 묶인 것만 */
+/** 링크 ID 집합 중 사진함에 묶인 것만 */
 export async function lockedLinkIds(db: SupabaseClient, linkIds: string[]): Promise<Set<string>> {
   if (linkIds.length === 0) return new Set();
   const { data, error } = await db.from("mailbox_photos").select("link_id").in("link_id", linkIds);
@@ -613,7 +613,7 @@ export interface MailboxSnapshot {
   };
   members: { user_id: string; display_name: string; role_text: string | null; kind: string; accepted_at: string; state: "active" | "kicked" | "left" }[];
   photos: (PhotoDto & { storage_path?: string | null; preview_path?: string | null; backup_preview_path?: string | null; backup_storage_path?: string | null })[];
-  /** 사서함의 실제 사진 총수 — photos는 SNAPSHOT_PHOTO_CAP까지만 수록되므로 확인서에 잘림 고지용 (2026-09-11 A-87) */
+  /** 사진함의 실제 사진 총수 — photos는 SNAPSHOT_PHOTO_CAP까지만 수록되므로 확인서에 잘림 고지용 (2026-09-11 A-87) */
   photo_total?: number;
   /** 백업 시 파일 복사 실패 건수(0이면 생략). 부분 백업이 성공으로 보이지 않게 (2026-09-11 A-87) */
   copy_failed?: number;

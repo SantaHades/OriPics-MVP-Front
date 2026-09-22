@@ -1,5 +1,5 @@
-// 사서함 사진 (A-81) — GET /api/mailboxes/:id/photos?locale= (참여자) · POST { link_ids } 인증 사진 제출 (참여자, 본인 소유·발행된 링크만)
-//   제출된 링크는 사서함 삭제 전까지 삭제 잠금 + 만료 해제(expires_at=null — 무료 7일 만료로 사서함 사진이 사라지지 않게).
+// 사진함 사진 (A-81) — GET /api/mailboxes/:id/photos?locale= (참여자) · POST { link_ids } 인증 사진 제출 (참여자, 본인 소유·발행된 링크만)
+//   제출된 링크는 사진함 삭제 전까지 삭제 잠금 + 만료 해제(expires_at=null — 무료 7일 만료로 사진함 사진이 사라지지 않게).
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
@@ -55,8 +55,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (linkIds.length === 0) return NextResponse.json({ detail: "link_ids_required" }, { status: 400 });
 
   // 본인 소유 + 발행(links 행 존재) + 미만료
-  // A-85③ (2026-09-11): 이미 어떤 사서함에든 등록된 링크는 만료 검사를 건너뛴다 — 다운그레이드 cron(charge-subscriptions)이
-  //   NULL 링크 전체에 37일 만료를 찍어 사서함 링크에도 과거 expires_at이 남을 수 있고, 그 링크는 삭제 잠금으로 실제 파일이 살아 있다.
+  // A-85③ (2026-09-11): 이미 어떤 사진함에든 등록된 링크는 만료 검사를 건너뛴다 — 다운그레이드 cron(charge-subscriptions)이
+  //   NULL 링크 전체에 37일 만료를 찍어 사진함 링크에도 과거 expires_at이 남을 수 있고, 그 링크는 삭제 잠금으로 실제 파일이 살아 있다.
   //   (아래 update에서 expires_at=NULL로 다시 풀린다)
   const { data: links, error: linkErr } = await g.db.from("links").select("link_id, user_id, expires_at").in("link_id", linkIds);
   if (linkErr) return NextResponse.json({ detail: "db_error" }, { status: 500 });
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       console.error("[mailboxes] submit failed:", insErr.message);
       return NextResponse.json({ detail: "db_error" }, { status: 500 });
     }
-    // 올린 사람은 자동 열람 + 무료 만료 해제(사서함 보존)
+    // 올린 사람은 자동 열람 + 무료 만료 해제(사진함 보존)
     await g.db.from("mailbox_reads").upsert(rows.map((r) => ({ photo_id: r.id, user_id: g.userId })), { onConflict: "photo_id,user_id", ignoreDuplicates: true });
     const members = await listMembers(g.db, id);
     await notify(
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       { mailbox_name: g.mb.name, actor_name: g.me.display_name, count: rows.length },
     );
   }
-  // 제출 사진의 만료 해제(사서함 보존) — 새로 넣은 것뿐 아니라 이 사서함에 이미 있던 중복 링크도 포함:
+  // 제출 사진의 만료 해제(사진함 보존) — 새로 넣은 것뿐 아니라 이 사진함에 이미 있던 중복 링크도 포함:
   // 다운그레이드 cron이 찍은 과거 만료(A-85③)가 남아 있으면 재제출로 NULL로 되돌린다
   await g.db.from("links").update({ expires_at: null }).in("link_id", ownedIds).not("expires_at", "is", null);
   const ineligible = linkIds.length - owned.length;

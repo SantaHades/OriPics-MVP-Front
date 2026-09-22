@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     stamp_version,
     captured_at,
     pass_id, // A-60: sign이 활성 패스를 확인한 경우에만 존재
-    mailbox_id, // A-81: 사서함 촬영 — billing_user_id(개설자 또는 촬영자)에서 차감
+    mailbox_id, // A-81: 사진함 촬영 — billing_user_id(개설자 또는 촬영자)에서 차감
     billing_user_id,
   } = claims;
   const billingUserId: string = typeof billing_user_id === "string" && billing_user_id ? billing_user_id : user_id;
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "user_mismatch" }, { status: 403 });
   }
 
-  // A-84②: 사서함 촬영은 차감 전에 멤버십·잠금·촬영 허용·부담 주체를 DB에서 재검증 (sign 이후 변경 반영)
+  // A-84②: 사진함 촬영은 차감 전에 멤버십·잠금·촬영 허용·부담 주체를 DB에서 재검증 (sign 이후 변경 반영)
   if (typeof mailbox_id === "string" && mailbox_id) {
     const mdb = eventsDb();
     if (!mdb) return NextResponse.json({ detail: "server_misconfigured" }, { status: 500 });
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
         userId: billingUserId,
         amount: proofCost,
         action: creditAction,
-        // A-81: 사서함 촬영은 차감 주체≠촬영자일 수 있어 메타에 사서함·촬영자를 남긴다 (웹 크레딧 내역에서 개설자 확인)
+        // A-81: 사진함 촬영은 차감 주체≠촬영자일 수 있어 메타에 사진함·촬영자를 남긴다 (웹 크레딧 내역에서 개설자 확인)
         metadata: { link_id, tier, width, height, size_multiplier: sizeMultiplier, ...(mailbox_id ? { mailbox_id, captured_by: user_id } : {}) },
       }),
     );

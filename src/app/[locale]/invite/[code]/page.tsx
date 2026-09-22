@@ -1,7 +1,7 @@
 "use client";
-// 사서함 초대 랜딩 (A-81 W4, 2026-09-09) — 초대문 링크·QR의 목적지. 로그인 불필요.
-// 서버 공개 API(/api/mailboxes/invites/:code)는 사서함 이름·개설자·초대받는 이름·상태만 내려준다(사진·참여자 비노출).
-// 앱 설치자는 [앱에서 열기](oripics://invite/CODE) → 앱 제출 탭 > 사서함 참여 미리보기. 미설치자는 설치 후 코드를 직접 입력.
+// 사진함 초대 랜딩 (A-81 W4, 2026-09-09) — 초대문 링크·QR의 목적지. 로그인 불필요.
+// 서버 공개 API(/api/mailboxes/invites/:code)는 사진함 이름·개설자·초대받는 이름·상태만 내려준다(사진·참여자 비노출).
+// 앱 설치자는 [앱에서 열기](oripics://invite/CODE) → 앱 제출 탭 > 사진함 참여 미리보기. 미설치자는 설치 후 코드를 직접 입력.
 // iOS는 설치 직후 딥링크가 유실될 수 있어 코드를 크게 보여 주고 복사 버튼을 둔다.
 // (2026-09-11 A-94) 초대 URL 의 ?ref=개설자 파트너코드 → 가입 CTA(/signup?ref=)·소셜 가입용 sessionStorage 로 전달.
 //   초대받아 가입한 참여자 = 개설자의 추천 가입(양쪽 할인권). ref 없으면 일반 가입 링크.
@@ -96,7 +96,7 @@ export default function InviteLanding() {
     used: ko ? "이미 사용된 초대코드입니다. 개설자에게 새 코드를 요청하세요." : "This code has already been used. Ask the owner for a new one.",
     expired: ko ? "만료된 초대코드입니다. 개설자에게 새 코드를 요청하세요." : "This code has expired. Ask the owner for a new one.",
     revoked: ko ? "취소된 초대코드입니다. 개설자에게 문의하세요." : "This code was cancelled. Please contact the owner.",
-    closed: ko ? "초대가 종료되어 참여할 수 없는 사서함입니다. 개설자에게 문의하세요." : "Invitations to this mailbox are closed. Please contact the owner.",
+    closed: ko ? "초대가 종료되어 참여할 수 없는 사진함입니다. 개설자에게 문의하세요." : "Invitations to this mailbox are closed. Please contact the owner.",
   };
 
   return (
@@ -109,7 +109,7 @@ export default function InviteLanding() {
         <div className="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm">
           <div className="flex items-center gap-2 text-blue-600 mb-3">
             <Mailbox size={20} />
-            <span className="text-sm font-semibold">{ko ? "사진 사서함 초대" : "Photo mailbox invitation"}</span>
+            <span className="text-sm font-semibold">{ko ? "사진 사진함 초대" : "Photo mailbox invitation"}</span>
           </div>
 
           {info === "loading" ? (
@@ -171,7 +171,7 @@ export default function InviteLanding() {
                   </a>
                   <p className="text-xs text-slate-500 text-center mt-2 leading-relaxed">
                     {ko
-                      ? "설치 후: 앱 > 제출 탭 > 사서함 > 초대받은 사서함 [+ 추가하기]에 위 코드를 입력하세요. 참여에는 로그인이 필요합니다."
+                      ? "설치 후: 앱 > 제출 탭 > 사진함 > 초대받은 사진함 [+ 추가하기]에 위 코드를 입력하세요. 참여에는 로그인이 필요합니다."
                       : "After installing: App > Submit tab > Mailboxes > Invited mailboxes [+ Add] and enter the code above. Sign-in is required."}
                   </p>
                   {/* (2026-09-11 A-94) 계정 CTA — ref(개설자 파트너코드)를 가입 폼까지 전달 */}

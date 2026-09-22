@@ -1,5 +1,5 @@
-// 비공개 사서함·이벤트(사설 채널) 서버 헬퍼 (A-72, 2026-09-05)
-// 공개 이벤트 2개는 코드 카탈로그(lib/events/catalog), 사설 이벤트·사서함은 DB(custom_events/mailboxes).
+// 비공개 사진함·이벤트(사설 채널) 서버 헬퍼 (A-72, 2026-09-05)
+// 공개 이벤트 2개는 코드 카탈로그(lib/events/catalog), 사설 이벤트·사진함은 DB(custom_events/mailboxes).
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getEvent, type EventDef } from "@/lib/events/catalog";
@@ -117,7 +117,7 @@ export async function resolveEvent(
   return customToDto(row, lang);
 }
 
-/** 사용자의 사서함 목록 — 공개 사서함 + 추가한 비공개 사서함 */
+/** 사용자의 사진함 목록 — 공개 사진함 + 추가한 비공개 사진함 */
 export async function listMailboxes(db: SupabaseClient, userId: string | null): Promise<MailboxDto[]> {
   const ids = new Set<string>();
   if (userId) {

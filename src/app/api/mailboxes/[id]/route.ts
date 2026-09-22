@@ -1,5 +1,5 @@
-// 사서함 상세·설정·삭제 예고 (A-81, 2026-09-09)
-//   GET    /api/mailboxes/:id            — 참여자용 상세(사서함·참여자 목록·내 정보). 개설자는 초대 대기 목록 포함
+// 사진함 상세·설정·삭제 예고 (A-81, 2026-09-09)
+//   GET    /api/mailboxes/:id            — 참여자용 상세(사진함·참여자 목록·내 정보). 개설자는 초대 대기 목록 포함
 //   PATCH  /api/mailboxes/:id            — 개설자: name·description·memo·report_title·invite_status·password('' = 제거)
 //   DELETE /api/mailboxes/:id            — 개설자: 삭제 예고(7일 유예) → 전원 알림. 취소는 actions cancel_delete
 import { NextRequest, NextResponse } from "next/server";

@@ -1,6 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
-// 사서함 확인서 PDF (A-81 2차, 2026-09-09) — 기획 apps/web/docs/mailbox-v2-ux-draft.md §4 '확인서 PDF'
-// 사서함 정보 · 참여자 표 · 사진별(썸네일·촬영시각·좌표·등급·공개링크 QR·올린 사람·미열람 수) · 고지문.
+// 사진함 확인서 PDF (A-81 2차, 2026-09-09) — 기획 apps/web/docs/mailbox-v2-ux-draft.md §4 '확인서 PDF'
+// 사진함 정보 · 참여자 표 · 사진별(썸네일·촬영시각·좌표·등급·공개링크 QR·올린 사람·미열람 수) · 고지문.
 // 기준(basis) = 현재 상태 또는 백업본(백업 시각) — 머리말에 명시. 증거능력을 단정하지 않는다(기록서 PDF 고지와 동일).
 import React from "react";
 import { Document, Page, Text, View, Image, Link, StyleSheet, Font } from "@react-pdf/renderer";
@@ -104,7 +104,7 @@ export interface MailboxReportData {
   timeZone?: string;
   members: MailboxReportMember[];
   photos: MailboxReportPhoto[];
-  /** 사서함의 실제 사진 총수. photos.length보다 크면 '앞 N장만 수록' 고지 (2026-09-11 A-87) */
+  /** 사진함의 실제 사진 총수. photos.length보다 크면 '앞 N장만 수록' 고지 (2026-09-11 A-87) */
   photoTotal?: number;
   /** 썸네일을 생성한 상한(호출 측 MAX_THUMBS). photos.length보다 작으면 '썸네일 N장까지만' 고지 */
   thumbLimit?: number;
@@ -112,12 +112,12 @@ export interface MailboxReportData {
 
 const S: Record<Locale, Record<string, string>> = {
   ko: {
-    title: "사서함 확인서",
+    title: "사진함 확인서",
     subtitle: "OriPics Photo Mailbox Report",
     issued: "발행",
     basisLive: "기준: 발행 시점의 현재 상태",
     basisBackup: "기준: 백업본",
-    mailbox: "사서함",
+    mailbox: "사진함",
     number: "번호",
     created: "개설",
     owner: "개설자",
@@ -147,13 +147,13 @@ const S: Record<Locale, Record<string, string>> = {
     capturedAt: "촬영",
     publishedAt: "발행",
     noCoords: "좌표 없음",
-    sourceCapture: "사서함 촬영",
+    sourceCapture: "사진함 촬영",
     sourceSubmit: "제출",
     memo: "공개메모",
     noPhotos: "사진이 없습니다.",
     unreadFmt: "{u} / {n}명 미열람",
     noticeTitle: "고지",
-    notice1: "이 확인서는 표기된 기준 시점의 사서함 상태(참여자·사진 속성·열람 현황)를 OriPics 서버 기록에 따라 그대로 출력한 것입니다.",
+    notice1: "이 확인서는 표기된 기준 시점의 사진함 상태(참여자·사진 속성·열람 현황)를 OriPics 서버 기록에 따라 그대로 출력한 것입니다.",
     notice2: "각 사진의 원본 무결성·촬영시각·좌표는 해당 공개링크(QR)에서 누구나 온라인으로 검증할 수 있습니다. 공개메모는 올린 사람이 적은 내용으로 검증 대상이 아닙니다.",
     notice3: "본 문서는 사실관계 기록을 돕기 위한 것으로, 법적 증거능력이나 콘텐츠의 진실성을 단정하지 않습니다.",
     mapHint: "좌표 옆 핀을 누르면 지도가 열립니다.",
@@ -163,12 +163,12 @@ const S: Record<Locale, Record<string, string>> = {
     page: "페이지",
     footer: "OriPics — 그 시각·그곳·실제 기기 촬영을 증명합니다.",
     tzNote: "모든 시각은 {tz} 기준",
-    truncPhotos: "사진 {total}장 중 앞 {shown}장만 수록됨 (확인서 상한). 전체 목록은 웹 사서함에서 확인하세요.",
+    truncPhotos: "사진 {total}장 중 앞 {shown}장만 수록됨 (확인서 상한). 전체 목록은 웹 사진함에서 확인하세요.",
     truncThumbs: "사진 {total}장 중 {shown}장까지만 썸네일 표시 — 이후 사진은 정보·공개링크만 수록됨.",
   },
   en: {
     title: "Photo Mailbox Report",
-    subtitle: "OriPics 사서함 확인서",
+    subtitle: "OriPics 사진함 확인서",
     issued: "Issued",
     basisLive: "Basis: current state at issuance",
     basisBackup: "Basis: backup snapshot",

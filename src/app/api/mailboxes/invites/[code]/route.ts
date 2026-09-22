@@ -1,5 +1,5 @@
 // 초대코드 공개 조회 (A-81) — GET /api/mailboxes/invites/:code — 로그인 불필요 (웹 랜딩·앱 미리보기)
-//   사서함 내용(사진·참여자)은 절대 노출하지 않는다. 이름·개설자·초대받는 이름·역할·촬영 조건·만료·상태만.
+//   사진함 내용(사진·참여자)은 절대 노출하지 않는다. 이름·개설자·초대받는 이름·역할·촬영 조건·만료·상태만.
 import { NextRequest, NextResponse } from "next/server";
 
 import { eventsDb, isMissingTable } from "@/lib/events/server";

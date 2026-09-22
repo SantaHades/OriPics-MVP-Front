@@ -1,4 +1,4 @@
-// 사서함 사진 요약 (2026-09-13 A-98) — GET /api/mailboxes/:id/photos/summary (참여자)
+// 사진함 사진 요약 (2026-09-13 A-98) — GET /api/mailboxes/:id/photos/summary (참여자)
 //   → { photo_count, unread_total, latest_at }. 앱·웹 상세가 15초 폴링에서 이것만 받고, 값이 바뀌었을 때만 /photos 전체를 다시 받는다.
 //   인증·참여 검사는 photos/route.ts와 동일(isActiveMember). 이미지 URL·링크 조인 없음(count/head 쿼리만).
 import { NextRequest, NextResponse } from "next/server";

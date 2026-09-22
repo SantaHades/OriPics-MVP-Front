@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ code: str
   const { data } = await db.from("mailbox_invites").select("code, mailbox_id").eq("code", code).maybeSingle();
   if (!data) return NextResponse.json({ detail: "invite_not_found" }, { status: 404 });
   const lang = langOf(req.nextUrl.searchParams.get("locale"));
-  // (2026-09-11 A-94) 개설자 파트너코드 → ?ref= (사서함·개설자 조회 실패 시 미부착)
+  // (2026-09-11 A-94) 개설자 파트너코드 → ?ref= (사진함·개설자 조회 실패 시 미부착)
   const mb = await loadMailbox(db, (data as { mailbox_id: string }).mailbox_id);
   const ref = await ownerPartnerRef(mb?.owner_user_id);
   const png = await QRCode.toBuffer(inviteUrl(code, lang, ref), { type: "png", width: 512, margin: 1, errorCorrectionLevel: "M" });

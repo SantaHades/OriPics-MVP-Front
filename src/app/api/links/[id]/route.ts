@@ -55,7 +55,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     return NextResponse.json({ detail: "not_owner" }, { status: 403 });
   }
 
-  // A-81 삭제 잠금: 사서함에 포함된 사진은 사서함이 삭제되기 전까지 삭제 불가 (대표 확정 2026-09-09)
+  // A-81 삭제 잠금: 사진함에 포함된 사진은 사진함이 삭제되기 전까지 삭제 불가 (대표 확정 2026-09-09)
   const holders = await mailboxesHoldingLink(supabase, linkId);
   if (holders.length > 0) {
     return NextResponse.json({ detail: "in_mailbox", mailboxes: holders }, { status: 409 });

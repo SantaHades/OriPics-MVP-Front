@@ -1,5 +1,5 @@
-// 사서함 v2 (A-81, 2026-09-09) — GET /api/mailboxes: 내가 개설한 사서함 + 초대받은 사서함 (사진 수·미열람 수 포함)
-//                               POST /api/mailboxes: 개설 { name, description?, memo?, invite_status?, password?, owner_name? } — owner_name=이 사서함에서 쓸 개설자 표시 이름(사서함마다 다르게 가능, 9/9 대표)
+// 사진함 v2 (A-81, 2026-09-09) — GET /api/mailboxes: 내가 개설한 사진함 + 초대받은 사진함 (사진 수·미열람 수 포함)
+//                               POST /api/mailboxes: 개설 { name, description?, memo?, invite_status?, password?, owner_name? } — owner_name=이 사진함에서 쓸 개설자 표시 이름(사진함마다 다르게 가능, 9/9 대표)
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
@@ -23,7 +23,7 @@ export async function GET() {
     console.error("[mailboxes] list failed:", error.message);
     return NextResponse.json({ detail: "db_error" }, { status: 500 });
   }
-  const mine = ((myRows ?? []) as MemberRow[]).filter((m) => !m.left_at); // 내보내진 사서함은 목록에서 숨김(알림만)
+  const mine = ((myRows ?? []) as MemberRow[]).filter((m) => !m.left_at); // 내보내진 사진함은 목록에서 숨김(알림만)
   const ids = mine.filter((m) => !m.kicked_at).map((m) => m.mailbox_id);
   if (ids.length === 0) return NextResponse.json({ mine: [], invited: [] });
 
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   const password = typeof body.password === "string" ? body.password.trim().slice(0, 80) : "";
   const ownerNameInput = typeof body.owner_name === "string" ? body.owner_name.trim().slice(0, 40) : "";
 
-  // 한도: 무료 1개 / Pro 무제한 (활성 사서함만 계산)
+  // 한도: 무료 1개 / Pro 무제한 (활성 사진함만 계산)
   const limits = await limitsFor(userId);
   const { count } = await db
     .from("mailboxes")

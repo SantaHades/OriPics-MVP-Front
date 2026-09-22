@@ -1,4 +1,4 @@
-// 사서함 확인서 데이터 빌더 (A-81 2차) — 스냅샷(현재 상태 또는 백업본) → @oripics/certificate MailboxReportData
+// 사진함 확인서 데이터 빌더 (A-81 2차) — 스냅샷(현재 상태 또는 백업본) → @oripics/certificate MailboxReportData
 // 썸네일: 프리뷰 JPEG(공개 URL)를 받아 sharp로 160px 축소 → data URL. QR: 공개링크. 사진 200장까지(그 이상은 표만).
 import QRCode from "qrcode";
 import type { MailboxReportData, MailboxReportPhoto } from "@oripics/certificate";

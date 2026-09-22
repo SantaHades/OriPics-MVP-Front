@@ -1,4 +1,4 @@
-// 사서함 사진 상세 (A-81) — GET /api/mailboxes/:id/photos/:photoId?locale= → 속성 + 참여자별 열람 시각 (참여자)
+// 사진함 사진 상세 (A-81) — GET /api/mailboxes/:id/photos/:photoId?locale= → 속성 + 참여자별 열람 시각 (참여자)
 import { NextRequest, NextResponse } from "next/server";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";

@@ -1,4 +1,4 @@
-// 사서함 상태 동작 (A-81) — POST /api/mailboxes/:id/actions { action: 'lock' | 'unlock' | 'cancel_delete' | 'leave' | 'transfer_owner', user_id? }
+// 사진함 상태 동작 (A-81) — POST /api/mailboxes/:id/actions { action: 'lock' | 'unlock' | 'cancel_delete' | 'leave' | 'transfer_owner', user_id? }
 //   transfer_owner(2차): 개설자 권한을 참여 중인 다른 참여자에게 이전 — 이후 참여자 촬영의 기본 부담·설정 권한이 새 개설자에게
 //   lock/unlock/cancel_delete = 개설자, leave = 참여자(개설자 불가). 각 동작은 해당자에게 인앱 알림.
 import { NextRequest, NextResponse } from "next/server";
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       return NextResponse.json({ detail: "recipient_mailbox_limit", limit: recipientLimits.mailboxes }, { status: 403 });
     }
     const ownerBilled = members.filter(isActiveMember).filter((m) => m.user_id !== targetId && m.kind !== "owner" && m.can_capture && m.capture_billing !== "self").length + 1; // +1 = 이전 개설자(본인 부담으로 바뀌지만 알림 시점 표기) 제외 → 아래에서 조정
-    // 나만 보는 사서함 메모: 기본은 삭제(개인 기록), 개설자가 넘기기를 선택하면 유지 (9/10 대표)
+    // 나만 보는 사진함 메모: 기본은 삭제(개인 기록), 개설자가 넘기기를 선택하면 유지 (9/10 대표)
     const keepMemo = body.keep_memo === true;
     // A-84③: 3개 UPDATE를 한 트랜잭션으로 — Prisma는 Supabase와 같은 Postgres에 붙어 있어(rate_limits·links 쿼터 조회와 동일)
     // 전용 RPC 없이 원자성을 얻는다. 첫 UPDATE는 "지금도 내가 개설자·잠금/삭제예고 아님"을 조건으로 걸어 동시 요청·상태 변경 경합을 막고,

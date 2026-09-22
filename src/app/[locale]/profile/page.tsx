@@ -644,12 +644,12 @@ export default function ProfilePage() {
           if (Array.isArray(j.mailboxes)) mailboxNames = j.mailboxes.map((m: { name: string }) => m.name);
         } catch { /* ignore */ }
         if (res.status === 409 && detail === "in_mailbox") {
-          // A-81 삭제 잠금 — 사서함에 포함된 사진은 사서함을 먼저 삭제해야 함 (대표 확정 문구)
+          // A-81 삭제 잠금 — 사진함에 포함된 사진은 사진함을 먼저 삭제해야 함 (대표 확정 문구)
           const names = mailboxNames.join(", ");
           alert(
             locale === "en"
               ? `This photo belongs to the mailbox "${names}" and cannot be deleted. Delete the mailbox first.`
-              : `사서함 '${names}'에 포함된 사진이라 삭제할 수 없습니다. 사서함을 먼저 삭제해야 합니다.`,
+              : `사진함 '${names}'에 포함된 사진이라 삭제할 수 없습니다. 사진함을 먼저 삭제해야 합니다.`,
           );
           setDeleteTarget(null);
           return;
@@ -1529,9 +1529,9 @@ export default function ProfilePage() {
             <History size={20} className="text-blue-600" />
             <h2 className="text-lg font-bold">{t("proof_history.title")}</h2>
             <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{proofs.length}</span>
-            {/* A-81 2차: 사서함(참여 중·백업) 페이지 진입 */}
+            {/* A-81 2차: 사진함(참여 중·백업) 페이지 진입 */}
             <Link href="/mailboxes" className="ml-auto text-sm font-semibold text-blue-600 hover:underline">
-              {locale === "en" ? "Mailboxes →" : "사서함 →"}
+              {locale === "en" ? "Mailboxes →" : "사진함 →"}
             </Link>
           </div>
 

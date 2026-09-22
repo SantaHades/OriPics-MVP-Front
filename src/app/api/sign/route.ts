@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     exposure_time,
     f_number,
     focal_length,
-    // A-81 사서함 촬영 — 참여자 권한·좌표 필수·차감 주체(개설자/본인) 판정
+    // A-81 사진함 촬영 — 참여자 권한·좌표 필수·차감 주체(개설자/본인) 판정
     mailbox_id,
   } = body || {};
   if (typeof inner_hash !== "string" || !HEX64.test(inner_hash)) {
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
   // ⚠️ 2026-09-05 정정: 종전 코드는 C(클립보드)도 패스 적용 — 설계·안내문구("붙여넣기는 잔여 건수 차감")와 불일치라 P만으로 좁힘.
   const uploadType = ["F", "P", "C"].includes(upload_type) ? upload_type : "F";
 
-  // A-81 사서함 촬영 컨텍스트 — 차감 주체(billingUserId)가 세션 사용자와 다를 수 있다(개설자 부담).
+  // A-81 사진함 촬영 컨텍스트 — 차감 주체(billingUserId)가 세션 사용자와 다를 수 있다(개설자 부담).
   // 이후 잔액·티어·패스 판정은 모두 billingUser 기준. links.user_id(사진 소유 표시)는 촬영자(세션 사용자) 유지.
   let billingUserId = userId;
   let billingUser = user;

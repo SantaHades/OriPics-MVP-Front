@@ -1,4 +1,4 @@
-// 웹 사서함 페이지 공용 (A-81 2차) — 타입·fetch·PDF 다운로드·표기
+// 웹 사진함 페이지 공용 (A-81 2차) — 타입·fetch·PDF 다운로드·표기
 "use client";
 
 export interface WMailbox {
@@ -73,15 +73,15 @@ export function loginUrl(lang: "ko" | "en", callbackPath: string): string {
   return `/${lang}/login?callbackUrl=${encodeURIComponent(callbackPath)}`;
 }
 
-/** API 오류 detail → 사용자 문구 (사서함 페이지 공용, 2026-09-11 A-90). 매핑 없으면 null → 호출 측이 원문 표시 */
+/** API 오류 detail → 사용자 문구 (사진함 페이지 공용, 2026-09-11 A-90). 매핑 없으면 null → 호출 측이 원문 표시 */
 export function errorText(detail: string | null | undefined, lang: "ko" | "en"): string | null {
   const ko = lang === "ko";
   switch (detail) {
     case "http_401": case "unauthenticated": return ko ? "로그인이 필요합니다." : "Please sign in.";
-    case "http_403": case "forbidden": return ko ? "권한이 없습니다. 이 사서함의 참여자만 열 수 있습니다." : "You don't have permission. Only participants can open this mailbox.";
-    case "kicked": return ko ? "개설자가 이 사서함에서 내보냈습니다." : "The owner removed you from this mailbox.";
-    case "left": return ko ? "나간 사서함입니다." : "You have left this mailbox.";
-    case "http_404": case "not_found": return ko ? "사서함을 찾을 수 없습니다(삭제되었을 수 있음)." : "Mailbox not found (it may have been deleted).";
+    case "http_403": case "forbidden": return ko ? "권한이 없습니다. 이 사진함의 참여자만 열 수 있습니다." : "You don't have permission. Only participants can open this mailbox.";
+    case "kicked": return ko ? "개설자가 이 사진함에서 내보냈습니다." : "The owner removed you from this mailbox.";
+    case "left": return ko ? "나간 사진함입니다." : "You have left this mailbox.";
+    case "http_404": case "not_found": return ko ? "사진함을 찾을 수 없습니다(삭제되었을 수 있음)." : "Mailbox not found (it may have been deleted).";
     case "setup_required": case "http_503": return ko ? "서버 준비 중입니다. 잠시 후 다시 시도해 주세요." : "Server is being set up. Please try again shortly.";
     case "rate_limited": case "http_429": return ko ? "요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요(백업은 시간당 5회)." : "Too many requests. Please try again later (backups: 5 per hour).";
     case "storage_quota": return ko ? "보관함 용량(5GB)을 초과해 사진 파일을 복사할 수 없습니다. 백업본을 정리하거나 용량을 확인해 주세요." : "Storage quota (5GB) exceeded — photo files cannot be copied. Free up backups or check your storage.";

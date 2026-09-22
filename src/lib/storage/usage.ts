@@ -1,4 +1,4 @@
-// 보관함 사용량·한도 (2026-09-11 A-87) — /api/user/storage 의 합산 쿼리를 사서함 백업 쿼터 검사와 공유하도록 분리.
+// 보관함 사용량·한도 (2026-09-11 A-87) — /api/user/storage 의 합산 쿼리를 사진함 백업 쿼터 검사와 공유하도록 분리.
 // 크기 출처 = storage.objects.metadata->>'size' (Supabase Storage 메타데이터).
 import { Prisma } from "@prisma/client";
 
@@ -11,7 +11,7 @@ export const STORAGE_LIMIT_BYTES: Record<string, number> = {
   pro: 5 * 1024 ** 3,
   business: 5 * 1024 ** 3,
 };
-/** 사서함 백업 복사 파일에 적용하는 기본 상한 — 요금제 한도가 없는 tier(무료)도 백업 복사는 이 값으로 제한 */
+/** 사진함 백업 복사 파일에 적용하는 기본 상한 — 요금제 한도가 없는 tier(무료)도 백업 복사는 이 값으로 제한 */
 export const BACKUP_DEFAULT_LIMIT_BYTES = 5 * 1024 ** 3;
 
 export interface StorageUsage {
@@ -23,8 +23,8 @@ export interface StorageUsage {
 
 /**
  * 사용자 발행 자산의 실제 저장 크기 합산: 원본 PNG(links.storage_path) + 뷰어 프리뷰(links.preview_path)
- * + 인증서 PDF 캐시(ProofHistory.pdfStoragePath) + 사서함 백업 복사본(mailbox-backups/{id}/).
- * A-81 용량 귀속(대표 확정 9/9): 사서함 촬영분은 차감 주체(billing_user_id)의 보관함에 계산 —
+ * + 인증서 PDF 캐시(ProofHistory.pdfStoragePath) + 사진함 백업 복사본(mailbox-backups/{id}/).
+ * A-81 용량 귀속(대표 확정 9/9): 사진함 촬영분은 차감 주체(billing_user_id)의 보관함에 계산 —
  * 내 링크 중 남이 부담한 것은 제외, 남의 링크 중 내가 부담한 것은 포함. 마이그레이션 전이면 기존 쿼리로 폴백.
  */
 export async function storageUsage(userId: string): Promise<StorageUsage> {

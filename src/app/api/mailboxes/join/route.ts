@@ -1,5 +1,5 @@
-// 사서함 참여 — 이름(또는 번호)+비밀번호 (A-81 v2, 2026-09-09) — POST { query, password?, display_name, mailbox_id? }
-// 이름이 여러 사서함과 겹치면 409 ambiguous + 후보(id·이름·개설자) → 앱이 고른 mailbox_id로 재요청.
+// 사진함 참여 — 이름(또는 번호)+비밀번호 (A-81 v2, 2026-09-09) — POST { query, password?, display_name, mailbox_id? }
+// 이름이 여러 사진함과 겹치면 409 ambiguous + 후보(id·이름·개설자) → 앱이 고른 mailbox_id로 재요청.
 // 초대코드 참여는 /api/mailboxes/invites/:code/accept.
 import { NextRequest, NextResponse } from "next/server";
 
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   const userId = await getSessionUserId();
   if (!userId) return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
-  // A-83: 사용자+IP별 시간당 10회(실패 포함) — 비밀번호 무차별 대입·사서함 열람(enumeration) 억제
+  // A-83: 사용자+IP별 시간당 10회(실패 포함) — 비밀번호 무차별 대입·사진함 열람(enumeration) 억제
   const rl = await checkRateLimit(RATE_LIMITS.mailboxJoin, `${userId}:${clientIp(req)}`);
   if (!rl.allowed) return tooManyRequests(rl, "참여 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.");
   const db = eventsDb();
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     }
     candidates = (data ?? []) as MailboxRow[];
   } else {
-    // 이름 입력 — 이스케이프된 접두어 ilike, 후보 ≤10 (A-83: 이전엔 `%` 한 글자로 활성 사서함 전체가 409 ambiguous에 노출)
+    // 이름 입력 — 이스케이프된 접두어 ilike, 후보 ≤10 (A-83: 이전엔 `%` 한 글자로 활성 사진함 전체가 409 ambiguous에 노출)
     const { data, error } = await db
       .from("mailboxes")
       .select(MAILBOX_COLS)
@@ -62,13 +62,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ detail: "db_error" }, { status: 500 });
     }
     candidates = (data ?? []) as MailboxRow[];
-    // 이름이 정확히 맞는 것이 있으면 그것들만 (접두어가 같은 다른 사서함은 제외)
+    // 이름이 정확히 맞는 것이 있으면 그것들만 (접두어가 같은 다른 사진함은 제외)
     const exact = candidates.filter((c) => c.name.toLowerCase() === query.toLowerCase());
     if (exact.length > 0) candidates = exact;
   }
   if (candidates.length === 0) return NextResponse.json({ detail: "not_found" }, { status: 404 });
   if (candidates.length > 1) {
-    // 개설자 이름은 마스킹("손용석"→"손*석") — 로그인 사용자라도 타 사서함 개설자 실명은 노출하지 않음 (A-83)
+    // 개설자 이름은 마스킹("손용석"→"손*석") — 로그인 사용자라도 타 사진함 개설자 실명은 노출하지 않음 (A-83)
     const owners = await Promise.all(
       candidates.map(async (c) => {
         const { data } = await db.from("mailbox_members").select("display_name").eq("mailbox_id", c.id).eq("kind", "owner").maybeSingle();

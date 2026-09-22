@@ -26,8 +26,8 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ backupId
   const g = await load(backupId, userId);
   if ("res" in g) return g.res;
   const { row } = g;
-  // 복사된 프리뷰가 있으면 그것을 표시(사서함 삭제 후에도 유효), 없으면 스냅샷 당시 image_url
-  // (2026-09-13 A-96) thumb_url은 원 링크의 썸네일(백업엔 복사 안 함) — 복사본이 있는 백업은 사서함 삭제 후 원 링크가 지워져
+  // 복사된 프리뷰가 있으면 그것을 표시(사진함 삭제 후에도 유효), 없으면 스냅샷 당시 image_url
+  // (2026-09-13 A-96) thumb_url은 원 링크의 썸네일(백업엔 복사 안 함) — 복사본이 있는 백업은 사진함 삭제 후 원 링크가 지워져
   //   그리드에 깨진 이미지가 뜰 수 있으므로 null로 내려 image_url(복사본)로 폴백시킨다. 옛 스냅샷(thumb_url 없음)도 null.
   const photos = row.snapshot.photos.map((p) => ({
     ...p,

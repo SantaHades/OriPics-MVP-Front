@@ -1,5 +1,5 @@
 "use client";
-// 웹 사서함 실시간 열람 (A-81 2차 W3) — 참여 중 사서함의 현재 상태: 정보·참여자·사진 그리드(라이트박스=열람 기록)·[백업]·[확인서 PDF]
+// 웹 사진함 실시간 열람 (A-81 2차 W3) — 참여 중 사진함의 현재 상태: 정보·참여자·사진 그리드(라이트박스=열람 기록)·[백업]·[확인서 PDF]
 // 2026-09-11 A-90: 세션 가드(401→로그인 callbackUrl)·403 안내·백업 오류 상세(쿼터·횟수)·확인서 제목 편집(개설자)·라이트박스 패널 스크롤·탭 비활성 시 폴링 중단
 // 2026-09-13 A-96: 그리드는 thumb_url(320px) + lazy/async 디코딩 · A-98: 15초 폴링은 photos/summary만 받고 값이 바뀔 때만 목록 재수신, 라이트박스 열림 중 정지
 import { Link } from "@/navigation";
@@ -132,19 +132,19 @@ export default function MailboxLivePage() {
   };
 
   const active = members.filter((m) => !m.kicked && !m.left);
-  const defaultTitle = ko ? "사서함 확인서" : "Photo Mailbox Report";
+  const defaultTitle = ko ? "사진함 확인서" : "Photo Mailbox Report";
   const loadingView = <div className="flex items-center gap-2 text-sm text-slate-500"><RefreshCw className="animate-spin text-blue-500" size={16} /> {ko ? "불러오는 중…" : "Loading…"}</div>;
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <Link href="/mailboxes" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-6"><ArrowLeft size={14} /> {ko ? "사서함 목록" : "Mailboxes"}</Link>
+        <Link href="/mailboxes" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-6"><ArrowLeft size={14} /> {ko ? "사진함 목록" : "Mailboxes"}</Link>
         {status !== "authenticated" ? loadingView : err ? (
           <div className="rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3">
-            {errorText(err, lang) ?? `${ko ? "사서함을 열 수 없습니다: " : "Cannot open mailbox: "}${err}`}
+            {errorText(err, lang) ?? `${ko ? "사진함을 열 수 없습니다: " : "Cannot open mailbox: "}${err}`}
           </div>
         ) : !mb ? loadingView : (
           <>
-            {mb.delete_after ? <div className="rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 mb-4">{ko ? `⚠️ 개설자가 삭제를 예고했습니다. ${fmtDateTime(mb.delete_after, lang)}에 삭제됩니다. 지금 백업해 두세요.` : `⚠️ Deletion scheduled for ${fmtDateTime(mb.delete_after, lang)}. Back up now.`}</div> : mb.locked ? <div className="rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 text-sm px-4 py-3 mb-4">{ko ? "🔒 잠긴 사서함(읽기 전용)" : "🔒 Locked (read-only)"}</div> : null}
+            {mb.delete_after ? <div className="rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 mb-4">{ko ? `⚠️ 개설자가 삭제를 예고했습니다. ${fmtDateTime(mb.delete_after, lang)}에 삭제됩니다. 지금 백업해 두세요.` : `⚠️ Deletion scheduled for ${fmtDateTime(mb.delete_after, lang)}. Back up now.`}</div> : mb.locked ? <div className="rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-800 text-sm px-4 py-3 mb-4">{ko ? "🔒 잠긴 사진함(읽기 전용)" : "🔒 Locked (read-only)"}</div> : null}
             <div className="flex flex-wrap items-start justify-between gap-4 mb-2">
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold break-words">{mb.name}</h1>
@@ -220,7 +220,7 @@ export default function MailboxLivePage() {
           <div className="flex-1 min-h-0">{open.image_url ? <ZoomableImage src={open.image_url} alt="" onClose={() => setOpen(null)} /> : null}</div>
           {/* 패널: 긴 메모·참여자 열람 목록이 화면을 밀어내지 않게 최대 높이 + 스크롤 (A-90) */}
           <div className="bg-white text-sm p-4 grid gap-1 sm:grid-cols-2 max-h-[45vh] overflow-y-auto">
-            <div>{ko ? "올린사람" : "Uploaded by"}: <b>{open.uploader_name}{open.uploader_role ? `(${open.uploader_role})` : ""}</b> · {open.source === "capture" ? (ko ? "사서함 촬영" : "captured") : (ko ? "제출" : "submitted")}</div>
+            <div>{ko ? "올린사람" : "Uploaded by"}: <b>{open.uploader_name}{open.uploader_role ? `(${open.uploader_role})` : ""}</b> · {open.source === "capture" ? (ko ? "사진함 촬영" : "captured") : (ko ? "제출" : "submitted")}</div>
             <div>{ko ? "촬영" : "Captured"}: {fmtCaptured(open.captured_at, lang)}</div>
             {/* 좌표 오른쪽 지도 핀 (2026-09-13 대표) */}
             <div>{ko ? "좌표" : "Location"}: {open.lat != null && open.lng != null ? <span className="inline-flex items-center gap-1"><a className="text-blue-600 underline" target="_blank" rel="noreferrer" href={mapsUrl(open.lat, open.lng)}>{open.lat.toFixed(5)}, {open.lng.toFixed(5)}</a><MapPinLink lat={open.lat} lng={open.lng} size={16} title={ko ? "지도에서 위치 열기" : "Open location in maps"} /></span> : "-"}</div>

@@ -40,7 +40,7 @@ export declare function renderCertificatePdf(opts: {
   logoDataUrl?: string;
 }): Promise<Buffer>;
 
-// A-81 사서함 확인서 PDF (2026-09-09)
+// A-81 사진함 확인서 PDF (2026-09-09)
 export interface MailboxReportMember {
   name: string;
   role?: string | null;
@@ -85,7 +85,7 @@ export interface MailboxReportData {
   timeZone?: string;
   members: MailboxReportMember[];
   photos: MailboxReportPhoto[];
-  /** 사서함의 실제 사진 총수. photos.length보다 크면 '앞 N장만 수록' 고지 (2026-09-11 A-87) */
+  /** 사진함의 실제 사진 총수. photos.length보다 크면 '앞 N장만 수록' 고지 (2026-09-11 A-87) */
   photoTotal?: number;
   /** 썸네일을 생성한 상한(호출 측 MAX_THUMBS). photos.length보다 작으면 '썸네일 N장까지만' 고지 */
   thumbLimit?: number;

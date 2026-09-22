@@ -14,7 +14,7 @@ export async function renderCertificatePdf(opts: {
   return renderToBuffer(element as any);
 }
 
-// A-81 사서함 확인서 PDF (2026-09-09)
+// A-81 사진함 확인서 PDF (2026-09-09)
 import { FONT_UNAVAILABLE, MailboxReportDocument, type MailboxReportData, type MailboxReportMember, type MailboxReportPhoto } from "./mailboxReport";
 export type { MailboxReportData, MailboxReportMember, MailboxReportPhoto };
 /** 폰트 등록 실패 시 renderMailboxReportPdf가 던지는 Error.message — 라우트가 500 detail로 그대로 전달 (2026-09-11 A-87) */

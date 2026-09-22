@@ -2,7 +2,7 @@
 // 배경: preview는 앱이 publish 본문에 base64로 보내면 저장되는데(A-36), 옛 빌드·웹 발행·전송 실패 건은 null →
 //   이벤트 갤러리·뷰어가 원본 PNG(수 MB)를 매번 받아 큰 사진이 스피너 뒤에 늦게 열림(대표 실측).
 // 서비스 키는 Vercel에만 있어(로컬 pull 불가 — Sensitive) 서버에서 실행: cron/cleanup(매 실행 소량) + /api/admin/previews/backfill(즉시).
-// (2026-09-13 A-96) 목록 썸네일(thumb_path, 긴 변 320px JPEG q75)도 같은 배치에서 생성 — 사서함·이벤트 그리드가 1600px 경량본(300~900KB)을
+// (2026-09-13 A-96) 목록 썸네일(thumb_path, 긴 변 320px JPEG q75)도 같은 배치에서 생성 — 사진함·이벤트 그리드가 1600px 경량본(300~900KB)을
 //   100장씩 받던 것을 수십 KB로. links.thumb_path 컬럼은 대표가 SQL(2026_09_13_links_thumb_path.sql)을 실행해야 생기므로
 //   존재 여부를 프로세스 단위로 캐시해 두고, 없으면 preview만 처리(옛 동작 유지).
 import type { SupabaseClient } from "@supabase/supabase-js";

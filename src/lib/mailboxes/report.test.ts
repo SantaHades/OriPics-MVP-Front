@@ -1,4 +1,4 @@
-// 사서함 확인서 PDF 스모크 (2026-09-11 A-87) — 장문·긴 URL(문자 단위 줄바꿈)·제목 maxLines·시간대 라벨·잘림 고지가 렌더를 깨지 않는지,
+// 사진함 확인서 PDF 스모크 (2026-09-11 A-87) — 장문·긴 URL(문자 단위 줄바꿈)·제목 maxLines·시간대 라벨·잘림 고지가 렌더를 깨지 않는지,
 // 그리고 시간대 검증 헬퍼. 썸네일 fetch는 하지 않는다(buildReportData는 네트워크 필요 → 여기서는 렌더 계층만).
 import { describe, expect, it } from "vitest";
 import { renderMailboxReportPdf, type MailboxReportData } from "@oripics/certificate";
