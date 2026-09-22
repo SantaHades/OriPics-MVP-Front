@@ -35,6 +35,8 @@ export interface PartnerOverview {
   benefits: {
     coupons: number;
     couponsNearestExpiry: string | null;
+    /** 첫 인증 전이라 잠겨 있는 할인권 수 (2026-09-22) */
+    lockedCoupons?: number;
     freeMonths: number;
     list: Array<{ id: string; type: string; source: string; status: string; issuedAt: string; expiresAt: string; usedAt: string | null; paymentId: string | null; revokedReason: string | null }>;
   };
@@ -400,6 +402,10 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
               <p className="text-[11px] text-slate-500">{t("coupons_label", { amount: fmtWon(c.discountAmount) })}</p>
               <p className="text-xl font-extrabold">{t("coupons_value", { count: data.benefits.coupons })}</p>
               {data.benefits.couponsNearestExpiry && <p className="text-[10px] text-slate-400">{t("nearest_expiry", { date: fmtDate(data.benefits.couponsNearestExpiry) })}</p>}
+              {/* 지급 조건 안내 (2026-09-22) — 잠긴 할인권이 있으면 왜 아직 0장인지 알 수 있게 */}
+              {data.benefits.lockedCoupons ? (
+                <p className="text-[10px] text-blue-600 font-semibold mt-1">{t("locked_hint", { count: data.benefits.lockedCoupons })}</p>
+              ) : null}
             </div>
             <div className="rounded-xl bg-slate-50 p-3">
               <p className="text-[11px] text-slate-500">{t("free_months_label")}</p>
