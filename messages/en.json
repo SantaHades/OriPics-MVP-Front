@@ -377,7 +377,9 @@
         "mult3": "Over 100M pixels",
         "mult_note": "(Public links & PDFs are not multiplied)",
         "carryover_note": "Unused credits do not carry over — the balance resets to your plan's allowance on each monthly renewal."
-      }
+      },
+      "photobox_banner_title": "Photo Box Pass — for real-estate photo boxes, ₩9,900 (VAT incl.)",
+      "photobox_banner_body": "100 photos (any size) in one photo box · certification, public links and certificates included · kept 5 years · two Pro 50% coupons also work"
     },
     "verify_confirm": {
       "title": "Already an OriPics image",

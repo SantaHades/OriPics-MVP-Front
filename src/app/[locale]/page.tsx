@@ -2178,15 +2178,28 @@ export default function Home() {
           {/* 원데이 패스 배너 (A-60 Phase 3) — 구독 3플랜 아래 단품 노출. KG MID 심사 "상품 노출" 요건 겸용 */}
           <Link
             href="/pass"
-            className="mt-6 flex items-center justify-between gap-4 p-5 rounded-2xl bg-blue-50 border border-blue-200 hover:border-blue-300 transition-colors group"
+            className="mt-6 block p-5 rounded-2xl bg-blue-50 border border-blue-200 hover:border-blue-300 transition-colors group"
           >
-            <div>
-              <p className="text-sm font-bold text-slate-900">
-                🎟️ {t("pricing.pass_banner_title")}
-              </p>
-              <p className="text-xs text-slate-600 mt-0.5">{t("pricing.pass_banner_body")}</p>
-            </div>
-            <span className="shrink-0 text-sm font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">
+            <p className="text-sm font-bold text-slate-900">
+              🎟️ {t("pricing.pass_banner_title")}
+            </p>
+            <p className="text-xs text-slate-600 mt-0.5">{t("pricing.pass_banner_body")}</p>
+            {/* 자세히 보기는 안내문 아래로 (2026-09-24 대표) */}
+            <span className="inline-block mt-2 text-sm font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">
+              {t("pricing.pass_banner_cta")} →
+            </span>
+          </Link>
+
+          {/* 사진함 패스 배너 (A-108, 2026-09-24 대표) — 원데이 패스 배너와 같은 형식 */}
+          <Link
+            href="/pass/photobox"
+            className="mt-3 block p-5 rounded-2xl bg-blue-50 border border-blue-200 hover:border-blue-300 transition-colors group"
+          >
+            <p className="text-sm font-bold text-slate-900">
+              🗂️ {t("pricing.photobox_banner_title")}
+            </p>
+            <p className="text-xs text-slate-600 mt-0.5">{t("pricing.photobox_banner_body")}</p>
+            <span className="inline-block mt-2 text-sm font-semibold text-blue-600 group-hover:translate-x-0.5 transition-transform">
               {t("pricing.pass_banner_cta")} →
             </span>
           </Link>
