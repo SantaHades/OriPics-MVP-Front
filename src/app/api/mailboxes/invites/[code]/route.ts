@@ -36,6 +36,9 @@ export async function GET(req: NextRequest, props: { params: Promise<{ code: str
       role_text: inv.role_text,
       can_capture: inv.can_capture,
       capture_billing: inv.capture_billing,
+      // A-108: 부동산사진함이면 참여 비용(사진함 패스) 안내 — 대납 초대면 '개설자가 이미 냈습니다'
+      mailbox_type: mb.type ?? "general",
+      sponsored: !!inv.sponsor_pass_id,
       expires_at: inv.expires_at,
     },
   });
