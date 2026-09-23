@@ -1,6 +1,12 @@
 // 사진함 사진 (A-81) — GET /api/mailboxes/:id/photos?locale= (참여자) · POST { link_ids } 인증 사진 제출 (참여자, 본인 소유·발행된 링크만)
 //   제출된 링크는 사진함 삭제 전까지 삭제 잠금 + 만료 해제(expires_at=null — 무료 7일 만료로 사진함 사진이 사라지지 않게).
 import { NextRequest, NextResponse } from "next/server";
+import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
+import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
+import { CREDIT_COSTS } from "@/lib/payment";
+import { consumeSeatPhoto, retainUntilFrom } from "@/lib/photobox/pass";
+import { isSeatMailbox } from "@/lib/photobox/seat";
+import { prisma } from "@/lib/prisma";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb, isMissingTable } from "@/lib/events/server";
@@ -58,7 +64,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // A-85③ (2026-09-11): 이미 어떤 사진함에든 등록된 링크는 만료 검사를 건너뛴다 — 다운그레이드 cron(charge-subscriptions)이
   //   NULL 링크 전체에 37일 만료를 찍어 사진함 링크에도 과거 expires_at이 남을 수 있고, 그 링크는 삭제 잠금으로 실제 파일이 살아 있다.
   //   (아래 update에서 expires_at=NULL로 다시 풀린다)
-  const { data: links, error: linkErr } = await g.db.from("links").select("link_id, user_id, expires_at").in("link_id", linkIds);
+  const { data: links, error: linkErr } = await g.db.from("links").select("link_id, user_id, expires_at, width, height, tier").in("link_id", linkIds);
   if (linkErr) return NextResponse.json({ detail: "db_error" }, { status: 500 });
   const { data: anyMailboxRows } = await g.db.from("mailbox_photos").select("link_id, mailbox_id").in("link_id", linkIds);
   const inAnyMailbox = new Set((anyMailboxRows ?? []).map((r) => r.link_id as string));
@@ -68,14 +74,47 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (owned.length === 0) return NextResponse.json({ detail: "no_eligible_links" }, { status: 403 });
   const ownedIds = owned.map((l) => l.link_id as string);
   const existing = new Set((anyMailboxRows ?? []).filter((r) => r.mailbox_id === id && ownedIds.includes(r.link_id as string)).map((r) => r.link_id as string));
-  const rows = ownedIds
+  let rows: Array<Record<string, unknown> & { id: string; link_id: string }> = ownedIds
     .filter((lid) => !existing.has(lid))
     .map((lid) => ({ id: newPhotoId(), mailbox_id: id, link_id: lid, uploaded_by: g.userId, billing_user_id: g.userId, source: "submit" }));
+
+  // A-108 부동산사진함: 목록 사진 등록도 1장씩 차감 — 좌석 잔여가 있으면 좌석에서, 소진 후엔 그 사진 인증 비용과 같은 일반 건수(§9-5).
+  // 건수도 부족한 사진은 등록하지 않고 insufficient로 돌려준다. 등록(insert) 실패 시 건수 차감분은 환불.
+  const insufficient: string[] = [];
+  const creditCharged: Array<{ link_id: string; amount: number }> = [];
+  if (isSeatMailbox(g.mb.type) && rows.length > 0) {
+    const byId = new Map((links ?? []).map((l) => [l.link_id as string, l]));
+    const kept: typeof rows = [];
+    for (const r of rows) {
+      const seat = await prisma.$transaction((tx) =>
+        consumeSeatPhoto(tx, { mailboxId: id, userId: g.userId, linkId: r.link_id, source: "submit" }),
+      );
+      const retain = retainUntilFrom(new Date()).toISOString();
+      if (seat.ok) {
+        kept.push({ ...r, pass_id: seat.passId, retain_until: retain });
+        continue;
+      }
+      const l = byId.get(r.link_id);
+      const base = l?.tier === "verified" ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
+      const amount = base * getProofMultiplier(Number(l?.width ?? 0), Number(l?.height ?? 0));
+      const c = await consumeCredits({ userId: g.userId, amount, action: "photobox_submit", metadata: { link_id: r.link_id, mailbox_id: id } });
+      if (!c.ok) {
+        insufficient.push(r.link_id);
+        continue;
+      }
+      creditCharged.push({ link_id: r.link_id, amount });
+      kept.push({ ...r, retain_until: retain });
+    }
+    rows = kept;
+  }
   if (rows.length > 0) {
     const { error: insErr } = await g.db.from("mailbox_photos").upsert(rows, { onConflict: "mailbox_id,link_id", ignoreDuplicates: true });
     if (insErr) {
       if (isMissingTable(insErr)) return NextResponse.json({ detail: "setup_required" }, { status: 503 });
       console.error("[mailboxes] submit failed:", insErr.message);
+      for (const c of creditCharged) {
+        await refundCredits({ userId: g.userId, amount: c.amount, action: "photobox_submit", metadata: { link_id: c.link_id, mailbox_id: id, reason: "insert_failed" } }).catch(() => {});
+      }
       return NextResponse.json({ detail: "db_error" }, { status: 500 });
     }
     // 올린 사람은 자동 열람 + 무료 만료 해제(사진함 보존)
@@ -94,5 +133,8 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   await g.db.from("links").update({ expires_at: null }).in("link_id", ownedIds).not("expires_at", "is", null);
   const ineligible = linkIds.length - owned.length;
   console.log(`[mailboxes] submit mailbox=${id} user=${g.userId} added=${rows.length} dup=${existing.size} ineligible=${ineligible}`);
-  return NextResponse.json({ added: rows.length, duplicates: existing.size, ineligible });
+  return NextResponse.json({
+    added: rows.length, duplicates: existing.size, ineligible,
+    ...(isSeatMailbox(g.mb.type) ? { insufficient: insufficient.length, credits_used: creditCharged.reduce((a, c) => a + c.amount, 0) } : {}),
+  });
 }

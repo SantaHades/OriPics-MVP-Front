@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { retainUntilFrom } from "@/lib/photobox/pass";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, timingSafeEqual } from "crypto";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
@@ -109,6 +110,9 @@ export async function POST(req: NextRequest) {
   // LINK_CREATE 차감 생략 + Pro와 동일한 보관 규칙 + links.pass_id 태그.
   const passId: string | null =
     typeof claims.pass_id === "string" && claims.pass_id ? claims.pass_id : null;
+  // A-108: 부동산사진함 좌석 촬영 — 공개링크 비용 없음(패스 포함), 개인 5GB 한도 제외, 사진 보관 5년
+  const photoboxPassId: string | null =
+    typeof claims.photobox_pass_id === "string" && claims.photobox_pass_id ? claims.photobox_pass_id : null;
   // A-81: 사진함 촬영 — 차감·용량 귀속 주체는 billing_user_id(개설자 또는 촬영자), links.user_id는 촬영자
   const mailboxId: string | null = typeof claims.mailbox_id === "string" && claims.mailbox_id ? claims.mailbox_id : null;
   const billingUserId: string = typeof claims.billing_user_id === "string" && claims.billing_user_id ? claims.billing_user_id : user_id;
@@ -172,7 +176,7 @@ export async function POST(req: NextRequest) {
 
   // 보관함 용량 체크(5GB): 초과 시 새 공개링크 생성 차단(기존 링크는 삭제하지 않음).
   // 패스 발행도 Pro와 동일하게 체크 (A-60 — 전용 쿼터 없음, 기존 규칙 공유).
-  if (isPaidTier || passId) {
+  if ((isPaidTier || passId) && !photoboxPassId) {
     try {
       // A-108 (2026-09-23): 프로필 표시와 같은 귀속 규칙(storageUsage — 차감 주체 기준, 남이 부담한 내 사진함 촬영분 제외·
       // 내가 부담한 남의 촬영분 포함)으로 합산. 이전엔 links.user_id=차감 주체만 세어 멤버의 개설자 부담 촬영분이 한도 검사에서 빠졌다.
@@ -191,7 +195,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 1. LINK_CREATE(-2) 차감 — 패스 발행은 링크 비용이 패스 1회에 포함되므로 생략(A-60)
-  if (!passId) {
+  if (!passId && !photoboxPassId) {
     const consume = await t.span("consume_credits", () => consumeCredits({
       userId: billingUserId,
       amount: CREDIT_COSTS.LINK_CREATE,
@@ -211,7 +215,7 @@ export async function POST(req: NextRequest) {
   }
 
   const refund = async (reason: string) => {
-    if (passId) return; // 패스 발행은 publish에서 차감한 크레딧이 없음
+    if (passId || photoboxPassId) return; // 패스 발행은 publish에서 차감한 크레딧이 없음
     try {
       await refundCredits({
         userId: billingUserId,
@@ -464,7 +468,10 @@ export async function POST(req: NextRequest) {
         const { error: mpErr } = await supabase
           .from("mailbox_photos")
           .upsert(
-            { id: photoId, mailbox_id: mailboxId, link_id, uploaded_by: user_id, billing_user_id: billingUserId, source: "capture" },
+            {
+              id: photoId, mailbox_id: mailboxId, link_id, uploaded_by: user_id, billing_user_id: billingUserId, source: "capture",
+              ...(photoboxPassId ? { pass_id: photoboxPassId, retain_until: retainUntilFrom(new Date()).toISOString() } : {}),
+            },
             { onConflict: "mailbox_id,link_id", ignoreDuplicates: true },
           );
         if (mpErr) throw new Error(mpErr.message);

@@ -37,7 +37,8 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
   const notices: Array<{ kind: "kicked" | "unkicked" | "billing_changed"; payload: Record<string, unknown> }> = [];
   if (!isSelf) {
     if (typeof body.can_capture === "boolean") patch.can_capture = body.can_capture;
-    if (body.capture_billing === "owner" || body.capture_billing === "self") {
+    // A-108: 부동산사진함은 촬영이 항상 본인 좌석 차감 — 부담 주체 변경 없음(대납은 좌석 비용으로 별도)
+    if ((body.capture_billing === "owner" || body.capture_billing === "self") && mb.type !== "real_estate") {
       patch.capture_billing = body.capture_billing;
       if (body.capture_billing !== target.capture_billing) {
         notices.push({ kind: "billing_changed", payload: { mailbox_name: mb.name, capture_billing: body.capture_billing } });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { consumeSeatPhoto } from "@/lib/photobox/pass";
 import { createHmac } from "crypto";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { unlockPartnerBenefitsOnFirstProof } from "@/lib/partner/server";
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
     pass_id, // A-60: sign이 활성 패스를 확인한 경우에만 존재
     mailbox_id, // A-81: 사진함 촬영 — billing_user_id(개설자 또는 촬영자)에서 차감
     billing_user_id,
+    photobox_seat, // A-108: 부동산사진함 좌석 촬영
   } = claims;
   const billingUserId: string = typeof billing_user_id === "string" && billing_user_id ? billing_user_id : user_id;
 
@@ -143,8 +145,31 @@ export async function POST(req: NextRequest) {
       select: { id: true, action: true },
     }),
   );
-  const replay = !!priorTx;
-  if (replay) {
+  let replay = !!priorTx;
+  let photoboxPassId: string | null = null;
+  if (photobox_seat === true && typeof mailbox_id === "string" && mailbox_id) {
+    // A-108: 좌석에서 1장 차감 — photobox_pass_uses(link_id PK)가 멱등을 보장(재시도·응답 유실에도 1회)
+    const seat = await t.span("consume_seat", () =>
+      prisma.$transaction((tx) => consumeSeatPhoto(tx, { mailboxId: mailbox_id, userId: user_id, linkId: link_id, source: "capture" })),
+    );
+    if (!seat.ok) return NextResponse.json({ detail: "seat_exhausted", tier }, { status: 402 });
+    photoboxPassId = seat.passId;
+    passRemaining = seat.remaining; // 앱은 pass_remaining 존재로 '패스' 태그·proof_cost 0 처리(원데이와 동일 계약)
+    replay = seat.replay;
+    if (!seat.replay) {
+      try {
+        const balance = await prisma.user.findUnique({ where: { id: user_id }, select: { credits: true } });
+        await prisma.creditTransaction.create({
+          data: {
+            userId: user_id, delta: 0, action: "photobox_proof", balanceAfter: balance?.credits ?? 0,
+            metadata: { link_id, tier, photobox_pass_id: seat.passId, mailbox_id, seat_remaining: seat.remaining } as any,
+          },
+        });
+      } catch (e: any) {
+        console.warn("[confirm] photobox_proof tx record failed:", e?.message || e);
+      }
+    }
+  } else if (replay) {
     console.log(`[confirm] replay link_id=${link_id} prior=${priorTx!.action} — 재차감 생략`);
     if (priorTx!.action === "day_pass_proof") passRemaining = -1; // 패스 차감분 재확정: 잔여 수는 알 수 없음(클라이언트는 proof_cost 0으로만 처리)
   } else if (typeof pass_id === "string" && pass_id) {
@@ -249,6 +274,10 @@ export async function POST(req: NextRequest) {
   if (typeof mailbox_id === "string" && mailbox_id) {
     receiptPayload.mailbox_id = mailbox_id;
     receiptPayload.billing_user_id = billingUserId;
+  }
+  if (photoboxPassId) {
+    // A-108: publish가 LINK_CREATE 생략·용량 한도 제외·mailbox_photos.pass_id/retain_until 기록에 사용
+    receiptPayload.photobox_pass_id = photoboxPassId;
   }
   const receipt = issueReceiptJwt(receiptPayload);
 

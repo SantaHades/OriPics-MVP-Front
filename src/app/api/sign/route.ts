@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { seatBalance } from "@/lib/photobox/pass";
+import { isSeatMailbox } from "@/lib/photobox/seat";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, createHash } from "crypto";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
@@ -159,6 +161,8 @@ export async function POST(req: NextRequest) {
   let billingUserId = userId;
   let billingUser = user;
   let mailboxCtx: { mailbox_id: string; billing: "owner" | "self" } | null = null;
+  // A-108: 부동산사진함 — 촬영은 항상 본인 좌석(사진함 패스)에서 1장, 사이즈 무관·크레딧 무관·Verified 허용
+  let photoboxSeat = false;
   if (typeof mailbox_id === "string" && mailbox_id) {
     if (uploadType !== "P") return NextResponse.json({ detail: "mailbox_requires_capture" }, { status: 400 });
     const mdb = eventsDb();
@@ -172,7 +176,15 @@ export async function POST(req: NextRequest) {
     if (!(Number.isInteger(lat_e6) && Number.isInteger(lng_e6))) {
       return NextResponse.json({ detail: "mailbox_gps_required" }, { status: 400 });
     }
-    const billing: "owner" | "self" = me.kind === "owner" || me.capture_billing !== "self" ? "owner" : "self";
+    photoboxSeat = isSeatMailbox(mb.type);
+    if (photoboxSeat) {
+      const bal = await seatBalance(prisma, mailbox_id, userId);
+      if (bal.remaining <= 0) {
+        return NextResponse.json({ detail: "seat_exhausted", seat: { total: bal.total, used: bal.used, remaining: 0 } }, { status: 402 });
+      }
+    }
+    const billing: "owner" | "self" =
+      !photoboxSeat && (me.kind === "owner" || me.capture_billing !== "self") ? "owner" : "self";
     const bId = billing === "owner" ? mb.owner_user_id : userId;
     if (!bId) return NextResponse.json({ detail: "mailbox_owner_missing" }, { status: 409 });
     if (bId !== userId) {
@@ -184,8 +196,9 @@ export async function POST(req: NextRequest) {
     mailboxCtx = { mailbox_id, billing };
   }
 
+  // 부동산사진함 좌석 촬영은 원데이 패스를 쓰지 않는다(사진함 패스 전용 — 설계 §4.4)
   const activePass =
-    uploadType === "P"
+    uploadType === "P" && !photoboxSeat
       ? await t.span("pass_check", () => getActivePass(billingUserId))
       : null;
 
@@ -199,7 +212,7 @@ export async function POST(req: NextRequest) {
 
   if (isVerifiedRequest) {
     // Verified 티어 = Pro 이상 (pricing-policy §2). 활성 원데이 패스는 Pro 동급(A-60).
-    if (billingUser.tier === "free" && !activePass) {
+    if (billingUser.tier === "free" && !activePass && !photoboxSeat) {
       return NextResponse.json(
         { detail: "verified_requires_pro", tier: billingUser.tier },
         { status: 403 },
@@ -287,7 +300,7 @@ export async function POST(req: NextRequest) {
   const sizeMultiplier = getProofMultiplier(width, height);
   const baseProofCost = isVerifiedRequest ? CREDIT_COSTS.VERIFIED_PROOF : CREDIT_COSTS.IMAGE_PROOF;
   const proofCost = baseProofCost * sizeMultiplier;
-  if (!activePass && billingUser.credits < proofCost) {
+  if (!activePass && !photoboxSeat && billingUser.credits < proofCost) {
     if (mailboxCtx?.billing === "owner" && billingUserId !== userId) {
       // 개설자 부담인데 개설자 건수 부족 — 개설자에게 인앱 알림 (참여자에게는 402 + billing='owner')
       const mdb = eventsDb();
@@ -424,6 +437,7 @@ export async function POST(req: NextRequest) {
     // A-81: confirm·publish가 이 주체에서 차감하고, publish가 mailbox_photos에 등록
     jwtPayload.mailbox_id = mailboxCtx.mailbox_id;
     jwtPayload.billing_user_id = billingUserId;
+    if (photoboxSeat) jwtPayload.photobox_seat = true; // A-108: confirm이 좌석에서 1장 차감, publish는 링크 비용·보관 규칙 면제
   }
   const jwt = issueJwt(jwtPayload);
 

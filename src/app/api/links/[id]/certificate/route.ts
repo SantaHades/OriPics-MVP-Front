@@ -155,7 +155,13 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
   }
 
   // 티어 게이트 — Pro/Business, 또는 원데이 패스로 발행한 링크(PDF가 패스에 포함, A-60)
-  const isPassLink = !!row.pass_id;
+  // A-108: 사진함 패스로 찍은(차감된) 사진도 인증서 무료 — 판정은 mailbox_photos.pass_id
+  let isPhotoboxLink = false;
+  if (!row.pass_id) {
+    const { data: mp } = await supabase.from("mailbox_photos").select("pass_id").eq("link_id", linkId).not("pass_id", "is", null).limit(1);
+    isPhotoboxLink = !!mp && mp.length > 0;
+  }
+  const isPassLink = !!row.pass_id || isPhotoboxLink;
   if (!isPassLink && user.tier !== "pro" && user.tier !== "business") {
     return NextResponse.json(
       { detail: "tier_required", required: "pro" },

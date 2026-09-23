@@ -29,7 +29,9 @@ export async function verifyMailboxCapture(
   const me = await loadMember(db, mailboxId, userId);
   if (!isActiveMember(me)) return { ok: false, detail: "mailbox_forbidden" };
   if (!me.can_capture) return { ok: false, detail: "mailbox_capture_disabled" };
-  const expectedBilling = me.kind === "owner" || me.capture_billing !== "self" ? mb.owner_user_id : userId;
+  // A-108: 부동산사진함은 항상 본인 좌석 부담(sign과 같은 규칙)
+  const expectedBilling =
+    mb.type === "real_estate" ? userId : me.kind === "owner" || me.capture_billing !== "self" ? mb.owner_user_id : userId;
   if (!expectedBilling || expectedBilling !== billingUserId) return { ok: false, detail: "mailbox_billing_changed" };
   return { ok: true };
 }
