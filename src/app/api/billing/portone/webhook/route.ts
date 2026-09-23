@@ -14,6 +14,7 @@ import {
   verifyAndIssueDayPass,
   revokeDayPassForPayment,
 } from "@/lib/pass/passPurchase";
+import { PHOTOBOX_PRODUCT_MARKER, revokePhotoboxForPayment, verifyAndIssuePhotoboxPass } from "@/lib/photobox/purchase";
 
 export const runtime = "nodejs";
 
@@ -51,6 +52,13 @@ export async function POST(req: NextRequest) {
 
   /** 콘솔/외부 취소 → 해당 결제로 활성화된 구독 회수 (멱등) */
   async function handleCancelled(paymentId: string, eventType: string) {
+    // A-108 사진함 패스 결제 환불 — 미등록 코드만 refunded(우리 /api/photobox/refund 호출의 반향도 멱등). 등록 후는 수동 판단.
+    const pbRevoke = await revokePhotoboxForPayment(paymentId).catch(() => "not_found" as const);
+    if (pbRevoke === "revoked") return NextResponse.json({ ok: true, photobox_revoked: true });
+    if (pbRevoke === "already_used") {
+      console.error("[portone/webhook] refund for a USED photobox pass — manual review needed", { paymentId, eventType });
+      return NextResponse.json({ ok: true, photobox_refund_needs_review: true });
+    }
     // 원데이 패스 결제의 환불이면 미등록 코드 무효화 (A-60 — 등록 후 상태는 수동 판단)
     const passRevoke = await revokeDayPassForPayment(paymentId);
     if (passRevoke === "revoked") {
@@ -192,6 +200,19 @@ export async function POST(req: NextRequest) {
   // 원데이 패스 단건 결제 (A-60 Phase 3) — 구독 경로와 분리 처리.
   // 사용자가 success 페이지로 못 돌아온 경우(모바일 브라우저 종료 등)에도
   // 코드가 발급되도록 보장. 코드 전달은 프로필 최근 내역/재방문 complete가 담당.
+  // A-108 사진함 패스 단건 결제 — success 미복귀에도 코드가 발급되도록
+  if (product === PHOTOBOX_PRODUCT_MARKER) {
+    if (!userId) return NextResponse.json({ ok: true, deferred: true });
+    const pb = await verifyAndIssuePhotoboxPass({ paymentId, userId, secret: PORTONE_API_SECRET });
+    if (!pb.ok) {
+      if (pb.code === "portone_lookup_failed" || pb.code === "db_update_failed") return NextResponse.json({ detail: pb.code }, { status: 500 });
+      console.warn("[portone/webhook] photobox permanent rejection", { paymentId, code: pb.code });
+      return NextResponse.json({ ok: true, rejected: pb.code });
+    }
+    if (pb.testChannel) return NextResponse.json({ ok: true, ignored: "test_channel" });
+    return NextResponse.json({ ok: true, photobox_issued: true, alreadyProcessed: pb.alreadyProcessed });
+  }
+
   if (product === PASS_PRODUCT_MARKER) {
     if (!userId) {
       console.warn("[portone/webhook] day pass payment without userId; deferring to complete path", { paymentId });

@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-07-24";
+const LAST_UPDATED = "2026-09-23";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const SUPPORT_EMAIL = "hi@ori.pics";
@@ -57,6 +57,18 @@ function RefundKo() {
           즉시 개시되므로, 시작 이후에는 전자상거래법 제17조 제2항에 따라 청약철회가
           제한되어 환불이 불가합니다. 이 내용은 구매·시작 화면에서 사전 고지됩니다.
         </li>
+        <li>패스는 구매 계정 전용(양도 불가)이므로, 환불 신청도 구매 계정으로만 가능합니다.</li>
+      </ul>
+
+      <h2>2-2. 사진함 패스(사진함 1개 전용 촬영 이용권) 환불</h2>
+      <ul>
+        <li><strong>등록 전:</strong> 결제일로부터 7일 이내 전액 환불됩니다 (청약철회). 사진함 패스 페이지의 [환불] 버튼으로 바로 신청할 수 있습니다.</li>
+        <li>
+          <strong>사진함에 등록(사용 시작)한 후:</strong> 서비스 제공이 개시되므로 전자상거래법 제17조 제2항에 따라
+          남은 장수의 청약철회가 제한되어 환불이 불가합니다. 사진함에서 나가거나 내보내진 경우, 사진함이 삭제된 경우,
+          회원 탈퇴 시에도 같으며 개설자가 대신 지불한 패스도 마찬가지입니다. 이 내용은 결제 화면에서 사전 고지하고 동의를 받습니다.
+        </li>
+        <li>사진함에서 나간 뒤 다시 초대받아 참여하면 남은 장수가 복구됩니다.</li>
         <li>패스는 구매 계정 전용(양도 불가)이므로, 환불 신청도 구매 계정으로만 가능합니다.</li>
       </ul>
 

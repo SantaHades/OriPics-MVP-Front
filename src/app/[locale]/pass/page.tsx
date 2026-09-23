@@ -186,6 +186,24 @@ export default function PassProductPage() {
           </Link>
         </div>
 
+        {/* A-108 사진함 패스 — 부동산사진함 참여용(웹 전용 판매) */}
+        <div className="p-6 rounded-3xl bg-white border border-slate-200 mb-14 sm:flex items-center justify-between gap-6">
+          <div>
+            <p className="font-bold mb-1">{ko ? "사진함 패스 ₩9,900" : "Photo Box Pass ₩9,900"}</p>
+            <p className="text-sm text-slate-600">
+              {ko
+                ? "부동산사진함 1곳에서 사진 100장(사이즈 무관) · 인증·공개링크·인증서 포함 · 5년 보관"
+                : "100 photos (any size) in one real-estate photo box · certification, links and certificates included · kept 5 years"}
+            </p>
+          </div>
+          <Link
+            href="/pass/photobox"
+            className="mt-3 sm:mt-0 shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-700 text-white text-sm font-semibold transition-colors"
+          >
+            {ko ? "자세히 보기" : "Learn more"}
+          </Link>
+        </div>
+
         {/* 이용 안내 (전체 규칙) */}
         <h2 className="text-2xl font-bold tracking-tight mb-4">{ko ? "이용 안내" : "Terms of use"}</h2>
         <ul className="space-y-2 mb-16">

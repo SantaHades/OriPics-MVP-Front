@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-09-10";
+const LAST_UPDATED = "2026-09-23";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const COMPANY_ADDRESS_EN =
@@ -95,6 +95,7 @@ function PrivacyKo() {
         <li>인증 이미지(Standard 플랜): 인증 처리 시점부터 7일 후 자동 삭제.</li>
         <li>인증 이미지(Pro·Business 플랜): 구독 유지 기간 동안 보관. 다운그레이드 시 30일 grace 후 7일 보관 정책으로 회귀.</li>
         <li>이용 횟수 거래 이력: 회원 탈퇴 시까지 보관(부정 이용 방지·정산 목적).</li>
+        <li>부동산사진함 사진·확인서: 분쟁 증빙 목적으로 사진함 등록일부터 5년간 보관 후 파기(사진함 개설자의 요금제 변경·해지, 사진함 삭제와 무관). 보관 기간 중 사진을 올린 회원이 탈퇴하면 업로더 표시를 &quot;탈퇴한 회원&quot;으로 가리고 계정 식별정보는 파기합니다.</li>
         <li>결제 기록: 「전자상거래 등에서의 소비자 보호에 관한 법률」에 따라 5년 보관.</li>
         <li>접속 로그: 「통신비밀보호법」에 따라 3개월 보관.</li>
         <li>파트너 릴레이 챌린지 추천 관계(추천인·피추천인 계정 ID, 참여 시각, 접속 IP 해시): 혜택 지급·부정 참여 방지 목적으로 챌린지 종료 후 1년간 보관 후 파기. 코드 조회 시 코드 주인의 이름은 일부 가려서(예: 손*석) 표시됩니다.</li>
@@ -293,6 +294,7 @@ function PrivacyEn() {
         <li>Proof images (Standard): 7 days from creation, then auto-deleted.</li>
         <li>Proof images (Pro / Business): retained for the subscription period. After downgrade, 30-day grace period followed by reversion to 7-day policy.</li>
         <li>Usage (proof/verification) transaction history: until account deletion (abuse prevention, billing reconciliation).</li>
+        <li>Real-estate photo box photos and reports: kept for 5 years from registration to the photo box as dispute evidence, regardless of the owner's plan changes or photo box deletion. If the uploader deletes their account during this period, the uploader is shown as &quot;Deleted member&quot; and account identifiers are erased.</li>
         <li>Payment records: 5 years (Korean Act on Consumer Protection in E-Commerce).</li>
         <li>Access logs: 3 months (Korean Communications Privacy Act).</li>
         <li>Partner Relay Challenge referral relationships (referrer/referee account IDs, join time, hashed IP): retained for 1 year after the challenge ends for benefit issuance and fraud prevention, then erased. Code owners' names are partially masked (e.g., Y******g) when a code is looked up.</li>

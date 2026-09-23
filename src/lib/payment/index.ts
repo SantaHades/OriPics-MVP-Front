@@ -103,5 +103,7 @@ export type CreditTransactionAction =
   | "day_pass_purchase"      // 0 — 원데이 패스 구매 기록 (A-60 Phase 3, 크레딧 미변동)
   | "photobox_proof"         // 0 — 사진함 패스 좌석 촬영 차감 기록 (A-108, 크레딧 미차감)
   | "photobox_submit"        // 좌석 소진 후 목록 사진을 부동산사진함에 등록 — 그 사진 인증 비용과 같은 건수 (A-108 §9-5)
+  | "photobox_purchase"      // 0 — 사진함 패스 구매 기록 (A-108, 크레딧 미변동)
+  | "photobox_refund"        // 0 — 사진함 패스 미등록 코드 환불 기록 (A-108)
   | "subscription_grant"     // 구독 결제 시 추가 부여
   | "manual_adjust";         // 어드민 수동 조정
