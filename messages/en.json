@@ -473,7 +473,7 @@
         },
         {
           "q": "How do I join the Partner Relay Challenge?",
-          "a": "Every member automatically gets a numeric partner code. Enter a friend's code on the sign-up form (or within 7 days of signing up, in Profile or the app's Settings) and you both receive a 50% Pro coupon (₩4,950). When 12 people sign up with your code and complete their first proof, you get six 1-month Pro free vouchers (applied automatically to 6 consecutive charges after your coupons are used up). Coupons apply automatically to each Pro monthly charge (up to 2 on the first charge) and are valid for 24 months. Partner status (earning on referrals) is limited to the first 500 members, and accrual ends December 31, 2026. See the Partner page for details."
+          "a": "Every member automatically gets a numeric partner code. Enter a friend's code on the sign-up form (or within 7 days of signing up, in Profile or the app's Settings) and you both receive a 50% Pro coupon (₩4,950). When 12 people sign up with your code and complete their first proof, you get 12 more 50% Pro coupons. Coupons apply automatically to each Pro monthly charge (up to 2 on the first charge), two coupons can also be used in place of one Photo Box Pass, and they are valid for 24 months. Partner status (earning on referrals) is limited to the first 500 members, and accrual ends December 31, 2026. See the Partner page for details."
         }
       ]
     }
@@ -903,10 +903,10 @@
     },
     "referrals_title": "Referrals",
     "referrals_count": "{valid} valid / {total} signed up",
-    "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {months} one-month free vouchers (valid = completed first proof, accepted up to 30 days after the challenge ends)",
-    "milestone_pending": "{goal} reached! Your {months} 1-month free vouchers are under review (issued within 24h, reached {date}).",
-    "milestone_approved": "{months} 1-month free vouchers were issued ({date}). They apply to {months} consecutive charges after your coupons are used up.",
-    "milestone_rejected": "The voucher was withheld after review. Contact hi@ori.pics",
+    "milestone_progress": "Valid referrals {valid}/{goal} — reach {goal} for {coupons} 50% coupons (valid = completed first proof, accepted up to 30 days after the challenge ends)",
+    "milestone_pending": "{goal} reached! Your {coupons} 50% coupons are under review (issued within 24h, reached {date}).",
+    "milestone_approved": "{coupons} 50% coupons were issued ({date}). They apply automatically, one per Pro charge.",
+    "milestone_rejected": "The coupons were withheld after review. Contact hi@ori.pics",
     "referrals_empty": "No one has signed up with your code yet. Share it!",
     "ref_valid": "valid",
     "ref_pending": "signed up",
@@ -946,7 +946,7 @@
     "usage_free_month": "one 1-month free voucher",
     "usage_coupons": "{count} coupon(s)",
     "usage_paid": "₩{list} → ₩{paid}",
-    "terms_note": "Coupons and 1-month free vouchers apply automatically to Pro monthly charges only (vouchers are used one per consecutive charge), are valid for {months} months from issuance, and cannot be refunded for cash or transferred. Unused benefits may be revoked if fraudulent participation is found.",
+    "terms_note": "Coupons apply automatically to Pro monthly charges, or two can be used in place of one Photo Box Pass; valid for {months} months from issuance, and cannot be refunded for cash or transferred. Unused benefits may be revoked if fraudulent participation is found.",
     "errors": {
       "invalid_code": "A code is 3–8 digits.",
       "code_not_found": "That partner code doesn't exist.",
@@ -973,7 +973,7 @@
       "eyebrow": "Partner Relay Challenge",
       "headline": "Become an OriPics partner. Benefits stack up.",
       "sub1": "Every time a friend signs up with your partner code, you get a 50% Pro coupon (₩{amount}).",
-      "sub2": "When {goal} sign up, you also get {months} one-month free vouchers (worth ₩{value}), applied to {months} consecutive charges.",
+      "sub2": "When {goal} sign up, you also get {coupons} 50% coupons (worth ₩{value}).",
       "until": "Until {end}",
       "remaining": "First {cap} partners · {remaining} left",
       "full": "{cap} partners reached (coupons still issued)",
@@ -984,7 +984,7 @@
       "end_label": "Challenge ends",
       "days_left": "{days} days left",
       "leaderboard_title": "Referral leaderboard · Top 10",
-      "leaderboard_sub": "Ranked by valid referrals (signed up and completed a first certification) · names masked · refreshed every 5 minutes · {goal} valid referrals unlock free-month vouchers",
+      "leaderboard_sub": "Ranked by valid referrals (signed up and completed a first certification) · names masked · refreshed every 5 minutes · {goal} valid referrals unlock 12 more 50% coupons",
       "leaderboard_empty": "No valid referrals yet. Be the first partner.",
       "leaderboard_rank": "#{rank}",
       "leaderboard_valid": "{valid} valid · {total} signed up",
@@ -999,12 +999,12 @@
       "step1_b": "Enter a friend's partner code on the sign-up form (or within 7 days in Profile / app Settings) and get one 50% Pro coupon (₩{amount}) right away.",
       "step2_t": "2. Share your code",
       "step2_b": "You get your own partner code the moment you sign up. Each friend who joins with it earns you a 50% coupon (₩{amount}).",
-      "step3_t": "3. {goal} friends = {months} one-month free vouchers",
-      "step3_b": "When {goal} people sign up with your code and finish their first proof, you get {months} one-month free vouchers. Coupons apply one per charge (up to 2 on the first); vouchers apply one per charge for {months} consecutive months after coupons run out.",
+      "step3_t": "3. {goal} friends = {coupons} more 50% coupons",
+      "step3_b": "When {goal} people sign up with your code and finish their first proof, you get {coupons} more 50% coupons. Coupons apply one per charge (up to 2 on the first).",
       "example_title": "How it adds up",
       "ex1": "One 50% coupon for joining with a code + one 50% coupon from your first friend = two 50% coupons → first Pro month ₩0 (card registration only)",
       "ex2": "Then one 50% coupon per friend → ₩{amount} per month",
-      "ex3": "When {goal} friends have joined, you get {months} one-month free vouchers as a challenge-completion bonus → 1 free month · 11 months at 50% off · then {months} consecutive free months = 18 months",
+      "ex3": "When {goal} friends have joined, you get {coupons} more 50% coupons as a challenge-completion bonus → 1 free month, then 50% off every month = {total} months",
       "faq_title": "FAQ",
       "faq": [
         {
@@ -1021,7 +1021,7 @@
         },
         {
           "q": "How do I use coupons?",
-          "a": "No redemption needed — they apply automatically to Pro monthly charges. Up to 2 on the first charge (₩0), then 1 per charge (₩{amount}); once coupons run out, 1-month free vouchers are used one per consecutive charge. Valid for {months24} months from issuance."
+          "a": "No redemption needed — they apply automatically to Pro monthly charges. Up to 2 on the first charge (₩0), then 1 per charge (₩{amount}). Two coupons can also be used in place of one Photo Box Pass. Valid for {months24} months from issuance."
         },
         {
           "q": "What happens after the first {cap} partners are filled?",
@@ -1029,15 +1029,15 @@
         },
         {
           "q": "How is reaching {goal} confirmed?",
-          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. Only first proofs completed within 30 days after the challenge ends (by {deadline}) count. At {goal}, {months} one-month free vouchers are issued within 24 hours after review and you're notified by email. They apply one per charge for {months} consecutive months after your coupons are used up."
+          "a": "A friend counts as a 'valid referral' once they complete their first photo proof. Only first proofs completed within 30 days after the challenge ends (by {deadline}) count. At {goal}, {coupons} 50% coupons are issued within 24 hours after review and you're notified by email."
         }
       ],
       "notice_title": "Terms",
       "notice": [
         "Period: benefits are granted for sign-ups and joins until the challenge end date. Partner status (earning on referrals) is limited to the first {cap} members by join order; closure is shown on this page.",
-        "Coupons (₩{amount}) and 1-month free vouchers apply automatically to Pro monthly charges only (vouchers are used one per consecutive charge) — not to Day Passes, annual billing, or Business plans. Valid {months24} months from issuance; no cash refund, transfer, or resale; not a prepaid payment instrument.",
+        "Coupons (₩{amount}) apply automatically to Pro monthly charges, or two can be used in place of one Photo Box Pass — not to Day Passes, annual billing, or Business plans. Valid {months24} months from issuance; no cash refund, transfer, or resale; not a prepaid payment instrument.",
         "A registered card is still required for a month reduced to ₩0. The 2-coupon first charge applies once per account.",
-        "The {goal}-friend bonus ({months} one-month free vouchers) counts 'valid referrals' (first proof completed, accepted up to 30 days after the challenge ends) and is issued after review. Once per account.",
+        "The {goal}-friend bonus ({coupons} 50% coupons) counts 'valid referrals' (first proof completed, accepted up to 30 days after the challenge ends) and is issued after review. Once per account.",
         "Benefits obtained through fake accounts, self-referral, or other abuse may be revoked and participation voided (benefits already used are not clawed back).",
         "Refunds for charges with a benefit applied follow Terms §7 based on the amount actually paid; coupons are restored for a full refund within 7 days without use.",
         "Code owners' names are partially masked in lookups. Referral relationships are retained for one year after the challenge for benefit issuance and fraud prevention. We may change conditions or end early with prior notice.",

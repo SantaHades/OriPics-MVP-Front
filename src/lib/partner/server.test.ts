@@ -44,7 +44,7 @@ import { PARTNER } from "./config";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockTxBenefitCreateMany.mockResolvedValue({ count: PARTNER.MILESTONE_FREE_MONTHS });
+  mockTxBenefitCreateMany.mockResolvedValue({ count: PARTNER.MILESTONE_COUPONS });
 });
 
 describe("approveMilestone — 원자적 승인 (A-91 ④)", () => {
@@ -58,8 +58,8 @@ describe("approveMilestone — 원자적 승인 (A-91 ④)", () => {
     );
     expect(mockTxBenefitCreateMany).toHaveBeenCalledTimes(1);
     const data = mockTxBenefitCreateMany.mock.calls[0][0].data;
-    expect(data).toHaveLength(PARTNER.MILESTONE_FREE_MONTHS);
-    expect(data.every((b: any) => b.type === "pro_free_month" && b.source === "milestone_12" && b.userId === "u1")).toBe(true);
+    expect(data).toHaveLength(PARTNER.MILESTONE_COUPONS);
+    expect(data.every((b: any) => b.type === "pro_50" && b.source === "milestone_12" && b.userId === "u1")).toBe(true);
   });
 
   it("사전 조회는 미승인이었지만 선점에 실패(count=0, 동시 승인)하면 발급하지 않고 already", async () => {

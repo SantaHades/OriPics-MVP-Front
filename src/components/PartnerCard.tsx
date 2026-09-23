@@ -26,7 +26,7 @@ export interface PartnerOverview {
     campaignEnded: boolean;
     discountAmount: number;
     milestoneCount: number;
-    milestoneFreeMonths: number;
+    milestoneCoupons: number;
     benefitValidMonths: number;
   };
   referrals: Array<{ id: string; status: string; rewarded: boolean; joinedAt: string; nameMasked: string; valid: boolean }>;
@@ -367,10 +367,10 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
           >
             <div className="h-full bg-blue-600 transition-all" style={{ width: `${Math.min(100, (data.validCount / c.milestoneCount) * 100)}%` }} />
           </div>
-          <p id={progressId} className="text-[11px] text-slate-500 mb-3">{t("milestone_progress", { valid: data.validCount, goal: c.milestoneCount, months: c.milestoneFreeMonths })}</p>
+          <p id={progressId} className="text-[11px] text-slate-500 mb-3">{t("milestone_progress", { valid: data.validCount, goal: c.milestoneCount, coupons: c.milestoneCoupons })}</p>
           {data.milestone && (
             <p className={`mb-3 px-3 py-2 rounded-lg text-xs ${data.milestone.status === "approved" ? "bg-emerald-50 text-emerald-800" : data.milestone.status === "rejected" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-800"}`}>
-              {t(`milestone_${data.milestone.status}`, { date: fmtDate(data.milestone.approvedAt ?? data.milestone.reachedAt), goal: c.milestoneCount, months: c.milestoneFreeMonths })}
+              {t(`milestone_${data.milestone.status}`, { date: fmtDate(data.milestone.approvedAt ?? data.milestone.reachedAt), goal: c.milestoneCount, coupons: c.milestoneCoupons })}
             </p>
           )}
           {data.referrals.length === 0 ? (
@@ -407,10 +407,13 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
                 <p className="text-[10px] text-blue-600 font-semibold mt-1">{t("locked_hint", { count: data.benefits.lockedCoupons })}</p>
               ) : null}
             </div>
-            <div className="rounded-xl bg-slate-50 p-3">
-              <p className="text-[11px] text-slate-500">{t("free_months_label")}</p>
-              <p className="text-xl font-extrabold">{t("free_months_value", { count: data.benefits.freeMonths })}</p>
-            </div>
+            {/* 1개월 무료 이용권은 2026-09-24부터 발급 중단(50% 할인권 12장으로 대체) — 과거 보유분이 있을 때만 표시 */}
+            {data.benefits.freeMonths > 0 ? (
+              <div className="rounded-xl bg-slate-50 p-3">
+                <p className="text-[11px] text-slate-500">{t("free_months_label")}</p>
+                <p className="text-xl font-extrabold">{t("free_months_value", { count: data.benefits.freeMonths })}</p>
+              </div>
+            ) : null}
           </div>
           <p className="text-xs text-slate-700 mb-3">
             {nc.subscriptionActive

@@ -29,7 +29,7 @@ interface Stats {
   campaignEnded: boolean;
   discountAmount: number;
   milestoneCount: number;
-  milestoneFreeMonths: number;
+  milestoneCoupons: number;
   benefitValidMonths: number;
 }
 
@@ -61,7 +61,7 @@ export default function PartnerLandingPage() {
   /** 유효 초대(첫 인증) 인정 기한 = 종료 + VALIDITY_GRACE_DAYS (validityDeadline) */
   const deadline = fmtDate(stats ? new Date(endDate.getTime() + PARTNER.VALIDITY_GRACE_DAYS * 86_400_000) : validityDeadline());
   const discount = stats?.discountAmount ?? PARTNER.DISCOUNT_AMOUNT;
-  const months = stats?.milestoneFreeMonths ?? PARTNER.MILESTONE_FREE_MONTHS;
+  const coupons = stats?.milestoneCoupons ?? PARTNER.MILESTONE_COUPONS;
   const goal = stats?.milestoneCount ?? PARTNER.MILESTONE_COUNT;
   const cap = stats?.cap ?? PARTNER.CAP;
   const months24 = stats?.benefitValidMonths ?? PARTNER.BENEFIT_VALID_MONTHS;
@@ -82,7 +82,7 @@ export default function PartnerLandingPage() {
           <p className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-3">{t("eyebrow")}</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">{t("headline")}</h1>
           <p className="text-base text-slate-700 mb-2">{t("sub1", { amount: fmtWon(discount) })}</p>
-          <p className="text-base text-slate-700 mb-6">{t("sub2", { goal, months, value: fmtWon(discount * 2 * months) })}</p>
+          <p className="text-base text-slate-700 mb-6">{t("sub2", { goal, coupons, value: fmtWon(discount * coupons) })}</p>
 
           {/* (2026-09-11 A-94 ③) 잔여 좌석·종료일 강조 카드 */}
           <div className="grid sm:grid-cols-2 gap-3 mb-6">
@@ -136,7 +136,7 @@ export default function PartnerLandingPage() {
             {[
               { icon: <Ticket className="text-blue-600" size={22} />, title: t("step1_t"), body: t("step1_b", { amount: fmtWon(discount) }) },
               { icon: <Users className="text-blue-600" size={22} />, title: t("step2_t"), body: t("step2_b", { amount: fmtWon(discount) }) },
-              { icon: <Gift className="text-blue-600" size={22} />, title: t("step3_t", { goal, months }), body: t("step3_b", { goal, months }) },
+              { icon: <Gift className="text-blue-600" size={22} />, title: t("step3_t", { goal, coupons }), body: t("step3_b", { goal, coupons }) },
             ].map((s, i) => (
               <li key={i} className="rounded-2xl bg-white border border-slate-200 p-5">
                 <div className="mb-2">{s.icon}</div>
@@ -150,7 +150,7 @@ export default function PartnerLandingPage() {
         <section className="mt-10 rounded-2xl bg-white border border-slate-200 p-6">
           <h2 className="text-lg font-bold mb-3">{t("example_title")}</h2>
           <ul className="space-y-2 text-sm text-slate-700">
-            {[t("ex1"), t("ex2", { amount: fmtWon(discount) }), t("ex3", { goal, months })].map((line, i) => (
+            {[t("ex1"), t("ex2", { amount: fmtWon(discount) }), t("ex3", { goal, coupons, total: 1 + 11 + coupons })].map((line, i) => (
               <li key={i} className="flex gap-2">
                 <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" /> {line}
               </li>
@@ -187,8 +187,8 @@ export default function PartnerLandingPage() {
           <dl className="space-y-4">
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="rounded-2xl bg-white border border-slate-200 p-5">
-                <dt className="font-semibold mb-1">{t(`faq.${i}.q`, { goal, months, cap })}</dt>
-                <dd className="text-sm text-slate-600 leading-relaxed">{t(`faq.${i}.a`, { amount: fmtWon(discount), goal, months, months24, cap, end, deadline })}</dd>
+                <dt className="font-semibold mb-1">{t(`faq.${i}.q`, { goal, coupons, cap })}</dt>
+                <dd className="text-sm text-slate-600 leading-relaxed">{t(`faq.${i}.a`, { amount: fmtWon(discount), goal, coupons, months24, cap, end, deadline })}</dd>
               </div>
             ))}
           </dl>
@@ -198,7 +198,7 @@ export default function PartnerLandingPage() {
           <h2 className="text-sm font-bold text-slate-700 mb-2">{t("notice_title")}</h2>
           <ul className="list-disc pl-5 space-y-1">
             {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-              <li key={i}>{t(`notice.${i}`, { amount: fmtWon(discount), goal, months, months24, cap, end, deadline })}</li>
+              <li key={i}>{t(`notice.${i}`, { amount: fmtWon(discount), goal, coupons, months24, cap, end, deadline })}</li>
             ))}
           </ul>
           <p className="mt-3">

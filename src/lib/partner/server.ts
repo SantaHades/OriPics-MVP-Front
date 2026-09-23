@@ -387,9 +387,10 @@ export async function approveMilestone(userId: string, approvedBy: string): Prom
     });
     if (claimed.count !== 1) return "already" as const;
     await tx.partnerBenefit.createMany({
-      data: Array.from({ length: PARTNER.MILESTONE_FREE_MONTHS }, () => ({
+      // 2026-09-24: 1개월 무료 이용권 6장 → Pro 50% 할인권 12장
+      data: Array.from({ length: PARTNER.MILESTONE_COUPONS }, () => ({
         userId,
-        type: "pro_free_month",
+        type: "pro_50",
         source: "milestone_12",
         expiresAt: expires,
       })),
@@ -727,7 +728,7 @@ export async function partnerStats() {
     campaignEnded: Date.now() > PARTNER.CAMPAIGN_END.getTime(),
     discountAmount: PARTNER.DISCOUNT_AMOUNT,
     milestoneCount: PARTNER.MILESTONE_COUNT,
-    milestoneFreeMonths: PARTNER.MILESTONE_FREE_MONTHS,
+    milestoneCoupons: PARTNER.MILESTONE_COUPONS,
     benefitValidMonths: PARTNER.BENEFIT_VALID_MONTHS,
   };
 }

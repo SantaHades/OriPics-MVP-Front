@@ -8,10 +8,11 @@ export const PARTNER = {
   OWNER_CODE: "1234",
   /** 파트너(초대 적립 자격) 선착순 상한 */
   CAP: 500,
-  /** 마일스톤(1개월 무료 이용권 6장) — 유효 초대 인원 */
+  /** 마일스톤(Pro 50% 할인권 12장) — 유효 초대 인원 */
   MILESTONE_COUNT: 12,
-  /** 마일스톤 보상 = 1개월 무료 이용권 장수 (연속 결제에 1장씩 자동 적용) */
-  MILESTONE_FREE_MONTHS: 6,
+  /** 마일스톤 보상 = Pro 50% 할인권 장수 (2026-09-24 대표: 1개월 무료 이용권 6장 → 50% 할인권 12장, 같은 ₩59,400 상당).
+   *  할인권은 결제마다 1장씩 자동 적용되고, 2장으로 사진함 패스 1장 대신 쓸 수도 있다(A-108). 1개월 무료 이용권(pro_free_month)은 더 이상 발급하지 않음. */
+  MILESTONE_COUPONS: 12,
   /** 50% 할인권 1장의 할인액 (Pro 월 ₩9,900의 절반) */
   DISCOUNT_AMOUNT: 4950,
   /** 혜택 유효기간(발급일 기준, 개월) */
@@ -36,6 +37,7 @@ export function proofCountsForMilestone(proofAt: Date): boolean {
   return proofAt.getTime() <= validityDeadline().getTime();
 }
 
+/** pro_free_month는 과거 발급분 호환용(2026-09-24 이후 신규 발급 없음 — 발급 이력 0건 확인) */
 export type BenefitType = "pro_50" | "pro_free_month";
 export type BenefitSource = "signup" | "referral" | "milestone_12" | "admin";
 export type BenefitStatus = "available" | "reserved" | "used" | "expired" | "revoked";

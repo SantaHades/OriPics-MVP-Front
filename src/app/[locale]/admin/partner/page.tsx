@@ -63,7 +63,7 @@ function describeResult(action: string, ok: boolean, status: number, d: any): st
   switch (action) {
     case "approve_milestone":
       return d?.result === "granted"
-        ? `${name} 완료 — 1개월 무료 이용권 ${PARTNER.MILESTONE_FREE_MONTHS}장 발급·메일 발송`
+        ? `${name} 완료 — 50% 할인권 ${PARTNER.MILESTONE_COUPONS}장 발급·메일 발송`
         : d?.result === "already"
           ? `${name} — 이미 승인된 건입니다 (변경 없음)`
           : d?.result === "not_reached"
@@ -304,7 +304,7 @@ export default function PartnerAdminPage() {
                 {!m.approvedAt && (
                   <>
                     <button type="button" onClick={() => act({ action: "approve_milestone", userId: m.userId })} disabled={busy} className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold disabled:opacity-50">
-                      승인 → 1개월 무료 이용권 {PARTNER.MILESTONE_FREE_MONTHS}장 발급
+                      승인 → 50% 할인권 {PARTNER.MILESTONE_COUPONS}장 발급
                     </button>
                     <button
                       type="button"

@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-09-23";
+const LAST_UPDATED = "2026-09-24";
 const EFFECTIVE_DATE = "2026-08-06";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
@@ -127,7 +127,7 @@ function TermsKo() {
         <li>회사는 요금·과금 주기·플랜 구성을 변경할 수 있으며, 회원에게 불리한 변경은 시행일 30일 전, 그 외 변경은 7일 전 서비스 내 공지 및 이메일로 안내합니다. 변경 후 회원이 계속하여 서비스를 이용하는 경우 변경된 조건에 동의한 것으로 간주합니다. 변경 전 결제된 구독은 해당 결제 주기 종료 시까지 변경 전 조건이 유지됩니다.</li>
         <li>미성년자(만 19세 미만)가 결제를 진행한 경우 법정대리인은 미성년자 본인 또는 법정대리인이 동의하지 아니한 결제에 대하여 취소를 요청할 수 있습니다.</li>
         <li><strong>사진함 패스(사진함 1개 전용 촬영 이용권)</strong>: 1장 ₩9,900 (단건 결제). 결제 시 코드가 구매 계정에 귀속되며, 사진함을 개설하거나 사진함 초대를 수락할 때 등록(사용 시작)합니다. 등록한 사진함 1곳에서만 사진 100장(사진 크기 무관)을 인증할 수 있고, 해당 사진의 인증·공개링크 생성·인증서 PDF 발급이 포함되며 다른 사진함에서는 사용할 수 없습니다. 사진목록의 사진을 사진함에 등록하는 경우에도 1장씩 차감되며, 100장을 모두 사용한 뒤의 등록은 해당 사진의 인증 비용에 해당하는 플랜 이용 횟수가 차감됩니다. 사용 기간 제한은 없고(소진 시까지), 등록하지 않은 코드의 유효기간은 구매일로부터 1년입니다. 부동산사진함에 등록된 사진과 확인서는 등록일로부터 5년간 보관되며, 사진함 개설자의 요금제 변경·해지와 무관하게 유지됩니다. 사진함 개설자는 초대하는 참여자의 사진함 패스를 대신 지불할 수 있고(1장 단위, 분할 지불 불가), Pro 50% 할인권 2장은 사진함 패스 1장으로 사용할 수 있습니다. 구매한 패스는 구매 계정 전용으로 양도·재판매·현금 환급이 불가하며 선불전자지급수단에 해당하지 않습니다.</li>
-        <li><strong>할인권·이용권(파트너 릴레이 챌린지 등 프로모션)</strong>: 회사는 프로모션으로 Pro 플랜 월 요금에 적용되는 할인권(예: 50% 할인권) 또는 1개월 무료 이용권을 무상으로 발행할 수 있습니다. 할인권·이용권은 Pro 월간 구독 결제에만 자동 적용되며(첫 결제 최대 2장, 이후 결제마다 1장, 할인권 소진 후 1개월 무료 이용권 순, 무료 이용권을 여러 장 보유한 경우 연속되는 결제에 1장씩 사용 처리), 원데이 패스·연간 결제·Business 플랜에는 적용되지 않습니다. 발급일로부터 24개월 유효하고, 현금 환급·양도·재판매가 불가하며 선불전자지급수단에 해당하지 않습니다. 할인권으로 결제액이 0원이 된 달에도 다음 달 자동 결제를 위해 결제 수단(카드) 등록이 필요합니다. 혜택이 적용된 결제의 환불액은 실제 결제한 금액을 기준으로 제11조에 따라 산정하며, 7일 이내 미사용 전액 환불(청약철회) 시에는 사용된 할인권을 복원하고 그 외의 부분 환불에서는 복원하지 않습니다. 허위 계정·자기 추천 등 부정한 방법으로 취득한 혜택은 사전 통지 후 회수될 수 있으며(이미 사용된 혜택은 회수하지 않음), 프로모션 참여 조건·기간·선착순 인원 등 세부 사항은 서비스 내 안내 페이지에 게시합니다.</li>
+        <li><strong>할인권(파트너 릴레이 챌린지 등 프로모션)</strong>: 회사는 프로모션으로 Pro 플랜 월 요금에 적용되는 할인권(예: 50% 할인권)을 무상으로 발행할 수 있습니다. 할인권은 Pro 월간 구독 결제에 자동 적용되거나(첫 결제 최대 2장, 이후 결제마다 1장), 50% 할인권 2장으로 사진함 패스 1장을 대신할 수 있으며, 원데이 패스·연간 결제·Business 플랜에는 적용되지 않습니다. 과거에 발행된 1개월 무료 이용권이 있는 경우 할인권 소진 후 연속되는 결제에 1장씩 사용 처리됩니다. 발급일로부터 24개월 유효하고, 현금 환급·양도·재판매가 불가하며 선불전자지급수단에 해당하지 않습니다. 할인권으로 결제액이 0원이 된 달에도 다음 달 자동 결제를 위해 결제 수단(카드) 등록이 필요합니다. 혜택이 적용된 결제의 환불액은 실제 결제한 금액을 기준으로 제11조에 따라 산정하며, 7일 이내 미사용 전액 환불(청약철회) 시에는 사용된 할인권을 복원하고 그 외의 부분 환불에서는 복원하지 않습니다. 허위 계정·자기 추천 등 부정한 방법으로 취득한 혜택은 사전 통지 후 회수될 수 있으며(이미 사용된 혜택은 회수하지 않음), 프로모션 참여 조건·기간·선착순 인원 등 세부 사항은 서비스 내 안내 페이지에 게시합니다.</li>
       </ol>
 
       <h2 id="refund" className="scroll-mt-20">제11조 (환불 및 청약철회)</h2>
@@ -201,6 +201,7 @@ function TermsKo() {
 
       <h2>변경 이력</h2>
       <ul>
+        <li>2026-09-24: 제10조 할인권 조항 개정 — 파트너 챌린지 달성 보상을 1개월 무료 이용권에서 50% 할인권으로 변경, 할인권 2장의 사진함 패스 대체 사용 명시</li>
         <li>2026-09-23: 제10조에 사진함 패스(사진함 1개 전용 촬영 이용권) 추가, 제11조에 사진함 패스 환불 기준 추가</li>
         <li>2026-05-12: 제10조(유료 서비스) 및 제11조(환불·청약철회) 본문 갱신</li>
         <li>2026-07-24: 제11조 개정 — 환불액 산정 기준 신설(제3항: 회당 정가 공제·잔여 10% 위약금), 일반해지·중도해지 선택권 명시, 부정 이용 방지 조항 추가</li>
@@ -285,7 +286,7 @@ function TermsEn() {
         <li>Monthly proof allowances reset on each billing-anniversary date; unused allowances do not carry over.</li>
         <li>We may change pricing, billing cycles, or plan composition. Changes adverse to members take effect at least 30 days after in-Service and email notice; other changes take effect at least 7 days after notice. Continued use after the effective date constitutes acceptance. Subscriptions paid before the effective date retain prior terms until the end of that billing cycle.</li>
         <li>Where a minor (under 19 in Korea) made a payment without the consent of a legal guardian, the guardian or the minor may request cancellation under the Korean Civil Code.</li>
-        <li><strong>Promotional discount coupons and free-month vouchers</strong> (e.g., the Partner Relay Challenge): We may issue, free of charge, coupons that discount the Pro monthly fee (e.g., 50% off) or 1-month free vouchers. They apply automatically and only to Pro monthly subscription charges (up to 2 coupons on the first charge, then 1 per charge; 1-month free vouchers apply after coupons are used up, one per consecutive charge when several are held) and do not apply to Day Passes, annual billing, or Business plans. They are valid for 24 months from issuance, cannot be redeemed for cash, transferred, or resold, and are not prepaid payment instruments. A registered payment method (card) is still required for a month whose charge is reduced to ₩0. Refunds for charges to which a benefit was applied are calculated under §7 based on the amount actually paid; coupons used are restored only for a full refund within 7 days without use. Benefits obtained through fraudulent means (fake accounts, self-referral, etc.) may be revoked after notice (benefits already used are not clawed back). Participation conditions, period, and first-come caps are published on the promotion page in the Service.</li>
+        <li><strong>Promotional discount coupons</strong> (e.g., the Partner Relay Challenge): We may issue, free of charge, coupons that discount the Pro monthly fee (e.g., 50% off). They apply automatically to Pro monthly subscription charges (up to 2 coupons on the first charge, then 1 per charge), or two 50% coupons can be used in place of one Photo Box Pass, and do not apply to Day Passes, annual billing, or Business plans. Any previously issued 1-month free vouchers apply after coupons are used up, one per consecutive charge. They are valid for 24 months from issuance, cannot be redeemed for cash, transferred, or resold, and are not prepaid payment instruments. A registered payment method (card) is still required for a month whose charge is reduced to ₩0. Refunds for charges to which a benefit was applied are calculated under §7 based on the amount actually paid; coupons used are restored only for a full refund within 7 days without use. Benefits obtained through fraudulent means (fake accounts, self-referral, etc.) may be revoked after notice (benefits already used are not clawed back). Participation conditions, period, and first-come caps are published on the promotion page in the Service.</li>
       </ol>
 
       <h2 id="refund" className="scroll-mt-20">7. Refunds and Withdrawal</h2>
