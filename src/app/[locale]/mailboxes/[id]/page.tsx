@@ -132,12 +132,12 @@ export default function MailboxLivePage() {
   };
 
   const active = members.filter((m) => !m.kicked && !m.left);
-  const defaultTitle = ko ? "사진함 확인서" : "Photo Mailbox Report";
+  const defaultTitle = ko ? "사진함 확인서" : "Photo Box Report";
   const loadingView = <div className="flex items-center gap-2 text-sm text-slate-500"><RefreshCw className="animate-spin text-blue-500" size={16} /> {ko ? "불러오는 중…" : "Loading…"}</div>;
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <Link href="/mailboxes" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-6"><ArrowLeft size={14} /> {ko ? "사진함 목록" : "Mailboxes"}</Link>
+        <Link href="/mailboxes" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-6"><ArrowLeft size={14} /> {ko ? "사진함 목록" : "Photo Boxes"}</Link>
         {status !== "authenticated" ? loadingView : err ? (
           <div className="rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3">
             {errorText(err, lang) ?? `${ko ? "사진함을 열 수 없습니다: " : "Cannot open mailbox: "}${err}`}

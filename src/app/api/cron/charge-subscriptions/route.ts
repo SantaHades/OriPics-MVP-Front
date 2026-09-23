@@ -70,10 +70,19 @@ export async function GET(req: NextRequest) {
         }),
         // 보관함 종료 → 무기한 보관(expires_at=null) 링크에 grace 만료 설정:
         // 30일 유예 + 7일 free 정책 = 37일 (pricing-policy §11.2, A-7③)
+        // A-108 (2026-09-23): ①사진함 사진은 제외 — 사진함 삭제(부동산은 5년 보관)까지 만료 없음이 전제(이전엔 정리 크론이 건너뛰어 우연히 보존)
+        // ②원데이 패스 사진은 원래 1년 기한으로 복귀(Pro 기간 중엔 재구독 규칙대로 무기한) — 이미 지났으면 일반 유예 37일
         prisma.$executeRaw`
-          UPDATE public.links
-          SET expires_at = now() + interval '37 days'
-          WHERE user_id = ${sub.userId} AND expires_at IS NULL`,
+          UPDATE public.links l
+          SET expires_at = CASE
+            WHEN l.pass_id IS NOT NULL THEN GREATEST(
+              now() + interval '37 days',
+              (SELECT o.created_at + interval '365 days' FROM storage.objects o
+                WHERE o.bucket_id = 'oripics-proofs' AND o.name = l.storage_path LIMIT 1))
+            ELSE now() + interval '37 days'
+          END
+          WHERE l.user_id = ${sub.userId} AND l.expires_at IS NULL
+            AND NOT EXISTS (SELECT 1 FROM public.mailbox_photos mp WHERE mp.link_id = l.link_id)`,
       ]);
       downgraded++;
       // §5.3 즉시 알림 (A-58) — 유예 만료일·링크 수 안내. 발송 실패는 다운그레이드에 무영향

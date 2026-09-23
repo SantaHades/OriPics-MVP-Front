@@ -96,7 +96,7 @@ export default function InviteLanding() {
     used: ko ? "이미 사용된 초대코드입니다. 개설자에게 새 코드를 요청하세요." : "This code has already been used. Ask the owner for a new one.",
     expired: ko ? "만료된 초대코드입니다. 개설자에게 새 코드를 요청하세요." : "This code has expired. Ask the owner for a new one.",
     revoked: ko ? "취소된 초대코드입니다. 개설자에게 문의하세요." : "This code was cancelled. Please contact the owner.",
-    closed: ko ? "초대가 종료되어 참여할 수 없는 사진함입니다. 개설자에게 문의하세요." : "Invitations to this mailbox are closed. Please contact the owner.",
+    closed: ko ? "초대가 종료되어 참여할 수 없는 사진함입니다. 개설자에게 문의하세요." : "Invitations to this photo box are closed. Please contact the owner.",
   };
 
   return (
@@ -109,7 +109,7 @@ export default function InviteLanding() {
         <div className="rounded-3xl bg-white border border-slate-200 p-8 shadow-sm">
           <div className="flex items-center gap-2 text-blue-600 mb-3">
             <Mailbox size={20} />
-            <span className="text-sm font-semibold">{ko ? "사진함 초대" : "Photo mailbox invitation"}</span>
+            <span className="text-sm font-semibold">{ko ? "사진함 초대" : "Photo box invitation"}</span>
           </div>
 
           {info === "loading" ? (
@@ -172,7 +172,7 @@ export default function InviteLanding() {
                   <p className="text-xs text-slate-500 text-center mt-2 leading-relaxed">
                     {ko
                       ? "설치 후: 앱 > 제출 탭 > 사진함 > 초대받은 사진함 [+ 추가하기]에 위 코드를 입력하세요. 참여에는 로그인이 필요합니다."
-                      : "After installing: App > Submit tab > Mailboxes > Invited mailboxes [+ Add] and enter the code above. Sign-in is required."}
+                      : "After installing: App > Submit tab > Photo Boxes > Invited photo boxes [+ Add] and enter the code above. Sign-in is required."}
                   </p>
                   {/* (2026-09-11 A-94) 계정 CTA — ref(개설자 파트너코드)를 가입 폼까지 전달 */}
                   <p className="text-xs text-slate-600 text-center mt-3 leading-relaxed">

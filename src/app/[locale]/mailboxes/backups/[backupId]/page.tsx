@@ -67,7 +67,7 @@ export default function BackupDetailPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="max-w-5xl mx-auto px-6 py-10">
-        <Link href="/mailboxes" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-6"><ArrowLeft size={14} /> {ko ? "사진함 목록" : "Mailboxes"}</Link>
+        <Link href="/mailboxes" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-800 mb-6"><ArrowLeft size={14} /> {ko ? "사진함 목록" : "Photo Boxes"}</Link>
         {status !== "authenticated" ? loadingView : err ? (
           <div className="rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3">
             {errorText(err, lang) ?? `${ko ? "백업본을 열 수 없습니다: " : "Cannot open backup: "}${err}`}
@@ -76,7 +76,7 @@ export default function BackupDetailPage() {
           <>
             <div className="rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm px-4 py-3 mb-4">
               {ko ? `📦 백업본 — ${fmtDateTime(b.taken_at, lang)} 시점의 상태입니다.` : `📦 Backup — state as of ${fmtDateTime(b.taken_at, lang)}.`}
-              {b.copied_files ? (ko ? ` 사진 파일 포함(${fmtBytes(b.bytes)}).` : ` Includes photo files (${fmtBytes(b.bytes)}).`) : (ko ? " 사진은 원본 링크를 참조합니다(사진함 삭제 후에는 표시되지 않을 수 있음)." : " Photos reference the live links (may disappear after mailbox deletion).")}
+              {b.copied_files ? (ko ? ` 사진 파일 포함(${fmtBytes(b.bytes)}).` : ` Includes photo files (${fmtBytes(b.bytes)}).`) : (ko ? " 사진은 원본 링크를 참조합니다(사진함 삭제 후에는 표시되지 않을 수 있음)." : " Photos reference the live links (may disappear after photo box deletion).")}
               {copyFailed > 0 ? (ko ? ` ⚠️ 사진 파일 ${copyFailed}건은 백업 시 복사되지 않았습니다.` : ` ⚠️ ${copyFailed} photo file(s) could not be copied at backup time.`) : null}
             </div>
             <div className="flex flex-wrap items-start justify-between gap-4 mb-2">

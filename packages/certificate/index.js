@@ -221851,7 +221851,7 @@ function tzLabel(tz, locale) {
 var S3 = {
   ko: {
     title: "\uC0AC\uC9C4\uD568 \uD655\uC778\uC11C",
-    subtitle: "OriPics Photo Mailbox Report",
+    subtitle: "OriPics Photo Box Report",
     issued: "\uBC1C\uD589",
     basisLive: "\uAE30\uC900: \uBC1C\uD589 \uC2DC\uC810\uC758 \uD604\uC7AC \uC0C1\uD0DC",
     basisBackup: "\uAE30\uC900: \uBC31\uC5C5\uBCF8",
@@ -221905,12 +221905,12 @@ var S3 = {
     truncThumbs: "\uC0AC\uC9C4 {total}\uC7A5 \uC911 {shown}\uC7A5\uAE4C\uC9C0\uB9CC \uC378\uB124\uC77C \uD45C\uC2DC \u2014 \uC774\uD6C4 \uC0AC\uC9C4\uC740 \uC815\uBCF4\xB7\uACF5\uAC1C\uB9C1\uD06C\uB9CC \uC218\uB85D\uB428."
   },
   en: {
-    title: "Photo Mailbox Report",
+    title: "Photo Box Report",
     subtitle: "OriPics \uC0AC\uC9C4\uD568 \uD655\uC778\uC11C",
     issued: "Issued",
     basisLive: "Basis: current state at issuance",
     basisBackup: "Basis: backup snapshot",
-    mailbox: "Mailbox",
+    mailbox: "Photo Box",
     number: "Number",
     created: "Created",
     owner: "Owner",
@@ -221940,13 +221940,13 @@ var S3 = {
     capturedAt: "Captured",
     publishedAt: "Published",
     noCoords: "No location",
-    sourceCapture: "captured in mailbox",
+    sourceCapture: "captured in photo box",
     sourceSubmit: "submitted",
     memo: "Public memo",
     noPhotos: "No photos.",
     unreadFmt: "{u} of {n} unseen",
     noticeTitle: "Notice",
-    notice1: "This report reproduces the mailbox state (participants, photo attributes, read status) as recorded on OriPics servers at the stated basis time.",
+    notice1: "This report reproduces the photo box state (participants, photo attributes, read status) as recorded on OriPics servers at the stated basis time.",
     notice2: "The originality, capture time and location of each photo can be verified online by anyone via its public link (QR). Public memos are written by the uploader and are not verified.",
     notice3: "This document supports factual record-keeping; it does not assert legal evidentiary value or the truth of the content.",
     mapHint: "Tap the pin next to coordinates to open the map.",
@@ -221956,7 +221956,7 @@ var S3 = {
     page: "Page",
     footer: "OriPics \u2014 proof of when, where and on which device a photo was taken.",
     tzNote: "All times in {tz}",
-    truncPhotos: "Only the first {shown} of {total} photos are listed (report limit). See the web mailbox for the full list.",
+    truncPhotos: "Only the first {shown} of {total} photos are listed (report limit). See the web photo box for the full list.",
     truncThumbs: "Thumbnails omitted beyond {shown} of {total} photos \u2014 details and public links are still listed."
   }
 };

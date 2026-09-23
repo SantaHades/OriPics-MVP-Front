@@ -211,13 +211,13 @@ export function inviteMessage(
     const exp = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
     return [
       `Hi ${p.inviteeName}, this is ${p.ownerName}.`,
-      `You are invited to the OriPics photo mailbox "${p.mailboxName}".`,
+      `You are invited to the OriPics photo box "${p.mailboxName}".`,
       ``,
       `1. Tap the link below or scan the QR code. If you don't have the app yet, it will guide you to install it.`,
       `   ${url}`,
-      `2. In the app: Submit tab > Mailboxes > Invited mailboxes [+ Add] > enter the invite code ${code}`,
+      `2. In the app: Submit tab > Photo Boxes > Invited photo boxes [+ Add] > enter the invite code ${code}`,
       `※ The code can be used once, until ${exp}.`,
-      `※ You will appear as "${p.inviteeName}"${p.roleText ? ` (${p.roleText})` : ""} in the mailbox.`,
+      `※ You will appear as "${p.inviteeName}"${p.roleText ? ` (${p.roleText})` : ""} in the photo box.`,
     ].join("\n");
   }
   const kst = new Date(d.getTime() + 9 * 3600_000);
@@ -402,6 +402,14 @@ export async function mailboxDto(
   if (billingUser) {
     const u = await prisma.user.findUnique({ where: { id: billingUser }, select: { tier: true } });
     capturePro = u?.tier === "pro" || u?.tier === "business";
+    // A-108 (2026-09-23): 차감 주체에게 활성 원데이 패스가 있으면 서버 sign이 Verified를 허용하므로(A-60) 앱도 Verified를 요청하게 한다
+    if (!capturePro) {
+      const pass = await prisma.dayPass.findFirst({
+        where: { redeemerId: billingUser, status: "redeemed", expiresAt: { gt: new Date() } },
+        select: { totalProofs: true, usedProofs: true },
+      });
+      capturePro = !!pass && pass.usedProofs < pass.totalProofs;
+    }
   }
   return {
     id: mb.id,

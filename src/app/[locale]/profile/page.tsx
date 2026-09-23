@@ -648,7 +648,7 @@ export default function ProfilePage() {
           const names = mailboxNames.join(", ");
           alert(
             locale === "en"
-              ? `This photo belongs to the mailbox "${names}" and cannot be deleted. Delete the mailbox first.`
+              ? `This photo belongs to the photo box "${names}" and cannot be deleted. Delete the photo box first.`
               : `사진함 '${names}'에 포함된 사진이라 삭제할 수 없습니다. 사진함을 먼저 삭제해야 합니다.`,
           );
           setDeleteTarget(null);
@@ -1531,7 +1531,7 @@ export default function ProfilePage() {
             <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{proofs.length}</span>
             {/* A-81 2차: 사진함(참여 중·백업) 페이지 진입 */}
             <Link href="/mailboxes" className="ml-auto text-sm font-semibold text-blue-600 hover:underline">
-              {locale === "en" ? "Mailboxes →" : "사진함 →"}
+              {locale === "en" ? "Photo Boxes →" : "사진함 →"}
             </Link>
           </div>
 

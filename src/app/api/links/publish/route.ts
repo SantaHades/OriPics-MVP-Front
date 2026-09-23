@@ -4,6 +4,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
+import { storageUsage } from "@/lib/storage/usage";
 import { prisma } from "@/lib/prisma";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
 import { decodePngPixels, extractFinalHashFromPixels, computeInnerHashFromPixels, hexToBytes } from "@/lib/oripics-stamp/server";
@@ -173,12 +174,10 @@ export async function POST(req: NextRequest) {
   // 패스 발행도 Pro와 동일하게 체크 (A-60 — 전용 쿼터 없음, 기존 규칙 공유).
   if (isPaidTier || passId) {
     try {
-      const [usage]: any[] = await t.span("quota_check", () => prisma.$queryRaw`
-        SELECT COALESCE(sum((o.metadata->>'size')::bigint), 0)::bigint AS bytes
-        FROM storage.objects o
-        JOIN public.links l ON o.name = l.storage_path
-        WHERE l.user_id = ${billingUserId} AND o.bucket_id = ${BUCKET_NAME}`);
-      const usedBytes = Number(usage?.bytes ?? 0);
+      // A-108 (2026-09-23): 프로필 표시와 같은 귀속 규칙(storageUsage — 차감 주체 기준, 남이 부담한 내 사진함 촬영분 제외·
+      // 내가 부담한 남의 촬영분 포함)으로 합산. 이전엔 links.user_id=차감 주체만 세어 멤버의 개설자 부담 촬영분이 한도 검사에서 빠졌다.
+      const usage = await t.span("quota_check", () => storageUsage(billingUserId));
+      const usedBytes = usage.bytes;
       if (usedBytes >= STORAGE_QUOTA_BYTES) {
         return NextResponse.json(
           { detail: "storage_quota_exceeded", used_bytes: usedBytes, quota_bytes: STORAGE_QUOTA_BYTES },
