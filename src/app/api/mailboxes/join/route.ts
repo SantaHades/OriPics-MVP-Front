@@ -78,6 +78,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ detail: "ambiguous", candidates: owners }, { status: 409 });
   }
   const mb = candidates[0];
+  // A-108: 부동산사진함은 초대받은 사람만 참여(번호·비밀번호 참여 차단)
+  if (mb.type === "real_estate") return NextResponse.json({ detail: "invite_only" }, { status: 403 });
 
   const existing = await loadMember(db, mb.id, userId);
   if (existing?.kicked_at) return NextResponse.json({ detail: "kicked" }, { status: 403 });

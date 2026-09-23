@@ -1,5 +1,6 @@
 // 초대 대기 항목 수정·삭제 (A-81) — PATCH { invitee_name?, role_text?, can_capture?, capture_billing? } · DELETE = 무효화 (개설자)
 import { NextRequest, NextResponse } from "next/server";
+import { releaseSponsorPass } from "@/lib/photobox/seat";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb } from "@/lib/events/server";
@@ -56,5 +57,7 @@ export async function DELETE(_req: NextRequest, props: { params: Promise<{ id: s
   if (g.inv.used_at) return NextResponse.json({ detail: "already_used" }, { status: 409 });
   const { error } = await g.db.from("mailbox_invites").update({ revoked_at: new Date().toISOString() }).eq("code", g.code);
   if (error) return NextResponse.json({ detail: "db_error" }, { status: 500 });
+  // A-108: 대납 초대 취소 → 예약한 사진함 패스를 개설자에게 반환
+  await releaseSponsorPass(g.inv.sponsor_pass_id);
   return NextResponse.json({ ok: true });
 }

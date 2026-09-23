@@ -1,6 +1,10 @@
 // 사진함 v2 (A-81, 2026-09-09) — GET /api/mailboxes: 내가 개설한 사진함 + 초대받은 사진함 (사진 수·미열람 수 포함)
 //                               POST /api/mailboxes: 개설 { name, description?, memo?, invite_status?, password?, owner_name? } — owner_name=이 사진함에서 쓸 개설자 표시 이름(사진함마다 다르게 가능, 9/9 대표)
 import { NextRequest, NextResponse } from "next/server";
+import {
+  ACTIVE_MAILBOX_TYPES, canPaySeat, chargeSeat, isProUser, isSeatMailbox, parseMailboxType, parseSeatPayment, photoboxWallet,
+  seatPaymentRequired,
+} from "@/lib/photobox/seat";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb, isMissingTable } from "@/lib/events/server";
@@ -64,6 +68,20 @@ export async function POST(req: NextRequest) {
   const inviteStatus = body.invite_status === "closed" ? "closed" : "open";
   const password = typeof body.password === "string" ? body.password.trim().slice(0, 80) : "";
   const ownerNameInput = typeof body.owner_name === "string" ? body.owner_name.trim().slice(0, 40) : "";
+  // A-108 사진함 종류 — 미지정은 일반. 부동산만 활성, 나머지 3종은 준비 중(선택 불가)
+  const type = body.type === undefined ? "general" : parseMailboxType(body.type);
+  if (!type) return NextResponse.json({ detail: "invalid_type" }, { status: 400 });
+  if (!ACTIVE_MAILBOX_TYPES.includes(type)) return NextResponse.json({ detail: "type_unavailable" }, { status: 403 });
+  const seatMailbox = isSeatMailbox(type);
+  const seatPayment = seatMailbox ? parseSeatPayment(body.seat_payment) : null;
+  if (seatMailbox) {
+    // 부동산사진함: 개설은 Pro만 + 개설자 좌석 비용(사진함 패스 1장 또는 할인권 2장). 초대 전용이라 비밀번호 참여 없음.
+    if (!(await isProUser(userId))) return NextResponse.json({ detail: "pro_required" }, { status: 403 });
+    if (!seatPayment) return seatPaymentRequired(userId, "seat_payment_required");
+    if (seatPayment.kind !== "code" && !canPaySeat(await photoboxWallet(userId))) {
+      return seatPaymentRequired(userId, seatPayment.kind === "coupon" ? "not_enough_coupons" : "no_pass");
+    }
+  }
 
   // 한도: 무료 1개 / Pro 무제한 (활성 사진함만 계산)
   const limits = await limitsFor(userId);
@@ -87,7 +105,7 @@ export async function POST(req: NextRequest) {
 
   // 번호 발급 — 시퀀스(MB-1001~)가 A-72 때 운영자가 수동 등재한 번호(예: MB-1001)와 겹칠 수 있어(9/9 실기기 실측 duplicate key),
   // 충돌(23505)이면 다음 번호를 다시 받아 재시도한다.
-  const passwordHash = password ? await hashPassword(password) : null;
+  const passwordHash = password && !seatMailbox ? await hashPassword(password) : null;
   let id = "";
   let inserted = false;
   for (let attempt = 0; attempt < 30 && !inserted; attempt++) {
@@ -109,6 +127,7 @@ export async function POST(req: NextRequest) {
       invite_status: inviteStatus,
       status: "active",
       owner_user_id: userId,
+      type,
     });
     if (!insErr) {
       inserted = true;
@@ -125,6 +144,20 @@ export async function POST(req: NextRequest) {
   const ownerName = ownerNameInput || (await userDisplayName(userId));
   const member = { mailbox_id: id, user_id: userId, display_name: ownerName, kind: "owner", capture_billing: "owner" };
   await db.from("mailbox_members").insert(member);
+  if (seatMailbox && seatPayment) {
+    // 개설자 좌석 비용 — 실패하면 방금 만든 사진함을 되돌린다(멤버·초대는 FK cascade)
+    let charged: Awaited<ReturnType<typeof chargeSeat>> | null = null;
+    try {
+      charged = await chargeSeat(userId, { mailboxId: id, userId, paidBy: "self" }, seatPayment);
+    } catch (e: any) {
+      console.error("[mailboxes] seat charge failed:", e?.message ?? e);
+    }
+    if (!charged?.ok) {
+      await db.from("mailboxes").delete().eq("id", id);
+      if (charged && !charged.ok) return seatPaymentRequired(userId, charged.reason);
+      return NextResponse.json({ detail: "db_error" }, { status: 500 });
+    }
+  }
   const { data: mb } = await db.from("mailboxes").select(MAILBOX_COLS).eq("id", id).single();
   const { data: members } = await db.from("mailbox_members").select(MEMBER_COLS).eq("mailbox_id", id);
   const dto = await mailboxDto(db, mb as MailboxRow, ((members ?? []) as MemberRow[]).filter(isActiveMember), userId, { photo_count: 0, unread_count: 0 });

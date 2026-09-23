@@ -8,6 +8,8 @@ import * as bcrypt from "bcryptjs";
 import { randomInt } from "crypto";
 
 import { prisma } from "@/lib/prisma";
+import { seatBalance } from "@/lib/photobox/pass";
+import { isSeatMailbox } from "@/lib/photobox/seat";
 import { isMissingTable } from "@/lib/events/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -39,9 +41,15 @@ export interface MailboxRow {
   delete_after: string | null;
   /** 확인서 PDF 제목(개설자 지정). NULL = 기본 문구 (2026-09-10) */
   report_title: string | null;
+  /** A-108 사진함 종류: general | real_estate | accident | rental_car | construction (개설 후 변경 불가) */
+  type: string;
+  /** A-108 부동산사진함 보관 전환 시각(삭제 대신) */
+  archived_at: string | null;
+  /** A-108 부동산사진함 최종 보관 기한 */
+  retain_until: string | null;
 }
 export const MAILBOX_COLS =
-  "id, name, description, memo, password_hash, invite_status, status, owner_user_id, created_at, locked_at, delete_after, report_title";
+  "id, name, description, memo, password_hash, invite_status, status, owner_user_id, created_at, locked_at, delete_after, report_title, type, archived_at, retain_until";
 
 export interface MemberRow {
   mailbox_id: string;
@@ -71,9 +79,12 @@ export interface InviteRow {
   used_by: string | null;
   used_at: string | null;
   revoked_at: string | null;
+  /** A-108 개설자 대납 초대면 예약한 사진함 패스 id */
+  sponsor_pass_id: string | null;
+  is_rejoin: boolean;
 }
 export const INVITE_COLS =
-  "code, mailbox_id, invitee_name, role_text, can_capture, capture_billing, created_by, created_at, expires_at, used_by, used_at, revoked_at";
+  "code, mailbox_id, invitee_name, role_text, can_capture, capture_billing, created_by, created_at, expires_at, used_by, used_at, revoked_at, sponsor_pass_id, is_rejoin";
 
 export interface PhotoRow {
   id: string;
@@ -91,7 +102,7 @@ export function isActiveMember(m: MemberRow | null | undefined): m is MemberRow 
   return !!m && !m.kicked_at && !m.left_at;
 }
 export function isLocked(mb: MailboxRow): boolean {
-  return !!mb.locked_at || !!mb.delete_after;
+  return !!mb.locked_at || !!mb.delete_after || !!mb.archived_at;
 }
 
 export async function loadMailbox(db: SupabaseClient, id: string): Promise<MailboxRow | null> {
@@ -385,6 +396,10 @@ export interface MailboxDto {
   me: { display_name: string; role_text: string | null; can_capture: boolean; capture_billing: string; kicked: boolean } | null;
   /** 사진함 촬영 시 차감 주체가 Pro/패스 → 앱이 verified 요청 */
   capture_pro: boolean;
+  /** A-108 사진함 종류 */
+  type: string;
+  /** A-108 좌석(사진함 패스) — 부동산사진함에서 내 잔여. 일반사진함은 null */
+  seat: { total: number; used: number; remaining: number; sponsored: boolean } | null;
 }
 
 export async function mailboxDto(
@@ -399,7 +414,13 @@ export async function mailboxDto(
   const mine = mb.owner_user_id === viewerId;
   const billingUser = me?.capture_billing === "self" ? viewerId : mb.owner_user_id;
   let capturePro = false;
-  if (billingUser) {
+  // A-108: 부동산사진함은 촬영을 항상 본인 좌석에서 차감 — 잔여가 있으면 Verified(사진함 패스 포함 사항)
+  let seat: MailboxDto["seat"] = null;
+  if (isSeatMailbox(mb.type) && me) {
+    const b = await seatBalance(prisma, mb.id, viewerId);
+    seat = { total: b.total, used: b.used, remaining: b.remaining, sponsored: b.sponsored };
+    capturePro = b.remaining > 0;
+  } else if (billingUser) {
     const u = await prisma.user.findUnique({ where: { id: billingUser }, select: { tier: true } });
     capturePro = u?.tier === "pro" || u?.tier === "business";
     // A-108 (2026-09-23): 차감 주체에게 활성 원데이 패스가 있으면 서버 sign이 Verified를 허용하므로(A-60) 앱도 Verified를 요청하게 한다
@@ -431,6 +452,8 @@ export async function mailboxDto(
       ? { display_name: me.display_name, role_text: me.role_text, can_capture: me.can_capture, capture_billing: me.capture_billing, kicked: !!me.kicked_at }
       : null,
     capture_pro: capturePro,
+    type: mb.type ?? "general",
+    seat,
   };
 }
 

@@ -164,6 +164,8 @@ export async function GET(req: NextRequest) {
       .from("mailboxes")
       .select("id, name")
       .lte("delete_after", new Date().toISOString())
+      // A-108: 부동산사진함은 실제 삭제 대신 5년 보관(보관 전환은 6단계) — 여기서는 절대 지우지 않는다
+      .neq("type", "real_estate")
       .limit(20);
     if (dueErr) throw dueErr;
     for (const mb of due ?? []) {
@@ -242,6 +244,25 @@ export async function GET(req: NextRequest) {
     errors.push(`refresh_tokens purge: ${e?.message || e}`);
   }
 
+  // A-108: 만료·취소된 대납 초대에 예약된 사진함 패스를 개설자에게 반환(issued). 초대 취소 API가 즉시 반환하지만 만료(7일)는 여기서.
+  let sponsorPassesReleased = 0;
+  try {
+    sponsorPassesReleased = await prisma.$executeRawUnsafe(`
+      UPDATE public.photobox_passes p
+      SET status = 'issued', reserved_invite = NULL, updated_at = now()
+      FROM public.mailbox_invites i
+      WHERE p.status = 'reserved' AND i.sponsor_pass_id = p.id AND i.used_at IS NULL
+        AND (i.revoked_at IS NOT NULL OR i.expires_at <= now())`);
+    // 초대 행이 사라진 예약(사진함 삭제 cascade 등)도 반환
+    sponsorPassesReleased += await prisma.$executeRawUnsafe(`
+      UPDATE public.photobox_passes p
+      SET status = 'issued', reserved_invite = NULL, updated_at = now()
+      WHERE p.status = 'reserved' AND p.updated_at < now() - interval '10 minutes' -- 예약 직후·초대 저장 전 순간 보호
+        AND NOT EXISTS (SELECT 1 FROM public.mailbox_invites i WHERE i.sponsor_pass_id = p.id)`);
+  } catch (e: any) {
+    if (!/does not exist/i.test(String(e?.message || e))) errors.push(`sponsor_pass release: ${e?.message || e}`);
+  }
+
   // 7) 뷰어 경량본(preview_path) 누락 링크 백필 — 매 실행 20건 (2026-09-13, 큰 사진이 늦게 열리던 원인)
   let previewsBackfilled = 0;
   let thumbsBackfilled = 0; // (2026-09-13 A-96) 목록 썸네일(thumb_path) — 같은 배치에서 생성
@@ -254,5 +275,5 @@ export async function GET(req: NextRequest) {
     errors.push(`preview_backfill: ${e?.message || e}`);
   }
 
-  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, submitLinksReset, rateLimitsPurged, refreshTokensPurged, previewsBackfilled, thumbsBackfilled, errors });
+  return NextResponse.json({ ok: true, scanned, expiredRemoved, orphansRemoved, mailboxesDeleted, submitLinksReset, rateLimitsPurged, refreshTokensPurged, previewsBackfilled, thumbsBackfilled, sponsorPassesReleased, errors });
 }

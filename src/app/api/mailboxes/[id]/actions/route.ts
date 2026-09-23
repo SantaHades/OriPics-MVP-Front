@@ -2,6 +2,7 @@
 //   transfer_owner(2차): 개설자 권한을 참여 중인 다른 참여자에게 이전 — 이후 참여자 촬영의 기본 부담·설정 권한이 새 개설자에게
 //   lock/unlock/cancel_delete = 개설자, leave = 참여자(개설자 불가). 각 동작은 해당자에게 인앱 알림.
 import { NextRequest, NextResponse } from "next/server";
+import { isProUser } from "@/lib/photobox/seat";
 
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { eventsDb } from "@/lib/events/server";
@@ -46,6 +47,10 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     if (!target || !isActiveMember(target) || target.kind === "owner") return NextResponse.json({ detail: "member_not_found" }, { status: 404 });
     // A-84③: 잠금·삭제 예고 중에는 개설자 이전 불가 (잠금 해제/삭제 취소 후 진행)
     if (isLocked(mb)) return NextResponse.json({ detail: "mailbox_locked" }, { status: 409 });
+    // A-108: 부동산사진함 개설자 자격은 Pro 회원에게만 이전
+    if (mb.type === "real_estate" && !(await isProUser(targetId))) {
+      return NextResponse.json({ detail: "recipient_pro_required" }, { status: 403 });
+    }
     const meRow = members.find((m) => m.user_id === userId);
     // 받는 사람의 개설 한도(무료 1개) 검사 — 초과면 거절. 참여자 한도(무료 20)는 기존 인원 유지, 새 초대만 막힘(초대 생성 시 검사)
     const recipientLimits = await limitsFor(targetId);
