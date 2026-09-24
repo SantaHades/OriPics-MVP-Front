@@ -5,7 +5,7 @@
 // 필요 설정:
 //  - GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON: GCP 서비스 계정 키 JSON 전체
 //    (Play Console → 설정 → Google Cloud 프로젝트 연결 후, playintegrity 권한 부여)
-//  - ANDROID_PACKAGE_NAME: 예) com.santahades.oripics
+//  - ANDROID_PACKAGE_NAME: 쉼표 구분 목록, 예) ori.pics.app,com.santahades.oripics (verifyToken이 순서대로 시도)
 import { createHash, createSign } from "crypto";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";

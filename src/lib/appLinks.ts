@@ -3,6 +3,8 @@
 //   iOS  → https://apps.apple.com/app/id6804357260
 //   And  → https://play.google.com/store/apps/details?id=com.santahades.oripics
 export const IOS_APP_URL = "https://testflight.apple.com/join/zNwF6DKZ";
+// ⚠️(2026-09-25) Android 새 앱 ori.pics.app 전환 예정 — 새 앱이 프로덕션에 게시된 뒤에 이 URL과 아래 intent의 package를
+//   ori.pics.app(https://play.google.com/store/apps/details?id=ori.pics.app)으로 바꾼다. 게시 전에 바꾸면 설치 버튼이 404.
 export const ANDROID_STORE_URL = "https://play.google.com/apps/testing/com.santahades.oripics";
 
 // Android: 앱이 설치돼 있으면 실행, 없으면 스토어로 폴백 (Chrome intent 스킴).

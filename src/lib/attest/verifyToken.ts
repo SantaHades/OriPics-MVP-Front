@@ -69,16 +69,25 @@ export async function verifyAttestToken(input: VerifyTokenInput): Promise<Verify
 
   if (input.platform === "android") {
     const serviceAccountJson = process.env.GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON;
-    const packageName = process.env.ANDROID_PACKAGE_NAME;
-    if (!serviceAccountJson || !packageName) throw new AttestVerifierNotImplementedError("android");
+    // (2026-09-25) Android 새 앱 전환(com.santahades.oripics → ori.pics.app) 기간에는 두 패키지를 모두 받는다.
+    // ANDROID_PACKAGE_NAME = 쉼표 구분 목록, 앞쪽이 우선(새 패키지를 먼저 두면 대부분 한 번에 끝남).
+    // decodeIntegrityToken은 URL의 패키지와 토큰의 앱이 다르면 실패하므로 순서대로 시도하고 첫 성공을 쓴다.
+    const packageNames = (process.env.ANDROID_PACKAGE_NAME ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+    if (!serviceAccountJson || packageNames.length === 0) throw new AttestVerifierNotImplementedError("android");
 
-    const result = await verifyPlayIntegrity(input.token, input.nonce, {
-      serviceAccountJson,
-      packageName,
-      allowUnrecognizedApp: process.env.GOOGLE_PLAY_INTEGRITY_ALLOW_UNRECOGNIZED === "true",
-      requireStrong: process.env.PLAY_INTEGRITY_REQUIRE_STRONG === "true",
-    });
-    if (!result.ok) return { ok: false, reason: result.reason };
+    let result: Awaited<ReturnType<typeof verifyPlayIntegrity>> | null = null;
+    for (const packageName of packageNames) {
+      result = await verifyPlayIntegrity(input.token, input.nonce, {
+        serviceAccountJson,
+        packageName,
+        allowUnrecognizedApp: process.env.GOOGLE_PLAY_INTEGRITY_ALLOW_UNRECOGNIZED === "true",
+        requireStrong: process.env.PLAY_INTEGRITY_REQUIRE_STRONG === "true",
+      });
+      if (result.ok) break;
+      // 패키지가 맞지 않아 생긴 실패만 다음 후보로 넘어간다(무결성 판정 실패는 그대로 반환)
+      if (!/^decode_failed|package_name_mismatch|app_package_mismatch/.test(result.reason)) break;
+    }
+    if (!result || !result.ok) return { ok: false, reason: result?.reason ?? "android_verify_failed" };
     return {
       ok: true,
       verifier: "google_play_integrity",
