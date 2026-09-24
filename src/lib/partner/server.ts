@@ -387,7 +387,7 @@ export async function approveMilestone(userId: string, approvedBy: string): Prom
     });
     if (claimed.count !== 1) return "already" as const;
     await tx.partnerBenefit.createMany({
-      // 2026-09-24: 1개월 무료 이용권 6장 → Pro 50% 할인권 12장
+      // 2026-09-23: 1개월 무료 이용권 6장 → Pro 50% 할인권 12장
       data: Array.from({ length: PARTNER.MILESTONE_COUPONS }, () => ({
         userId,
         type: "pro_50",

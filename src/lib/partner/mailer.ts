@@ -1,7 +1,7 @@
 // 파트너 릴레이 챌린지 이메일 (A-82) — 전부 best-effort(호출측 try/catch).
 //  ① 코드 주인: "OOO 님이 회원님의 코드로 가입 → 할인권 1장 (총 N장)"
 //  ② 12명 달성: 파트너에게 검수 안내 + 운영자(ADMIN_EMAILS)에게 승인 요청
-//  ③ 50% 할인권 12장 지급 완료 (2026-09-24 — 구 1개월 무료 이용권 6장)
+//  ③ 50% 할인권 12장 지급 완료 (2026-09-23 — 구 1개월 무료 이용권 6장)
 import nodemailer from "nodemailer";
 import { PARTNER } from "./config";
 

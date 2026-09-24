@@ -69,7 +69,7 @@ export async function verifyAttestToken(input: VerifyTokenInput): Promise<Verify
 
   if (input.platform === "android") {
     const serviceAccountJson = process.env.GOOGLE_PLAY_INTEGRITY_SERVICE_ACCOUNT_JSON;
-    // (2026-09-25) Android 새 앱 전환(com.santahades.oripics → ori.pics.app) 기간에는 두 패키지를 모두 받는다.
+    // (2026-09-24) Android 새 앱 전환(com.santahades.oripics → ori.pics.app) 기간에는 두 패키지를 모두 받는다.
     // ANDROID_PACKAGE_NAME = 쉼표 구분 목록, 앞쪽이 우선(새 패키지를 먼저 두면 대부분 한 번에 끝남).
     // decodeIntegrityToken은 URL의 패키지와 토큰의 앱이 다르면 실패하므로 순서대로 시도하고 첫 성공을 쓴다.
     const packageNames = (process.env.ANDROID_PACKAGE_NAME ?? "").split(",").map((x) => x.trim()).filter(Boolean);

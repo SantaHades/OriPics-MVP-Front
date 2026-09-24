@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-09-24";
+const LAST_UPDATED = "2026-09-23";
 const EFFECTIVE_DATE = "2026-08-06";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
@@ -201,7 +201,7 @@ function TermsKo() {
 
       <h2>변경 이력</h2>
       <ul>
-        <li>2026-09-24: 제10조 할인권 조항 개정 — 파트너 챌린지 달성 보상을 1개월 무료 이용권에서 50% 할인권으로 변경, 할인권 2장의 사진함 패스 대체 사용 명시</li>
+        <li>2026-09-23: 제10조 할인권 조항 개정 — 파트너 챌린지 달성 보상을 1개월 무료 이용권에서 50% 할인권으로 변경, 할인권 2장의 사진함 패스 대체 사용 명시</li>
         <li>2026-09-23: 제10조에 사진함 패스(사진함 1개 전용 촬영 이용권) 추가, 제11조에 사진함 패스 환불 기준 추가</li>
         <li>2026-05-12: 제10조(유료 서비스) 및 제11조(환불·청약철회) 본문 갱신</li>
         <li>2026-07-24: 제11조 개정 — 환불액 산정 기준 신설(제3항: 회당 정가 공제·잔여 10% 위약금), 일반해지·중도해지 선택권 명시, 부정 이용 방지 조항 추가</li>

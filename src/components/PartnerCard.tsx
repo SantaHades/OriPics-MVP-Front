@@ -407,7 +407,7 @@ export default function PartnerCard({ highlight = false }: { highlight?: boolean
                 <p className="text-[10px] text-blue-600 font-semibold mt-1">{t("locked_hint", { count: data.benefits.lockedCoupons })}</p>
               ) : null}
             </div>
-            {/* 1개월 무료 이용권은 2026-09-24부터 발급 중단(50% 할인권 12장으로 대체) — 과거 보유분이 있을 때만 표시 */}
+            {/* 1개월 무료 이용권은 2026-09-23부터 발급 중단(50% 할인권 12장으로 대체) — 과거 보유분이 있을 때만 표시 */}
             {data.benefits.freeMonths > 0 ? (
               <div className="rounded-xl bg-slate-50 p-3">
                 <p className="text-[11px] text-slate-500">{t("free_months_label")}</p>

@@ -1,4 +1,4 @@
-// 사용자 콘텐츠 신고 (2026-09-26, Google Play UGC 정책) — POST /api/reports
+// 사용자 콘텐츠 신고 (2026-09-24, Google Play UGC 정책) — POST /api/reports
 //   { target_type: 'event_entry' | 'mailbox_photo', target_id, reason, note? } (로그인 필수)
 //   - 이벤트 출품작: 공개 갤러리. 서로 다른 신고자 3명이면 자동 숨김(status='hidden') 후 운영자 확인.
 //   - 사진함 사진: 초대 참여자만 신고 가능(참여자 검사). 증빙 보존 원칙(삭제 잠금)이라 자동 숨김 없이 운영자 확인.

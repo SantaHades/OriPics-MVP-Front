@@ -53,7 +53,7 @@ export async function DELETE() {
     const revoked = await revokeReferrerBenefitsOnRefereeDelete(user.id);
     if (revoked > 0) console.info("[Delete User] partner benefits revoked from referrer", { userId: user.id, revoked });
 
-    // (2026-09-26 데이터 보안 선언 정합) 탈퇴 시 본인 사진·공개링크를 파기한다 — 이전엔 links 행(FK 없음)과
+    // (2026-09-24 데이터 보안 선언 정합) 탈퇴 시 본인 사진·공개링크를 파기한다 — 이전엔 links 행(FK 없음)과
     // Storage 파일이 남아 공개링크가 계속 열렸다. 예외: 사진함에 등록된 사진은 다른 참여자와 공유한 증빙이라 보존
     // (부동산사진함 5년 보관 — 처리방침 §3, 업로더 표시는 mailbox_photos.uploaded_by SET NULL로 '탈퇴한 회원').
     const purged = await purgeUserLinks(user.id);
