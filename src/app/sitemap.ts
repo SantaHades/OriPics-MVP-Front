@@ -34,9 +34,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority,
       // hreflang — 같은 문서의 언어 대안을 명시해 ko/en 중복 콘텐츠 판정을 피한다
       alternates: {
-        languages: Object.fromEntries(
-          locales.map((l) => [l, `${BASE}/${l}${path}`]),
-        ),
+        languages: {
+          ...Object.fromEntries(locales.map((l) => [l, `${BASE}/${l}${path}`])),
+          // x-default — 홈은 언어 자동 선택 루트(/), 하위 페이지는 기본 언어(en) (2026-09-24, middleware Link 헤더와 동일)
+          "x-default": path ? `${BASE}/en${path}` : `${BASE}/`,
+        },
       },
     })),
   );

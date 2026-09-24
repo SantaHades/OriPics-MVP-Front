@@ -42,10 +42,19 @@ export default function middleware(request: NextRequest) {
   // (현재 어떤 페이지도 canonical meta를 내보내지 않으므로 신호 충돌 없음)
   // 쿼리스트링은 제외 — ?ref=1234 같은 파라미터가 별도 URL로 색인되지 않도록.
   if (response && response.status < 300) {
-    response.headers.set(
-      'Link',
-      `<${CANONICAL_ORIGIN}${request.nextUrl.pathname}>; rel="canonical"`,
-    );
+    // hreflang (2026-09-24 Search Console '중복 페이지, Google이 사용자와 다른 표준을 선택함'):
+    // 루트(/)가 언어별 307 리다이렉트라 구글이 /와 /en을 같은 문서로 보고 /를 표준으로 골랐다.
+    // → 같은 문서의 ko·en 대안과 x-default(언어 선택 루트)를 명시해 각 로케일 URL이 제각기 표준으로 인정되게 한다.
+    const path = request.nextUrl.pathname;
+    const m = path.match(/^\/(en|ko)(\/.*)?$/);
+    const links = [`<${CANONICAL_ORIGIN}${path}>; rel="canonical"`];
+    if (m) {
+      const rest = m[2] ?? '';
+      for (const l of locales) links.push(`<${CANONICAL_ORIGIN}/${l}${rest}>; rel="alternate"; hreflang="${l}"`);
+      // 홈은 언어 자동 선택 루트, 하위 페이지는 기본 언어(en)를 x-default로
+      links.push(`<${CANONICAL_ORIGIN}${rest ? `/en${rest}` : '/'}>; rel="alternate"; hreflang="x-default"`);
+    }
+    response.headers.set('Link', links.join(', '));
   }
   return response;
 }
