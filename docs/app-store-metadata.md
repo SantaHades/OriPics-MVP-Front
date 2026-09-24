@@ -175,6 +175,7 @@ Operated by SantaHades Co., Ltd.
 
 - 스토어 등록정보·데이터 보안·IARC 등급 제출 완료(8/24 심사 통과분).
 - ~~8/24 게시본 "인증서 적용 후 제공 예정" 문구~~ → **✅ 2026-09-03 Play Developer API로 ko-KR 등록정보 교체 완료**(전체 설명=§1.4 한국어판 Play 적응본: 문단 줄바꿈 해제·"기기 무결성 검증(Google Play Integrity)" 표기 / 짧은 설명=아래 신판). Google 등록정보 검토 대기. 이후 갱신도 같은 API 경로로 가능.
+- **2026-09-25 새 앱 `ori.pics.app`(조직 계정)**: 앱 이름 `OriPics - 원본 사진 증명`, 자세한 설명=옛 앱 게시본 + 사진함·이벤트 2줄, **요금제 문단 삭제**(대표 결정 — 앱 내 결제 없음). 원본 `~/Downloads/play-listing-assets/listing-ko.txt`. 옛 앱 설명(요금제 포함)은 옛 앱 게시 중지 시 함께 정리.
 - Full description은 §1.4 한국어판과 동일 사용. Short description(80자): "촬영하는 순간 원본임을 인증하세요. 사고·분쟁·거래의 증거 사진에. C2PA 표준." (~44자)
 
 ---
