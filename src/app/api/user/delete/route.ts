@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { prisma } from "@/lib/prisma";
+import { createClient } from "@supabase/supabase-js";
 import { revokeSocialGrants } from "@/lib/auth/revokeSocialGrants";
 import { revokeReferrerBenefitsOnRefereeDelete } from "@/lib/partner/server";
 
@@ -52,6 +53,12 @@ export async function DELETE() {
     const revoked = await revokeReferrerBenefitsOnRefereeDelete(user.id);
     if (revoked > 0) console.info("[Delete User] partner benefits revoked from referrer", { userId: user.id, revoked });
 
+    // (2026-09-26 데이터 보안 선언 정합) 탈퇴 시 본인 사진·공개링크를 파기한다 — 이전엔 links 행(FK 없음)과
+    // Storage 파일이 남아 공개링크가 계속 열렸다. 예외: 사진함에 등록된 사진은 다른 참여자와 공유한 증빙이라 보존
+    // (부동산사진함 5년 보관 — 처리방침 §3, 업로더 표시는 mailbox_photos.uploaded_by SET NULL로 '탈퇴한 회원').
+    const purged = await purgeUserLinks(user.id);
+    if (purged > 0) console.info("[Delete User] links purged", { userId: user.id, purged });
+
     await prisma.user.delete({
       where: { id: user.id },
     });
@@ -67,4 +74,41 @@ export async function DELETE() {
       { status: 500 }
     );
   }
+}
+
+const BUCKET = "oripics-proofs";
+
+/** 사진함에 속하지 않은 본인 링크의 Storage 파일(원본·경량본·썸네일·인증서 캐시)과 links 행 삭제. 실패는 로그만(탈퇴는 진행). */
+async function purgeUserLinks(userId: string): Promise<number> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return 0;
+  let rows: Array<{ link_id: string; storage_path: string | null; preview_path: string | null; thumb_path: string | null }> = [];
+  try {
+    rows = await prisma.$queryRaw`
+      SELECT l.link_id, l.storage_path, l.preview_path, l.thumb_path
+      FROM public.links l
+      WHERE l.user_id = ${userId}
+        AND NOT EXISTS (SELECT 1 FROM public.mailbox_photos mp WHERE mp.link_id = l.link_id)`;
+  } catch (e: any) {
+    console.error("[Delete User] link query failed:", e?.message ?? e);
+    return 0;
+  }
+  if (rows.length === 0) return 0;
+  const supabase = createClient(url, key);
+  for (let i = 0; i < rows.length; i += 100) {
+    const chunk = rows.slice(i, i + 100);
+    const paths: string[] = [];
+    for (const r of chunk) {
+      if (r.storage_path) paths.push(r.storage_path);
+      if (r.preview_path) paths.push(r.preview_path);
+      if (r.thumb_path) paths.push(r.thumb_path);
+      paths.push(`certificates/${r.link_id}.pdf`);
+    }
+    const { error: rmErr } = await supabase.storage.from(BUCKET).remove(paths);
+    if (rmErr) console.error("[Delete User] storage remove failed:", rmErr.message);
+    const { error: delErr } = await supabase.from("links").delete().in("link_id", chunk.map((r) => r.link_id));
+    if (delErr) console.error("[Delete User] links delete failed:", delErr.message);
+  }
+  return rows.length;
 }
