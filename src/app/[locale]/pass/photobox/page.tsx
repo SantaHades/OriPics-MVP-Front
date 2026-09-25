@@ -3,7 +3,7 @@
 // 사진함 패스 소개·보유 목록·환불 (A-108 4단계, 2026-09-23). 설계: docs/photobox-pass-design.md §1·§5
 // 웹 전용 화면 — 앱에는 가격·구매 링크를 두지 않는다(App Store 3.1.1). 앱은 코드 입력만.
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Link } from "@/navigation";
 import { ArrowLeft, Images, Loader2 } from "lucide-react";
@@ -35,6 +35,7 @@ const T = {
       "등록하지 않은 코드는 구매 후 7일 이내 전액 환불됩니다.",
     ],
     couponNote: "Pro 50% 할인권 2장으로도 사진함 패스 1장처럼 참여할 수 있어요.",
+    appNote: "보유한 사진함 패스와 코드 등록은 앱 설정 탭의 사진함 패스 카드에서 확인할 수 있어요.",
     buy: "구매하기",
     mine: "내 사진함 패스",
     loginToSee: "로그인하면 보유한 패스를 볼 수 있어요.",
@@ -72,6 +73,7 @@ const T = {
       "Unregistered codes are fully refundable within 7 days of purchase.",
     ],
     couponNote: "Two Pro 50% coupons also work like one Photo Box Pass.",
+    appNote: "See your passes and register codes in the Photo Box Pass card on the app's Settings tab.",
     buy: "Buy",
     mine: "My Photo Box Passes",
     loginToSee: "Sign in to see your passes.",
@@ -95,6 +97,8 @@ export default function PhotoboxPassPage() {
   const locale = (params?.locale as string) || "ko";
   const t = T[locale === "en" ? "en" : "ko"];
   const { status } = useSession();
+  // 앱 설정탭 사진함 패스 카드에서 열린 경우(from=app): iOS 3.1.1·Play 결제 정책 — 가격·구매·환불·보유 목록 숨김, 안내만 (2026-09-25 대표)
+  const fromApp = useSearchParams()?.get("from") === "app";
   const [passes, setPasses] = useState<PassItem[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -105,8 +109,8 @@ export default function PhotoboxPassPage() {
     else setPasses([]);
   }, []);
   useEffect(() => {
-    if (status === "authenticated") void load();
-  }, [status, load]);
+    if (status === "authenticated" && !fromApp) void load();
+  }, [status, load, fromApp]);
 
   const refund = async (code: string) => {
     if (!window.confirm(t.refundConfirm)) return;
@@ -130,36 +134,48 @@ export default function PhotoboxPassPage() {
   return (
     <main className="min-h-screen px-6 py-12 bg-slate-50">
       <div className="w-full max-w-xl mx-auto">
-        <Link href="/pass" className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-sm mb-6">
-          <ArrowLeft size={16} /> {t.back}
-        </Link>
+        {!fromApp && (
+          <Link href="/pass" className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-sm mb-6">
+            <ArrowLeft size={16} /> {t.back}
+          </Link>
+        )}
 
         <section className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm mb-6">
           <div className="flex items-start justify-between gap-4 mb-3">
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Images size={22} className="text-blue-600" /> {t.title}
             </h1>
-            <div className="text-right">
-              <p className="text-2xl font-extrabold">{t.price}</p>
-              <p className="text-[11px] text-slate-500">{t.priceNote}</p>
-            </div>
+            {!fromApp && (
+              <div className="text-right">
+                <p className="text-2xl font-extrabold">{t.price}</p>
+                <p className="text-[11px] text-slate-500">{t.priceNote}</p>
+              </div>
+            )}
           </div>
           <p className="text-sm text-slate-600 mb-5">{t.lead}</p>
           <ul className="text-sm text-slate-700 space-y-2 mb-5 list-disc pl-5">
             {t.features.map((f) => <li key={f}>{f}</li>)}
           </ul>
           <div className="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-900 space-y-1.5 mb-5">
-            {t.notices.map((n) => <p key={n}>· {n}</p>)}
+            {/* 마지막 항목(구매 후 7일 환불)은 구매 안내라 앱에서는 숨김 */}
+            {(fromApp ? t.notices.slice(0, -1) : t.notices).map((n) => <p key={n}>· {n}</p>)}
           </div>
-          <p className="text-xs text-slate-500 mb-5">{t.couponNote}</p>
-          <Link
-            href="/pass/photobox/checkout"
-            className="block w-full text-center py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
-          >
-            {t.buy}
-          </Link>
+          {fromApp ? (
+            <p className="text-xs text-slate-500">{t.appNote}</p>
+          ) : (
+            <>
+              <p className="text-xs text-slate-500 mb-5">{t.couponNote}</p>
+              <Link
+                href="/pass/photobox/checkout"
+                className="block w-full text-center py-3.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+              >
+                {t.buy}
+              </Link>
+            </>
+          )}
         </section>
 
+        {!fromApp && (
         <section className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
           <h2 className="font-bold mb-3">{t.mine}</h2>
           {status !== "authenticated" ? (
@@ -200,6 +216,7 @@ export default function PhotoboxPassPage() {
           )}
           {msg && <p className="mt-3 text-xs text-slate-600">{msg}</p>}
         </section>
+        )}
       </div>
     </main>
   );

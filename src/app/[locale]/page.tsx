@@ -1081,7 +1081,7 @@ export default function Home() {
         <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => window.scrollTo(0, 0)}>
           <img src="/logo.png" alt="OriPics Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
           <span className="font-bold text-base xs:text-lg sm:text-xl">OriPics</span>
-          {/* 베타 모집 배지 (2026-08-31 대표 지시) — 클릭 시 신청 팝업 */}
+          {/* 출시기념 이벤트 배지 — /events로 이동 */}
           <EventBadge />
         </div>
         <div className="flex items-center gap-2 sm:gap-6">

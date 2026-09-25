@@ -1046,7 +1046,24 @@
         "Participation is limited to one per email address. Deleting your account and signing up again with the same email (even with a different partner code) does not allow re-joining, and no coupons are issued to either side."
       ],
       "terms_link": "Terms §6",
-      "privacy_link": "Privacy Policy"
+      "privacy_link": "Privacy Policy",
+      "app": {
+        "sub1": "When a friend signs up with your partner code and completes their first photo proof, you both get 1 coupon.",
+        "sub2": "Once {goal} invites are valid, you get {coupons} more coupons.",
+        "code_hint": "Find and share your partner code in the app under Settings > Partner.",
+        "step1_b": "Enter a friend's partner code in the app's Settings tab within 7 days of signing up to get 1 coupon. It becomes usable after your first photo proof.",
+        "step2_b": "You get your own partner code when you sign up. Each time a friend signs up with it and completes their first photo proof, you earn 1 coupon.",
+        "step3_t": "3. {goal} friends = {coupons} coupons",
+        "step3_b": "When {goal} friends sign up with your code and complete their first photo proof, you get {coupons} more coupons.",
+        "leaderboard_sub": "Ranked by valid invites (first photo proof completed) · names masked · updated every 5 minutes · {coupons} coupons at {goal}",
+        "notice": {
+          "0": "Period: benefits apply to participation until the challenge end date ({end}). Invite-earning status (partner) is limited to the first {cap} participants by code entry order.",
+          "1": "A partner code can be entered once per account, within 7 days of signing up. Members who joined before the challenge was announced can enter one once at any time during the challenge.",
+          "2": "An invite counts once the friend completes their first photo proof after signing up. Only proofs completed within 30 days after the challenge ends ({deadline}) are counted.",
+          "3": "Coupons are valid for {months24} months from issue and cannot be refunded as cash, transferred, or resold.",
+          "4": "One participation per email. Fraudulent participation such as fake accounts or self-referrals may void participation and revoke unused benefits."
+        }
+      }
     },
     "locked_hint": "Complete 1 photo proof to receive {count} discount voucher(s)."
   }

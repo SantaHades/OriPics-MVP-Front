@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, Images, Trophy } from "lucide-react";
 
-import BetaRecruit from "@/components/BetaRecruit";
 import { EVENTS } from "@/lib/events/catalog";
 
 export default function EventsPage() {
@@ -80,10 +79,6 @@ export default function EventsPage() {
           </ol>
         </div>
 
-        <div className="text-center text-sm text-slate-500">
-          {ko ? "베타 테스터도 계속 모집합니다 — " : "We are still recruiting beta testers — "}
-          <span className="inline-flex align-middle"><BetaRecruit /><BetaRecruit variant="hero" /></span>
-        </div>
       </div>
     </div>
   );

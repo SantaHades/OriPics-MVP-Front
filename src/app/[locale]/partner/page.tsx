@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { Link } from "@/navigation";
 import { ArrowLeft, Gift, Users, Ticket, CheckCircle2, Trophy } from "lucide-react";
 import { PARTNER, validityDeadline } from "@/lib/partner/config";
@@ -37,6 +38,9 @@ export default function PartnerLandingPage() {
   const t = useTranslations("Partner.landing");
   const locale = useLocale();
   const { status } = useSession();
+  // 앱 설정탭 파트너 카드에서 열린 경우(from=app): iOS 3.1.1·Play 결제 정책 — 금액·할인율·결제·가입 버튼·FAQ(결제 설명) 숨김, 규칙만 (2026-09-25 대표)
+  const fromApp = useSearchParams()?.get("from") === "app";
+  const ta = (k: string, v?: Record<string, string | number>) => t(`app.${k}`, v);
   const [stats, setStats] = useState<Stats | null>(null);
   // 통계 실패 시 "…" 무한 대기 대신 "—" + 다시 시도 (A-92 ⑧)
   const [statsFailed, setStatsFailed] = useState(false);
@@ -74,15 +78,17 @@ export default function PartnerLandingPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <div className="max-w-3xl mx-auto px-6 py-12">
-        <Link href="/" className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-sm mb-8">
-          <ArrowLeft size={16} /> {t("back")}
-        </Link>
+        {!fromApp && (
+          <Link href="/" className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 text-sm mb-8">
+            <ArrowLeft size={16} /> {t("back")}
+          </Link>
+        )}
 
         <section className="rounded-3xl bg-white border border-slate-200 p-8 sm:p-10 shadow-sm">
           <p className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-3">{t("eyebrow")}</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">{t("headline")}</h1>
-          <p className="text-base text-slate-700 mb-2">{t("sub1", { amount: fmtWon(discount) })}</p>
-          <p className="text-base text-slate-700 mb-6">{t("sub2", { goal, coupons, value: fmtWon(discount * coupons) })}</p>
+          <p className="text-base text-slate-700 mb-2">{fromApp ? ta("sub1") : t("sub1", { amount: fmtWon(discount) })}</p>
+          <p className="text-base text-slate-700 mb-6">{fromApp ? ta("sub2", { goal, coupons }) : t("sub2", { goal, coupons, value: fmtWon(discount * coupons) })}</p>
 
           {/* (2026-09-11 A-94 ③) 잔여 좌석·종료일 강조 카드 */}
           <div className="grid sm:grid-cols-2 gap-3 mb-6">
@@ -112,6 +118,9 @@ export default function PartnerLandingPage() {
             </div>
           </div>
 
+          {fromApp ? (
+            <p className="text-sm text-slate-600">{ta("code_hint")}</p>
+          ) : (
           <div className="flex flex-col sm:flex-row gap-3">
             {status === "authenticated" ? (
               <Link href="/profile#partner" className="flex-1 py-3.5 text-center rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700">
@@ -128,15 +137,16 @@ export default function PartnerLandingPage() {
               </>
             )}
           </div>
+          )}
         </section>
 
         <section className="mt-10">
           <h2 className="text-xl font-bold mb-5">{t("how_title")}</h2>
           <ol className="grid sm:grid-cols-3 gap-4">
             {[
-              { icon: <Ticket className="text-blue-600" size={22} />, title: t("step1_t"), body: t("step1_b", { amount: fmtWon(discount) }) },
-              { icon: <Users className="text-blue-600" size={22} />, title: t("step2_t"), body: t("step2_b", { amount: fmtWon(discount) }) },
-              { icon: <Gift className="text-blue-600" size={22} />, title: t("step3_t", { goal, coupons }), body: t("step3_b", { goal, coupons }) },
+              { icon: <Ticket className="text-blue-600" size={22} />, title: t("step1_t"), body: fromApp ? ta("step1_b") : t("step1_b", { amount: fmtWon(discount) }) },
+              { icon: <Users className="text-blue-600" size={22} />, title: t("step2_t"), body: fromApp ? ta("step2_b") : t("step2_b", { amount: fmtWon(discount) }) },
+              { icon: <Gift className="text-blue-600" size={22} />, title: fromApp ? ta("step3_t", { goal, coupons }) : t("step3_t", { goal, coupons }), body: fromApp ? ta("step3_b", { goal, coupons }) : t("step3_b", { goal, coupons }) },
             ].map((s, i) => (
               <li key={i} className="rounded-2xl bg-white border border-slate-200 p-5">
                 <div className="mb-2">{s.icon}</div>
@@ -147,6 +157,7 @@ export default function PartnerLandingPage() {
           </ol>
         </section>
 
+        {!fromApp && (
         <section className="mt-10 rounded-2xl bg-white border border-slate-200 p-6">
           <h2 className="text-lg font-bold mb-3">{t("example_title")}</h2>
           <ul className="space-y-2 text-sm text-slate-700">
@@ -157,6 +168,7 @@ export default function PartnerLandingPage() {
             ))}
           </ul>
         </section>
+        )}
 
         {/* (2026-09-11 A-94 ③) 마스킹 리더보드 — 유효 초대 상위 10, 이름 마스킹(손*석), 서버 5분 캐시 */}
         <section className="mt-10 rounded-2xl bg-white border border-slate-200 p-6">
@@ -164,7 +176,7 @@ export default function PartnerLandingPage() {
             <Trophy size={18} className="text-amber-500" />
             <h2 className="text-lg font-bold">{t("leaderboard_title")}</h2>
           </div>
-          <p className="text-xs text-slate-500 mb-4">{t("leaderboard_sub", { goal })}</p>
+          <p className="text-xs text-slate-500 mb-4">{fromApp ? ta("leaderboard_sub", { goal, coupons }) : t("leaderboard_sub", { goal })}</p>
           {!stats ? (
             <p className="text-sm text-slate-400" aria-busy={!statsFailed ? true : undefined}>{statsFailed ? t("stats_failed") : "…"}</p>
           ) : leaderboard.length === 0 ? (
@@ -182,6 +194,7 @@ export default function PartnerLandingPage() {
           )}
         </section>
 
+        {!fromApp && (
         <section className="mt-10">
           <h2 className="text-lg font-bold mb-3">{t("faq_title")}</h2>
           <dl className="space-y-4">
@@ -193,16 +206,20 @@ export default function PartnerLandingPage() {
             ))}
           </dl>
         </section>
+        )}
 
         <section className="mt-10 text-xs text-slate-500 leading-relaxed">
           <h2 className="text-sm font-bold text-slate-700 mb-2">{t("notice_title")}</h2>
           <ul className="list-disc pl-5 space-y-1">
-            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-              <li key={i}>{t(`notice.${i}`, { amount: fmtWon(discount), goal, coupons, months24, cap, end, deadline })}</li>
-            ))}
+            {fromApp
+              ? [0, 1, 2, 3, 4].map((i) => <li key={i}>{ta(`notice.${i}`, { goal, coupons, months24, cap, end, deadline })}</li>)
+              : [0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <li key={i}>{t(`notice.${i}`, { amount: fmtWon(discount), goal, coupons, months24, cap, end, deadline })}</li>
+                ))}
           </ul>
           <p className="mt-3">
-            <Link href="/terms#paid" className="underline">{t("terms_link")}</Link> · <Link href="/privacy" className="underline">{t("privacy_link")}</Link>
+            {!fromApp && <><Link href="/terms#paid" className="underline">{t("terms_link")}</Link> · </>}
+            <Link href="/privacy" className="underline">{t("privacy_link")}</Link>
           </p>
         </section>
       </div>
