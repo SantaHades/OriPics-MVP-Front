@@ -59,7 +59,7 @@ const nextConfig = {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co https://*.portone.io https://api.portone.io",
-      "frame-src 'self' https://*.portone.io",
+      "frame-src 'self' https://*.portone.io https://www.youtube-nocookie.com", // 메인 소개 영상(2026-09-28)
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",

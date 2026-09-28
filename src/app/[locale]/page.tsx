@@ -10,6 +10,7 @@ import { mapsUrl } from "@/lib/mapsUrl";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EventBadge from "@/components/EventBadge";
+import IntroVideo, { IntroVideoButton } from "@/components/IntroVideo";
 import C2paRecordModal from "@/components/C2paRecordModal";
 import {
   signAndStampFromPixels,
@@ -1077,12 +1078,16 @@ export default function Home() {
 
   return (
     <>
+      {/* 메인 진입 시 소개 영상 팝업 ('오늘 다시 보지 않기' 지원) */}
+      <IntroVideo />
       <nav className="sticky top-0 w-full glass z-50 px-2 sm:px-6 py-3 sm:py-4 flex justify-between items-center text-[10px] sm:text-sm">
         <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => window.scrollTo(0, 0)}>
           <img src="/logo.png" alt="OriPics Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
           <span className="font-bold text-base xs:text-lg sm:text-xl">OriPics</span>
           {/* 출시기념 이벤트 배지 — /events로 이동 */}
           <EventBadge />
+          {/* 소개 영상 다시 보기 (2026-09-28 대표) */}
+          <IntroVideoButton />
         </div>
         <div className="flex items-center gap-2 sm:gap-6">
           <LanguageSwitcher />
@@ -1144,8 +1149,9 @@ export default function Home() {
             <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-c absolute bottom-3 left-[22%] hidden md:inline-block">{t("hero.floating_3")}</span>
           </div>
           {/* 출시기념 이벤트 배지 — 모바일 전용 (네비 배지는 xs+ 전용; 9/5 대표: 베타 배지→이벤트 배지, /events로 이동) */}
-          <div className="relative z-10 w-full text-left xs:hidden mb-3">
+          <div className="relative z-10 w-full text-left xs:hidden mb-3 flex flex-wrap gap-2">
             <EventBadge variant="hero" />
+            <IntroVideoButton variant="hero" />
           </div>
           {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
           <p className="relative z-10 text-sm md:text-base text-slate-600 mb-4 leading-relaxed">
