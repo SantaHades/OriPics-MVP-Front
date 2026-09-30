@@ -1163,7 +1163,8 @@ export default function ProfilePage() {
                     <li key={tx.id} className="px-5 py-3 flex items-center justify-between gap-3 text-sm">
                       <div className="flex flex-col min-w-0">
                         <span className="font-medium text-slate-800 truncate">
-                          {tCredits(`action_${tx.action}` as any)}
+                          {/* 번역이 없는 새 거래 종류는 키 대신 '기타 내역' (2026-09-30 — 사진함 패스 추가 때 누락돼 영문 키가 노출됨) */}
+                          {tCredits.has(`action_${tx.action}` as any) ? tCredits(`action_${tx.action}` as any) : tCredits("action_unknown")}
                         </span>
                         <span className="text-xs text-slate-500 font-mono">
                           {new Date(tx.createdAt).toLocaleString()}

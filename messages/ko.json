@@ -306,7 +306,12 @@
       "pass_details_7": "활성 패스는 계정당 1장 — 10회를 모두 쓰거나 24시간이 지나면 곧바로 새 패스를 등록할 수 있어요.",
       "pass_details_8": "파일 업로드 및 붙여넣기로 인증하는 경우는 패스가 아닌 잔여 건수에서 차감돼요.",
       "pass_details_9": "등록 후에는 환불이 불가하고, 미등록 코드의 유효기간은 발급일로부터 1년이에요.",
-      "pass_details_close": "닫기"
+      "pass_details_close": "닫기",
+      "action_photobox_purchase": "사진함 패스 구매",
+      "action_photobox_refund": "사진함 패스 환불",
+      "action_photobox_proof": "사진함 패스 촬영 인증",
+      "action_photobox_submit": "사진함 사진 등록",
+      "action_unknown": "기타 내역"
     },
     "pricing": {
       "pass_banner_title": "원데이 패스 — 필요한 그 하루만, ₩3,300 (부가세 포함)",
