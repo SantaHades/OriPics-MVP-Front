@@ -13,7 +13,7 @@
 | 가격 모델 | **Freemium 3-Tier** (사용자 노출은 단순, 백엔드는 크레딧 회계) |
 | 비로그인 인증 | **불가** (회원가입 필수). 로그인 = Free 자동 가입 |
 | Verified 티어 (모바일 P 경로) | **Pro 한정 권한** — Free는 Standard 인증만 |
-| Free 월 크레딧 | **20크레딧** (= 사진인증 5건 또는 Standard 인증 6건). 교통사고 1건(5~8장)을 처리 못 하도록 의도적 설계 → Pro 전환 트리거 |
+| Free 월 크레딧 | **30크레딧** (2026-10-01 20→30, [strategy-verification-layer.md](strategy-verification-layer.md) §4.2) = Standard 인증 10건 / 인증+공개링크 6장(중고거래 매물 1건). 10장 이상 사례(사고·퇴실 점검)는 원데이 패스·Pro로 |
 | Pro 가격 | **₩9,900/월** (₩99,000/년 = 17% 할인, 2개월 무료) |
 | Pro 월 크레딧 | **1,000** (실질 무제한, Standard 500건 / Verified 333건) |
 | Business 가격 | **₩79,000/월~** (5명 + 영업 협의), **베타 후 첫 B2B 미팅 시점 활성화** |
@@ -63,7 +63,7 @@
 
 | 액션 | 기본 크레딧 | 비고 |
 |---|---|---|
-| **검증 조회** (`/api/verify`) — **로그인 필수**, 호출자 계정에서 차감. 미공개 인증 이미지면 무차감 404 응답. | **−1** × multiplier | 본인 published 이미지는 면제 |
+| **검증 조회** (`/api/verify`) — **2026-10-01부터 로그인 없이 무료** (IP 레이트리밋만). 미공개 인증도 원장으로 검증 | **0** (구 −1 × multiplier, 폐지) | 과거 `verify_query` 거래 기록은 보존 |
 | **이미지 인증 1회** (Standard, F/C) — `/api/links/confirm` | **−3** × multiplier | proof만. Storage·DB 미접근 |
 | **사진 인증 1회** (Verified, 모바일 P) — `/api/links/confirm` | **−4** × multiplier | proof만. Pro 한정 |
 | **공개링크 생성 1회** — `/api/links/publish` | **−2** | 사이즈 무관 1× 고정. C2PA·Storage·DB row 생성을 모두 처리 |
@@ -111,7 +111,7 @@
 
 구현: [lib/credits/sizeMultiplier.ts](../src/lib/credits/sizeMultiplier.ts), 테스트: [sizeMultiplier.test.ts](../src/lib/credits/sizeMultiplier.test.ts).
 
-**검증 조회 정책 (2026-05-11 갱신)**: 외부 검증 가능성은 contentcredentials.org·Adobe Photoshop·Truepic Verify 등 C2PA 외부 도구로 유지. OriPics 사이트 내 verify는 로그인 필수 + 차감.
+**검증 조회 정책 (2026-10-01 폐지 → 무료·비로그인, 아래는 이전 기록)**: 외부 검증 가능성은 contentcredentials.org·Adobe Photoshop·Truepic Verify 등 C2PA 외부 도구로 유지. OriPics 사이트 내 verify는 로그인 필수 + 차감.
 
 **클라이언트 측 무료 detect (2026-05-11)**: 메인 페이지에서 PNG 업로드 시 `detectStamp()` (magic byte만 확인, 해시·서버 호출 X)로 인증 여부 무료 판단. 사용자가 "자세히 확인" 선택 시에만 풀 verify(`/api/verify`) 호출되어 -1 차감.
 

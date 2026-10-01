@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
-import { CREDIT_COSTS } from "@/lib/payment";
-import { consumeCredits } from "@/lib/credits/consumeCredits";
-import { getProofMultiplier } from "@/lib/credits/sizeMultiplier";
+import { checkRateLimit, clientIp, RATE_LIMITS, tooManyRequests } from "@/lib/security/rateLimit";
+import { findByFinalHash } from "@/lib/ledger/server";
 import {
   getSalt,
   parseMetaBytes,
@@ -165,11 +164,16 @@ async function tryReadC2paForLink(
 }
 
 export async function POST(req: NextRequest) {
-  // 인증 필수 (로그인한 사용자만 verify 가능, 차감 대상)
-  const userId = await getSessionUserId();
-  if (!userId) {
-    return NextResponse.json({ detail: "unauthenticated" }, { status: 401 });
-  }
+  // 2026-10-01 원장 1단계: 검증은 로그인 없이 무료 (VERIFY_QUERY 차감 폐지). 남용은 IP 레이트리밋으로만 억제.
+  // 로그인 사용자는 본인 사진 여부(is_owner)만 추가로 받는다.
+  const ip = clientIp(req);
+  const [perMin, perDay] = await Promise.all([
+    checkRateLimit(RATE_LIMITS.verify, ip),
+    checkRateLimit(RATE_LIMITS.verifyDaily, ip),
+  ]);
+  if (!perMin.allowed) return tooManyRequests(perMin, "verify_rate_limited");
+  if (!perDay.allowed) return tooManyRequests(perDay, "verify_rate_limited");
+  const userId = await getSessionUserId().catch(() => null);
 
   let body: any;
   try {
@@ -211,8 +215,7 @@ export async function POST(req: NextRequest) {
   const borderHashBytes = hexToBytes(border_hash);
   const extractedBytes = hexToBytes(extracted_final_hash);
 
-  // 메타를 미리 파싱 — 사이즈 multiplier 계산 + owner 면책 + seal 검증에 모두 필요.
-  // 파싱 실패 시 차감 전에 200 응답으로 종료 (잘못된 메타에 크레딧 소모 방지).
+  // 메타 파싱 — 공개링크 유도 + seal 검증에 필요. 파싱 실패 시 200 match=false로 종료.
   let metaWidth = 0;
   let metaHeight = 0;
   let metaTimestamp = "";
@@ -262,14 +265,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ match: false, reason: e.message });
   }
 
-  // 2026-05-17 (B-2'' 후속): V4 메타 timestamp로 DB 조회.
-  //   - row 없음(미공개) → 무차감 404 응답. 의미 없는 seal-only 검증에 크레딧 소모 방지.
-  //   - row 있고 본인이면 → ownerExempt (무차감).
-  //   - row 있고 타인이면 → 차감 후 정상 검증.
-  // V2/V3는 timestamp uniqueness 없어 미공개 판정 불가 → 기존 흐름 유지(차감).
-  let ownerExempt = false;
-  // 클라이언트가 link_id를 안 보내도 timestamp 조회로 자체 유도 — C2PA 확인 + 공개링크 표시에 사용.
-  // 단일 매칭일 때만 (2건 = timestamp 충돌 → 유도 포기).
+  // 공개링크 유도 (V4+): 메타 timestamp로 links 조회 — C2PA 확인 + 공개링크 표시에 사용.
+  // 단일 매칭일 때만 (2건 = timestamp 충돌 → 유도 포기). 미공개 인증도 스탬프·원장으로 검증된다(2026-10-01, 구 not_published 404 폐지).
+  let isOwner = false;
   let derivedLinkId: string | null = null;
   if (version >= 4 && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
@@ -279,54 +277,12 @@ export async function POST(req: NextRequest) {
         .select("link_id, user_id")
         .eq("timestamp", metaTimestamp)
         .limit(2);
-      if (!rows || rows.length === 0) {
-        // 미공개 인증 — 워터마크는 진짜지만 DB row 없음 → 무차감 404
-        return NextResponse.json(
-          {
-            match: false,
-            reason: "not_published",
-            metadata: {
-              timestamp: metaTimestamp,
-              width: metaWidth,
-              height: metaHeight,
-            },
-          },
-          { status: 404 },
-        );
-      }
-      if (rows.length === 1) {
+      if (rows && rows.length === 1) {
         derivedLinkId = rows[0].link_id ?? null;
-        if (rows[0].user_id === userId) {
-          ownerExempt = true;
-        }
+        if (userId && rows[0].user_id === userId) isOwner = true;
       }
     } catch (e) {
-      // 조회 실패 시 안전을 위해 차감 흐름으로 (정상 검증은 진행). owner 면책만 못 받음.
       console.warn("[verify] db lookup failed:", e);
-    }
-  }
-
-  // 크레딧 차감 (race-safe atomic). 본인 이미지는 면책.
-  // VERIFY_QUERY × sizeMultiplier (1×/2×/3× — 메타에 박힌 width/height 기준).
-  const sizeMultiplier = getProofMultiplier(metaWidth, metaHeight);
-  const verifyCost = CREDIT_COSTS.VERIFY_QUERY * sizeMultiplier;
-  if (!ownerExempt) {
-    const consume = await consumeCredits({
-      userId,
-      amount: verifyCost,
-      action: "verify_query",
-      metadata: { link_id, version, width: metaWidth, height: metaHeight, size_multiplier: sizeMultiplier },
-    });
-    if (!consume.ok) {
-      return NextResponse.json(
-        {
-          detail: "insufficient_credits",
-          balance: consume.balance,
-          required: verifyCost,
-          size_multiplier: sizeMultiplier,
-        },
-        { status: 402 },
-      );
     }
   }
 
@@ -351,8 +307,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ match: false, reason: e.message });
   }
 
+  // 해시 원장 (2026-10-01) — 스탬프가 진짜일 때만 조회. 인증 시각·제3자 시각 증명(머클 TSA)·공개 여부.
+  const ledger = seal.match ? await findByFinalHash(extracted_final_hash) : null;
+
   const effectiveLinkId =
-    typeof link_id === "string" && link_id.length > 0 ? link_id : derivedLinkId;
+    typeof link_id === "string" && link_id.length > 0
+      ? link_id
+      : derivedLinkId ?? (ledger?.published ? ledger.link_id : null);
   const c2paLookup = effectiveLinkId
     ? await tryReadC2paForLink(effectiveLinkId)
     : { checked: false as const, reason: "no_link_id" };
@@ -456,7 +417,10 @@ export async function POST(req: NextRequest) {
     ...(linkTier ? { tier: linkTier } : {}),
     ...(verifiedDetail ? { verified_detail: verifiedDetail } : {}),
     ...(seal.reason ? { reason: seal.reason } : {}),
-    ...(ownerExempt ? { owner_exempt: true } : {}),
+    ...(isOwner ? { is_owner: true } : {}),
+    ...(ledger
+      ? { ledger: { ...ledger, proof_url: `/api/ledger/proof?final_hash=${extracted_final_hash.toLowerCase()}` } }
+      : {}),
     trust_report,
   });
 }

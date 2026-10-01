@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assertCron } from "@/lib/security/cron";
 import { purgeExpiredRefreshTokens } from "@/lib/auth/refreshStore";
+import { markUnpublished } from "@/lib/ledger/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -81,7 +82,10 @@ export async function GET(req: NextRequest) {
       const ids = expiredFree.map((l) => l.link_id);
       const { error: delErr } = await supabase.from("links").delete().in("link_id", ids);
       if (delErr) errors.push(`expired db: ${delErr.message}`);
-      else expiredRemoved = ids.length;
+      else {
+        expiredRemoved = ids.length;
+        await markUnpublished(ids);
+      }
     }
   } catch (e: any) {
     errors.push(`expired pass: ${e?.message || e}`);
@@ -190,6 +194,7 @@ export async function GET(req: NextRequest) {
           }
           const { error: lErr } = await supabase.from("links").delete().in("link_id", toDelete);
           if (lErr) errors.push(`mailbox ${mb.id} links: ${lErr.message}`);
+          else await markUnpublished(toDelete);
           try {
             await prisma.proofHistory.deleteMany({ where: { linkId: { in: toDelete } } });
           } catch (e: any) {

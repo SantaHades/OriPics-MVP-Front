@@ -55,6 +55,9 @@ export const RATE_LIMITS = {
   mailboxInviteLookup: { name: "mbinvlookup", windowSec: 3600, max: 60 },
   /** 사진함 백업 생성(/api/mailboxes/:id/backups POST) — 사용자별 시간당 5회. 파일 복사(스토리지 copy)·보관함 용량 남용 억제 (2026-09-11 A-87) */
   mailboxBackup: { name: "mbbackup", windowSec: 3600, max: 5 },
+  /** 무료·비로그인 검증(/api/verify, /api/verify/lookup) — IP별 분당 20회·일 500회 (2026-10-01 원장 1단계) */
+  verify: { name: "verify", windowSec: 60, max: 20 },
+  verifyDaily: { name: "verifyd", windowSec: 86400, max: 500 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export interface RateLimitResult {

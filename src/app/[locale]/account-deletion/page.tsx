@@ -4,12 +4,13 @@
 // 앱·개발자 이름, 삭제 요청 단계, 삭제·보관되는 데이터와 보관 기간을 로그인 없이 볼 수 있어야 한다.
 // 실제 삭제 동작: api/user/delete (사진함에 속하지 않은 사진·공개링크 파기 + 계정 삭제, 사진함 사진은 업로더 가림 후 보존).
 // 2026-09-25: 이메일 요청 버튼(mailto 양식) + '계정 유지·데이터만 삭제' 섹션 + 카드형 디자인.
+// 2026-10-01: 해시 원장(인증 기록) 보관 항목 추가 — 탈퇴 시 user_id만 NULL, 기록은 존속.
 import type { ReactNode } from "react";
 import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Archive, Globe, Mail, Smartphone, Trash2, UserX } from "lucide-react";
 
-const LAST_UPDATED = "2026-09-25";
+const LAST_UPDATED = "2026-10-01";
 const SUPPORT_EMAIL = "hi@ori.pics";
 
 // 요청 메일 미리 채우기 — 본인 확인은 가입 이메일로 보낸 메일로 한다
@@ -113,6 +114,11 @@ const KO: Copy = {
       period: "사진함 유지 기간",
       body: "다른 참여자와 공유한 증빙이라 사진함에 남습니다. 업로더는 '탈퇴한 회원'으로 표시되고 계정 식별정보는 삭제됩니다. 부동산사진함 사진은 등록일로부터 5년 후 파기됩니다.",
     },
+    {
+      title: "인증 기록(해시·지문·인증 시각)",
+      period: "서비스 운영 기간",
+      body: "이미 공유된 인증 사진이 계속 검증되도록 남습니다. 계정과의 연결은 탈퇴 즉시 삭제되며, 사진이나 위치는 들어 있지 않아 이것만으로는 본인이나 사진을 알아낼 수 없습니다.",
+    },
     { title: "결제 기록", period: "5년", body: "전자상거래법에 따른 보관" },
     { title: "접속 기록", period: "3개월", body: "통신비밀보호법에 따른 보관" },
     { title: "파트너 참여 기록(이메일 해시)", period: "챌린지 종료 후 1년", body: "부정 참여 방지" },
@@ -201,6 +207,11 @@ const EN: Copy = {
       title: "Photos added to a photo box",
       period: "While the photo box exists",
       body: "They stay in the photo box because they were shared with other participants as evidence. The uploader is shown as 'Deleted member' and account identifiers are erased. Real-estate photo box photos are erased 5 years after registration.",
+    },
+    {
+      title: "Certification records (hashes, fingerprints, time)",
+      period: "While the service operates",
+      body: "Kept so that photos you already shared can still be verified. The link to your account is erased immediately; they contain no photo or location, so they cannot identify you or the photo on their own.",
     },
     { title: "Payment records", period: "5 years", body: "Korean Act on Consumer Protection in E-Commerce" },
     { title: "Access logs", period: "3 months", body: "Korean Communications Privacy Act" },

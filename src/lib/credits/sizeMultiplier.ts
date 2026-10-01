@@ -6,7 +6,7 @@
  *  - 2× : 긴 변 > 1800px AND 픽셀 수 ≤ 100,000,000 (1억)
  *  - 3× : 픽셀 수 > 100,000,000
  *
- * 적용 대상: IMAGE_PROOF, VERIFY_QUERY, VERIFIED_PROOF
+ * 적용 대상: IMAGE_PROOF, VERIFIED_PROOF (VERIFY_QUERY는 2026-10-01 검증 무료화로 폐지)
  * 미적용:    LINK_CREATE (메타데이터 작업, 사이즈 무관)
  *
  * 호출 위치:

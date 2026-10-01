@@ -11,6 +11,7 @@ import { eventsDb } from "@/lib/events/server";
 import { verifyMailboxCapture } from "@/lib/mailboxes/captureGuard";
 import { prisma } from "@/lib/prisma";
 import { StepTimer } from "@/lib/timing";
+import { recordProof, sanitizeFingerprints } from "@/lib/ledger/server";
 
 const JWT_SECRET = process.env.ORIPICS_JWT_SECRET!;
 const RECEIPT_TTL_SECONDS = 30 * 24 * 60 * 60; // 30일
@@ -48,7 +49,7 @@ function verifySignJwt(token: string): Record<string, any> {
 /**
  * /api/links/confirm — B-2'' (2026-05-17 재정렬): 인증 단계는 메타데이터만 처리.
  *
- * 입력: JSON { jwt_token } (sign에서 발급한 JWT)
+ * 입력: JSON { jwt_token, fingerprints? } (sign에서 발급한 JWT, 인증본 지문 { file_sha256, phash256, dhash64 })
  * 처리:
  *   - JWT 검증
  *   - proof cost 차감 (IMAGE_PROOF or VERIFIED_PROOF × sizeMultiplier)
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ detail: "invalid_json" }, { status: 400 });
   }
-  const { jwt_token } = body || {};
+  const { jwt_token, fingerprints } = body || {};
   if (!jwt_token) {
     return NextResponse.json({ detail: "missing_jwt" }, { status: 400 });
   }
@@ -232,6 +233,25 @@ export async function POST(req: NextRequest) {
   // best-effort: 실패해도 인증 응답을 막지 않고, 사용자가 파트너 화면을 열면 overview가 자가 치유한다.
   if (!replay) {
     void unlockPartnerBenefitsOnFirstProof(billingUserId).catch(() => {});
+  }
+
+  // 해시 원장 기록 (2026-10-01 1단계) — 사진 없이 해시·지문·시각·등급만. 재확정이면 빈 지문만 채움.
+  // best-effort: 원장 실패가 인증(차감 완료) 응답을 막지 않는다. 구 클라이언트(지문 미전송)도 해시는 기록.
+  if (typeof final_hash_hex === "string" && typeof inner_hash_hex === "string") {
+    await t.span("ledger", () =>
+      recordProof({
+        linkId: link_id,
+        userId: user_id,
+        finalHash: final_hash_hex,
+        innerHash: inner_hash_hex,
+        tier,
+        stampTs: String(timestamp),
+        capturedAt: typeof captured_at === "string" ? captured_at : null,
+        width,
+        height,
+        fingerprints: sanitizeFingerprints(fingerprints),
+      }),
+    );
   }
 
   // receipt JWT 발급 (publish 시 재제출)

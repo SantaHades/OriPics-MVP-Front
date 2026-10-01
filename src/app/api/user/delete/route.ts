@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
 import { revokeSocialGrants } from "@/lib/auth/revokeSocialGrants";
 import { revokeReferrerBenefitsOnRefereeDelete } from "@/lib/partner/server";
+import { detachUser, markUnpublished } from "@/lib/ledger/server";
 
 export async function DELETE() {
   try {
@@ -59,6 +60,9 @@ export async function DELETE() {
     const purged = await purgeUserLinks(user.id);
     if (purged > 0) console.info("[Delete User] links purged", { userId: user.id, purged });
 
+    // 해시 원장(2026-10-01): 기록은 남기고 계정 연결만 끊는다 — 이미 공유된 인증의 검증 지속(처리방침 §3)
+    await detachUser(user.id);
+
     await prisma.user.delete({
       where: { id: user.id },
     });
@@ -109,6 +113,7 @@ async function purgeUserLinks(userId: string): Promise<number> {
     if (rmErr) console.error("[Delete User] storage remove failed:", rmErr.message);
     const { error: delErr } = await supabase.from("links").delete().in("link_id", chunk.map((r) => r.link_id));
     if (delErr) console.error("[Delete User] links delete failed:", delErr.message);
+    else await markUnpublished(chunk.map((r) => r.link_id));
   }
   return rows.length;
 }

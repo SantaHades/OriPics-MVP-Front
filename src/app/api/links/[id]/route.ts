@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { verifyLinkId } from "@/lib/oripics-stamp/common";
 import { mailboxesHoldingLink } from "@/lib/mailboxes/server";
+import { markUnpublished } from "@/lib/ledger/server";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -92,6 +93,7 @@ export async function DELETE(req: NextRequest, props: { params: Promise<{ id: st
     console.error(`[delete] db delete failed link_id=${linkId}:`, dbErr.message);
     return NextResponse.json({ detail: `db_error:${dbErr.message}` }, { status: 500 });
   }
+  await markUnpublished([linkId]);
 
   // 5. ProofHistory 삭제
   try {

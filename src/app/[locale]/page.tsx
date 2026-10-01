@@ -64,7 +64,7 @@ interface ApiResponse {
   message?: string;
   session_id?: string;
   metadata?: MetaData;
-  owner_exempt?: boolean;
+  is_owner?: boolean;
   /** 검증 등급 — "verified"(attest 통과 촬영 인증) | undefined(standard·구 링크) */
   tier?: string;
   /** 기기 검증 상세 (C2PA com.oripics.verified 어서션, 2026-08-29) */
@@ -292,7 +292,7 @@ export default function Home() {
     fileInputRef.current?.click();
   };
 
-  // 인증 확인 모달에서 "예" → 풀 verify 호출 (-1 차감)
+  // 인증 확인 모달에서 "예" → 풀 verify 호출 (2026-10-01부터 무료)
   const handleVerifyConfirmYes = async () => {
     const ctx = verifyConfirm;
     if (!ctx) return;
@@ -321,7 +321,7 @@ export default function Home() {
           status: "verified",
           match: verifyRes.match,
           metadata: verifyRes.metadata,
-          owner_exempt: verifyRes.owner_exempt,
+          is_owner: verifyRes.is_owner,
           tier: verifyRes.tier,
           verify_url: verifyRes.trust_report?.subject?.verify_url,
           c2pa: c2paEv ? { result: c2paEv.result, issuer: c2paEv.details?.signer?.issuer } : undefined,
@@ -345,7 +345,7 @@ export default function Home() {
     }
   };
 
-  // 인증 확인 모달에서 "아니오" → 차감 없이 닫기 (idle 복귀)
+  // 인증 확인 모달에서 "아니오" → 닫기 (idle 복귀)
   const handleVerifyConfirmNo = () => {
     setVerifyConfirm(null);
     setStatus("idle");
@@ -388,7 +388,7 @@ export default function Home() {
               return;
             }
           }
-          // 이미 인증된 이미지 — 풀 verify는 차감이라 사용자 확인 필요.
+          // 이미 인증된 이미지 — 자세한 확인(무료 검증) 여부를 묻는다.
           setStatus("idle");
           setVerifyConfirm({ file, detect });
           return;
@@ -1218,6 +1218,14 @@ export default function Home() {
             >
               {t("hero.link_cases")}
             </Link>
+            <span className="text-slate-300">·</span>
+            {/* 무료 검증 (2026-10-01 원장 1단계) — 로그인 없이 받은 사진 확인 */}
+            <Link
+              href="/verify"
+              className="text-sm text-emerald-600 hover:text-emerald-500 font-semibold underline underline-offset-4 decoration-emerald-300"
+            >
+              {t("hero.link_verify")}
+            </Link>
           </div>
 
           {status !== "result_stamped" && status !== "result_verified" && (
@@ -1852,7 +1860,7 @@ export default function Home() {
               {resultData.match ? <ShieldCheck size={28} /> : <AlertTriangle size={28} />}
               <h2 className="text-2xl font-bold">{resultData.match ? t("verify.success_title") : t("verify.fail_title")}</h2>
             </div>
-            {resultData.owner_exempt && (
+            {resultData.is_owner && (
               <div className="mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
                 <CheckCircle size={14} /> {t("verify.owner_exempt")}
               </div>
@@ -2518,11 +2526,6 @@ export default function Home() {
       })()}
 
       {verifyConfirm && (() => {
-        const preview = verifyConfirm.detect.preview;
-        const verifyMult = preview
-          ? getProofMultiplier(preview.width, preview.height)
-          : 1;
-        const verifyCost = CREDIT_COSTS.VERIFY_QUERY * verifyMult;
         return (
         <div
           className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/60"
@@ -2539,8 +2542,8 @@ export default function Home() {
             <p className="text-sm text-slate-600 leading-relaxed mb-2">
               {t("verify_confirm.body")}
             </p>
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-5">
-              {t("verify_confirm.cost_notice_dynamic", { cost: verifyCost, mult: verifyMult })}
+            <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-5">
+              {t("verify_confirm.free_notice")}
             </p>
             <div className="flex gap-2">
               <button

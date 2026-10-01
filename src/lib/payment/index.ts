@@ -65,7 +65,7 @@ export function selectGatewayForUser(_opts: {
  * 전체 흐름 (인증 + 공유): Standard 3+2=5, Verified 4+2=6
  */
 export const CREDIT_COSTS = {
-  VERIFY_QUERY: 1,       // /api/verify 조회
+  VERIFY_QUERY: 1,       // (2026-10-01 폐지 — 검증 무료) 과거 verify_query 거래 표시용으로만 유지
   LINK_CREATE: 2,        // /api/links/[id]/publish — 공개링크 공개 (proof와 분리)
   IMAGE_PROOF: 3,        // /api/links/confirm Standard 인증 (proof만, link 비용 별도)
   VERIFIED_PROOF: 4,     // 모바일 P 경로 Verified 인증 (proof만, Pro 한정)
@@ -80,8 +80,8 @@ export type CreditAction = keyof typeof CREDIT_COSTS;
  * 2026-05-15 갱신: free 10 → 20 (사진인증 5건 ≒ 4×5=20).
  */
 export const PLAN_GRANTS = {
-  free_signup: 20,            // 가입 즉시 첫 달치
-  free_monthly: 20,           // 매월 갱신
+  free_signup: 30,            // 가입 즉시 첫 달치 (2026-10-01 20→30, 검증 무료화와 함께)
+  free_monthly: 30,           // 매월 갱신 (2026-10-01 20→30)
   pro_monthly: 1000,          // 실질 무제한 (사진인증 250건)
   pro_yearly_monthly: 1000,   // 연결제도 매월 1000으로 갱신, 한 번에 받지 않음
   business_monthly: 10000,    // 5명 팀 공유 (사진인증 2,500건)

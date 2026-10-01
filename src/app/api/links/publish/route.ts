@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { retainUntilFrom } from "@/lib/photobox/pass";
 import { createClient } from "@supabase/supabase-js";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { getSessionUserId } from "@/lib/auth/getSessionUserId";
 import { CREDIT_COSTS } from "@/lib/payment";
 import { consumeCredits, refundCredits } from "@/lib/credits/consumeCredits";
@@ -10,6 +10,8 @@ import { prisma } from "@/lib/prisma";
 import { attachC2paManifest, oripicsTimestampToISO8601, type Tier } from "@/lib/oripics-stamp/c2pa";
 import { decodePngPixels, extractFinalHashFromPixels, computeInnerHashFromPixels, hexToBytes } from "@/lib/oripics-stamp/server";
 import { StepTimer } from "@/lib/timing";
+import { computePerceptualFingerprint } from "@oripics/stamp";
+import { recordPublished } from "@/lib/ledger/server";
 import { normalizeMemo, isMissingColumn } from "@/lib/links/memo";
 import { hasThumbColumn, makeThumb, thumbPathFor } from "@/lib/links/previewBackfill";
 import { isActiveMember, listMembers, loadMailbox, loadMember, newPhotoId, notify } from "@/lib/mailboxes/server";
@@ -249,10 +251,18 @@ export async function POST(req: NextRequest) {
   //   (A) final_hash: border LSB 추출값 ↔ JWT final_hash_hex  — PNG 교체 공격 차단
   //   (B) inner_hash: inner 픽셀 SHA-256 재계산 ↔ JWT inner_hash_hex  — inner 픽셀 교체 공격 차단
   // hash 필드가 없으면 구 receipt (배포 전 발급) — 검증 생략 (하위호환)
+  // 원장 지문 (2026-10-01) — 서버가 받은 실제 이미지로 계산 (클라이언트 보고값보다 신뢰). 실패해도 publish 진행.
+  const fileSha256 = createHash("sha256").update(pngBuffer).digest("hex");
+  let serverFp: { phash256: string; dhash64: string } | null = null;
   if (claims.final_hash_hex || claims.inner_hash_hex) {
     try {
-      // PNG 풀 디코드는 대형 이미지에서 수 초 — (A)(B)가 같은 픽셀을 쓰므로 1회만.
+      // PNG 풀 디코드는 대형 이미지에서 수 초 — (A)(B)·원장 지문이 같은 픽셀을 쓰므로 1회만.
       const pixels = await t.span("png_decode", () => decodePngPixels(pngBuffer, width, height));
+      try {
+        serverFp = computePerceptualFingerprint(pixels, width, height);
+      } catch (e: any) {
+        console.warn(`[publish] perceptual fingerprint failed link_id=${link_id}:`, e?.message || e);
+      }
 
       // (A) border LSB → final_hash 검증
       if (claims.final_hash_hex) {
@@ -291,6 +301,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. C2PA 매니페스트 적용 + Storage 재업로드
+  let publishedSha256: string | null = null; // 뷰어 다운로드본(C2PA 첨부 후) — 실패 시 원본 그대로 공개되므로 fileSha256과 같음
   if (C2PA_ENABLED) {
     try {
       const c2paStart = Date.now();
@@ -326,6 +337,7 @@ export async function POST(req: NextRequest) {
           });
         if (upErr) throw new Error(`reupload_failed:${upErr.message}`);
       });
+      publishedSha256 = createHash("sha256").update(signResult.buffer).digest("hex");
 
       console.log(
         `[publish] c2pa attached link_id=${link_id} bytes=${signResult.buffer.length} added=${signResult.bytesAdded} ms=${Date.now() - c2paStart} ` +
@@ -513,6 +525,26 @@ export async function POST(req: NextRequest) {
     if (!String(e?.message || "").includes("Unique constraint")) {
       console.warn("[publish] ProofHistory create failed:", e?.message || e);
     }
+  }
+
+  if (typeof claims.final_hash_hex === "string" && typeof claims.inner_hash_hex === "string") {
+    await t.span("ledger", () =>
+      recordPublished({
+        linkId: link_id,
+        userId: user_id,
+        finalHash: claims.final_hash_hex,
+        innerHash: claims.inner_hash_hex,
+        tier: tier === "verified" ? "verified" : "standard",
+        stampTs: String(timestamp),
+        capturedAt: typeof claims.captured_at === "string" ? claims.captured_at : null,
+        width,
+        height,
+        fileSha256,
+        publishedSha256,
+        phash256: serverFp?.phash256 ?? null,
+        dhash64: serverFp?.dhash64 ?? null,
+      }),
+    );
   }
 
   console.log(`[publish] ok link_id=${link_id}`);

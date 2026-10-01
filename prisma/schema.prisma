@@ -307,3 +307,46 @@ model PartnerJoinLedger {
 
   @@map("partner_join_ledger")
 }
+
+// ─── 해시 원장 1단계 (2026-10-01) — db_migrations/2026_10_01_proof_ledger.sql · docs/strategy-verification-layer.md ───
+// 사진·GPS 미저장. userId는 FK(ON DELETE SET NULL)만 DB에 두고 Prisma 관계는 두지 않음(계정 삭제 후에도 행 존속).
+
+model ProofLedger {
+  id          String    @id @default(cuid())
+  linkId      String    @unique @map("link_id")
+  userId      String?   @map("user_id")
+  finalHash   String    @unique @map("final_hash")
+  innerHash   String    @map("inner_hash")
+  fileSha256  String?   @map("file_sha256")
+  publishedSha256 String? @map("published_sha256")
+  phash256    String?
+  dhash64     String?
+  tier        String
+  stampTs     String    @map("stamp_ts")
+  capturedAt  String?   @map("captured_at")
+  width       Int
+  height      Int
+  certifiedAt DateTime  @default(now()) @map("certified_at")
+  publishedAt DateTime? @map("published_at")
+  batchId     String?   @map("batch_id")
+  leafIndex   Int?      @map("leaf_index")
+
+  @@index([fileSha256])
+  @@index([publishedSha256])
+  @@index([batchId, leafIndex])
+  @@map("proof_ledger")
+}
+
+model LedgerBatch {
+  id         String    @id @default(cuid())
+  day        String
+  merkleRoot String    @map("merkle_root")
+  leafCount  Int       @map("leaf_count")
+  tsaToken   Bytes?    @map("tsa_token")
+  tsaTime    DateTime? @map("tsa_time")
+  tsaError   String?   @map("tsa_error")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([day])
+  @@map("ledger_batches")
+}

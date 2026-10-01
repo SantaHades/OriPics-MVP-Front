@@ -77,7 +77,7 @@ describe("renewCreditsIfDue", () => {
     expect(result.renewed).toBe(false);
   });
 
-  it("renews free user to 20 credits", async () => {
+  it("renews free user to 30 credits", async () => {
     const pastDate = makeDate(-1); // yesterday
     mockFindUnique.mockResolvedValue({
       tier: "free",
@@ -90,7 +90,7 @@ describe("renewCreditsIfDue", () => {
     const result = await renewCreditsIfDue("user-1");
 
     expect(result.renewed).toBe(true);
-    expect(result.grantAmount).toBe(PLAN_GRANTS.free_monthly); // 20
+    expect(result.grantAmount).toBe(PLAN_GRANTS.free_monthly); // 30
     expect(result.previousCredits).toBe(3);
     expect(result.nextRenewAt).toBeDefined();
     expect(result.nextRenewAt!.getTime()).toBeGreaterThan(Date.now());
@@ -110,7 +110,7 @@ describe("renewCreditsIfDue", () => {
         data: expect.objectContaining({
           action: "monthly_renewal",
           balanceAfter: PLAN_GRANTS.free_monthly,
-          delta: PLAN_GRANTS.free_monthly - 3, // 20 - 3 = 17
+          delta: PLAN_GRANTS.free_monthly - 3, // 30 - 3 = 27
         }),
       }),
     );

@@ -52,6 +52,36 @@ import {
   readUint32BE,
 } from './common';
 import { applyWatermark } from './watermark';
+import { computePerceptualFingerprint } from '@oripics/stamp';
+
+/** 해시 원장 지문 (2026-10-01) — confirm에 동봉, 서버는 사진을 받지 않음 */
+export interface DraftFingerprints {
+  file_sha256: string;
+  phash256: string;
+  dhash64: string;
+}
+
+/** 원장 공개 정보 (/api/verify·/api/verify/lookup 응답, lib/ledger/server.ts LedgerPublicInfo와 동일) */
+export interface LedgerInfo {
+  link_id: string;
+  tier: string;
+  certified_at: string;
+  captured_at: string | null;
+  stamp_ts: string;
+  width: number;
+  height: number;
+  published: boolean;
+  verify_url: string | null;
+  timestamp_proof:
+    | { status: 'pending'; expected_day: string }
+    | { status: 'stamped'; day: string; tsa_time: string; merkle_root: string }
+    | { status: 'retrying'; day: string };
+}
+
+async function sha256Hex(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  return bytesToHex(new Uint8Array(digest));
+}
 
 export interface SignResponse {
   version: number;
@@ -102,8 +132,10 @@ export interface VerifyResponse {
     /** 촬영시각 (V5, 기기 기록) */
     captured_at?: string;
   };
-  /** V4+ 메타에서 owner가 호출자와 일치하면 true — 차감 면제됨 */
-  owner_exempt?: boolean;
+  /** 로그인 사용자가 공개링크 소유자면 true (2026-10-01 검증 무료화 — 구 owner_exempt) */
+  is_owner?: boolean;
+  /** 해시 원장 기록 (스탬프 일치 시) — proof_url = 포함 증명 JSON(배치 후) */
+  ledger?: LedgerInfo & { proof_url?: string };
   /** 서버 trust report — link_id 자체 유도 시 subject.verify_url에 공개링크가 담김 */
   trust_report?: {
     overall_trust?: string;
@@ -118,6 +150,8 @@ export interface StampedDraft {
   height: number;
   sign: SignResponse;
   gps?: { lat: number; lng: number } | null;
+  /** 원장 지문 — 계산 실패 시 없음(confirm은 해시만 기록) */
+  fingerprints?: DraftFingerprints;
 }
 
 export type UploadType = 'F' | 'P' | 'C';
@@ -188,7 +222,16 @@ export async function signAndStampFromPixels(
   embedPayloadV5(stamped, width, height, payload, mode);
   const blob = await encodeCanvasToPng(stamped, width, height);
 
-  return { blob, width, height, sign, gps: hasGps ? opts.gps! : null };
+  // 원장 지문 — 인증본(스탬프 후) 기준. 실패해도 인증은 진행.
+  let fingerprints: DraftFingerprints | undefined;
+  try {
+    const fp = computePerceptualFingerprint(stamped, width, height);
+    fingerprints = { file_sha256: await sha256Hex(blob), phash256: fp.phash256, dhash64: fp.dhash64 };
+  } catch (e) {
+    console.warn('[stamp] fingerprint failed', e);
+  }
+
+  return { blob, width, height, sign, gps: hasGps ? opts.gps! : null, fingerprints };
 }
 
 export async function signAndStamp(file: Blob, opts: SignAndStampOptions): Promise<StampedDraft> {
@@ -212,7 +255,7 @@ export async function confirmStamped(
     res = await fetch(`${apiBase}/api/links/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jwt_token: draft.sign.jwt }),
+      body: JSON.stringify({ jwt_token: draft.sign.jwt, ...(draft.fingerprints ? { fingerprints: draft.fingerprints } : {}) }),
     });
   } catch (e: any) {
     throw new Error(`confirm_failed:0:${JSON.stringify({ detail: `network_error:${e?.message || e}` })}`);
@@ -727,6 +770,40 @@ export async function verifyImage(file: Blob, opts: { apiBase: string }): Promis
   if (!res.ok) {
     return { match: false, reason: `verify_http_${res.status}` };
   }
+  return res.json();
+}
+
+export interface CopyMatch {
+  kind: 'exact_file' | 'perceptual';
+  phash_distance?: number;
+  dhash_distance?: number;
+  record: LedgerInfo;
+}
+
+export interface LookupResult {
+  matches: CopyMatch[];
+  low_info: boolean;
+}
+
+/**
+ * 사본 찾기 (2026-10-01) — 스탬프가 없거나 손상된 사진(재압축·크기 변경)을 원장 지문과 대조.
+ * 브라우저에서 지문만 계산해 보낸다. 사진은 업로드하지 않음. 로그인 불필요.
+ */
+export async function lookupCopies(file: Blob, opts: { apiBase: string }): Promise<LookupResult> {
+  const apiBase = opts.apiBase.replace(/\/$/, '');
+  const { data: pixels, width, height } = await decodeImageToCanvas(file);
+  const fp = computePerceptualFingerprint(pixels, width, height);
+  const res = await fetch(`${apiBase}/api/verify/lookup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      file_sha256: await sha256Hex(file),
+      phash256: fp.phash256,
+      dhash64: fp.dhash64,
+      low_info: fp.lowInfo,
+    }),
+  });
+  if (!res.ok) throw new Error(`lookup_failed:${res.status}`);
   return res.json();
 }
 

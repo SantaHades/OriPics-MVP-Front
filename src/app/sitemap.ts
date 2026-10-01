@@ -11,6 +11,7 @@ const BASE = "https://www.ori.pics";
 const PUBLIC_PATHS: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] }[] = [
   { path: "", priority: 1.0, changeFrequency: "weekly" },
   { path: "/how-it-works", priority: 0.8, changeFrequency: "monthly" },
+  { path: "/verify", priority: 0.9, changeFrequency: "monthly" },
   { path: "/use-cases", priority: 0.8, changeFrequency: "monthly" },
   { path: "/for/construction", priority: 0.7, changeFrequency: "monthly" },
   { path: "/for/rental", priority: 0.7, changeFrequency: "monthly" },

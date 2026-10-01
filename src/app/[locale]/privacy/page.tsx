@@ -4,7 +4,7 @@ import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
-const LAST_UPDATED = "2026-09-23";
+const LAST_UPDATED = "2026-10-01";
 const COMPANY_NAME_KO = "주식회사 산타하데스";
 const COMPANY_NAME_EN = "SantaHades Co., Ltd.";
 const COMPANY_ADDRESS_EN =
@@ -68,7 +68,7 @@ function PrivacyKo() {
           </tr>
           <tr>
             <td>인증 데이터</td>
-            <td>업로드한 이미지, 이미지 메타데이터(타임스탬프·해상도), GPS 좌표(이용자 동의 시)</td>
+            <td>업로드한 이미지(공개링크 생성 시), 이미지 메타데이터(타임스탬프·해상도), GPS 좌표(이용자 동의 시), 인증 기록(이미지 해시값·지각 지문·인증 시각·등급 — 이미지 자체나 좌표는 포함하지 않음)</td>
             <td>이미지 인증 처리 시 자동 수집</td>
           </tr>
           <tr>
@@ -95,6 +95,7 @@ function PrivacyKo() {
         <li>인증 이미지(Standard 플랜): 인증 처리 시점부터 7일 후 자동 삭제.</li>
         <li>인증 이미지(Pro·Business 플랜): 구독 유지 기간 동안 보관. 다운그레이드 시 30일 grace 후 7일 보관 정책으로 회귀.</li>
         <li>이용 횟수 거래 이력: 회원 탈퇴 시까지 보관(부정 이용 방지·정산 목적).</li>
+        <li>인증 기록(이미지 해시값·지각 지문·인증 시각·등급): 이미 공유된 인증 사진을 누구나 계속 검증할 수 있도록 서비스 운영 기간 동안 보관합니다. 회원 탈퇴 시 계정과의 연결(회원 식별자)을 즉시 삭제하며, 남은 기록만으로는 이용자를 식별하거나 사진을 복원할 수 없습니다. 하루 단위로 묶은 기록의 대표값은 외부 시각 인증기관(SSL.com)의 타임스탬프를 받습니다.</li>
         <li>부동산사진함 사진·확인서: 분쟁 증빙 목적으로 사진함 등록일부터 5년간 보관 후 파기(사진함 개설자의 요금제 변경·해지, 사진함 삭제와 무관). 보관 기간 중 사진을 올린 회원이 탈퇴하면 업로더 표시를 &quot;탈퇴한 회원&quot;으로 가리고 계정 식별정보는 파기합니다.</li>
         <li>결제 기록: 「전자상거래 등에서의 소비자 보호에 관한 법률」에 따라 5년 보관.</li>
         <li>접속 로그: 「통신비밀보호법」에 따라 3개월 보관.</li>
@@ -273,7 +274,7 @@ function PrivacyEn() {
           <tr><td>Required</td><td>Email address, password (one-way hashed)</td><td>Sign-up form</td></tr>
           <tr><td>Optional</td><td>Name, profile picture</td><td>Sign-up / profile edit</td></tr>
           <tr><td>OAuth</td><td>Email, name, profile picture (per provider scope)</td><td>Google / Naver / Kakao consent</td></tr>
-          <tr><td>Proof data</td><td>Uploaded images, image metadata (timestamp, dimensions), GPS coordinates (with explicit user consent)</td><td>Auto-collected during proof processing</td></tr>
+          <tr><td>Proof data</td><td>Uploaded images (when a public link is created), image metadata (timestamp, dimensions), GPS coordinates (with explicit user consent), certification records (image hashes, perceptual fingerprints, certification time, tier — not the image or coordinates)</td><td>Auto-collected during proof processing</td></tr>
           <tr><td>Device-integrity (Verified)</td><td>Hash of App Attest / Play Integrity token</td><td>Mobile app (after Track D launch)</td></tr>
           <tr><td>Payment</td><td>Billing key identifier. Card numbers and CVCs are not stored by the Company</td><td>Subscription checkout (after J-7)</td></tr>
           <tr><td>Auto-collected</td><td>IP address, browser / OS info, session cookies, service usage logs</td><td>Generated during service use</td></tr>
@@ -294,6 +295,7 @@ function PrivacyEn() {
         <li>Proof images (Standard): 7 days from creation, then auto-deleted.</li>
         <li>Proof images (Pro / Business): retained for the subscription period. After downgrade, 30-day grace period followed by reversion to 7-day policy.</li>
         <li>Usage (proof/verification) transaction history: until account deletion (abuse prevention, billing reconciliation).</li>
+        <li>Certification records (image hashes, perceptual fingerprints, certification time, tier): kept for as long as the service operates so that photos already shared can still be verified by anyone. On account deletion the link to your account (member identifier) is erased immediately; the remaining record cannot identify you or reconstruct the photo. Each day&apos;s records are summarized and timestamped by an external time-stamping authority (SSL.com).</li>
         <li>Real-estate photo box photos and reports: kept for 5 years from registration to the photo box as dispute evidence, regardless of the owner's plan changes or photo box deletion. If the uploader deletes their account during this period, the uploader is shown as &quot;Deleted member&quot; and account identifiers are erased.</li>
         <li>Payment records: 5 years (Korean Act on Consumer Protection in E-Commerce).</li>
         <li>Access logs: 3 months (Korean Communications Privacy Act).</li>
