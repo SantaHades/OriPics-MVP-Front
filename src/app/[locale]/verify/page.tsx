@@ -4,17 +4,19 @@
 // 로그인 없이 누구나. 사진은 서버로 보내지 않는다 — 브라우저에서 스탬프 판독·해시·지문만 계산해 대조.
 //   ① 스탬프가 있으면 /api/verify (원본 여부 + 원장 기록 + 제3자 시각 증명)
 //   ② 스탬프가 없거나 손상(재압축·크기 변경)이면 /api/verify/lookup (원장 지문으로 인증 원본 후보 찾기)
+//   ③ (2026-10-01 2단계) 어떤 사진이든 C2PA 자격증명(Pixel·삼성·Adobe·AI 생성 표시)·EXIF를 브라우저에서 판독해 "확인된 점"으로 표시
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { Link } from "@/navigation";
 import { useParams } from "next/navigation";
 import {
-  AlertTriangle, ArrowLeft, CheckCircle2, Clock, Download, ExternalLink, FileSearch, Loader2,
-  RefreshCw, SearchX, ShieldCheck, Upload,
+  AlertTriangle, ArrowLeft, CheckCircle2, Clock, Download, ExternalLink, FileSearch, Info, Loader2,
+  RefreshCw, ScanSearch, SearchX, ShieldCheck, Upload,
 } from "lucide-react";
 import { verifyImage, lookupCopies, type VerifyResponse, type LookupResult, type LedgerInfo } from "@/lib/oripics-stamp";
+import { readC2pa, readExif, type C2paCheck, type ExifCheck } from "@/lib/check/client";
+import { buildFindings, type Finding } from "@/lib/check/findings";
 
 const MAX_BYTES = 50 * 1024 * 1024;
-const LOOKUP_REASONS = ["no_stamp", "dimension_mismatch", "image_too_small"];
 
 type Phase =
   | { kind: "idle" }
@@ -23,13 +25,18 @@ type Phase =
   | { kind: "lookup"; res: LookupResult; reason: string }
   | { kind: "error"; message: string };
 
+/** C2PA·EXIF 검사 — 스탬프 검증과 병렬, 실패해도 위 결과는 그대로 */
+type Checks =
+  | { status: "running" }
+  | { status: "done"; c2pa: C2paCheck; exif: ExifCheck; c2paError: boolean };
+
 type Copy = typeof KO;
 
 const KO = {
   back: "홈으로",
   title: "사진 무료 검증",
-  lead: "받은 사진이 OriPics로 인증된 원본인지 확인합니다. 로그인 없이 누구나 무료로 쓸 수 있습니다.",
-  privacy: "사진은 서버로 전송되지 않습니다. 브라우저에서 스탬프와 지문만 계산해 인증 기록과 대조합니다.",
+  lead: "받은 사진이 OriPics로 인증된 원본인지, 사진에 어떤 기록(C2PA 자격증명·촬영 정보)이 남아 있는지 확인합니다. 로그인 없이 누구나 무료입니다.",
+  privacy: "사진은 서버로 전송되지 않습니다. 브라우저 안에서 판독하고, 인증 기록 대조에는 해시와 지문만 보냅니다.",
   drop: "사진을 끌어다 놓거나 눌러서 선택",
   dropHint: "PNG·JPEG·WEBP · 50MB 이하 · 카톡·메신저로 받은 사진도 됩니다",
   working: "확인 중…",
@@ -77,13 +84,35 @@ const KO = {
   ],
   cta: "다음 거래부터는 상대에게 OriPics 인증 사진을 요청해 보세요.",
   ctaLink: "OriPics 알아보기",
+  checkTitle: "사진에 남은 기록",
+  checkLead: "C2PA 콘텐츠 자격증명과 촬영 정보(EXIF)를 브라우저에서 읽었습니다. 기록이 없다고 가짜라는 뜻은 아니고, 기록이 있다고 사진 내용이 사실이라는 뜻도 아닙니다.",
+  checkRunning: "C2PA·촬영 정보 읽는 중…",
+  c2paUnreadable: "이 파일 형식은 C2PA 자격증명을 읽지 못했습니다.",
+  f: {
+    c2pa_none: () => "C2PA 콘텐츠 자격증명이 없습니다. 대부분의 사진에는 없고, 메신저·SNS로 보내면 지워집니다.",
+    c2pa_trusted: (x: { signer: string; captured: boolean; at: string | null }, fd: (d: Date) => string) =>
+      `신뢰할 수 있는 C2PA 서명이 있습니다: ${x.signer}${x.captured ? " — 기기 카메라 촬영으로 기록됨" : ""}${x.at ? ` (서명 ${fd(new Date(x.at))})` : ""}`,
+    c2pa_untrusted: (x: { signer: string }) => `C2PA 서명은 유효하지만 공식 신뢰 목록에 없는 서명자입니다: ${x.signer}`,
+    c2pa_invalid: () => "C2PA 자격증명이 있으나 검증에 실패했습니다. 자격증명이 붙은 뒤 파일이 바뀌었을 수 있습니다.",
+    c2pa_ai_generated: () => "C2PA 기록에 AI로 생성한 이미지라고 표시돼 있습니다.",
+    c2pa_ai_edited: () => "C2PA 기록에 AI 편집·합성이 포함됐다고 표시돼 있습니다.",
+    c2pa_edited: (x: { tools: string }) => `C2PA 기록에 편집 이력이 있습니다 (${x.tools}).`,
+    c2pa_history: (x: { chain: string }) => `자격증명 이력: ${x.chain}`,
+    exif_none: () => "촬영 정보(EXIF)가 없습니다. 메신저 전송·화면 캡처·편집 앱 저장에서 흔히 지워지므로 그 자체로 조작 신호는 아닙니다.",
+    exif_device: (x: { device: string; at: Date | null }, fd: (d: Date) => string) =>
+      `촬영 정보에 기록된 기기: ${x.device}${x.at ? ` · 촬영 시각 ${fd(x.at)}` : ""} (누구나 고칠 수 있는 기록)`,
+    exif_editor: (x: { tool: string }) => `편집·보정 앱 흔적이 있습니다: ${x.tool}`,
+    exif_ai: (x: { tool: string }) => `AI 생성·편집 도구 흔적이 있습니다: ${x.tool}`,
+    exif_saved_later: (x: { at: Date }, fd: (d: Date) => string) => `촬영 이후 다른 시각(${fd(x.at)})에 다시 저장된 기록이 있습니다.`,
+    exif_gps: () => "사진에 위치(GPS) 정보가 들어 있습니다. 다른 사람에게 보낼 때 위치가 함께 전달될 수 있습니다.",
+  },
 };
 
 const EN: Copy = {
   back: "Home",
   title: "Free photo verification",
-  lead: "Check whether a photo you received is an OriPics-certified original. Free for everyone, no sign-in.",
-  privacy: "Your photo is never uploaded. The browser computes the stamp and fingerprints and compares them with certification records.",
+  lead: "Check whether a photo you received is an OriPics-certified original and what records (C2PA Content Credentials, capture data) it carries. Free for everyone, no sign-in.",
+  privacy: "Your photo is never uploaded. It is read inside your browser; only hashes and fingerprints are sent to match certification records.",
   drop: "Drop a photo here or tap to choose",
   dropHint: "PNG · JPEG · WEBP · up to 50MB · photos received via messengers work too",
   working: "Checking…",
@@ -131,6 +160,28 @@ const EN: Copy = {
   ],
   cta: "Next time, ask the other party for an OriPics-certified photo.",
   ctaLink: "About OriPics",
+  checkTitle: "Records found in the photo",
+  checkLead: "We read C2PA Content Credentials and capture data (EXIF) in your browser. No record does not mean fake, and a record does not prove the scene is true.",
+  checkRunning: "Reading C2PA and capture data…",
+  c2paUnreadable: "C2PA credentials could not be read for this file format.",
+  f: {
+    c2pa_none: () => "No C2PA Content Credentials. Most photos have none, and messengers and social apps strip them.",
+    c2pa_trusted: (x: { signer: string; captured: boolean; at: string | null }, fd: (d: Date) => string) =>
+      `Trusted C2PA signature: ${x.signer}${x.captured ? " — recorded as a device camera capture" : ""}${x.at ? ` (signed ${fd(new Date(x.at))})` : ""}`,
+    c2pa_untrusted: (x: { signer: string }) => `Valid C2PA signature from a signer not on the official trust list: ${x.signer}`,
+    c2pa_invalid: () => "C2PA credentials are present but failed validation. The file may have changed after they were attached.",
+    c2pa_ai_generated: () => "The C2PA record marks this image as AI-generated.",
+    c2pa_ai_edited: () => "The C2PA record says AI editing or compositing was involved.",
+    c2pa_edited: (x: { tools: string }) => `The C2PA record contains edit history (${x.tools}).`,
+    c2pa_history: (x: { chain: string }) => `Credential history: ${x.chain}`,
+    exif_none: () => "No capture data (EXIF). It is commonly removed by messengers, screenshots and editing apps, so this alone is not a sign of tampering.",
+    exif_device: (x: { device: string; at: Date | null }, fd: (d: Date) => string) =>
+      `Device in capture data: ${x.device}${x.at ? ` · captured ${fd(x.at)}` : ""} (editable by anyone)`,
+    exif_editor: (x: { tool: string }) => `Traces of an editing app: ${x.tool}`,
+    exif_ai: (x: { tool: string }) => `Traces of an AI generation or editing tool: ${x.tool}`,
+    exif_saved_later: (x: { at: Date }, fd: (d: Date) => string) => `Saved again at a different time after capture (${fd(x.at)}).`,
+    exif_gps: () => "This photo contains location (GPS) data, which may be shared when you send it to others.",
+  },
 };
 
 function fmtDate(d: Date, locale: string): string {
@@ -211,6 +262,59 @@ function Banner({ tone, icon, title, lead }: { tone: "ok" | "warn" | "info"; ico
   );
 }
 
+function findingText(f: Finding, c: Copy, fd: (d: Date) => string): string {
+  switch (f.code) {
+    case "c2pa_trusted": return c.f.c2pa_trusted(f, fd);
+    case "c2pa_untrusted": return c.f.c2pa_untrusted(f);
+    case "c2pa_edited": return c.f.c2pa_edited(f);
+    case "c2pa_history": return c.f.c2pa_history(f);
+    case "exif_device": return c.f.exif_device(f, fd);
+    case "exif_editor": return c.f.exif_editor(f);
+    case "exif_ai": return c.f.exif_ai(f);
+    case "exif_saved_later": return c.f.exif_saved_later(f, fd);
+    default: return c.f[f.code]();
+  }
+}
+
+function ChecksSection({ checks, c, locale, skipOriPicsC2pa }: { checks: Checks | null; c: Copy; locale: string; skipOriPicsC2pa: boolean }) {
+  if (!checks) return null;
+  const fd = (d: Date) => fmtDate(d, locale);
+  return (
+    <div className="rounded-xl border border-slate-200 p-5">
+      <h3 className="flex items-center gap-2 font-bold text-slate-900"><ScanSearch size={18} /> {c.checkTitle}</h3>
+      {checks.status === "running" ? (
+        <p className="mt-3 inline-flex items-center gap-2 text-sm text-slate-500"><Loader2 className="animate-spin" size={16} /> {c.checkRunning}</p>
+      ) : (
+        <>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{c.checkLead}</p>
+          <ul className="mt-3 space-y-2">
+            {(checks.c2paError
+              ? buildFindings({ ...checks.c2pa, present: false }, checks.exif).filter((f) => f.code !== "c2pa_none")
+              : buildFindings(checks.c2pa, checks.exif, { skipC2paTrusted: skipOriPicsC2pa })
+            ).map((f, i) => (
+              <li key={`${f.code}-${i}`} className="flex items-start gap-2 text-sm leading-relaxed">
+                {f.tone === "positive" ? (
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                ) : f.tone === "caution" ? (
+                  <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                ) : (
+                  <Info size={16} className="mt-0.5 shrink-0 text-slate-400" />
+                )}
+                <span className={f.tone === "caution" ? "text-amber-800" : "text-slate-700"}>{findingText(f, c, fd)}</span>
+              </li>
+            ))}
+            {checks.c2paError && (
+              <li className="flex items-start gap-2 text-sm text-slate-500">
+                <Info size={16} className="mt-0.5 shrink-0 text-slate-400" /> {c.c2paUnreadable}
+              </li>
+            )}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function VerifyPage() {
   const params = useParams();
   const locale = (params?.locale as string) || "ko";
@@ -219,11 +323,23 @@ export default function VerifyPage() {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [checks, setChecks] = useState<Checks | null>(null);
+  const runId = useRef(0);
 
   const reset = () => {
+    runId.current++;
     if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
     setPhase({ kind: "idle" });
+    setChecks(null);
+  };
+
+  // C2PA·EXIF 판독 — 스탬프 검증과 병렬. 늦게 끝난 이전 사진 결과는 버린다(runId).
+  const runChecks = async (file: File, id: number) => {
+    setChecks({ status: "running" });
+    const [c2paRes, exifRes] = await Promise.all([readC2pa(file), readExif(file)]);
+    if (runId.current !== id) return;
+    setChecks({ status: "done", c2pa: c2paRes, exif: exifRes, c2paError: !!c2paRes.error });
   };
 
   const run = async (file: File) => {
@@ -232,12 +348,14 @@ export default function VerifyPage() {
     if (preview) URL.revokeObjectURL(preview);
     setPreview(URL.createObjectURL(file));
     setPhase({ kind: "working" });
+    const id = ++runId.current;
+    void runChecks(file, id);
     try {
       const res = await verifyImage(file, { apiBase: "" });
       if (res.reason === "verify_http_429") return setPhase({ kind: "error", message: c.errRate });
       if (res.metadata) return setPhase({ kind: "stamp", res });
+      // 스탬프 없음·손상 외의 실패(서버 판독 오류 등)도 사본 찾기·C2PA·EXIF는 계속 보여 준다
       const reason = res.reason ?? "no_stamp";
-      if (!LOOKUP_REASONS.includes(reason)) return setPhase({ kind: "error", message: c.errGeneric });
       const lk = await lookupCopies(file, { apiBase: "" });
       setPhase({ kind: "lookup", res: lk, reason });
     } catch (e: any) {
@@ -389,6 +507,14 @@ export default function VerifyPage() {
                 </>
               );
             })()}
+
+            <ChecksSection
+              checks={checks}
+              c={c}
+              locale={locale}
+              // OriPics 인증 원본이면 OriPics 자체 C2PA 서명은 위 카드와 중복 → 생략(이전 단계 서명·이력만 표시)
+              skipOriPicsC2pa={phase.kind === "stamp" && phase.res.match}
+            />
 
             <button
               onClick={reset}

@@ -54,7 +54,9 @@ const nextConfig = {
     const cspReportOnly = [
       "default-src 'self'",
       // Next는 인라인/eval 스크립트를 사용 → 초기엔 완화. PortOne SDK 도메인 허용.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.portone.io https://*.portone.io",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.portone.io https://*.portone.io",
+      // 사진 검사(/verify) C2PA 판독 — c2pa-web이 blob: 워커에서 자체 호스팅 WASM 실행 (2026-10-01)
+      "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
@@ -77,6 +79,11 @@ const nextConfig = {
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
           { key: 'Content-Security-Policy-Report-Only', value: cspReportOnly },
         ],
+      },
+      {
+        // 자체 호스팅 라이브러리(c2pa-web WASM) — 경로에 버전이 있어 영구 캐시
+        source: '/vendor/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
       {
         // API 응답은 캐시/색인 금지

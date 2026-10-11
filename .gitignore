@@ -13,3 +13,6 @@ node_modules/
 
 /src/generated/prisma
 .vercel
+
+# c2pa-web WASM — scripts/copy-c2pa-assets.mjs가 생성
+/public/vendor
