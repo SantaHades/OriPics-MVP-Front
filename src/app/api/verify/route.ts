@@ -358,6 +358,7 @@ export async function POST(req: NextRequest) {
         "os_version",
         "app_version",
         "attest_token_hash",
+        "app_id",
       ];
       const numKeys = ["zoom_factor", "iso", "exposure_time", "f_number", "focal_length"];
       for (const key of strKeys) {
@@ -379,7 +380,7 @@ export async function POST(req: NextRequest) {
     const fb: Record<string, unknown> = {};
     for (const key of [
       "platform", "device_integrity", "lens_position", "device_model",
-      "os_version", "app_version", "attest_token_hash",
+      "os_version", "app_version", "attest_token_hash", "app_id",
     ]) {
       if (typeof dbVerifiedInfo[key] === "string" && dbVerifiedInfo[key]) fb[key] = dbVerifiedInfo[key];
     }

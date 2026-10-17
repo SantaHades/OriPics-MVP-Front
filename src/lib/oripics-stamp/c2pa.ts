@@ -33,6 +33,8 @@ export interface C2paAttachInput {
     attest_token_hash: string;
     /** Play Integrity 등급(MEETS_*) 또는 'passed'(iOS) */
     device_integrity?: string;
+    /** 검증된 앱 ID — iOS bundle / Android 패키지 (2026-10-18) */
+    app_id?: string;
     zoom_factor?: number;
     lens_position?: string;
     /** A-56 촬영 세부 (빌드 8+ 클라이언트가 보고, attest 통과 앱 기준) */
@@ -296,6 +298,7 @@ export async function attachC2paManifest(input: C2paAttachInput): Promise<C2paAt
       'exposure_time',
       'f_number',
       'focal_length',
+      'app_id',
     ] as const) {
       const v = (vi as Record<string, unknown>)[key];
       if (v != null && v !== '') optional[key] = v;

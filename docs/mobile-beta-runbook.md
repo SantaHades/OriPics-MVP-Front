@@ -91,7 +91,7 @@ npx expo prebuild -p android --no-install   # android/ 없을 때만 (재생성 
 cd android
 SENTRY_DISABLE_AUTO_UPLOAD=true JAVA_HOME=$(/usr/libexec/java_home -v 17) ./gradlew assembleRelease
 adb install -r app/build/outputs/apk/release/app-release.apk
-adb shell monkey -p com.santahades.oripics -c android.intent.category.LAUNCHER 1
+adb shell monkey -p ori.pics.app -c android.intent.category.LAUNCHER 1   # 2026-10-18: 새 앱 패키지 (옛 com.santahades.oripics는 iOS bundle ID로만 남음)
 ```
 
 - 폰: 개발자 옵션 → USB 디버깅 ON + 케이블 연결 (`adb devices`로 확인)

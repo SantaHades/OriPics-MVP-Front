@@ -56,6 +56,8 @@
 
 #### 한국어
 
+> 2026-10-18: App Store 정식 심사용으로 **요금제(가격) 문단 삭제** — 앱에서 살 수 없는 구독 가격을 스토어 설명에 적으면 3.1.1 거절 사유(Play 등록정보와 동일 조치). 무료 검증 문단 추가.
+
 ```
 "그 사진, 나중에 찍은 거 아니에요?"
 
@@ -88,11 +90,10 @@ JPEG Trust 채택) 표준의 적합성 인증(Conformant) 제품입니다. 발�
 자동 첨부되어, OriPics가 아닌 표준 지원 도구에서도 출처를 검증할 수
 있습니다.
 
-▣ 요금제
-• Free — 월 6회 사진 인증(표준 크기 기준), 공개링크 7일 보관
-• Pro — 월 9,900원: 월 1,000건 이용(표준 크기 사진 인증 기준 약 330회),
-  보관함 계속 보관, 촬영 검증(Verified), 인증서 PDF
-※ 사용하지 않은 이용 건수는 다음 달로 이월되지 않습니다.
+▣ 받은 사진도 무료로 검증
+• 로그인 없이 누구나 ori.pics/verify에서 무료 검증 — 메신저로 다시 압축된
+  사본도 인증 원본을 찾아 줍니다
+• 매일 인증 기록을 묶어 외부 시각 인증기관(SSL.com)의 타임스탬프를 받습니다
 
 ▣ 개인정보 보호
 • 비밀번호는 단방향 해시로 저장, 모든 통신 HTTPS 암호화
@@ -137,11 +138,11 @@ photos carry Content Credentials signed with a certificate on the C2PA
 trust list — verifiable in any standards-aware tool, independent of
 OriPics.
 
-▣ Pricing
-• Free — 6 photo proofs per month (standard size), 7-day public links
-• Pro — ₩9,900/month: 1,000 usage credits per month (≈330 standard-size
-  photo proofs), continuous storage, Verified capture, certificate PDFs
-※ Unused credits do not roll over to the next month.
+▣ Free verification for received photos
+• Anyone can verify for free at ori.pics/verify, no sign-in — it even finds
+  the certified original of copies recompressed by messengers
+• Certification records are timestamped daily by an external time-stamping
+  authority (SSL.com)
 
 ▣ Privacy
 • Passwords stored with one-way hashing; all transport HTTPS encrypted
@@ -162,7 +163,9 @@ Operated by SantaHades Co., Ltd.
 - KO: 검색어로는 "증명"도 여전히 쓰이므로 `원본증명` 유지(검색 키워드는 UI 용어 통일 대상 아님).
 - EN: 구 초안 107자 → `no blockchain`·`real photo` 제거, 95자로 조정 (U-15 해소 — 9/3 실측 재계산).
 
-### 1.6 What's New — v1.0.0 (출시 버전)
+### 1.6 What's New — v1.0.1 (첫 App Store 출시, 빌드 26+)
+
+> 첫 정식 출시라 ASC에서는 '이 버전의 새로운 기능' 입력란이 없을 수 있음(첫 버전은 생략 가능). 아래는 있을 때 사용.
 
 | 언어 | 카피 |
 |---|---|
@@ -210,7 +213,24 @@ Operated by SantaHades Co., Ltd.
 
 ---
 
-## 5. 정식 심사 제출 체크리스트 (2026-09-03 기준)
+## 5. 정식 심사 제출 체크리스트 (2026-10-18 갱신 — iOS 정식 출시 결정)
+
+> **2026-10-18 대표 결정**: iOS도 TestFlight가 아닌 **App Store 정식 출시**. 판매자명은 개인 계정(YONGSEOG SON)으로 출시, 법인 전환은 추후.
+> **3.1.1 대비 iOS 빌드 조치(d7e0901)**: 원데이·사진함 패스 **코드 등록 UI 숨김**(웹에서 등록한 패스는 계정에 붙어 그대로 사용), 웹 패스·파트너 안내 링크 숨김, 차감 규칙의 **요금제 비교·'ori.pics 요금제' 안내 숨김**, 재구독 권유·웹 갱신 유도·웹사이트 안내 문장 제외. Android는 그대로.
+
+| # | 항목 | 상태 |
+|---|---|---|
+| A | iOS 제출 빌드 | ⏳ v1.0.1 빌드 26 (EAS, 10/18) → `eas submit` 후 ASC 처리 대기 |
+| B | 설명문 §1.4 (요금제 문단 삭제판) 붙여넣기 | ⬜ 대표 ASC |
+| C | 심사 노트 §6 (10/18판) + 데모 계정 비밀번호 | ⬜ 대표 ASC |
+| D | 연령 등급 설문 — 사용자 제작 콘텐츠(이벤트 갤러리·사진함 공유)·위치 공유 '예' 반영 | ⬜ 대표 ASC (Play IARC와 일치시킬 것) |
+| E | 앱 개인정보(Privacy Label) — 10/1 처리방침 개정(인증 기록 해시) 반영 확인: 사진·위치는 '사용자 콘텐츠/위치', 해시는 기기 ID 아님 | ⬜ 대표 확인 |
+| F | 출시 방식 | 수동 출시 권장(승인 후 대표가 '출시') |
+
+**이전(9/3) 체크리스트**
+
+| # | 항목 | 상태 |
+|---|---|---|
 
 | # | 항목 | 상태 |
 |---|---|---|
@@ -228,37 +248,39 @@ Operated by SantaHades Co., Ltd.
 
 ---
 
-## 6. App Review 심사 노트 초안 (ASC "App Review Information"에 입력)
+## 6. App Review 심사 노트 (ASC "App Review Information"에 입력) — 2026-10-18판
 
 ```
 [Demo Account]
 Email: demo-screenshots@ori.pics
 Password: (.secrets/demo-screenshots-account.txt)
+The demo account has the Pro plan so every feature can be tested.
 
 [Notes]
 OriPics certifies photo authenticity at the moment of capture.
 
-- Camera permission: used to capture photos that are certified with an
-  invisible steganographic fingerprint and server-side signature at
-  capture time. This is the core feature ("Verified" tier).
-- App Attest: we use DeviceCheck App Attest to verify device integrity
-  for the Verified tier. Captures on the demo account will work end to
-  end: shoot in the Capture tab → certify in the List tab → publish a
-  public link → open the link in any browser to see verification.
-- Location (optional): GPS coordinates are embedded only when the user
-  enables the toggle on the capture screen.
-- Sign in with Apple is offered alongside Google/Kakao/Naver.
-- Account deletion is available in-app (Home tab → bottom).
-- The app contains no in-app purchases and no purchase links; paid plans
-  exist on our website only and the app does not direct users there.
+- Camera: used to capture photos that are certified with an invisible
+  fingerprint and a server-side signature at capture time ("Verified" tier).
+- App Attest: DeviceCheck App Attest verifies device integrity for the
+  Verified tier. To test: shoot in the Capture tab -> certify in the List
+  tab -> create a public link -> open the link in any browser.
+- Location (optional): GPS is embedded only when the user turns on the
+  toggle on the capture screen.
+- Sign in with Apple is offered alongside Google, Kakao and Naver.
+- Account deletion: Settings tab -> bottom -> "Delete account".
+- User-generated content: event galleries and shared photo boxes have
+  in-app reporting (Report button on each photo); reported items are
+  reviewed and hidden by the operator.
+- Purchases: the app has no in-app purchases, no prices, no purchase
+  buttons and no links to purchase pages. Plans that users already hold on
+  their account are simply applied when they sign in.
 ```
-
----
 
 ## 7. 변경 이력
 
 | 일자 | 변경 |
 |---|---|
+| 2026-10-18 | **iOS 정식 출시 대비** — §1.4 요금제 문단 삭제·무료 검증 문단 추가(KO/EN), §1.6 v1.0.1, §5 체크리스트 갱신(3.1.1 iOS 빌드 조치 기록), §6 심사 노트 10/18판(계정 삭제 위치=설정 탭, UGC 신고, 구매 없음 명시) |
 | 2026-05-10 | 최초 작성 — Apple/Google 카피, Privacy Label 표, 키워드 리서치 |
 | 2026-09-03 | **정식 출시용 전면 현행화** — 인앱결제 No(결정 B)·'인증' 용어 통일·요금 표기 현행화(월 1,000건·이월 불가)·신기능 반영(제보 탭·인증서 PDF·Verified 상세·C2PA 신뢰 목록 서명)·EN 키워드 96자(U-15 해소)·연령 4+ 확정안·심사 노트(§6)·체크리스트 갱신. 가정한 결정 3가지는 문서 상단 |
 - 2026-09-03: 대표 검토 완료 — 가정 3가지(4+·패스 앱 설명 제외·결제정보 미수집) 승인, 배포 국가 한국만, 수동 출시 확정. 문서 상태 초안→확정.

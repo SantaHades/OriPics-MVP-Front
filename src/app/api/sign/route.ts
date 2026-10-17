@@ -262,6 +262,8 @@ export async function POST(req: NextRequest) {
         attest_token_hash: tokenResult.attestTokenHash,
         // A-49②: 무결성 등급 기록 — Android=MEETS_*(verdict 실측), iOS=passed
         device_integrity: tokenResult.deviceIntegrity ?? "passed",
+        // 검증된 앱 ID (iOS bundle / Android 패키지) — 인증서 '기술 상세' 표기 (2026-10-18)
+        app_id: tokenResult.appId,
         ...(typeof zoom_factor === "number" ? { zoom_factor } : {}),
         ...(typeof lens_position === "string" ? { lens_position } : {}),
         ...captureDetail,

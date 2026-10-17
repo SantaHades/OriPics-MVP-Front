@@ -93,6 +93,8 @@ export interface CertificateData {
     attestTokenHash?: string;
     /** Play Integrity 등급(MEETS_*) 또는 'passed'(iOS) */
     deviceIntegrity?: string;
+    /** 검증된 앱 ID — iOS bundle / Android 패키지 (2026-10-18). 없으면(구 인증) 표기 생략 */
+    appId?: string;
     /** A-56 촬영 세부 (빌드 8+ 신규 인증부터, 서명된 값만) */
     deviceModel?: string;
     osVersion?: string;
@@ -150,9 +152,11 @@ const STRINGS: Record<Locale, Record<string, string>> = {
       "정품 기기에서, 위·변조되지 않은 OriPics 정식 앱이 촬영 시점에 이 사진을 인증했음이 하드웨어 수준에서 확인되었습니다.",
     verifiedTech: "기술 상세",
     verifiedTech_ios:
-      "Apple DeviceCheck App Attest — Secure Enclave 하드웨어 키 증명(attestation)을 Apple 루트 CA 인증서 체인·nonce 바인딩·앱 ID(com.santahades.oripics)·production 환경(AAGUID)까지 서버 측에서 검증.",
+      "Apple DeviceCheck App Attest — Secure Enclave 하드웨어 키 증명(attestation)을 Apple 루트 CA 인증서 체인·nonce 바인딩·앱 ID·production 환경(AAGUID)까지 서버 측에서 검증.",
     verifiedTech_android:
-      "Google Play Integrity API — Google 서명 무결성 평결(verdict)을 서버 측에서 검증, 기기 무결성 등급 MEETS_DEVICE_INTEGRITY 이상 확인. 패키지: com.santahades.oripics",
+      "Google Play Integrity API — Google 서명 무결성 평결(verdict)을 서버 측에서 검증, 기기 무결성 등급 MEETS_DEVICE_INTEGRITY 이상 확인.",
+    verifiedAppId_ios: "앱 ID",
+    verifiedAppId_android: "패키지",
     verifiedTech_unknown:
       "Apple App Attest / Google Play Integrity 하드웨어 증명 토큰을 서버 측에서 검증.",
     verifiedEvidence: "인증 데이터",
@@ -214,9 +218,11 @@ const STRINGS: Record<Locale, Record<string, string>> = {
       "Hardware-level attestation confirmed that a genuine device running the untampered official OriPics app certified this photo at the moment of capture.",
     verifiedTech: "Technical detail",
     verifiedTech_ios:
-      "Apple DeviceCheck App Attest — Secure Enclave hardware key attestation verified server-side: Apple root CA chain, nonce binding, app ID (com.santahades.oripics), production environment (AAGUID).",
+      "Apple DeviceCheck App Attest — Secure Enclave hardware key attestation verified server-side: Apple root CA chain, nonce binding, app ID, production environment (AAGUID).",
     verifiedTech_android:
-      "Google Play Integrity API — Google-signed integrity verdict verified server-side; device integrity MEETS_DEVICE_INTEGRITY or higher confirmed. Package: com.santahades.oripics",
+      "Google Play Integrity API — Google-signed integrity verdict verified server-side; device integrity MEETS_DEVICE_INTEGRITY or higher confirmed.",
+    verifiedAppId_ios: "App ID",
+    verifiedAppId_android: "Package",
     verifiedTech_unknown:
       "Apple App Attest / Google Play Integrity hardware attestation token verified server-side.",
     verifiedEvidence: "Evidence data",
@@ -659,6 +665,10 @@ export function CertificateDocument({
                     : vd?.platform === "android"
                       ? t.verifiedTech_android
                       : t.verifiedTech_unknown}
+                  {/* 검증된 앱 ID (2026-10-18) — 옛·새 Android 패키지 병행이라 고정 문구 대신 기록값. 구 인증(기록 없음)은 생략 */}
+                  {vd?.appId && (vd.platform === "ios" || vd.platform === "android")
+                    ? ` ${vd.platform === "ios" ? t.verifiedAppId_ios : t.verifiedAppId_android}: ${vd.appId}`
+                    : ""}
                 </Text>
               </View>
               {evidenceParts.length > 0 ? (

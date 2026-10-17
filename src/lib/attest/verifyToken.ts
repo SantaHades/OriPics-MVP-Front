@@ -32,6 +32,8 @@ export interface VerifyTokenSuccess {
   verifier: "apple_app_attest" | "google_play_integrity";
   /** 디바이스 무결성 등급 (Android Play Integrity 응답) */
   deviceIntegrity?: "MEETS_DEVICE_INTEGRITY" | "MEETS_BASIC_INTEGRITY" | "MEETS_STRONG_INTEGRITY";
+  /** 검증에 성공한 앱 식별자 — iOS bundle ID / Android 패키지 (2026-10-18: 새·옛 Android 패키지 병행 기간 인증서 표기용) */
+  appId: string;
 }
 
 export interface VerifyTokenFailure {
@@ -64,7 +66,7 @@ export async function verifyAttestToken(input: VerifyTokenInput): Promise<Verify
       allowDevelopmentEnvironment: process.env.APPLE_APP_ATTEST_ALLOW_DEV === "true",
     });
     if (!result.ok) return { ok: false, reason: result.reason };
-    return { ok: true, verifier: "apple_app_attest", attestTokenHash: tokenHash(input.token) };
+    return { ok: true, verifier: "apple_app_attest", attestTokenHash: tokenHash(input.token), appId: bundleId };
   }
 
   if (input.platform === "android") {
@@ -76,7 +78,9 @@ export async function verifyAttestToken(input: VerifyTokenInput): Promise<Verify
     if (!serviceAccountJson || packageNames.length === 0) throw new AttestVerifierNotImplementedError("android");
 
     let result: Awaited<ReturnType<typeof verifyPlayIntegrity>> | null = null;
+    let matchedPackage = packageNames[0];
     for (const packageName of packageNames) {
+      matchedPackage = packageName;
       result = await verifyPlayIntegrity(input.token, input.nonce, {
         serviceAccountJson,
         packageName,
@@ -93,6 +97,7 @@ export async function verifyAttestToken(input: VerifyTokenInput): Promise<Verify
       verifier: "google_play_integrity",
       attestTokenHash: result.attestTokenHash ?? tokenHash(input.token),
       deviceIntegrity: result.deviceIntegrity,
+      appId: matchedPackage,
     };
   }
 

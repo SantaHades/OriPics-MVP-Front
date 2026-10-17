@@ -24,6 +24,8 @@ export interface CertificateData {
     lensPosition?: string;
     attestTokenHash?: string;
     deviceIntegrity?: string;
+    /** 검증된 앱 ID — iOS bundle / Android 패키지 (2026-10-18). 없으면 인증서 표기 생략 */
+    appId?: string;
     deviceModel?: string;
     osVersion?: string;
     appVersion?: string;
