@@ -11,6 +11,10 @@ import { mapsUrl } from "@/lib/mapsUrl";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EventBadge from "@/components/EventBadge";
 import IntroVideo, { IntroVideoButton } from "@/components/IntroVideo";
+
+// 메인 소개 영상(팝업 + '영상 다시 보기' 버튼 2곳) 표시 스위치.
+// 2026-10-18 대표 요청으로 끔 — 다시 켤 때는 true로만 바꾸면 된다(컴포넌트·CSP youtube-nocookie 허용은 그대로 둠).
+const SHOW_INTRO_VIDEO = false;
 import C2paRecordModal from "@/components/C2paRecordModal";
 import {
   signAndStampFromPixels,
@@ -1079,7 +1083,7 @@ export default function Home() {
   return (
     <>
       {/* 메인 진입 시 소개 영상 팝업 ('오늘 다시 보지 않기' 지원) */}
-      <IntroVideo />
+      {SHOW_INTRO_VIDEO && <IntroVideo />}
       <nav className="sticky top-0 w-full glass z-50 px-2 sm:px-6 py-3 sm:py-4 flex justify-between items-center text-[10px] sm:text-sm">
         <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => window.scrollTo(0, 0)}>
           <img src="/logo.png" alt="OriPics Logo" className="w-8 h-8 sm:w-9 sm:h-9 object-contain" />
@@ -1087,7 +1091,7 @@ export default function Home() {
           {/* 출시기념 이벤트 배지 — /events로 이동 */}
           <EventBadge />
           {/* 소개 영상 다시 보기 (2026-09-28 대표) */}
-          <IntroVideoButton />
+          {SHOW_INTRO_VIDEO && <IntroVideoButton />}
         </div>
         <div className="flex items-center gap-2 sm:gap-6">
           <LanguageSwitcher />
@@ -1151,7 +1155,7 @@ export default function Home() {
           {/* 출시기념 이벤트 배지 — 모바일 전용 (네비 배지는 xs+ 전용; 9/5 대표: 베타 배지→이벤트 배지, /events로 이동) */}
           <div className="relative z-10 w-full text-left xs:hidden mb-3 flex flex-wrap gap-2">
             <EventBadge variant="hero" />
-            <IntroVideoButton variant="hero" />
+            {SHOW_INTRO_VIDEO && <IntroVideoButton variant="hero" />}
           </div>
           {/* 아이브로 2줄(사진 원본 인증 · C2PA 적합성) + 설명문의 타이틀 승격 — 2026-08-29 대표 시안 */}
           <p className="relative z-10 text-sm md:text-base text-slate-600 mb-4 leading-relaxed">

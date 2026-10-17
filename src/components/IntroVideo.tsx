@@ -3,6 +3,7 @@
 // 메인 소개 영상 팝업 (2026-09-28 대표) — 메인 진입 시 자동 표시, '오늘 다시 보지 않기'는 오늘 날짜(기기 시각)까지 숨김.
 // 다시 보기 버튼(IntroVideoButton)은 창 이벤트로 팝업을 연다 — 네비(xs+)·히어로(모바일) 두 곳에 배치.
 // 영상은 youtube-nocookie 임베드(추적 쿠키 최소화), 닫으면 iframe을 내려 재생을 멈춘다.
+// 2026-10-18: 메인에서 숨김 — [locale]/page.tsx의 SHOW_INTRO_VIDEO 스위치(false)로 제어.
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { PlayCircle, X } from "lucide-react";
