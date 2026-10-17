@@ -51,11 +51,12 @@
   60%  { transform: translate(-40px, -50px) rotate(3deg); opacity: .55; }
   100% { transform: translate(0, 0) rotate(2deg); opacity: .5; }
 }
+/* c: 제목 왼쪽 여백 안에서만 — 아래로 +28px 이상 내려가면 설명문을 덮는다(2026-10-18) */
 @keyframes hero-float-c {
   0%   { transform: translate(0, 0) rotate(0deg); opacity: .4; }
-  20%  { transform: translate(40px, -60px) rotate(-3deg); opacity: .8; }
-  55%  { transform: translate(-70px, -30px) rotate(2deg); opacity: .6; }
-  80%  { transform: translate(-20px, 30px) rotate(-1deg); opacity: .85; }
+  20%  { transform: translate(36px, -44px) rotate(-3deg); opacity: .8; }
+  55%  { transform: translate(-14px, -22px) rotate(2deg); opacity: .6; }
+  80%  { transform: translate(18px, 24px) rotate(-1deg); opacity: .85; }
   100% { transform: translate(0, 0) rotate(0deg); opacity: .4; }
 }
 .hero-float-a { animation: hero-float-a 28s ease-in-out infinite; }
