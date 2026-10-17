@@ -1149,10 +1149,11 @@ export default function Home() {
         <section className="relative w-full text-center mb-16 pt-8 flex flex-col items-center">
           {/* 떠다니는 말풍선 3종("이 사진 진짜예요?"·"나중에 찍은 거 아니죠?"·"AI 같은데?") — 장식용(pointer-events 없음), 모바일 1개·sm+ 2개·md+ 3개 (2026-09-03 대표 아이디어)
               2026-10-18: "AI 같은데?"(c)가 설명문·링크 줄을 덮어 제목 왼쪽 여백으로 이동 + 이동 범위 축소(globals.css hero-float-c).
-              영어는 제목이 길어 1280px 미만엔 왼쪽 여백이 없음 → en은 xl+에서만 표시 */}
+              영어는 제목이 길어 1280px 미만엔 왼쪽 여백이 없음 → en은 xl+에서만 표시.
+              a·b도 아이브로·제목 글자를 덮어 맨 위 빈 띠(아이브로 위 ~36px)에서 좌우로만 떠다니게 정리 — a 왼쪽 절반, b 오른쪽 절반 */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-56 sm:h-64 md:h-72 z-0 overflow-hidden">
             <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-a absolute top-2 left-[4%]">{t("hero.floating_1")}</span>
-            <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-b absolute top-[42%] right-[6%] hidden sm:inline-block">{t("hero.floating_2")}</span>
+            <span className="inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-b absolute top-2 right-[4%] hidden sm:inline-block">{t("hero.floating_2")}</span>
             <span className={`inline-block rounded-full bg-slate-100/90 border border-slate-200 shadow-sm text-slate-600 text-[11px] sm:text-xs font-semibold px-2.5 py-0.5 whitespace-nowrap select-none hero-float-c absolute top-[150px] left-[3%] hidden ${locale === "en" ? "xl:inline-block" : "md:inline-block"}`}>{t("hero.floating_3")}</span>
           </div>
           {/* 출시기념 이벤트 배지 — 모바일 전용 (네비 배지는 xs+ 전용; 9/5 대표: 베타 배지→이벤트 배지, /events로 이동) */}

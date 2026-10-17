@@ -38,18 +38,21 @@
 
 /* 히어로 떠다니는 말풍선 "이 사진, 진짜예요?" (2026-09-03 대표 아이디어)
    서로 다른 경로·주기 3종. 모션 최소화 설정에서는 정지. */
+/* a·b: 히어로 맨 위 빈 띠(아이브로 위, 높이 ~36px) 안에서만 — 세로 이동은 -8~+2px로 묶어 글자를 덮지 않는다.
+   a는 왼쪽에서 오른쪽(+80px까지), b는 오른쪽에서 왼쪽(-80px까지)이라 640px(영어 b가 가장 긴 경우)에서도 서로 닿지 않는다.
+   b는 영어 문구가 길어 기울면 박스가 커지므로 기울기 ±1.5°·아래로 0px (2026-10-18) */
 @keyframes hero-float-a {
   0%   { transform: translate(0, 0) rotate(-3deg); opacity: .45; }
-  25%  { transform: translate(70px, -28px) rotate(2deg); opacity: .85; }
-  50%  { transform: translate(150px, 18px) rotate(-1deg); opacity: .6; }
-  75%  { transform: translate(60px, 64px) rotate(3deg); opacity: .85; }
+  25%  { transform: translate(45px, -6px) rotate(2deg); opacity: .85; }
+  50%  { transform: translate(80px, 2px) rotate(-1deg); opacity: .6; }
+  75%  { transform: translate(30px, -4px) rotate(3deg); opacity: .85; }
   100% { transform: translate(0, 0) rotate(-3deg); opacity: .45; }
 }
 @keyframes hero-float-b {
-  0%   { transform: translate(0, 0) rotate(2deg); opacity: .5; }
-  30%  { transform: translate(-90px, 40px) rotate(-2deg); opacity: .85; }
-  60%  { transform: translate(-40px, -50px) rotate(3deg); opacity: .55; }
-  100% { transform: translate(0, 0) rotate(2deg); opacity: .5; }
+  0%   { transform: translate(0, -2px) rotate(1deg); opacity: .5; }
+  30%  { transform: translate(-55px, 0) rotate(-1.5deg); opacity: .85; }
+  60%  { transform: translate(-80px, -6px) rotate(1.5deg); opacity: .55; }
+  100% { transform: translate(0, -2px) rotate(1deg); opacity: .5; }
 }
 /* c: 제목 왼쪽 여백 안에서만 — 아래로 +28px 이상 내려가면 설명문을 덮는다(2026-10-18) */
 @keyframes hero-float-c {
